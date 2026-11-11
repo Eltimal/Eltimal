@@ -1,6 +1,6 @@
 // Vérifie l'app Electron : chargement local, polices, aucune requête réseau, son qui démarre seul,
 // sauvegarde gardée entre deux lancements. Lancer : npm run test:app (sous Linux sans écran : xvfb-run -a npm run test:app).
-// APP=<chemin de l'exécutable> teste une app construite au lieu du dossier source. SHOT=<fichier.png> garde une capture.
+// SRC=<dossier ou app.asar> teste un paquet avec l'Electron du dossier. APP=<chemin de l'exécutable> teste une app construite au lieu du dossier source. SHOT=<fichier.png> garde une capture.
 const { _electron: electron } = require("playwright");
 const fs = require("fs"), os = require("os"), path = require("path");
 const racine = path.join(__dirname, "..");
@@ -10,7 +10,7 @@ const res = []; const note = (nom, ok, detail) => { res.push(ok); console.log((o
 
 async function lancer() {
   const opts = { env: Object.assign({}, process.env, { LP_USER_DATA: donnees }) };
-  if (process.env.APP) { opts.executablePath = process.env.APP; opts.args = []; } else { opts.executablePath = require("electron"); opts.args = [racine]; }
+  if (process.env.APP) { opts.executablePath = process.env.APP; opts.args = []; } else { opts.executablePath = require("electron"); opts.args = [process.env.SRC || racine]; }
   if (process.platform === "linux") opts.args.push("--no-sandbox");
   const app = await electron.launch(opts);
   const page = await app.firstWindow(); const errs = [];

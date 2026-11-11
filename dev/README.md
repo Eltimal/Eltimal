@@ -1,6 +1,6 @@
 # La Permanence — fiche de reprise technique
 
-À lire en premier dans toute nouvelle conversation. Elle évite de relire tout le code (environ 13 000 lignes) : on ne charge que les fichiers du chantier en cours.
+À lire en premier dans toute nouvelle conversation. **Depuis le 11 novembre 2026, ce dépôt Git est la seule version de référence** (le jeu publié en artifact n'est plus mis à jour) ; le jeu se lance comme une app Mac (Electron), voir « App Mac » ci-dessous. Elle évite de relire tout le code (environ 13 000 lignes) : on ne charge que les fichiers du chantier en cours.
 
 - Jeu publié : https://claude.ai/artifact/CM1PX734VjnAAZvwZrdNx3 — **version 1.0 en construction** (voir « Version 1.0 : où on en est » ci-dessous). L'historique détaillé des livraisons d'avant la 1.0 est dans la feuille de route du document de conception.
 - Consigne de la 1.0 (à relire en reprenant) : https://claude.ai/artifact/5vYcLYtXT1YejTvRmmXuCx
@@ -74,13 +74,36 @@ Audit fait le 9 novembre 2026 (35 suites de tests : tout passait sauf `tdialogue
 3. Pour plus tard dans la carrière : spécialité « mineurs » (le juge des enfants n'est pas dans le jeu), concours de la Conférence.
 
 
+## App Mac (Electron) : structure, lancement, build
+
+Structure du dépôt :
+
+- `index.html`, `js/`, `lib/`, `fonts/` : le jeu, inchangé, toujours jouable seul dans un navigateur (ouvrir `index.html`).
+- `electron/main.js` : l'enveloppe. Une fenêtre (1440 × 900, plein écran : menu Affichage ou Ctrl+Cmd+F) qui charge `index.html` depuis le disque. Hors ligne strict : toute requête autre que `file:`, `data:`, `blob:` est annulée et notée dans `global.lpBloquees` ; pas de fenêtre secondaire ni de navigation. Son : `autoplay-policy=no-user-gesture-required` plus un faux `keydown` au chargement, qui déclenche l'`eveil` de son.js sans toucher au jeu. Menu Affichage → « Ouvrir le dossier des sauvegardes ».
+- `electron/test-app.js` : test de l'app (voir plus bas).
+- `package.json` (racine) : Electron, electron-builder, réglages du build (`build.files` : seuls `index.html`, `js`, `lib`, `fonts`, `electron/main.js` entrent dans l'app ; `dev/` n'y est pas).
+- `dev/` : cette fiche, tests jsdom et outils de capture (son propre `package.json`).
+- `dist/` : produit par le build, jamais commité.
+
+Commandes, depuis la racine (Node 20 ou plus) :
+
+- `npm install` : une fois.
+- `npm start` : lance le jeu dans sa fenêtre.
+- `npm run test:app` : deux lancements de suite dans un dossier de données temporaire ; vérifie page locale, scripts, six familles de polices, son `running` sans clic et signal mesuré, partie enregistrée puis retrouvée après relance, réglages gardés, aucune requête réseau, plein écran. `échecs: 0` attendu. Sous Linux sans écran : `xvfb-run -a npm run test:app`. `SRC=<app.asar>` teste le contenu d'une app construite ; `SHOT=<fichier.png>` garde une capture.
+- `npm run build` : construit `dist/mac-arm64/La Permanence.app` (Mac Apple Silicon) et `dist/mac/La Permanence.app` (Mac Intel). `npm run build:zip` : les mêmes en `.zip`.
+
+Signature : pas de certificat Apple (usage personnel). Construit **sur un Mac**, l'app reçoit une signature locale (`identity: "-"`) et s'ouvre directement. Construit **sous Linux** (session cloud), aucune signature n'est possible : sur le Mac, lancer une fois dans le Terminal `xattr -cr "La Permanence.app" && codesign --force --deep --sign - "La Permanence.app"`, sinon macOS annonce une app « endommagée ». Icône : celle d'Electron par défaut (mettre un `build/icon.icns` pour la changer).
+
+Sauvegardes : `window.claude` n'existe pas dans l'app, donc `CR.Saves.backend` vaut `local` (`localStorage`, clé `la-permanence-saves-v2`), rangé dans `~/Library/Application Support/La Permanence/`. Elles survivent aux mises à jour de l'app. L'export en fichier (bouton lié à `window.claude`) n'apparaît pas dans l'app.
+
 ## 1. Reprendre dans une nouvelle conversation
 
-1. Lire cette fiche : `Artifact read` du jeu avec `path: "dev/README.md"`.
-2. Lire la section « Feuille de route » du document de conception (outil Docs, lecture ciblée, pas tout le document).
-3. Récupérer le code : `Artifact list` avec `scope: "files"` sur le jeu, puis `Artifact read` avec `paths: [...]` pour tout télécharger dans un dossier de travail (par exemple `lp/`). Les fichiers arrivent à leur chemin publié.
-4. Outils de test : `cd lp/dev && npm install`. Si l'installation reste bloquée (le registre npm est exclu du proxy), forcer le proxy : `NO_PROXY= no_proxy= npm_config_noproxy= npm install --noproxy="" --proxy=$HTTPS_PROXY --https-proxy=$HTTPS_PROXY`. Ne jamais lancer `playwright install` : le navigateur est déjà là (voir § 4).
+1. Lire cette fiche (`dev/README.md`).
+2. Lire la section « Feuille de route » du document de conception (lien ci-dessus, lecture ciblée, pas tout le document).
+3. Le code est dans ce dépôt : rien à télécharger.
+4. Outils : `npm install` à la racine (app) et `cd dev && npm install` (tests jsdom). Ne jamais lancer `playwright install` dans une session cloud : le navigateur est déjà là (voir § 4).
 5. Ne lire en entier que les fichiers du chantier (table du § 3). Pour le reste : `grep`, lectures partielles.
+6. Un commit Git avant chaque étape.
 
 ## 2. Architecture
 
@@ -185,7 +208,7 @@ Une affaire = `CR.defineCase({ id, title, arrive, leadTask, client, profile, hon
 
 ## 4. Tests
 
-Depuis `lp/dev` après `npm install` :
+Depuis `dev/` après `npm install` (l'app elle-même se teste avec `npm run test:app` à la racine, voir « App Mac ») :
 
 - `node tests/t1.js` … `node tests/t18.js` : parties jouées automatiquement dans jsdom ; chaque test affiche `errors: none` s'il passe. t1 navigation, t2–t3 tutoriel (t2 écrit `tests/save_ch1.json` que t3 relit), t4–t8 affaires 2 à 6, t9–t14 affaires 7 à 12, t15 générateur et sauvegarde, t16 carrière de 330 jours sans intervention, t17 carte, t18 tous les décors et pièces (toutes heures, pluie, largeurs), t19 portraits (toutes coiffures, tenues, expressions, fiches), t20 interface en pixel et moments forts (icônes, bureau cliquable, décrocher en cliquant le téléphone, trajet animé, verdict, papier, animations réduites).
 - `node tests/tp3.js [par graine] [codes]` : phase 3 du moteur génératif (200 par graine et 200 codes par défaut) : 1 000 affaires sur cinq graines, lieux dans Paris et les trois départements de la petite couronne, tribunal judiciaire et commissariat du lieu des faits, aucune signature en double, refus et transmission sans erreur, refus d'une commission d'office seulement pour motif légitime ; carrière d'un an avec clients qui mentent, absents, mauvais payeurs ; historique conservé d'une partie à l'autre ; 200 codes tirés puis rejoués à l'identique (faits, pièces, personnages, dialogues), joués dans l'autre camp, codes par critères ; code mal tapé, d'une autre version ou inconnu refusé avec un message clair ; `échecs: 0` attendu.
@@ -246,14 +269,12 @@ Pièges connus :
 
 Deux affaires prises deux à deux ne disent plus grand-chose : sur le chemin réellement joué d'une carrière simulée (appels, pièces, audience principale), la part du texte déjà lu est de 8 % par rapport à l'affaire précédente, 30 % sur les cinq dernières, 45 % sur les dix dernières, 69 % sur toute la carrière ; pour les choix, 14 %, 40 %, 60 % et 85 %. Le phrasier et ses variantes ne font presque plus bouger ces chiffres : ce qui reste, ce sont les choix fixés par la procédure (questions de l'avocat en garde à vue, motifs de refus d'une commission d'office, accepter d'être jugé ou demander un délai, dernier mot) et les récits d'une même infraction dans une même scène. Prochaine étape : de nouveaux choix tirés des faits, pas de nouvelles phrases.
 
-## 5. Publier
+## 5. Livrer
 
-Avant le premier publish d'une conversation : `Artifact read` du lien sans `path`, puis `Read` de TOUTES les lignes du fichier indiqué (environ 1 300 lignes, en trois lectures), sinon le publish est refusé. Le `index.html` téléchargé est enveloppé : supprimer sa première ligne (`<!doctype html>…<body>`) et le `</body></html>` final avant de travailler. Les fichiers de `lib/` et `fonts/` ne changent pas : ne pas les republier.
-
-`Artifact` publish : `file_path` = `lp/index.html`, `url` = lien du jeu, `root` = `lp`, `files` = seulement les fichiers modifiés (`{"js/x.js": "js/x.js"}`), les autres sont conservés. Ne pas passer `icon` ni `capabilities` (reportés automatiquement). `edits` ne marche que sur la page `.html` ; pour un `.js` : Edit puis publish. Le dossier `dev/` est publié avec le jeu pour être conservé, mais la page ne le charge pas.
+Plus de publication en artifact : on commite et on pousse sur le dépôt Git, puis `npm run build` pour refaire l'app. `index.html` est un document complet (il garde en première ligne l'enveloppe héritée de l'artifact : ne pas la supprimer). Toute CSS nouvelle se met avant le DERNIER `</style>`.
 
 ## 6. Règles du projet
 
 - Droit : faire des recherches en ligne dès que c'est nécessaire pour être quasi certain de ce qu'on met dans le jeu (texte en vigueur, peine, rédaction d'un article, jurisprudence), sans attendre l'accord de Kevin : Légifrance et Judilibre d'abord, puis sources officielles (service-public.fr, ministère de la Justice). Un texte vérifié est marqué avec la date et la source de la vérification ; ce qui n'a pas pu l'être reste marqué « à revérifier ». Depuis le 10 novembre 2026, il ne reste aucun « à revérifier » sur une règle précise : seulement l'avertissement général (résumés à relire avant tout usage réel).
 - Économie de tokens : lectures ciblées, plusieurs modifications par appel, au plus une capture de contrôle par livraison, pas de boucle de retouches sans demande.
-- Après un chantier : cocher la case dans la feuille de route, republier, faire tourner t1, t17 et les tests des affaires touchées.
+- Après un chantier : cocher la case dans la feuille de route, commiter, faire tourner `npm run test:app`, t1, t17 et les tests des affaires touchées.

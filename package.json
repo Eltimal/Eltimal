@@ -7,8 +7,8 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --mac dir",
-    "build:zip": "electron-builder --mac zip",
+    "build": "electron-builder --mac",
+    "build:zip": "electron-builder --mac zip --arm64 --x64",
     "test:app": "node electron/test-app.js"
   },
   "devDependencies": {
@@ -40,7 +40,8 @@
           ]
         }
       ],
-      "identity": null
+      "identity": "-"
     }
-  }
+  },
+  "author": "Kevin"
 }
