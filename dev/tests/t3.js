@@ -1,0 +1,105 @@
+const { boot, sleep, texts, findBtn, click } = require("./harness");
+const P = require("./play");
+const { runAudience } = require("./court");
+const fs = require("fs");
+(async () => {
+  const { w, CR, doc, errors } = boot();
+  await sleep(200);
+  CR.store.s = CR.deserialize(fs.readFileSync(__dirname + "/save_ch1.json", "utf8"));
+  const s = CR.store.s;
+  s.pendingDebrief = [];
+  CR.store.bump(); await sleep(100);
+  CR.endDay(s); CR.store.bump(); await sleep(50);
+  for (const m of s.inbox.filter((x) => !x.read)) CR.readMail(s, m.id);
+  for (let i = 0; i < 20 && !s.ring; i++) CR.spend(s, 10, "admin"); CR.store.bump(); await sleep(50);
+  console.log("jour", s.day, CR.fmtTime(s.min), "ring", s.ring && s.ring.from);
+  await click(w, findBtn(doc, "Répondre"));
+  await P.runCall(w, doc, CR, { avoid: [/gagné d'avance/], advice: [/à vos côtés/, /Ne contactez pas/, /contrat de travail/] });
+  const cs = s.cases.tuto_thomas;
+  console.log("faits", CR.fmtDate(cs.proc.faitsDay, "dow"), "audition", CR.fmtDate(cs.vars.auditionDay, "dow"), "umj", CR.fmtDate(cs.vars.umjDay, "dow"));
+  console.log("statut", cs.status, "notes", cs.notes.filter(n=>n.fact).map(n=>n.fact).join(","));
+  await P.openCase(w, doc, "Moreau");
+  await P.runTask(w, doc, /conflits/); await click(w, findBtn(doc, "Terminé"));
+  await P.runTask(w, doc, /honoraires/);
+  await click(w, findBtn(doc, "Expliquer les honoraires"));
+  await click(w, findBtn(doc, /^Proposer$/));
+  for (let i = 0; i < 4 && !cs.neg.done; i++) { const off = cs.neg.lastCounter || { type: "forfait", amount: Math.round(cs.neg.fairForfait * 0.85 / 50) * 50 }; CR.negPropose(s, cs, off); CR.store.bump(); await sleep(50); }
+  console.log("négociation", cs.neg.result, JSON.stringify(cs.fee && CR.offerShort(cs.fee)), cs.neg.history.map(h => h.who + ": " + h.text).slice(-3).join(" / "));
+  await click(w, findBtn(doc, "Fermer") || findBtn(doc, "Renoncer"));
+  await P.openCase(w, doc, "Moreau");
+  if (cs.fee) { await P.runTask(w, doc, /convention/); await P.fillDraft(w, doc, CR, cs, { key: "convention" }); }
+  else await P.runTask(w, doc, /urgence/);
+  console.log("statut", cs.status, "encaissé", cs.collected);
+  while (s.day < cs.vars.auditionDay) CR.endDay(s);
+  CR.store.bump(); await sleep(50);
+  await P.openCase(w, doc, "Moreau");
+  await P.runTask(w, doc, /audition libre/);
+  await P.waitFor(() => doc.querySelector(".gav-scene"));
+  const step = async (re) => { const b = findBtn(doc, re); if (!b) throw new Error("GAV: " + re + " | " + texts(doc.querySelector(".gav-card")).slice(0, 200)); await click(w, b); await sleep(60); };
+  await step(/Entrer dans le bureau/);
+  for (const seg of [...doc.querySelectorAll(".gav-card .noteable")]) await click(w, seg);
+  await step(/^Continuer$/);
+  await step(/S'expliquer complètement/);
+  for (let i = 0; i < 6; i++) { for (const seg of [...doc.querySelectorAll(".gav-card .noteable")]) if (!seg.classList.contains("seg-noted")) await click(w, seg); const b = findBtn(doc, "Question suivante"); if (!b) break; await click(w, b); }
+  await step(/Fin de l'audition/);
+  for (let i = 0; i < 3; i++) { const q = doc.querySelector(".gav-card .q-btn"); if (q) await click(w, q); }
+  for (const seg of [...doc.querySelectorAll(".gav-card .noteable")]) await click(w, seg);
+  await step(/Continuer|Ne plus poser/);
+  const obs = [...doc.querySelectorAll(".gav-card label")].find((l) => /quitter/.test(texts(l)));
+  if (obs) await click(w, obs.querySelector("input"));
+  await step(/Rédiger et joindre|Pas d'observations/);
+  const bad = [...doc.querySelectorAll(".paper-pv .seg")].find((x) => /voulu le frapper/.test(texts(x)));
+  if (bad) await click(w, bad);
+  await step(/Signer et continuer|fidèle/);
+  console.log("issue:", texts(doc.querySelector(".gav-card")).slice(0, 300));
+  await step(/Quitter/);
+  console.log("audience", cs.proc.audience && CR.fmtDate(cs.proc.audience.day, "dow"), "oblig", JSON.stringify(cs.obligs.map(o => [o.id, o.due])), "flags", JSON.stringify(cs.flags));
+  await P.openCase(w, doc, "Moreau");
+  await P.runTask(w, doc, /copie de la procédure/);
+  for (let i = 0; i < 8 && !CR.hasDoc(cs, "pv_audition"); i++) CR.endDay(s);
+  CR.store.bump(); await sleep(50);
+  // relever l'anomalie par l'interface
+  await P.openCase(w, doc, "Moreau");
+  await click(w, [...doc.querySelectorAll(".tab")].find((t) => /^Pièces/.test(texts(t))));
+  const row = [...doc.querySelectorAll(".doc-row")].find((r) => /Audition libre de Thomas/.test(texts(r)));
+  await click(w, row);
+  const seg = [...doc.querySelectorAll(".docview .seg")].find((x) => /Avons notifié/.test(texts(x)));
+  await P.releve(w, doc, seg, "Mention manquante");
+  console.log("irrégularités", JSON.stringify(cs.issues.map((i) => i.flag)), "note", JSON.stringify((cs.notes.find((n) => n.cat === "irreg") || {}).text || "").slice(0, 90));
+  for (const d of cs.docs) { const r = CR.renderDoc(s, cs, d); for (const p of r.paras || []) for (const sg of p) if (typeof sg === "object" && sg.f) CR.addNote(s, cs, { text: sg.t, fact: sg.f, src: "doc" }); }
+  CR.pinTexts(s, cs, ["CP_R625-1", "CPP_466"]);
+  await click(w, [...doc.querySelectorAll(".tab")].find((t) => /^Actions/.test(texts(t))));
+  console.log("tâches:", [...doc.querySelectorAll(".task strong")].map((x) => texts(x)).join(" | "));
+  while (!CR.isBusinessDay(s.day)) CR.endDay(s); CR.store.bump(); await sleep(30); await P.openCase(w, doc, "Moreau");
+  await P.runTask(w, doc, /conclusions de nullité/);
+  await P.fillDraft(w, doc, CR, cs, { key: "conclusions_nullite", check: [/Avons notifié/, /porté atteinte/] });
+  console.log("brouillon", JSON.stringify(CR.drafted(cs, "conclusions_nullite")));
+  await P.openCase(w, doc, "Moreau");
+  console.log("tâches2:", [...doc.querySelectorAll(".task strong")].map((x) => texts(x)).join(" | "));
+  const origH = CR.FLOW_HOOKS.filed_conclusions_nullite;
+  CR.FLOW_HOOKS.filed_conclusions_nullite = (api, d) => { console.log("HOOK", d.depot, JSON.stringify(d.res.picks), JSON.stringify(api.cs.issues.map(i=>[i.id,i.flag]))); try { origH(api, d); } catch (e) { console.log("ERR", e.stack); } console.log("après", JSON.stringify(api.cs.proc.moyens)); };
+  const od = CR.deposer; CR.deposer = (...a) => { console.log("DEPOSER", a[2]); const r = od(...a); console.log("->", JSON.stringify(r && r.depose)); return r; };
+  const t0 = P.taskBtn(doc, /Déposer/); console.log("task?", !!t0, t0 && texts(t0));
+  await P.runTask(w, doc, /Déposer/);
+  console.log("modal:", texts(doc.querySelector(".modal") || doc.createElement("i")).slice(0,200), "toasts", JSON.stringify(s.toasts));
+  console.log("moyens", JSON.stringify(cs.proc.moyens.map((m) => [m.flag, m.vehicle, m.recevable, m.motif])), "à", CR.fmtTime(s.min), s.at);
+  await P.openCase(w, doc, "Moreau");
+  for (const re of [/contrat de travail/, /attestation au gérant/, /lettre d'excuses/, /Préparer le client/]) { if (P.taskBtn(doc, re)) await P.runTask(w, doc, re); await P.openCase(w, doc, "Moreau"); }
+  while (s.day < cs.proc.audience.day) CR.endDay(s);
+  for (const m of s.inbox.filter((x) => !x.read)) CR.readMail(s, m.id);
+  CR.store.bump(); await sleep(50);
+  await click(w, P.rail(doc, "Bureau"));
+  await click(w, findBtn(doc, "Y aller"));
+  const tr = [...doc.querySelectorAll(".modal .decide-opt")][0]; if (tr) await click(w, tr);
+  const log = await runAudience(w, doc, CR, { interject: true, questions: [/poussé M. Moreau/, /examiné par le médecin/], angle: /Requalification/, args: [/Six jours/, /UMJ l'a examiné/, /R. 625-1/, /CDI/], card: /Contrat à durée|Attestation/, dernier: /regrets/ });
+  console.log(log.join("\n"));
+  await sleep(200);
+  console.log("statut", cs.status, JSON.stringify(cs.outcome), "tutoFini", s.flags.tutoFini);
+  const deb = doc.querySelector(".modal .debrief");
+  console.log("débrief:", deb ? texts(deb).slice(0, 1400) : "aucun");
+  if (deb) { await click(w, findBtn(doc, "Ranger la fiche")); await sleep(50); }
+  console.log("modale finale:", texts(doc.querySelector(".modal") || doc.createElement("div")).slice(0, 200));
+  console.log("classeur", s.classeur.length);
+  console.log("errors:", errors.length ? errors.slice(0, 6).join("\n---\n") : "none");
+  process.exit(0);
+})().catch((e) => { console.error("FATAL", e); process.exit(1); });

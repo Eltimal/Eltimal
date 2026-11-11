@@ -1,0 +1,61 @@
+const { sleep, texts, findBtn, click } = require("./harness");
+const P = require("./play"); const U = require("./util"); const { runAudience } = require("./court");
+(async () => {
+  const conseil = process.argv[2] || "partiel";
+  const env = await U.career("a06_messages", +(process.argv[3] || 7));
+  const { w, doc, CR, s, errors } = env;
+  await U.untilRing(env);
+  await click(w, findBtn(doc, "Répondre"));
+  await P.runCall(w, doc, CR, { avoid: [/rien à cacher/], advice: [/N'envoyez plus/, /écoutons ensemble/, /quitter les locaux/, /tribunal de commerce/] });
+  const cs = s.cases.a06_messages;
+  await U.engageFee(env, cs, "Benhamou");
+  console.log("statut", cs.status, "audition", CR.fmtDate(cs.vars.auditionDay, "dow"), "nouveaux", cs.flags.nouveauxMessages);
+  while (s.day < cs.vars.auditionDay) CR.endDay(s);
+  CR.store.bump(); await sleep(30);
+  await P.openCase(w, doc, "Benhamou");
+  await P.runTask(w, doc, /audition libre/);
+  await P.waitFor(() => doc.querySelector(".gav-scene"));
+  const step = async (re) => { const b = findBtn(doc, re); if (!b) throw new Error("GAV: " + re + " | " + texts(doc.querySelector(".gav-card")).slice(0, 300)); await click(w, b); await sleep(60); };
+  await step(/Entrer dans le bureau/);
+  for (const sg of [...doc.querySelectorAll(".gav-card .noteable")]) await click(w, sg);
+  await step(/^Continuer$/);
+  await step(conseil === "partiel" ? /Écouter d'abord/ : conseil === "quitter" ? /Écourter/ : /Tout reconnaître/);
+  for (let i = 0; i < 6; i++) { for (const sg of [...doc.querySelectorAll(".gav-card .noteable")]) if (!sg.classList.contains("seg-noted")) await click(w, sg); const b = findBtn(doc, "Question suivante"); if (!b) break; await click(w, b); }
+  for (const sg of [...doc.querySelectorAll(".gav-card .noteable")]) if (!sg.classList.contains("seg-noted")) await click(w, sg);
+  await step(/Fin de l'audition/);
+  for (let i = 0; i < 3; i++) { const q = doc.querySelector(".gav-card .q-btn"); if (q) await click(w, q); }
+  await step(/Continuer|Ne plus poser/);
+  for (const l of [...doc.querySelectorAll(".gav-card label")]) await click(w, l.querySelector("input"));
+  await step(/Rédiger et joindre|Pas d'observations/);
+  const bad = [...doc.querySelectorAll(".paper-pv .seg")].find((x) => /pensais à des menaces/.test(texts(x))); if (bad) await click(w, bad);
+  await step(/Signer et continuer|fidèle/);
+  console.log("issue:", texts(doc.querySelector(".gav-card")).slice(0, 160));
+  await step(/Quitter/);
+  CR.pinTexts(s, cs, ["CP_222-17", "CPP_41-1"]);
+  await P.openCase(w, doc, "Benhamou");
+  await P.runTask(w, doc, /observations au procureur/);
+  await P.fillDraft(w, doc, CR, cs, { key: "observations_parquet", check: [/contexte/, /222-17/, /cessé/, /antécédent/, /41-1/] });
+  console.log("obs", JSON.stringify(cs.vars.obsParquet));
+  for (let i = 0; i < 30 && !cs.vars.decisionParquet; i++) CR.endDay(s);
+  console.log("décision parquet", cs.vars.decisionParquet, "statut", cs.status, JSON.stringify(cs.outcome));
+  if (cs.status !== "closed") {
+    U.readAll(CR, s);
+    while (!CR.isBusinessDay(s.day)) CR.endDay(s);
+    CR.store.bump(); await sleep(30);
+    await P.openCase(w, doc, "Benhamou");
+    await P.runTask(w, doc, /copie de la procédure/);
+    for (let i = 0; i < 6 && !CR.hasDoc(cs, "captures"); i++) CR.endDay(s);
+    U.noteDocs(CR, s, cs);
+    await P.openCase(w, doc, "Benhamou");
+    if (P.taskBtn(doc, /Préparer le client/)) await P.runTask(w, doc, /Préparer le client/);
+    while (s.day < cs.proc.audience.day) CR.endDay(s);
+    CR.store.bump(); await sleep(30);
+    await U.goCourt(env);
+    const log = await runAudience(w, doc, CR, { interject: true, angle: /menaces/, args: [/222-17/, /12 000/, /cessé/, /antécédent/], dernier: /regrets/ });
+    console.log(log.join("\n"));
+    await sleep(80);
+    console.log("statut", cs.status, JSON.stringify(cs.outcome));
+  }
+  console.log("errors:", errors.length ? errors.slice(0, 5).join("\n---\n") : "none");
+  process.exit(0);
+})().catch((e) => { console.error("FATAL", e); process.exit(1); });
