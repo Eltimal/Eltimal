@@ -42,6 +42,27 @@
     const gavMode = phase === "arrivee" ? (mode === "gav" ? "geole" : "bureau") : phase === "pieces" ? "pieces" : phase === "entretien" || phase === "conseil" ? "entretien" : phase === "issue" ? (mode === "gav" ? "issue" : "bureau") : "bureau";
     const roomOpts = { min: s.min, rain: CR.dec.rainy(s), season: CR.dec.seasonOf(s), gav: gavMode, gend: s.at === "gendarmerie", print: phase === "relecture", prefW: 210, clientExpr: phase === "entretien" || phase === "conseil" ? "worried" : phase === "issue" ? "soulage" : null, looks: { opj: opjLook, client: look, you: CR.youLook(s) } };
     roomOpts.sig = CR.dec.sigOf(roomOpts);
+    // tranche pilote de la refonte : l'entretien et le conseil se jouent dans le plan plein cadre (CR.plans.entretien)
+    const staged = (phase === "entretien" || phase === "conseil") && mode === "gav" && UI.planOk && UI.planOk("entretien");
+    if (staged) {
+      const pl = CR.placeOf && CR.placeOf(s, s.at);
+      const planOpts = { min: s.min, rain: CR.dec.rainy(s), look, expr: "worried", you: CR.youLook(s), live: ctx };
+      return html`<div className="scene gav-scene staged">
+        <${UI.Plan} name="entretien" opts=${planOpts} />
+        <div className="stg-top">
+          <div className="stg-cap"><span className="pix">Garde à vue · local avocat</span><span className="stg-sub">${pl ? pl.nom + " · " : ""}${CR.fmtTime(s.min)}</span></div>
+          <div className="gav-steps">${phases.map((p, i) => html`<span key=${p} className=${cx("gav-step", i === pi && "on", i < pi && "done")}>${STEP_LABEL[p]}</span>`)}</div>
+        </div>
+        <div className="gav-body">
+          <div className="gav-main">
+            <${UI.Coach} k="gav" s=${s} />
+            ${phase === "entretien" && html`<${Entretien} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
+            ${phase === "conseil" && html`<${Conseil} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
+          </div>
+          <div className="gav-side"><${Carnet} cs=${cs} /></div>
+        </div>
+      </div>`;
+    }
     const header = html`<div className="gav-head">
       <div className="mini-stage"><${UI.Room} name="gav" mini=${true} opts=${roomOpts} /></div>
       <div className="gav-steps">${phases.map((p, i) => html`<span key=${p} className=${cx("gav-step", i === pi && "on", i < pi && "done")}>${STEP_LABEL[p]}</span>`)}</div>
@@ -136,11 +157,12 @@
       let nl = lines.concat([{ who: "you", segs: [CR.fmt(t.q, v)] }, { who: "client", segs: ans }]);
       if (m >= 30) { nl = nl.concat([{ who: "sys", segs: ["On frappe à la porte. « C'est l'heure, maître : trente minutes. »"] }]); setOver(true); }
       if (t.fx) CR.applyFx(CR.api(s, cs), t.fx);
+      ctx.talkFrom = Date.now() + 500; ctx.talkUntil = ctx.talkFrom + Math.min(4200, 900 + ans.map(segText).join(" ").length * 22);
       setLines(nl);
       setMin(Math.min(30, m));
     };
     const finish = () => { ctx.entretien = min; CR.spend(s, Math.max(5, min), "gav", { busy: true }); bump(); next(); };
-    return html`<div className="gav-card">
+    return html`<div className="gav-card ent-card">
       <div className="entretien-head"><span className="pix">Entretien confidentiel</span><span className=${cx("chrono", min >= 25 && "urgent")}>${min} / 30 min</span></div>
       <div className="transcript">
         ${lines.map((L, li) => html`<div key=${li} className=${cx("tline", "who-" + L.who)}><span className="tl-who pix">${L.who === "client" ? (CR.client(cs).prenom || "").toUpperCase() : L.who === "you" ? "VOUS" : ""}</span><span className="tl-body">${L.segs.map((seg, si) => { const t = segText(seg); const noted = cs.notes.some((n) => n.text === t.trim()); return html`<span key=${si} className=${cx("seg", L.who === "client" && "noteable", noted && "seg-noted")} onClick=${() => { if (L.who !== "client") return; CR.addNote(s, cs, { text: t.trim(), fact: typeof seg === "object" ? seg.f : null, src: "gav" }); bump(); }}>${t} </span>`; })}</span></div>`)}

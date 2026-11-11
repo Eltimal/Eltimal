@@ -35,6 +35,21 @@ Direction validée par Kevin sur un pilote (https://claude.ai/artifact/WrA7EV9xP
   - Tests passés : t1, t2, t3, t15 gav, t17, t18, t19, t20, tmetro, tenseignes.
 - **Lot 5, à faire** — cohérence, performance, image fixe en animations réduites, tous les tests, captures de chaque écran, feuille de route du document de conception.
 
+## Refonte « studio » (décidée le 11 novembre 2026) : tranche pilote
+
+Kevin a demandé de refaire toute la **forme** du jeu au niveau d'une production de studio, pour son MacBook Air M1 (sans ventilateur : ne pas viser le maximum de la machine). Le **fond ne change pas** : règles, droit, affaires, tests. La refonte graphique ci-dessous peut être reprise si le niveau monte. Étapes : 1. tranche pilote (jugée par Kevin sur son Mac) ; 2. socle (nouveau rendu et nouvelle interface partout) ; 3. production lot par lot ; 4. finition. Le lot 5 ci-dessous et les finitions de la 1.0 sont absorbés.
+
+- **Pilote, premier plan livré (11 novembre 2026)** — l'entretien de garde à vue, de nuit, en plein écran.
+  - `js/gpu.js` (`CR.gpu`, après lumiere.js) : rendu WebGL 2. `G.Mat(W, H)` = tampon de matière (couleur + lumière propre ; normale, brillance, profondeur 0 devant → 255 au fond) avec les formes de `CR.lum.Buf` plus `orb` (volume arrondi), `tube`, `blit` (image détourée, relief tiré de la silhouette), `set({ E, n, S, D })`. `G.Renderer(canvas).draw(mat, o)` : éclairage par source (distance, relief, profondeur, cône), reflets du sol (`floorY`, `reflK`, `wet`), halo et brume (`haze`, `hr`), agrandissement à pixels nets, courbe, teinte, vignette, grain, fondu. `G.ok()` est faux sans WebGL 2 (jsdom) : l'ancien écran reste alors affiché, les tests ne voient donc pas le pilote.
+  - `js/plan-entretien.js` (`CR.plans.entretien`) : plan par-dessus l'épaule, 360 × 225 (plus large selon l'écran), `make(W)` → `{ mat, frame(t, o) }` ; `o` : `min`, `rain`, `look`, `expr`, `you`, `live` (`talkFrom`, `talkUntil` : le client parle), `reduce`. Le bas de l'image (rangées 130 et plus) est prévu pour être couvert par l'interface. Détails animés : ne pas les décrire au joueur.
+  - `js/ui-plan.js` : `UI.Plan` (canvas plein cadre, matière à 30 images par seconde, lumière à chaque image, image fixe en animations réduites) et `UI.planOk(nom)`.
+  - `js/ui-gav.js` : `UI.GavScene` passe en `.staged` (plein écran) pour les phases entretien et conseil d'une garde à vue ; mêmes boutons et mêmes textes qu'avant. CSS « Refonte, tranche pilote » à la fin de la feuille.
+  - `js/portraits.js` : le canvas d'un portrait porte `kind` (0 = fond) pour le détourage.
+  - Écran titre : bouton « Tranche pilote » (seulement avec WebGL 2) : garde à vue de l'affaire `a02_sac` à 2 h 15, partie marquée `s.pilote` que `CR.autosave` n'enregistre pas.
+  - Outils (après `node tools/shot.js`) : `node tools/shotplan.js entretien 1440x900 <ms> '<options>'` (le plan seul), `node tools/shotgav.js` (la scène montée seule), `DPR=2 node tools/shotpilote.js` (parcours depuis l'écran titre, vérifie qu'aucune sauvegarde n'est écrite). Les captures passent par un rendu logiciel : la fluidité ne se mesure que sur le Mac.
+  - Tests passés : t1, t2, t3, t15 gav, t17, t20, tson.
+  - **Attendu de Kevin** : son avis sur ce plan (image, fluidité, chaleur de la machine). Suite prévue du pilote : les autres phases de la garde à vue (geôles, bureau d'audition), l'arrivée au commissariat, puis la comparution immédiate ; interface de dialogue allégée ; musique.
+
 ## Version 1.0 : où on en est
 
 Audit fait le 9 novembre 2026 (35 suites de tests : tout passait sauf `tdialogues`, corrigé depuis). Ordre de construction décidé : socle → son → sauvegarde → plaidoirie → cas pratique → carrière → mémoire des magistrats → cassation → lot 5 anti-répétition → assises → droit à revérifier → finitions.

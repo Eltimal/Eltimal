@@ -505,6 +505,7 @@
       else if (isBg(x - 1, y) || isBg(x, y - 1)) set(x, y, mixc(c, [18, 12, 16], 0.5));
     }
     ctx.putImageData(img, 0, 0);
+    cv.kind = k0; // 0 = fond : les plans (CR.plans) détourent le buste avec ce masque
     return cv;
   }
 

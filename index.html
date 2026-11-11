@@ -1418,6 +1418,32 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .acc-jeux { position: absolute; right: max(24px, env(safe-area-inset-right, 0px)); bottom: max(20px, env(safe-area-inset-bottom, 0px)); z-index: 4; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; padding: 8px 12px; background: rgba(7,10,24,.82); box-shadow: inset 0 0 0 2px #3b4a68; }
 .acc-jeux-t { font: 400 calc(11px * var(--tz))/1.2 "Silkscreen", var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); margin-right: 4px; }
 @media (max-width: 900px) { .acc-jeux { display: none; } }
+
+/* ---------- Refonte, tranche pilote : scène jouée dans un plan plein cadre (UI.Plan) ---------- */
+.plan-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.gav-scene.staged { position: fixed; inset: 0; z-index: 40; display: block; background: #04060a; overflow: hidden; }
+.staged .stg-top { position: absolute; inset: 0 0 auto 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; padding: max(18px, env(safe-area-inset-top, 0px)) 24px 46px; background: linear-gradient(rgba(2,4,8,.78), rgba(2,4,8,0)); pointer-events: none; }
+.staged .stg-cap { display: flex; flex-direction: column; gap: 7px; }
+.staged .stg-cap .pix { font: 400 calc(13px * var(--tz))/1 var(--f-pix); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); text-shadow: 0 2px 0 #000; }
+.staged .stg-sub { font: 500 .95rem/1 var(--f-ui); color: #cfd6e6; text-shadow: 0 1px 0 #000; }
+.staged .gav-steps { justify-content: flex-end; max-width: 60%; }
+.staged .gav-step { background: rgba(6,9,15,.72); }
+.staged .gav-step.on { background: var(--amber); }
+.staged .gav-body { position: absolute; inset: auto 0 0 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 310px); gap: 16px; align-items: end; padding: 70px 24px max(20px, env(safe-area-inset-bottom, 0px)); background: linear-gradient(rgba(3,5,9,0), rgba(3,5,9,.9) 46%); }
+.staged .gav-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.staged .gav-card { background: rgba(9,13,21,.86); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); max-height: 38vh; overflow-y: auto; animation: stg-in .5s steps(6) both; }
+.staged .gav-side { position: static; max-height: 38vh; overflow-y: auto; animation: stg-in .5s steps(6) .12s both; }
+.staged .coach { margin: 0; background: rgba(20,27,44,.9); max-width: 760px; }
+.staged .ent-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "head head" "tr q" "tr fin"; gap: 10px 14px; align-items: stretch; height: 38vh; overflow: hidden; }
+.staged .ent-card > .entretien-head { grid-area: head; }
+.staged .ent-card > .transcript { grid-area: tr; max-height: none; min-height: 0; background: rgba(4,6,11,.6); }
+.staged .ent-card > .questions { grid-area: q; overflow-y: auto; min-height: 0; align-self: start; max-height: 100%; }
+.staged .ent-card > .btn { grid-area: fin; justify-self: end; align-self: end; }
+.staged .q-btn { background: rgba(19,26,42,.92); }
+.staged .chrono { font-size: 1.25rem; text-shadow: 0 0 12px currentColor; }
+@keyframes stg-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .staged .gav-card, .staged .gav-side { animation: none; } }
+@media (max-width: 900px) { .staged .gav-body { grid-template-columns: minmax(0, 1fr); } .staged .gav-side { display: none; } .staged .ent-card { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "tr" "q" "fin"; grid-template-rows: auto minmax(0, 1fr) auto auto; height: 52vh; } }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
@@ -1483,6 +1509,8 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/ui-pixel.js"></script>
 <!-- Refonte graphique : le moteur de lumière se charge avant la carte et les décors ; décors éclairés, Timon et accueil après decor-int.js -->
 <script src="js/lumiere.js"></script>
+<script src="js/gpu.js"></script>
+<script src="js/plan-entretien.js"></script>
 <script src="js/title.js"></script>
 <script src="js/carte.js"></script>
 <script src="js/decor-core.js"></script>
@@ -1499,6 +1527,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/ui-biblio.js"></script>
 <script src="js/ui-livre.js"></script>
 <script src="js/ui-equipe.js"></script>
+<script src="js/ui-plan.js"></script>
 <script src="js/ui-scenes.js"></script>
 <script src="js/ui-gav.js"></script>
 <script src="js/ui-court.js"></script>
