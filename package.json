@@ -1,0 +1,46 @@
+{
+  "name": "la-permanence",
+  "productName": "La Permanence",
+  "version": "1.0.0",
+  "description": "La Permanence — jeu d'avocat pénaliste, hors ligne.",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac dir",
+    "build:zip": "electron-builder --mac zip",
+    "test:app": "node electron/test-app.js"
+  },
+  "devDependencies": {
+    "electron": "45.3.0",
+    "electron-builder": "26.18.0",
+    "playwright": "1.63.0"
+  },
+  "build": {
+    "appId": "fr.lapermanence.jeu",
+    "productName": "La Permanence",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.html",
+      "js/**",
+      "lib/**",
+      "fonts/**",
+      "electron/main.js"
+    ],
+    "mac": {
+      "category": "public.app-category.simulation-games",
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "identity": null
+    }
+  }
+}
