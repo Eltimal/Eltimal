@@ -162,7 +162,9 @@ const moyennePaires = (items, f) => { let t = 0, n = 0; for (let i = 0; i < item
       const set = new Set();
       for (const c of d.calls) for (const l of c.lines) norm(l).forEach((x) => set.add(x));
       for (const a of d.audience) norm(a.t).forEach((x) => set.add(x));
-      for (const k of Object.keys(def.docs || {})) { try { const r = CR.renderDoc(s, cs, { key: k }); for (const pa of r.paras || []) norm(pa.map(segT).join(" ")).forEach((x) => set.add(x)); } catch (e) { /* pièce absente */ } }
+      // les formulaires légaux (déclaration des droits, billets d'avis, bordereau : trame « forme ») et les lignes, titres et
+      // mentions de clôture des procès-verbaux du moteur sont les mêmes partout, comme dans une vraie procédure : on mesure la rédaction
+      for (const k of Object.keys(def.docs || {})) { try { const r = CR.renderDoc(s, cs, { key: k }); if (r.trame === "forme") continue; (r.paras || []).forEach((pa, i) => { if (r.pstyle && ["ligne", "titre", "mention", "saut"].includes(r.pstyle[i])) return; norm(pa.map(segT).join(" ")).forEach((x) => set.add(x)); }); } catch (e) { /* pièce absente */ } }
       items.push({ inf: p.t.inf, set });
     }
     const r = moyennePaires(items, (a, b) => (a.inf === b.inf ? null : recouvre(a.set, b.set)));

@@ -1,5 +1,6 @@
 // Refonte du gameplay, lot 1 : simulation de l'affaire et moteur de documents (sim.js, docs.js, trames-flagrance.js).
-// Sur toutes les affaires de flagrance avec garde à vue (garde à vue en cours et comparution immédiate), dont l'arrachage : toutes les pièces se lisent, chacune
+// Sur toutes les affaires avec garde à vue (garde à vue en cours et comparution immédiate), en flagrance (dont l'arrachage) ou
+// au bout d'une enquête préliminaire (plainte, actes d'enquête, interpellation au domicile ou présentation sur convocation) : toutes les pièces se lisent, chacune
 // sous 2 000 mots, dans leur trame ; cotes dans l'ordre des actes ; mêmes faits, irrégularités et anomalies que les
 // anciennes pièces ; chronologie de la garde à vue cohérente ; tenue, objet et témoin cohérents d'une pièce à l'autre ;
 // déterminisme. node tests/tsim.js [n] ; « échecs: 0 » attendu.
@@ -14,7 +15,7 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40 || process.env.VOIR) co
   const marques = (r) => { const m = new Set(); for (const g of segsDe(r)) { if (g.f) m.add("f:" + g.f); if (g.flag) m.add("flag:" + g.flag); if (g.paire) m.add("paire:" + g.paire); } return m; };
   const s = CR.newGame({ prenom: "A", nom: "B", mode: "carriere", seed: 3 }); CR.store.s = s;
   const rendre = (PZ, k, t) => PZ.docs[k]({ s, cs: { vars: {}, proc: { faitsDay: t.d.faits }, enq: {} }, def: {}, c: t.A, api: {} });
-  let vus = { ci: 0, gav: 0 }, mots = [], pieces = 0, nArr = 0, nNum = 0, nPap = 0, nSchema = 0, nPil = 0; const familles = {};
+  let vus = { ci: 0, gav: 0 }, mots = [], pieces = 0, nArr = 0, nNum = 0, nPap = 0, nSchema = 0, nPil = 0, nPre = 0, nDom = 0; const familles = {};
   for (let i = 0; i < 6000 && (vus.ci < N0 || vus.gav < N0 / 2); i++) for (const genre of ["ci", "gav"]) {
     if (vus[genre] >= (genre === "ci" ? N0 : N0 / 2)) continue;
     const t = G.tirer("tsim" + i, genre, { day: i % 2 ? 30 : 12, inf: i % 3 === 0 ? "vol" : i % 3 === 1 ? "violences" : undefined });
@@ -61,13 +62,28 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40 || process.env.VOIR) co
     // chronologie
     const SS = SIM.simuler(t, { N, C: PZ.C, VID: null, SF: CR.MONDE.lieuxDe(t).F, TJ: CR.MONDE.lieuxDe(t).TJ, opjN: "Brigadier-chef X Y", has: (x) => t.preuves.includes(x), irr: (x) => t.irr.includes(x), dou: (x) => t.doutes.includes(x), A: t.A, V: t.V, T: t.T, q: t.q });
     const E = SS.E, C = PZ.C;
-    ok(E.interp >= SS.T0 + 5 && E.interp <= SS.T0 + 45, `${tag} : interpellation ${E.interp - SS.T0} min après les faits`);
-    ok(E.surPlace > E.requis && E.surPlace < E.interp, `${tag} : arrivée de la patrouille`);
-    ok(C.debut >= E.interp, `${tag} : la mesure commence avant l'interpellation`);
+    if (SS.prelim) {
+      // enquête préliminaire : plainte aux heures du service, après les faits ; actes d'enquête entre la plainte et la garde à vue
+      nPre++; if (SS.venue === "domicile") nDom++;
+      const hP = ((E.plainte % 1440) + 1440) % 1440;
+      ok(E.plainte >= SS.T0 + 45 && E.plainte <= E.debut - 600 && hP >= 9 * 60 && hP <= 21 * 60, `${tag} : plainte à ${E.plainte} (faits ${SS.T0}, garde à vue ${E.debut})`);
+      for (let i = 0; i < 4; i++) ok(E.enquete(i) > E.plainte && E.enquete(i) < E.debut, `${tag} : acte d'enquête ${i} hors de l'enquête`);
+      ok(E.debut >= E.interp && E.interp - SS.base === C.interp, `${tag} : la mesure commence avant l'interpellation`);
+      ok(SS.venue === "convocation" || ((E.interp % 1440) >= 6 * 60), `${tag} : interpellation au domicile avant 6 heures`);
+      for (const k of Object.keys(PZ.docs)) { const r = rendre(PZ, k, t); if (r.bandeau) ok(r.bandeau.cadre === "ENQUÊTE PRÉLIMINAIRE", `${tag}/${k} : cadre ${r.bandeau.cadre}`); }
+      ok(/plainte/i.test(PZ.titres.pv_victime || "plainte"), `${tag} : la victime n'est pas reçue en plainte`);
+      if (PZ.docs.pv_saisie) ok(/assentiment/.test(DOCS.texte(rendre(PZ, "pv_saisie", t))), `${tag} : perquisition sans assentiment`);
+      // l'ordre des cotes suit les jours : la plainte d'abord
+      if (PZ.cotes.pv_victime) ok(+PZ.cotes.pv_victime.slice(1) < +PZ.cotes.pv_notification.slice(1), `${tag} : la plainte après la garde à vue`);
+    } else {
+      ok(E.interp >= SS.T0 + 5 && E.interp <= SS.T0 + 45, `${tag} : interpellation ${E.interp - SS.T0} min après les faits`);
+      ok(E.surPlace > E.requis && E.surPlace < E.interp, `${tag} : arrivée de la patrouille`);
+      ok(C.debut >= E.interp, `${tag} : la mesure commence avant l'interpellation`);
+    }
     ok(!SS.famille.demande || SS.famille.h - E.notif <= 180, `${tag} : avis à la famille après trois heures`);
     if (genre === "ci") {
       ok(E.aud > E.avisAv && E.fin > E.audFin && E.synthese > E.fin, `${tag} : ordre audition, fin, synthèse`);
-      ok(!!PZ.docs.pv_prolongation === (E.fin > C.debut + 1440 || t.irr.includes("prolongation")), `${tag} : prolongation`);
+      ok(!!PZ.docs.pv_prolongation === (E.fin > E.debut + 1440 || t.irr.includes("prolongation")), `${tag} : prolongation`);
       for (const k of ["pv_audition", "pv_fin_gav", "pv_synthese", "bordereau"]) ok(PZ.docs[k], `${tag} : ${k} absent`);
     } else for (const k of ["pv_audition", "pv_fin_gav", "pv_synthese"]) ok(!PZ.docs[k], `${tag} : ${k} dans une garde à vue en cours`);
     if (!SS.arrachage) {
@@ -120,7 +136,8 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40 || process.env.VOIR) co
   }
   mots.sort((a, b) => a - b);
   console.log(`affaires : ${vus.ci} comparutions immédiates, ${vus.gav} gardes à vue (dont ${nArr} arrachages) ; ${pieces} pièces ; dossier médian ${mots[mots.length >> 1]} mots (min ${mots[0]}, max ${mots[mots.length - 1]})`);
-  console.log(`violences au dossier détaillé du pilote : ${nPil}`);
+  console.log(`violences au dossier détaillé du pilote : ${nPil} ; enquêtes préliminaires : ${nPre} (dont ${nDom} interpellations au domicile)`);
+  ok(nPre > 0 && nDom > 0 && nDom < nPre, "enquêtes préliminaires : interpellation au domicile et présentation sur convocation attendues");
   console.log(`procès-verbaux : ${nNum} en procédure numérique, ${nPap} sur papier ; ${nSchema} certificats avec schéma corporel`);
   ok(nNum > 0 && nPap > 0, "un seul support de dossier rencontré");
   console.log("délits :", Object.entries(familles).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(", "));

@@ -86,7 +86,7 @@
   // o : { cote, proc, service, unite, cadre, titre, qualite, numPV, jour, heure, redacteur, visa, lieu, identite, blocs, cloture,
   //       signataires, st, objet }
   DOCS.pv = function (o) {
-    const cadre = o.cadre || "FLAGRANT DÉLIT";
+    const cadre = DOCS.cadre || o.cadre || "FLAGRANT DÉLIT"; // DOCS.cadre : posé par les trames pour tout un dossier (enquête préliminaire)
     const bandeau = {
       service: o.service, unite: o.unite, cadre, titre: o.titre.toUpperCase(), qualite: o.qualite ? o.qualite.toUpperCase() : null,
       grille: [["Procédure", o.proc], ["PV n°", o.numPV || "—"], ["Pièce", o.cote], ["Année", String(CR.ymd(o.jour).y)]].concat(DOCS.numerique ? [["Support", "procédure pénale numérique"]] : []),

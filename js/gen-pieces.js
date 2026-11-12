@@ -80,7 +80,7 @@
       C.jg = t.genre === "al" ? d.audition : d.mesure != null ? d.mesure : d.acte != null ? d.acte : d.faits + int(r, 5, 30);
       C.aud = 14 * 60 + int(r, 0, 20); C.audFin = C.aud + int(r, 40, 90);
     }
-    if (CR.SIM && CR.SIM.supporte(t)) { CR.SIM.caler(t, C); CR.SIM.adresses(t, N, CR.MONDE.lieuxDe(t).F); }
+    if (CR.SIM && CR.SIM.supporte(t)) { CR.SIM.equipage(t); CR.SIM.caler(t, C); CR.SIM.adresses(t, N, CR.MONDE.lieuxDe(t).F); }
     const jf = d.faits;
     const lieu = N.lieu;
     // aucun acte d'enquête après le dernier acte retenu pour la prescription (classement) ou après la convocation
@@ -507,9 +507,12 @@
       const SS = CR.SIM.simuler(t, kS);
       const HORS = ["enq_video", "esr", "casier", "convocation", "avis_classement", "pv_auteur", "proposition_cjip"];
       // les pièces que le moteur ne compose pas encore gardent leur texte et prennent leur place dans la chronologie
-      const E = SS.E, fin = E.fin != null ? E.fin : C.debut + 600;
-      const minuteDe = (k) => (/alcool|ethylo|controle|mesure|depistage/.test(k) ? E.presentation + 15 : /urgences/.test(k) ? SS.T0 + 120 : /video|camera/.test(k) ? C.debut + 240
-        : /labo|adn|telephonie|captures|releve|fichier|expertise|autopsie/.test(k) ? fin - 90 : C.debut + 180);
+      const E = SS.E, fin = E.fin != null ? E.fin : E.debut + 600;
+      // enquête préliminaire : les captures sont remises avec la plainte ; images, réquisitions et expertises suivent, avant la garde à vue
+      let iEnq = 0;
+      const minuteDe = (k) => (SS.prelim && /captures/.test(k) ? E.plainte + 40 : SS.prelim && /video|camera|labo|adn|telephonie|releve|fichier|expertise|autopsie/.test(k) ? E.enquete(1 + iEnq++)
+        : /alcool|ethylo|controle|mesure|depistage/.test(k) ? E.presentation + 15 : /urgences/.test(k) ? SS.T0 + 120 : /video|camera/.test(k) ? E.debut + 240
+        : /labo|adn|telephonie|captures|releve|fichier|expertise|autopsie/.test(k) ? fin - 90 : E.debut + 180);
       const resteKeys = Object.keys(docs).filter((k) => !HORS.includes(k) && !k.startsWith("justif_"));
       kS.reste = resteKeys.map((k) => ({ key: k, m: minuteDe(k), court: (titres[k] || k).replace(/ \(D\d+\)$/, "") }));
       // violences en comparution immédiate : le dossier détaillé du pilote (trames-violences.js), sinon le moteur générique
