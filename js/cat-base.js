@@ -4,8 +4,8 @@
    possibles et les preuves typiques ; elle sait tirer des faits cohérents (tirer) et les qualifier (qual).
    Le moteur (gen-moteur.js) s'en sert pour qualifier, calculer les délais, choisir le tribunal et le juge.
    Tout est rédigé hors ligne d'après le document de conception : chaque texte est à revérifier sur Légifrance.
-   Niveau de contenu : un réglage du générateur (CR.CONTENU) ; seul « réaliste » existe pour l'instant ; les textes crus passent
-   par le lexique (CAT.lex), qu'un mode adouci pourra remplacer sans réécrire les affaires. */
+   Niveau de contenu : « réaliste », seul niveau du jeu (décision de Kevin du 12 novembre 2026 : aucun mode adouci, la dureté
+   des pièces et des images fait partie de la formation) ; les mots crus passent par le lexique (CAT.lex). */
 (function () {
   const CR = window.CR;
   const VERIF = "Catalogue rédigé pour le jeu (octobre 2026), points sensibles vérifiés en ligne le 10 novembre 2026 — à relire sur Légifrance avant tout usage réel";
@@ -14,7 +14,6 @@
   // ------------------------------------------------------------------ Niveau de contenu
   CR.CONTENU = {
     realiste: { label: "Réaliste", sub: "Les faits sont décrits comme dans un vrai dossier pénal, mots crus compris. Violences sexuelles : description clinique ; mineurs victimes d'infractions sexuelles : procédure seulement.", actif: true },
-    // adouci : { label: "Adouci", actif: false } — à venir ; il ne remplacera que le lexique et les passages marqués.
   };
   CR.contenu = (s) => { const n = s && s.settings && s.settings.contenu; return CR.CONTENU[n] && CR.CONTENU[n].actif ? n : "realiste"; };
   CAT.LEX = {

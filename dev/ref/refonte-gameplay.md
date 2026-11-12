@@ -552,6 +552,8 @@ Treize lots, dans cet ordre, chacun jouable et testé avant le suivant. Le pilot
 
 Décision de Kevin du 12 novembre 2026, après une affaire de viol sur mineur jouée : les règles actuelles empêchent de traiter l'affaire, il faut les assouplir le plus possible. Principe retenu : le dossier contient tout ce qu'un vrai dossier contient et tout ce dont l'avocat a besoin pour défendre ou représenter la victime, écrit comme l'écrivent les enquêteurs, les médecins et les juges, c'est-à-dire de façon clinique et factuelle.
 
+**Aucun adoucissement** (décision de Kevin du 12 novembre 2026) : pas de mode adouci, ni dans les pièces ni dans les images. C'est une simulation de pénaliste ; un pénaliste voit des pièces très dures, et cette dureté fait partie de la formation et du parti pris du jeu. Seules restent les limites fermes ci-dessous sur les mineurs victimes d'infractions sexuelles.
+
 ### Ce qui change pour les mineurs victimes d'infractions sexuelles
 
 Aujourd'hui ces affaires sont réduites à la procédure (« des faits de nature sexuelle », examen et audition résumés en une ligne). Elles deviennent des dossiers complets :
@@ -571,7 +573,7 @@ Les descriptions restent cliniques mais deviennent complètes : tous les actes u
 
 ### Les vidéos
 
-Décision de Kevin du 12 novembre 2026 : toute infraction commise sous une caméra a sa vidéo jouée par le moteur, à la même qualité que l'arrachage, quelle que soit sa gravité : meurtres et autres crimes, violences, agressions sexuelles et viols sur majeur, exhibition, et tous les délits. Seule exception : les infractions sexuelles sur mineur, jamais filmées (voir ci-dessous). Rendu : celui de la caméra du moteur (320 × 180, silhouettes, grain, images sautées) ; le geste est lisible (qui fait quoi, la contrainte, la lutte, le coup, la chute, la fuite), sans détail anatomique, que cette résolution ne donnerait pas. Le réglage « adouci » peut couper l'image au moment de l'acte et reprendre sur la suite.
+Décision de Kevin du 12 novembre 2026 : toute infraction commise sous une caméra a sa vidéo jouée par le moteur, à la même qualité que l'arrachage, quelle que soit sa gravité : meurtres et autres crimes, violences, agressions sexuelles et viols sur majeur, exhibition, et tous les délits. Seule exception : les infractions sexuelles sur mineur, jamais filmées (voir ci-dessous). Rendu : celui de la caméra du moteur (320 × 180, silhouettes, grain, images sautées) ; le geste est lisible (qui fait quoi, la contrainte, la lutte, le coup, la chute, la fuite), sans détail anatomique, que cette résolution ne donnerait pas. Aucun adoucissement : l'image n'est jamais coupée.
 
 ### Ce qui ne change pas
 
@@ -579,7 +581,6 @@ Ces limites restent fermes, quel que soit le réglage :
 
 - **Aucune description sexualisée, sensorielle ou détaillée d'actes sexuels sur un mineur**, ni aucune reproduction de messages sexuels adressés à un mineur. Le registre est celui du procès-verbal et du rapport médical, jamais celui du récit.
 - **Aucune image d'un mineur victime**, et aucune description d'images ou de vidéos d'abus. Leur existence, leur nombre, leur date et leur placement sous scellé figurent au dossier ; leur contenu, jamais. Le metteur en scène des images n'est jamais utilisé pour ces affaires.
-- Le réglage de contenu (« réaliste », « adouci ») reste proposé au joueur ; ce qui précède définit le réglage « réaliste ».
 
 ### Où le changer dans le code
 
