@@ -42,22 +42,31 @@
     const gavMode = phase === "arrivee" ? (mode === "gav" ? "geole" : "bureau") : phase === "pieces" ? "pieces" : phase === "entretien" || phase === "conseil" ? "entretien" : phase === "issue" ? (mode === "gav" ? "issue" : "bureau") : "bureau";
     const roomOpts = { min: s.min, rain: CR.dec.rainy(s), season: CR.dec.seasonOf(s), gav: gavMode, gend: s.at === "gendarmerie", print: phase === "relecture", prefW: 210, clientExpr: phase === "entretien" || phase === "conseil" ? "worried" : phase === "issue" ? "soulage" : null, looks: { opj: opjLook, client: look, you: CR.youLook(s) } };
     roomOpts.sig = CR.dec.sigOf(roomOpts);
-    // tranche pilote de la refonte : l'entretien et le conseil se jouent dans le plan plein cadre (CR.plans.entretien)
-    const staged = (phase === "entretien" || phase === "conseil") && mode === "gav" && UI.planOk && UI.planOk("entretien");
-    if (staged) {
-      const pl = CR.placeOf && CR.placeOf(s, s.at);
-      const planOpts = { min: s.min, rain: CR.dec.rainy(s), look, expr: "worried", you: CR.youLook(s), live: ctx };
-      return html`<div className="scene gav-scene staged">
-        <${UI.Plan} name="entretien" opts=${planOpts} />
+    // refonte : chaque étape se joue dans un plan plein cadre (CR.plans) ; les pièces à lire s'ouvrent en feuille à droite
+    const planName = mode !== "gav" ? "audition" : phase === "entretien" || phase === "conseil" ? "entretien" : phase === "arrivee" || phase === "issue" ? "geoles" : "audition";
+    if (UI.planOk && UI.planOk(planName)) {
+      const pl = CR.placeOf && CR.placeOf(s, s.at), side = phase === "pieces" || phase === "relecture" || phase === "droits";
+      const planOpts = { min: s.min, rain: CR.dec.rainy(s), look, opj: opjLook, expr: roomOpts.clientExpr || (phase === "audition" || phase === "questions" ? "worried" : "neutral"), you: CR.youLook(s), live: ctx, dehors: phase === "issue", print: phase === "relecture", gend: s.at === "gendarmerie" };
+      const cap = planName === "entretien" ? "local avocat" : planName === "geoles" ? "les geôles" : "bureau d'audition";
+      return html`<div className=${cx("scene gav-scene staged", side && "stg-side")}>
+        <${UI.Plan} key=${planName} name=${planName} opts=${planOpts} />
         <div className="stg-top">
-          <div className="stg-cap"><span className="pix">Garde à vue · local avocat</span><span className="stg-sub">${pl ? pl.nom + " · " : ""}${CR.fmtTime(s.min)}</span></div>
+          <div className="stg-cap"><span className="pix">${mode === "gav" ? "Garde à vue" : "Audition libre"} · ${cap}</span><span className="stg-sub">${pl ? pl.nom + " · " : ""}${CR.fmtTime(s.min)}</span></div>
           <div className="gav-steps">${phases.map((p, i) => html`<span key=${p} className=${cx("gav-step", i === pi && "on", i < pi && "done")}>${STEP_LABEL[p]}</span>`)}</div>
         </div>
         <div className="gav-body">
           <div className="gav-main">
             <${UI.Coach} k="gav" s=${s} />
+            ${phase === "arrivee" && html`<${Arrivee} s=${s} cs=${cs} G=${G} opj=${opj} mode=${mode} next=${next} />`}
+            ${phase === "pieces" && html`<${Pieces} s=${s} cs=${cs} G=${G} next=${next} />`}
+            ${phase === "droits" && html`<${Droits} s=${s} cs=${cs} G=${G} next=${next} />`}
             ${phase === "entretien" && html`<${Entretien} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
             ${phase === "conseil" && html`<${Conseil} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
+            ${phase === "audition" && html`<${Audition} s=${s} cs=${cs} G=${G} ctx=${ctx} opj=${opj} next=${next} />`}
+            ${phase === "questions" && html`<${Questions} s=${s} cs=${cs} G=${G} ctx=${ctx} opj=${opj} next=${next} rerender=${rerender} />`}
+            ${phase === "observations" && html`<${Observations} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
+            ${phase === "relecture" && html`<${Relecture} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
+            ${phase === "issue" && html`<${Issue} s=${s} cs=${cs} G=${G} ctx=${ctx} onDone=${onDone} />`}
           </div>
           <div className="gav-side"><${Carnet} cs=${cs} /></div>
         </div>
@@ -157,7 +166,7 @@
       let nl = lines.concat([{ who: "you", segs: [CR.fmt(t.q, v)] }, { who: "client", segs: ans }]);
       if (m >= 30) { nl = nl.concat([{ who: "sys", segs: ["On frappe à la porte. « C'est l'heure, maître : trente minutes. »"] }]); setOver(true); }
       if (t.fx) CR.applyFx(CR.api(s, cs), t.fx);
-      ctx.talkFrom = Date.now() + 500; ctx.talkUntil = ctx.talkFrom + Math.min(4200, 900 + ans.map(segText).join(" ").length * 22);
+      ctx.who = "client"; ctx.talkFrom = Date.now() + 500; ctx.talkUntil = ctx.talkFrom + Math.min(4200, 900 + ans.map(segText).join(" ").length * 22);
       setLines(nl);
       setMin(Math.min(30, m));
     };

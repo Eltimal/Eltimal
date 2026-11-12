@@ -13,7 +13,9 @@ const SP = __dirname;
   const click = async (re) => { const b = page.locator("button", { hasText: re }).first(); if (await b.count()) { await b.click(); await page.waitForTimeout(250); return true; } return false; };
   const steps = [];
   steps.push(await click(/Tranche pilote/)); await page.waitForTimeout(400);
-  steps.push(await click(/consulter les pièces/)); steps.push(await click(/Rendre les pièces/));
+  await page.waitForTimeout(1200); await page.screenshot({ path: path.join(SP, "out", "pilote_0_arrivee.png") });
+  steps.push(await click(/consulter les pièces/)); await page.waitForTimeout(1200); await page.screenshot({ path: path.join(SP, "out", "pilote_0_pieces.png") });
+  steps.push(await click(/Rendre les pièces/));
   for (let i = 0; i < nq; i++) { const q = page.locator(".q-btn").first(); if (await q.count()) { await q.click(); await page.waitForTimeout(300); } }
   await page.waitForTimeout(1500);
   const saved = await page.evaluate(() => Object.keys(localStorage).filter((k) => /saves/.test(k)).map((k) => k + ":" + localStorage.getItem(k).length));
@@ -21,8 +23,18 @@ const SP = __dirname;
   steps.push(await click(/l'entretien/)); await page.waitForTimeout(1200);
   await page.screenshot({ path: path.join(SP, "out", "pilote_2.png") });
   const fps = await page.evaluate(() => new Promise((res) => { let n = 0; const t0 = performance.now(); const f = () => { n++; if (performance.now() - t0 > 2000) res(Math.round(n / 2)); else requestAnimationFrame(f); }; requestAnimationFrame(f); }));
-  steps.push(await click(/Garder le silence/)); await page.waitForTimeout(500);
-  const after = await page.evaluate(() => ({ staged: !!document.querySelector(".staged"), canvas: !!document.querySelector(".plan-canvas") }));
+  steps.push(await click(/Garder le silence/)); await page.waitForTimeout(700);
+  steps.push(await click(/Question suivante/)); await page.waitForTimeout(1800);
+  await page.screenshot({ path: path.join(SP, "out", "pilote_3_audition.png") });
+  // jusqu'au bout : chaque étape doit laisser un bouton pour avancer
+  let fin = 0;
+  for (let k = 0; k < 40 && !fin; k++) {
+    if (await click(/Question suivante|Fin de l'audition|Ne plus poser|Continuer|Ne rien déposer|Déposer|Signer|Sortir|Terminer|Quitter|Retour/)) continue;
+    const b = page.locator(".staged .gav-card .btn-primary, .staged .gav-card button.btn").last();
+    if (await b.count()) { await b.click(); await page.waitForTimeout(250); } else fin = 1;
+  }
+  await page.screenshot({ path: path.join(SP, "out", "pilote_4_fin.png") });
+  const after = await page.evaluate(() => ({ staged: !!document.querySelector(".staged"), etape: (document.querySelector(".gav-step.on") || {}).textContent || "sortie" }));
   console.log("étapes:", steps.join(","), "| sauvegardes:", JSON.stringify(saved), "| images/s (rendu logiciel):", fps, "| après le conseil:", JSON.stringify(after), "| errors:", errs.slice(0, 4).join(" | ") || "none");
   await browser.close();
 })();
