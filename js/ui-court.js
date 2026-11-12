@@ -285,11 +285,14 @@
     const room = useMemo(() => CR.courtRoom(s, cs, decor || {}, title), [cs.id, title, JSON.stringify(decor || {})]);
     const typing = ["type", "window", "pause"].includes(phase);
     const roomOpts = Object.assign({}, room.opts, { min: s.min, rain: CR.dec.rainy(s), season: CR.dec.seasonOf(s), speaker: typing && speaker !== "sys" ? speaker : null, court, verdict, turn: ["choose", "card", "limine", "questions", "constitution", "plaidoirie"].includes(phase) });
-    return html`<div className="scene court-scene">
-      <div className="court-stage">
+    // refonte : l'audience se joue dans le plan plein cadre (CR.plans.audience) ; sinon l'ancienne salle
+    const staged = UI.planOk && UI.planOk("audience");
+    return html`<div className=${cx("scene court-scene", staged && "staged")}>
+      ${staged ? html`<${UI.Plan} name="audience" opts=${Object.assign({}, roomOpts, { room: room.name })} />
+      <div className="stg-top"><div className="stg-cap"><span className="pix">${title}</span><span className="stg-sub">${sub ? sub + " · " : ""}${CR.fmtTime(s.min)}</span></div></div>` : html`<div className="court-stage">
         <${UI.Room} name=${room.name} opts=${roomOpts} />
         <div className="court-title"><span className="pix">${title}</span>${sub && html`<span className="small">${sub}</span>`}</div>
-      </div>
+      </div>`}
       <${UI.Coach} k="audience" s=${s} />
       <div className="court-body">
         <div className="court-left">
@@ -297,7 +300,7 @@
           ${log.map((l, i) => html`<div key=${i} className=${cx("tline", "who-" + l.who)}><span className="tl-who pix">${l.who === "sys" ? "" : WHO(s, cs, l.who, l.name).toUpperCase()}</span><span className="tl-body">${l.t}</span></div>`)}
           ${cur && !cur._end && ["type", "window", "pause"].includes(phase) && cur.t != null && html`<div className=${cx("tline", "live", "who-" + (speaker || "sys"))}><span className="tl-who pix">${speaker && speaker !== "sys" ? WHO(s, cs, speaker, cur.name).toUpperCase() : ""}</span><span className="tl-body">${lineText.slice(0, typed)}${typed < lineText.length ? html`<span className="caret">▌</span>` : ""}</span></div>`}
         </div>
-        <details className="court-dossier" open=${true}><summary className="pix">Votre dossier à la barre — carnet et textes enregistrés</summary><${UI.DossierSide} s=${s} cs=${cs} ctx="audience" /></details>
+        <details className="court-dossier" open=${!staged}><summary className="pix">Votre dossier à la barre — carnet et textes enregistrés</summary><${UI.DossierSide} s=${s} cs=${cs} ctx="audience" /></details>
         </div>
         <div className="court-controls">
           ${phase === "window" && html`<div className="window-bar"><div className="wb-fill" style=${{ width: Math.max(0, timer / ((cur.interject.window || 4500) / fatigue)) * 100 + "%" }}></div></div>`}
