@@ -1,4 +1,4 @@
-<!-- Copie de l'onglet « Refonte du gameplay » du document de conception (https://claude.ai/artifact/CuxLGVpCzBWHchG3qY1daX#784c4d9e-bd1e), exportée le 12 novembre 2026 (mise à jour le 12 novembre 2026 : mécaniques de jeu) pour qu'une conversation sans accès au document puisse la lire. En cas d'écart, le document fait foi ; mettre à jour cette copie après chaque modification de l'onglet. Le schéma « une simulation, cinq vues » n'est pas reproduit : la simulation de l'affaire (faits minute par minute, enquête acte par acte, ce que chaque personne sait, ignore ou cache) produit cinq vues : pièces, paroles, images, délibéré, débrief. -->
+<!-- Copie de l'onglet « Refonte du gameplay » du document de conception (https://claude.ai/artifact/CuxLGVpCzBWHchG3qY1daX#784c4d9e-bd1e), exportée le 12 novembre 2026 (mises à jour le 12 novembre 2026 : mécaniques de jeu, puis vidéosurveillance en extrait vidéo) pour qu'une conversation sans accès au document puisse la lire. En cas d'écart, le document fait foi ; mettre à jour cette copie après chaque modification de l'onglet. Le schéma « une simulation, cinq vues » n'est pas reproduit : la simulation de l'affaire (faits minute par minute, enquête acte par acte, ce que chaque personne sait, ignore ou cache) produit cinq vues : pièces, paroles, images, délibéré, débrief. -->
 
 # Refonte du gameplay
 
@@ -13,7 +13,7 @@ Dix décisions arrêtées avec Kevin le 12 novembre 2026 cadrent toute la refont
 1. **Pédagogie d'abord.** Après beaucoup de parties, le joueur doit avoir les réflexes, la méthode et la connaissance des textes d'un pénaliste débutant. Rien n'est simplifié pour le confort.
 2. **Forme réelle, lecture courte.** Chaque pièce garde la trame, les formules et les rubriques d'une vraie pièce, mais se lit en 5 à 10 minutes au plus (décision de Kevin du 12 novembre 2026, qui remplace la règle « vingt pages en vrai, vingt dans le jeu »). Un gros dossier a plus de pièces, pas des pièces plus longues.
 3. **Mise en page réelle.** Chaque type de pièce suit sa trame d'usage.
-4. **Images représentées.** Toute pièce qui contient une image en vrai la montre. La vidéosurveillance est une image fixe, produite par un moteur où les acteurs se remplacent.
+4. **Images représentées.** Toute pièce qui contient une image en vrai la montre. La vidéosurveillance est un extrait vidéo joué par le moteur, où les acteurs, leurs tenues et leurs gestes se remplacent : aucune vidéo n'est fabriquée pour une affaire (décision de Kevin du 12 novembre 2026, qui remplace l'image fixe).
 5. **Moins directif.** Plus de liste taillée pour l'affaire, plus de boîte de choix qui annonce le moment d'agir, plus de signal immédiat.
 6. **Pas de texte libre interprété.** Le jeu reste hors ligne. Deux saisies au clavier restent : le numéro d'un article et la recherche d'un mot dans un index.
 7. **Le métier écrit au complet.** Plateforme du barreau, canaux de transmission, actes, requêtes, citations et assignations, au plus près de la pratique.
@@ -123,8 +123,9 @@ Les trames des décisions sont calées sur des décisions publiées. Celles des 
 
 Toute pièce qui contient une image en vrai la montre, et l'image sort de la même simulation que le texte.
 
-- **Vidéosurveillance : une image fixe** de l'instant du geste, vue comme par la caméra. Deux ou trois captures seulement si l'ordre des gestes est l'enjeu et que Kevin le décide.
-- **Un metteur en scène à quatre éléments indépendants** : le lieu (décor du lieu des faits, vu d'en haut et de biais), les acteurs (emplacements auteur, victime, témoin, passant, où se branche n'importe quelle fiche de personnage), le geste (squelette articulé et bibliothèque de poses), la caméra (grain, basse résolution, déformation, horodatage incrusté, infrarouge la nuit).
+- **Vidéosurveillance : un extrait vidéo joué par le moteur**, de 20 à 60 secondes, vu comme par la caméra et rejoué depuis la graine. Le joueur le regarde à son rythme (lecture, pause, image par image, retour) et cite l'horodatage incrusté dans son dossier de travail ; le temps de visionnage compte. Au dossier figure le procès-verbal d'exploitation avec sa planche de captures ; l'extrait lui-même se demande, comme en pratique (à vérifier au lot 0).
+- **Un metteur en scène à cinq éléments indépendants** : le lieu (décor du lieu des faits, vu d'en haut et de biais), les acteurs (emplacements auteur, victime, témoin, passant, où se branche n'importe quelle fiche de personnage, avec une tenue tirée d'un vestiaire : capuche, casquette, couleur du haut, sac, chaussures), le geste (squelette articulé vu en plongée et bibliothèque de gestes animés), la chorégraphie (qui entre dans le champ, par où, quel geste à quelle seconde, tirée des faits minute par minute), la caméra (grain, basse résolution, 8 à 12 images par seconde, images sautées, déformation, horodatage incrusté, infrarouge la nuit).
+- **Mêmes faits, autres affaires.** Les tenues changent d'une affaire à l'autre pour des faits identiques. Le signalement du procès-verbal, la fouille à l'interpellation et la vidéo peuvent ne pas concorder : l'écart se voit et se plaide.
 - **Ce que l'image permet.** Elle montre ce que la simulation sait, pas plus : capuche, distance, angle mort. Si le procès-verbal affirme une identification que l'image ne permet pas, cela se voit et se plaide.
 - **Autres images** : planche photographique des lieux et des objets saisis, captures de messages, croquis des lieux, relevés en tableau, schéma corporel.
 - **Limites de contenu** : violences montrées par la position des corps, sans gros plan ni détail de blessure ; jamais d'image d'un mineur victime.
@@ -531,7 +532,7 @@ Les règles de droit sont reprises ; tout ce qui fabrique du texte ou propose un
 Douze lots, dans cet ordre, chacun jouable et testé avant le suivant. Le pilote que Kevin juge sur son Mac est une seule affaire de flagrance jouée de la garde à vue à la veille de l'audience, avec les lots 1 à 3 réduits à cette affaire.
 
 - [ ] **0. Étalons.** Vérifier sur sources les trames, les longueurs et le droit de la voie électronique ; recueillir les pièces réelles anonymisées et les captures que Kevin peut fournir.
-- [ ] **1. Simulation et pièces.** Simulation fine, moteur de documents, dossier complet de flagrance pour un délit (une douzaine de trames), image de vidéosurveillance, imprévus nés de la simulation.
+- [ ] **1. Simulation et pièces.** Simulation fine, moteur de documents, dossier complet de flagrance pour un délit (une douzaine de trames), extrait de vidéosurveillance joué par le moteur, imprévus nés de la simulation.
 - [ ] **2. Dossier de travail.** Sélection libre, marges, onglets, liens, chronologie, tableau des versions, plan de défense, irrégularité en quatre éléments.
 - [ ] **3. Entretien et audition.** Client modélisé, questions composées, oral qui s'efface, conseil sujet par sujet, audition intégrale.
 - [ ] **Pilote jugé par Kevin.**

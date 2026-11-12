@@ -1,0 +1,200 @@
+<title>Caméra 04, sortie de métro</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Mise en page : un lecteur de scellé vidéo à gauche, les réglages du metteur en scène à droite, puis le constat. */
+:root {
+  --bg: #eef0f2; --panel: #ffffff; --ink: #1b2026; --muted: #5d6672; --line: #d3d8de;
+  --accent: #b3471d; --accent-ink: #ffffff; --screen: #0b0d10; --mark: #e0a100;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #14171b; --panel: #1c2026; --ink: #e5e8ec; --muted: #9aa3ae; --line: #2e343c; --accent: #e0703f; --accent-ink: #14171b; --screen: #050607; --mark: #f0b72e; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #14171b; --panel: #1c2026; --ink: #e5e8ec; --muted: #9aa3ae; --line: #2e343c; --accent: #e0703f; --accent-ink: #14171b; --screen: #050607; --mark: #f0b72e; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px }
+header { display: grid; gap: 6px }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+h1 { font: 600 26px/1.2 var(--sans); margin: 0; text-wrap: balance }
+.lead { margin: 0; color: var(--muted); max-width: 70ch }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start }
+@media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr) } }
+.player { background: var(--screen); border-radius: 6px; overflow: hidden }
+.player canvas { display: block; width: 100%; aspect-ratio: 16 / 9; max-width: 100% }
+.bar { background: var(--panel); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 6px 6px; padding: 10px 12px; display: grid; gap: 8px }
+.scrub { position: relative; height: 22px }
+.scrub input { position: absolute; inset: 0; width: 100%; margin: 0; accent-color: var(--accent) }
+.ticks { position: absolute; left: 8px; right: 8px; top: 0; height: 6px; pointer-events: none }
+.ticks i { position: absolute; top: 0; width: 2px; height: 6px; background: var(--mark); transform: translateX(-1px) }
+.ticks b { position: absolute; top: 0; height: 4px; background: var(--muted); opacity: .5 }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.time { font: 500 13px/1 var(--mono); font-variant-numeric: tabular-nums; margin-left: auto; color: var(--muted) }
+.time strong { color: var(--ink); font-weight: 500 }
+button { font: 500 13px/1 var(--sans); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; cursor: pointer; min-height: 34px }
+button:hover { border-color: var(--muted) }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
+button.play { min-width: 84px }
+aside { display: grid; gap: 14px }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: grid; gap: 10px }
+.box h2, section h2 { font: 600 14px/1.3 var(--sans); margin: 0 }
+.box p { margin: 0; color: var(--muted); font-size: 13px }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px }
+.seg.v { grid-auto-flow: row }
+section { display: grid; gap: 10px; min-width: 0 }
+.tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 6px }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13.5px }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line) }
+th { font: 500 11.5px/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted) }
+tr:last-child td { border-bottom: 0 }
+td.who { font-weight: 600; white-space: nowrap }
+.planche { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px }
+figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; cursor: pointer; display: grid; align-content: start }
+figure canvas { display: block; width: 100%; aspect-ratio: 16 / 9; background: var(--screen) }
+figcaption { padding: 8px 10px 10px; font-size: 13px; display: grid; gap: 2px }
+figcaption .h { font: 500 12px/1.2 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.note { color: var(--muted); font-size: 13px; max-width: 80ch; margin: 0 }
+.busy { opacity: .55; transition: opacity .15s }
+@media (prefers-reduced-motion: reduce) { .busy { transition: none } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Scellé n° 3 · extraction de vidéoprotection · prototype</div>
+    <h1>Caméra 04, sortie de métro</h1>
+    <p class="lead">Vol à l'arraché devant une bouche de métro. Aucune vidéo n'a été tournée : le moteur du jeu joue la scène depuis la simulation. Changez les tenues ou la caméra, les faits restent les mêmes.</p>
+  </header>
+
+  <div class="main">
+    <div>
+      <div class="player" id="player"><canvas id="ecran" width="960" height="540" aria-label="Image de la caméra"></canvas></div>
+      <div class="bar">
+        <div class="scrub"><input id="scrub" type="range" min="0" max="1000" value="0" step="1" aria-label="Position dans l'extrait"><div class="ticks" id="ticks"></div></div>
+        <div class="row">
+          <button id="debut" title="Début">Début</button>
+          <button id="prec" title="Image précédente (flèche gauche)">− 1 image</button>
+          <button id="lire" class="play" title="Lecture ou pause (espace)">Lecture</button>
+          <button id="suiv" title="Image suivante (flèche droite)">+ 1 image</button>
+          <div class="seg" role="group" aria-label="Vitesse">
+            <button data-v="0.25">× ¼</button><button data-v="0.5">× ½</button><button data-v="1" aria-pressed="true">× 1</button>
+          </div>
+          <div class="time"><strong id="horo">—</strong> · image <span id="num">0</span> / <span id="tot">0</span> · <span id="fps"></span> i/s</div>
+        </div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="box">
+        <h2>Mêmes faits, autres tenues</h2>
+        <div class="seg" id="tenues" role="group" aria-label="Tirage des tenues">
+          <button data-t="a" aria-pressed="true">Tirage 1</button><button data-t="b">Tirage 2</button><button data-t="c">Tirage 3</button>
+        </div>
+        <p>Les personnes, leurs gestes et l'horodatage ne bougent pas ; seuls les vêtements changent.</p>
+      </div>
+      <div class="box">
+        <h2>Caméra</h2>
+        <div class="seg v" id="modes" role="group" aria-label="Éclairage de la caméra">
+          <button data-m="ir" aria-pressed="true">Nuit, infrarouge</button><button data-m="soir">Soir, couleur</button><button data-m="jour">Jour</button>
+        </div>
+        <p>En infrarouge, les couleurs disparaissent et un tissu noir peut ressortir clair.</p>
+      </div>
+      <div class="box">
+        <h2>Déroulé des faits</h2>
+        <div class="seg" id="faits" role="group" aria-label="Déroulé">
+          <button data-f="1" aria-pressed="true">Fuite par l'escalier</button><button data-f="2">Fuite par la gauche</button>
+        </div>
+        <p id="sauts"></p>
+      </div>
+    </aside>
+  </div>
+
+  <section>
+    <h2>Ce que l'image permet</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Personne</th><th>Tenue selon la simulation</th><th>Ce que montre l'image</th><th>Visage</th></tr></thead>
+      <tbody id="lisible"></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Planche de captures du procès-verbal d'exploitation</h2>
+    <div class="planche" id="planche"></div>
+  </section>
+
+  <p class="note">Le moteur assemble cinq éléments indépendants : le lieu (décor en volume, vu d'en haut et de biais), les acteurs et leurs tenues, les gestes (squelette articulé), la chorégraphie tirée des faits minute par minute, et la caméra (cadence, images sautées, déformation, grain, horodatage, infrarouge). Tout sort d'une graine : la même affaire redonne la même vidéo au pixel près, sans fichier vidéo. Raccourcis : espace pour lire, flèches pour avancer d'une image.</p>
+</div>
+
+<script src="../../js/video.js"></script>
+<script>
+(function () {
+  const V = window.CR.video;
+  const $ = (id) => document.getElementById(id);
+  const etat = { tenues: "a", mode: "ir", faits: "1" };
+  let S = null, L = null;
+  const ROLES = { A: "Auteur", V: "Victime", T: "Témoin" };
+
+  function presser(groupe, attr, val) { for (const b of $(groupe).querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset[attr] === val)); }
+
+  function monter() {
+    document.body.classList.add("busy");
+    setTimeout(() => {
+      const t = L ? L.t : 0;
+      if (L) L.detruire();
+      S = V.extrait({ graine: "1", grainetenues: etat.tenues, mode: etat.mode, fuite: etat.faits === "1" ? "escalier" : "gauche" });
+      L = V.lecteur($("ecran"), S, { onTemps: majTemps, onFin: () => { $("lire").textContent = "Lecture"; } });
+      L.aller(t);
+      $("tot").textContent = S.frames.length; $("fps").textContent = S.fps;
+      // repères : moments clés et images sautées
+      const ticks = $("ticks"); ticks.innerHTML = "";
+      for (const [a, b] of S.sauts) { const e = document.createElement("b"); e.style.left = (a / S.duree * 100) + "%"; e.style.width = ((b - a) / S.duree * 100) + "%"; e.title = "Images sautées"; ticks.appendChild(e); }
+      for (const m of S.moments) { const e = document.createElement("i"); e.style.left = (m.t / S.duree * 100) + "%"; e.title = m.txt; ticks.appendChild(e); }
+      $("sauts").textContent = S.sauts.length ? `Enregistrement à ${S.fps} images par seconde, ${S.sauts.length === 1 ? "une coupure" : S.sauts.length + " coupures"} (barres grises sur la frise) : l'horodatage saute.` : `Enregistrement à ${S.fps} images par seconde, sans coupure.`;
+      // ce que l'image permet
+      const lis = S.lisible(), tb = $("lisible"); tb.innerHTML = "";
+      for (const id of ["A", "V", "T"]) {
+        const x = lis[id], tr = document.createElement("tr");
+        tr.innerHTML = `<td class="who">${ROLES[id]}</td><td>${x.reel}</td><td>${x.image}</td><td>${x.visage} <span style="color:var(--muted)">(tête ≈ ${Math.round(x.tetePx)} px)</span></td>`;
+        tb.appendChild(tr);
+      }
+      // planche
+      const pl = $("planche"); pl.innerHTML = "";
+      for (const m of S.moments) {
+        const f = document.createElement("figure"), c = document.createElement("canvas");
+        c.width = V.W; c.height = V.H;
+        const ctx = c.getContext("2d"), img = ctx.createImageData(V.W, V.H);
+        S.image(S.indexA(m.t), img.data); ctx.putImageData(img, 0, 0);
+        f.appendChild(c);
+        const cap = document.createElement("figcaption"); cap.innerHTML = `<span class="h">${m.h}</span><span>${m.txt}</span>`;
+        f.appendChild(cap); f.tabIndex = 0; f.title = "Aller à ce moment";
+        const go = () => { L.pause(); $("lire").textContent = "Lecture"; L.aller(m.t); };
+        f.addEventListener("click", go); f.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+        pl.appendChild(f);
+      }
+      document.body.classList.remove("busy");
+    }, 20);
+  }
+  function majTemps(t, i) {
+    $("horo").textContent = S.horodatage(S.frames[i]);
+    $("num").textContent = i + 1;
+    if (document.activeElement !== $("scrub")) $("scrub").value = Math.round(t / S.duree * 1000);
+  }
+
+  $("lire").addEventListener("click", () => { L.basculer(); $("lire").textContent = L.enLecture ? "Pause" : "Lecture"; });
+  $("debut").addEventListener("click", () => { L.pause(); $("lire").textContent = "Lecture"; L.aller(0); });
+  $("prec").addEventListener("click", () => { L.image(-1); $("lire").textContent = "Lecture"; });
+  $("suiv").addEventListener("click", () => { L.image(1); $("lire").textContent = "Lecture"; });
+  $("scrub").addEventListener("input", (e) => { L.aller(e.target.value / 1000 * S.duree); });
+  for (const b of document.querySelectorAll("[data-v]")) b.addEventListener("click", () => { L.vitesse(+b.dataset.v); for (const x of document.querySelectorAll("[data-v]")) x.setAttribute("aria-pressed", String(x === b)); });
+  for (const b of $("tenues").querySelectorAll("button")) b.addEventListener("click", () => { etat.tenues = b.dataset.t; presser("tenues", "t", etat.tenues); monter(); });
+  for (const b of $("modes").querySelectorAll("button")) b.addEventListener("click", () => { etat.mode = b.dataset.m; presser("modes", "m", etat.mode); monter(); });
+  for (const b of $("faits").querySelectorAll("button")) b.addEventListener("click", () => { etat.faits = b.dataset.f; presser("faits", "f", etat.faits); if (L) L.t = 0; monter(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT" || (e.target.tagName === "BUTTON" && (e.key === " " || e.key === "Enter"))) return;
+    if (e.key === " ") { e.preventDefault(); $("lire").click(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); $("prec").click(); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); $("suiv").click(); }
+  });
+  monter();
+  setTimeout(() => { if (L) L.aller(S.scn.tG - 3); }, 60);
+})();
+</script>
