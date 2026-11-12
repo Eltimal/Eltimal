@@ -14,7 +14,7 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40) console.log("ÉCHEC", 
   const marques = (r) => { const m = new Set(); for (const g of segsDe(r)) { if (g.f) m.add("f:" + g.f); if (g.flag) m.add("flag:" + g.flag); if (g.paire) m.add("paire:" + g.paire); } return m; };
   const s = CR.newGame({ prenom: "A", nom: "B", mode: "carriere", seed: 3 }); CR.store.s = s;
   const rendre = (PZ, k, t) => PZ.docs[k]({ s, cs: { vars: {}, proc: { faitsDay: t.d.faits }, enq: {} }, def: {}, c: t.A, api: {} });
-  let vus = { ci: 0, gav: 0 }, mots = [], pieces = 0, nArr = 0, nNum = 0, nPap = 0; const familles = {};
+  let vus = { ci: 0, gav: 0 }, mots = [], pieces = 0, nArr = 0, nNum = 0, nPap = 0, nSchema = 0; const familles = {};
   for (let i = 0; i < 6000 && (vus.ci < N0 || vus.gav < N0 / 2); i++) for (const genre of ["ci", "gav"]) {
     if (vus[genre] >= (genre === "ci" ? N0 : N0 / 2)) continue;
     const t = G.tirer("tsim" + i, genre, { day: i % 2 ? 30 : 12, inf: i % 3 === 0 ? "vol" : undefined });
@@ -44,6 +44,9 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40) console.log("ÉCHEC", 
       if (["pv_interpellation", "pv_notification", "pv_victime", "pv_audition", "pv_temoin", "pv_fin_gav", "pv_synthese"].includes(k)) ok(r.bandeau && r.bandeau.grille && r.pstyle && r.pstyle.length === r.paras.length, `${tag}/${k} : pas de trame de procès-verbal`);
       // support du dossier : numérique (signature électronique unique) ou papier (signature par feuillet)
       if (r.bandeau) { const num = SIM.numerique(t, CR.MONDE.lieuxDe(t).TJ); ok(r.numerique === num && (r.sigs || []).every((g) => (num ? g.t !== "signé" : true)), `${tag}/${k} : support du dossier`); if (num) nNum++; else nPap++; }
+      // lecteur en feuillets (ui-dossier.js) : même nombre de feuillets, rien de perdu ; schéma des lésions au certificat
+      if (CR.UI.lecteurDe) { const L = CR.UI.lecteurDe(r, { cote: r.cote }); ok(L.feuillets.length === (r.feuillets || 1) && L.blocs.length > 0, `${tag}/${k} : lecteur ${L.feuillets.length} feuillets pour ${r.feuillets}`); }
+      if (k === "certificat" && r.schema) { const tx = DOCS.texte(r).toLowerCase(); ok(r.schema.length > 0 && r.schema.every((l) => tx.includes(l.toLowerCase())), `${tag} : schéma corporel sans les lésions du certificat`); nSchema++; }
       // déterminisme
       ok(JSON.stringify(rendre(PZ, k, t)) === txt, `${tag}/${k} : non déterministe`);
     }
@@ -86,7 +89,7 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40) console.log("ÉCHEC", 
   }
   mots.sort((a, b) => a - b);
   console.log(`affaires : ${vus.ci} comparutions immédiates, ${vus.gav} gardes à vue (dont ${nArr} arrachages) ; ${pieces} pièces ; dossier médian ${mots[mots.length >> 1]} mots (min ${mots[0]}, max ${mots[mots.length - 1]})`);
-  console.log(`procès-verbaux : ${nNum} en procédure numérique, ${nPap} sur papier`);
+  console.log(`procès-verbaux : ${nNum} en procédure numérique, ${nPap} sur papier ; ${nSchema} certificats avec schéma corporel`);
   ok(nNum > 0 && nPap > 0, "un seul support de dossier rencontré");
   console.log("délits :", Object.entries(familles).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(", "));
   ok(mots[mots.length >> 1] > 2000, "dossier trop court");

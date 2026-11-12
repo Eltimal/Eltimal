@@ -133,6 +133,7 @@
       ${doc.video && !compact && UI.VideoExtrait && html`<${UI.VideoExtrait} spec=${doc.video} />`}
       ${doc.to && html`<p className="paper-to">À : ${doc.to}</p>`}
       ${(doc.paras || []).map((p, i) => (PS && PS[i] === "saut" ? pied(p.map((x) => (typeof x === "string" ? x : x.t)).join(""), i) : html`<p key=${i} className=${PS && PS[i] ? "pp-" + PS[i] : null}>${p.map((seg, j) => segEl(seg, j))}</p>`))}
+      ${doc.schema && doc.schema.length && !compact && UI.SchemaCorporel && html`<${UI.SchemaCorporel} lesions=${doc.schema} />`}
       ${B && doc.feuillets > 1 && pied(`Feuillet ${doc.feuillets} / ${doc.feuillets}`, "fin")}
       ${doc.sigs && doc.sigs.length > 0 && html`<div className="paper-sigs">${doc.sigs.map((g, i) => {
         const shown = g.t === "signé" ? "(signature)" : g.t || "—";

@@ -1718,6 +1718,13 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .dr-cam { width: 86%; height: auto; image-rendering: pixelated; border: 0.2cqw solid #111; background: #111; }
 .dr-schema { width: 24%; height: auto; }
 @media (max-width: 860px) { .dr { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } .dr-rail { max-height: 30vh; border-right: 0; } .dr-pilote p { display: none; } }
+
+/* ---- Lecteur en feuillets ouvert depuis un dossier, schéma corporel dans une pièce ---- */
+.doc-lire { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.dr-video { margin: 8px 0 14px; }
+.pv-schema { margin: 10px 0 14px; display: flex; gap: 14px; align-items: flex-start; }
+.pv-schema canvas { width: 110px; height: 220px; flex: none; border: 1px solid rgba(0, 0, 0, .15); background: #fff; }
+.pv-schema figcaption { font: .78rem/1.4 var(--f-ui); color: var(--ink-2); }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>

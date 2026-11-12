@@ -24,7 +24,7 @@
     useEffect(() => {
       const c = ref.current; if (!c || !CR.SIMIMG) return;
       try { if (cam) CR.SIMIMG.dessiner(c, CR.SIMIMG.scene(S)); else CR.SIMIMG.schema(c, spec.lesions || []); } catch (e) { /* canevas factice des tests */ }
-    }, [S.sig, spec.type]);
+    }, [S && S.sig, spec.type, (spec.lesions || []).join("|")]);
     return html`<canvas ref=${ref} className=${cam ? "dr-cam" : "dr-schema"} width=${cam ? 640 : 220} height=${cam ? 480 : 440} role="img" aria-label=${cam ? "Capture de vidéoprotection" : "Schéma corporel"}></canvas>`;
   }
 
@@ -58,6 +58,7 @@
       case "liste": return html`<ul className="dr-liste">${b.items.map((x, i) => html`<li key=${i}>${x}</li>`)}</ul>`;
       case "sig": return html`<div className="dr-sigs">${b.cases.map((c, i) => html`<${Signature} key=${i} c=${c} />`)}</div>`;
       case "image": return html`<figure className="dr-fig"><${Toile} S=${S} spec=${b.spec} /><figcaption>${b.legende}</figcaption></figure>`;
+      case "video": return UI.VideoExtrait ? html`<div className="dr-video"><${UI.VideoExtrait} spec=${b.spec} /></div>` : null;
       default:
         if (b.cls === "decl") return html`<p className="dr-p dr-decl">« ${b.t} <i className="dr-tirets">----------</i></p>`;
         return html`<p className=${cx("dr-p", b.cls && "dr-" + b.cls)}>${b.t}</p>`;
@@ -77,15 +78,16 @@
         ${blocs.map((b, k) => html`<${Bloc} key=${k} b=${b} S=${S} n=${i + 1} N=${N} />`)}
       </div>
       ${doc.piedSig && !sigFinale && html`<div className="dr-pied-sig">${doc.piedSig.map((r, k) => { const c = sigs.find((x) => x.role === r) || {}; return html`<div key=${k}><span>${r}</span>${c.etat === "signe" && html`<i className="dr-griffe">${paraphe(c.nom)}</i>`}${c.etat === "refus" && html`<i className="dr-manus">refus</i>`}</div>`; })}</div>`}
-      <footer className="dr-pied">${doc.forme === "pv" ? `Procédure n° ${S.proc}` : ""}<span>${i + 1} / ${N}</span></footer>
+      <footer className="dr-pied">${doc.forme === "pv" ? `Procédure n° ${doc.proc || (S && S.proc)}` : ""}<span>${i + 1} / ${N}</span></footer>
     </article>`;
   }
   UI.Feuillet = Feuillet;
 
   // ------------------------------------------------------------------ Le dossier
   // props : S (simulation), stade ("gav" : pièces de l'article 63-4-1 ; "copie" : dossier complet), onClose, pied (zone libre)
-  UI.DossierReel = function DossierReel({ S, stade, onClose, entete }) {
-    const docs = useMemo(() => (stade === "gav" ? DOCS.consultables(S, S.a.entretien.m) : DOCS.dossier(S)), [S.sig, stade]);
+  // props : docs (pièces déjà au format du lecteur, voir UI.lecteurDe) ou S (simulation du pilote) ; onClose(minutes lues)
+  UI.DossierReel = function DossierReel({ S, stade, onClose, entete, docs: fournies, proc, titre, sousTitre }) {
+    const docs = useMemo(() => fournies || (stade === "gav" ? DOCS.consultables(S, S.a.entretien.m) : DOCS.dossier(S)), [fournies, S && S.sig, stade]);
     const [id, setId] = useState(docs[0] && docs[0].id);
     const [f, setF] = useState(0);
     const [lus, setLus] = useState({});
@@ -114,7 +116,7 @@
         else if (e.key === "ArrowUp" && ix > 0) { aller(docs[ix - 1]); e.preventDefault(); }
         else if (e.key === "Home") { setF(0); e.preventDefault(); }
         else if (e.key === "End") { setF(Math.floor((N - 1) / pas) * pas); e.preventDefault(); }
-        else if (e.key === "Escape" && onClose) onClose();
+        else if (e.key === "Escape" && onClose) onClose(minutes);
       };
       window.addEventListener("keydown", kd);
       return () => window.removeEventListener("keydown", kd);
@@ -124,11 +126,11 @@
     return html`<div className="dr">
       <aside className="dr-rail" aria-label="Pièces du dossier">
         <header>
-          <b>${stade === "gav" ? "Pièces consultables" : "Copie de la procédure"}</b>
-          <span>${stade === "gav" ? "article 63-4-1 du code de procédure pénale" : `n° ${S.proc} · ${docs.length - 1} pièces`}</span>
+          <b>${titre || (stade === "gav" ? "Pièces consultables" : "Copie de la procédure")}</b>
+          <span>${sousTitre || (stade === "gav" ? "article 63-4-1 du code de procédure pénale" : `n° ${proc || S.proc} · ${docs.length - 1} pièces`)}</span>
         </header>
         <ol>${docs.map((d) => html`<li key=${d.id}><button type="button" className=${cx("dr-piece", d.id === doc.id && "on", luDoc(d) && "lu")} onClick=${() => aller(d)} aria-current=${d.id === doc.id ? "true" : undefined}>
-          <span className="dr-pc">${d.cote || "—"}</span><span className="dr-pt">${d.titre}</span><span className="dr-pd">${SIM.date(S, d.m, "num").slice(0, 5)} · ${d.feuillets.length} f.</span>
+          <span className="dr-pc">${d.cote || "—"}</span><span className="dr-pt">${d.titre}</span><span className="dr-pd">${d.date || SIM.date(S, d.m, "num").slice(0, 5)} · ${d.feuillets.length} f.</span>
         </button></li>`)}</ol>
         ${entete}
       </aside>
@@ -136,7 +138,7 @@
         <header className="dr-barre">
           <span className="dr-ou"><b>${doc.cote || "Bordereau"}</b> ${doc.titre}</span>
           <span className="dr-lecture" title="Temps de lecture compté">Lecture : ${minutes} min</span>
-          ${onClose && html`<button type="button" className="dr-fermer" onClick=${onClose}>Refermer le dossier</button>`}
+          ${onClose && html`<button type="button" className="dr-fermer" onClick=${() => onClose(minutes)}>Refermer le dossier</button>`}
         </header>
         <div className=${cx("dr-pages", large && "double")}>
           <button type="button" className="dr-fleche" onClick=${() => tourner(-1)} disabled=${f === 0 && docs.indexOf(doc) === 0} aria-label="Feuillet précédent">‹</button>
@@ -146,6 +148,49 @@
         </div>
       </section>
     </div>`;
+  };
+
+  // ------------------------------------------------------------------ Les pièces du jeu dans le lecteur
+  // Une pièce rendue par CR.renderDoc (moteur de documents docs.js, ou pièce d'avant) → le format du lecteur :
+  // { id, cote, titre, date, forme, proc, blocs, feuillets, piedSig }. Les feuillets suivent les sauts du moteur.
+  const txt = (p) => p.map((x) => (typeof x === "string" ? x : x.t || "")).join("");
+  UI.lecteurDe = function (doc, meta) {
+    meta = meta || {};
+    const B = doc.bandeau, PS = doc.pstyle || [];
+    const feuillets = [[]];
+    const pousser = (b) => feuillets[feuillets.length - 1].push(b);
+    if (B) {
+      const g = {}; for (const [k, v] of B.grille || []) if (k !== "Pièce") g[k] = v;
+      pousser({ k: "bandeau", service: [B.service, B.unite].filter(Boolean).join(" · "), cadre: B.cadre, titre: B.titre, qualite: B.qualite, grille: g });
+    } else {
+      if (doc.entete && doc.entete.length) pousser({ k: "entete", lignes: doc.entete });
+      if (doc.title) pousser({ k: "titre", t: doc.title });
+    }
+    if (doc.video) pousser({ k: "video", spec: doc.video });
+    let grille = null;
+    const paras = doc.paras || [];
+    for (let i = 0; i < paras.length; i++) {
+      const st = PS[i], t = txt(paras[i]);
+      if (st !== "ligne") grille = null;
+      if (st === "saut") { feuillets.push([]); continue; }
+      if (st === "ligne") { const m = /^([^:]+?) : (.*)$/.exec(t); if (!grille) { grille = { k: "grille", rows: [] }; pousser(grille); } grille.rows.push(m ? [m[1], m[2]] : ["", t]); continue; }
+      if (st === "q" && PS[i + 1] === "r") { pousser({ k: "qr", q: t.replace(/^Question : /, ""), r: txt(paras[i + 1]).replace(/^Réponse : /, "") }); i++; continue; }
+      if (st === "titre") { pousser({ k: "stitre", t }); continue; }
+      if (st === "decl") { pousser({ k: "p", cls: "decl", t: t.replace(/^« /, "") }); continue; }
+      pousser({ k: "p", cls: st === "mention" ? "mention" : null, t });
+    }
+    if (doc.schema && doc.schema.length) pousser({ k: "image", spec: { type: "schema", lesions: doc.schema }, legende: "Schéma corporel : siège des lésions décrites" });
+    const sigs = (doc.sigs || []).filter((g) => g && g.qui);
+    if (sigs.length) pousser({ k: "sig", cases: sigs.map((g) => ({ role: g.qui, nom: g.t === "signé" || g.t === "signature électronique" ? g.qui.replace(/,.*$/, "") : "", etat: g.t ? "signe" : "vide", tampon: g.t === "signature électronique" ? "signé électroniquement" : null })) });
+    const blocs = [].concat(...feuillets);
+    return {
+      id: meta.id || doc.cote || doc.title, cote: meta.cote || doc.cote || null, titre: meta.titre || doc.title, date: meta.date || "", proc: meta.proc || null,
+      forme: B ? "pv" : "forme", blocs, feuillets: feuillets.filter((f) => f.length), piedSig: B && !doc.numerique ? sigs.map((g) => g.qui) : null, mots: CR.DOCS ? CR.DOCS.mots(doc) : 0,
+    };
+  };
+  // le schéma corporel dans une pièce (UI.Paper) : siège des lésions numéroté sur une silhouette
+  UI.SchemaCorporel = function SchemaCorporel({ lesions }) {
+    return html`<figure className="pv-schema"><${Toile} S=${null} spec=${{ type: "schema", lesions }} /><figcaption>Schéma corporel : ${lesions.map((l, i) => `${i + 1}. ${l}`).join(" ; ")}</figcaption></figure>`;
   };
 
   // ------------------------------------------------------------------ Le pilote : une affaire de flagrance à graine fixe

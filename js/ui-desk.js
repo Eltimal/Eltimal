@@ -348,6 +348,7 @@
   UI.CaseFile = ({ s, cs, go, onBack }) => {
     const [tab, setTab] = useState(cs.status === "closed" ? "debrief" : "actions");
     const [docSel, setDocSel] = useState(null);
+    const [lecteur, setLecteur] = useState(false); // le dossier lu en feuillets (ui-dossier.js)
     const c = CR.client(cs);
     const tasks = CR.caseTasks(s, cs);
     const textes = CR.pinnedTexts(s, cs);
@@ -388,10 +389,22 @@
       ${tab === "pieces" && (docSel ? html`<div className="reader">
           <button className="link" onClick=${() => setDocSel(null)}>← Toutes les pièces</button>
           ${(() => { const d = cs.docs.find((x) => x.id === docSel); const doc = d ? CR.renderDoc(s, cs, d) : null; return doc ? html`<${DocView} s=${s} cs=${cs} doc=${Object.assign({}, doc, { paras: UI.segmentize(doc.paras), hid: d.vars && d.vars.hid, ref: { doc: d.id, key: d.key, titre: d.title } })} go=${go} kind=${d.dir === "out" ? "out" : doc.kind} />` : null; })()}
-        </div>` : html`<ul className="doc-list">
+        </div>` : html`<div className="doc-lire">${UI.DossierReel && cs.docs.some((d) => d.dir !== "out") && html`<${Btn} small icon="cases" onClick=${() => setLecteur(true)}>Lire en feuillets</${Btn}>`}</div><ul className="doc-list">
           ${cs.docs.length === 0 && html`<li className="empty">Aucune pièce.</li>`}
           ${cs.docs.slice().reverse().map((d) => html`<li key=${d.id}><button className="doc-row" onClick=${() => setDocSel(d.id)}><span className=${cx("dir", d.dir)}>${d.dir === "out" ? "Envoyé" : "Reçu"}</span><span>${d.title}</span><span className="small muted">${CR.fmtDate(d.day, "short")}</span></button></li>`)}
         </ul>`)}
+      ${tab === "pieces" && lecteur && UI.DossierReel && (() => {
+        // pièces reçues, dans l'ordre des cotes quand elles en ont, sinon dans l'ordre d'arrivée
+        // la cote : celle de la pièce composée, sinon celle de son titre (« Exploitation vidéo (D11) »)
+        const coteDe = (d, r) => (r && r.cote) || ((/\((D\d+)\)$/.exec(d.title) || [])[1]) || null;
+        const recues = cs.docs.filter((d) => d.dir !== "out").map((d) => { const r = CR.renderDoc(s, cs, d); return { d, r, cote: coteDe(d, r) }; });
+        const num = (x) => (x.cote ? +String(x.cote).replace(/\D/g, "") : 1e6 + x.d.day);
+        recues.sort((a, b) => num(a) - num(b));
+        const pr = ((recues.find((x) => x.r && x.r.bandeau) || {}).r || {}).bandeau;
+        const proc = pr ? (pr.grille.find(([k]) => k === "Procédure") || [])[1] : null;
+        const docs = recues.map((x) => UI.lecteurDe(x.r, { id: x.d.id, cote: x.cote, titre: x.d.title.replace(/ \(D\d+\)$/, ""), date: CR.fmtDate(x.d.day, "num").slice(0, 5), proc }));
+        return html`<${UI.DossierReel} docs=${docs} proc=${proc} titre="Le dossier" sousTitre=${`${CR.caseTitle(s, cs)} · ${docs.length} pièces`} onClose=${(min) => { setLecteur(false); if (min > 0 && cs.status !== "closed") { CR.spend(s, min, "desk", { caseId: cs.id }); bump(); } }} />`;
+      })()}
       ${tab === "irreg" && html`<div className="cf-irreg">
         <p className="small muted">Le jeu ne signale rien : c'est en lisant les pièces que vous trouvez ce qui cloche. Une nullité ne se soulève que sur ce que vous avez relevé ici.</p>
         <ul className="issue-list">

@@ -270,7 +270,7 @@
       add("certificat", E.umj.examen, "Certificat de l'UMJ", () => {
         const rr = CR.seeded(t.sig + ":d:umj");
         const les = S.blessures.length ? S.blessures : ["pas de lésion traumatique récente objectivée"];
-        return DOCS.forme({ title: "Certificat médical — unité médico-judiciaire", kind: "courrier", cote: cote("certificat"), entete: [`${TJ.umj} · AP-HP`, `Réquisition de l'officier de police judiciaire — procédure n° ${t.proc}`],
+        return DOCS.forme({ title: "Certificat médical — unité médico-judiciaire", kind: "courrier", cote: cote("certificat"), schema: S.blessures.length ? S.blessures : null, entete: [`${TJ.umj} · AP-HP`, `Réquisition de l'officier de police judiciaire — procédure n° ${t.proc}`],
           blocs: [
             p(`Je soussigné${pk(rr, ["", "e"])}, Dr ${pk(rr, ["Élise Vannier", "Marc Dubreuil", "Nora Belhadj"])}, médecin légiste, certifie avoir examiné ${at(E.umj.examen)}, sur réquisition de ${OPJ.signe.toLowerCase().replace(OPJ.nom.toLowerCase(), OPJ.nom)} du ${DOCS.date(j(E.umj.req))}, une personne qui me dit s'appeler ${n(V)}, ${V.age} ans.`),
             titre("COMMÉMORATIFS"), p(`La personne déclare avoir été victime, le ${DOCS.date(jf)} vers ${hm(S.T0)}, de l'arrachage de ${objet} par un individu qui l'aurait ${S.dit.violence ? "entraîné" + e(V) + " au sol" : "surpris" + (V.g === "f" ? "e" : "") + " par derrière"}.`),
@@ -468,7 +468,7 @@
         add("certificat", E.umj.examen, "Certificat de l'UMJ", () => {
           const rr = CR.seeded(t.sig + ":g:umj");
           const les = S.blessures.length ? S.blessures : ["pas de lésion traumatique récente objectivée"];
-          return DOCS.forme({ title: "Certificat médical — unité médico-judiciaire", kind: "courrier", cote: cote("certificat"), entete: [`${TJ.umj} · AP-HP`, `Réquisition de l'officier de police judiciaire — procédure n° ${t.proc}`],
+          return DOCS.forme({ title: "Certificat médical — unité médico-judiciaire", kind: "courrier", cote: cote("certificat"), schema: S.blessures.length ? S.blessures : null, entete: [`${TJ.umj} · AP-HP`, `Réquisition de l'officier de police judiciaire — procédure n° ${t.proc}`],
             blocs: [
               p(`Je soussigné${pk(rr, ["", "e"])}, Dr ${pk(rr, ["Élise Vannier", "Marc Dubreuil", "Nora Belhadj"])}, médecin légiste, certifie avoir examiné ${at(E.umj.examen)}, sur réquisition du ${DOCS.date(j(E.umj.req))}, une personne qui me dit s'appeler ${n(V)}, ${V.age} ans.`),
               titre("COMMÉMORATIFS"), p(`La personne déclare avoir été victime de violences le ${DOCS.date(jf)}${/^violences_conj/.test(t.inf) ? ", de la part de son conjoint ou ancien conjoint" : ""}.`),

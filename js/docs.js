@@ -78,6 +78,7 @@
       entete: o.entete || [], paras, pstyle, sigs, feuillets: feuillet, signataires: o.signataires || null, mots: total, numerique: !!DOCS.numerique,
     };
     if (o.video) doc.video = o.video;
+    if (o.schema) doc.schema = o.schema; // lésions à porter sur le schéma corporel (certificats)
     return doc;
   };
 
@@ -118,7 +119,7 @@
 
   // ---------------------------------------------------------------- pièce courte de pure forme (réquisition, avis, billet, bordereau)
   DOCS.forme = function (o) {
-    return DOCS.composer({ title: o.title, kind: o.kind || "pv", trame: "forme", cote: o.cote, entete: o.entete, blocs: o.blocs, sigs: (o.sigs || []).map((qui) => (typeof qui === "string" ? { qui, t: "signé" } : qui)), st: o.st });
+    return DOCS.composer({ title: o.title, kind: o.kind || "pv", trame: "forme", cote: o.cote, entete: o.entete, blocs: o.blocs, sigs: (o.sigs || []).map((qui) => (typeof qui === "string" ? { qui, t: "signé" } : qui)), st: o.st, schema: o.schema, video: o.video });
   };
 
   // ---------------------------------------------------------------- mesures

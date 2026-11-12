@@ -10,7 +10,7 @@ const SP = __dirname;
   const name = process.argv[3] || "ui", script = process.argv[4] || "", wait = +(process.argv[5] || 1500);
   const browser = await chromium.launch({ executablePath: process.env.CHROME, args: ["--allow-file-access-from-files", "--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
   const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: process.env.DPR ? +process.env.DPR : 1, reducedMotion: process.env.RM ? "reduce" : "no-preference" });
-  const errs = []; page.on("pageerror", (e) => errs.push(String(e))); page.on("console", (m) => { if (m.type() === "error" && !/ERR_TUNNEL/.test(m.text())) errs.push(m.text()); });
+  const errs = []; page.on("pageerror", (e) => errs.push(String(e))); page.on("requestfailed", (r) => errs.push("introuvable : " + r.url().replace(/^.*\/preview\//, ""))); page.on("console", (m) => { if (m.type() === "error" && !/ERR_TUNNEL/.test(m.text())) errs.push(m.text()); });
   await page.goto("file://" + path.join(SP, "preview/index.html"));
   await page.waitForTimeout(500);
   await page.evaluate(async (script) => {
