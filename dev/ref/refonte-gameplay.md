@@ -425,6 +425,17 @@ Le délibéré par addition de poids est remplacé par un raisonnement, et le ju
 
 Le profil du magistrat (sévérité, formalisme, mémoire des audiences passées) pèse sur l'appréciation, plus sur un seuil.
 
+### La charge de la preuve
+
+Constat de Kevin du 12 novembre 2026, mesuré sur 2 000 affaires générées ([audit des mécaniques](https://claude.ai/artifact/WiS2saHnXPwYds9exGB9Ht)) : 36 à 50 % des affaires sont perdues d'avance, 1 à 4 % seulement ont des charges sous le seuil, et la meilleure défense ne gagne qu'une affaire sur cinq. Les pièces à charge s'additionnent d'office, le doute ne vient que du tirage, et la plaidoirie ne pèse pas sur la culpabilité. Le tribunal de la refonte suit quatre règles :
+
+- **Élément par élément.** L'élément matériel, l'imputation à la personne et l'élément moral sont prouvés chacun à part ; il suffit qu'un seul manque pour que le doute profite au prévenu.
+- **Des pièces qu'on discute.** La force d'une pièce dépend de sa fiabilité dans la simulation ; la défense l'entame par une contradiction relevée, un témoin mis en difficulté à la barre, une contre-expertise.
+- **Une plaidoirie qui compte.** Démontrer une lacune de preuve peut emporter la relaxe.
+- **Des dossiers fragiles en proportion réelle.** La part de relaxes est calée sur les statistiques du ministère de la Justice (à vérifier).
+
+Pas de correction provisoire du calcul actuel avant la refonte (décision de Kevin du 12 novembre 2026).
+
 ### Le jugement écrit
 
 Trame complète : composition, parties, rappel de la procédure et des faits, réponse à chaque moyen, motifs sur la culpabilité, motifs sur la peine, action civile, « Par ces motifs », voies de recours. Même exigence pour les ordonnances du juge des libertés, les arrêts et les décisions d'application des peines.
@@ -524,7 +535,7 @@ Douze lots, dans cet ordre, chacun jouable et testé avant le suivant. Le pilote
 - [ ] **2. Dossier de travail.** Sélection libre, marges, onglets, liens, chronologie, tableau des versions, plan de défense, irrégularité en quatre éléments.
 - [ ] **3. Entretien et audition.** Client modélisé, questions composées, oral qui s'efface, conseil sujet par sujet, audition intégrale.
 - [ ] **Pilote jugé par Kevin.**
-- [ ] **4. Audience et tribunal.** Gestes toujours disponibles, débats intégraux, réquisitoire, délibéré raisonné, peine choisie et motivée, jugement écrit complet.
+- [ ] **4. Audience et tribunal.** Gestes toujours disponibles, débats intégraux, réquisitoire, délibéré raisonné, charge de la preuve élément par élément, peine choisie et motivée, jugement écrit complet.
 - [ ] **5. Poste de travail.** Plateforme du barreau, canaux, actes du jugement et des recours, contradictoire.
 - [ ] **6. Sans guidage.** Fin des jauges et de l'onglet Actions, cabinet par objets, grille de compétences, débrief corrigé, mode assisté.
 - [ ] **6 bis. Économie du cabinet.** Convention d'honoraires et facturation, aide juridictionnelle, arrivée des clients, tableau des permanences, trésorerie et cotisations, carrière et équipe recalées.
