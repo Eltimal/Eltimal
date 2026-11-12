@@ -53,10 +53,24 @@
     const parquet = TJ.parquet;
     const docs = {}, titres = {}, ordre = [];
     // chaque pièce : sa minute (pour les cotes), son titre court, sa fonction de composition
-    const add = (key, m, court, fn) => { ordre.push({ key, m, court }); docs[key] = (x) => { const avant = DOCS.numerique, cadre0 = DOCS.cadre; DOCS.numerique = S.numerique; DOCS.cadre = S.prelim ? "ENQUÊTE PRÉLIMINAIRE" : null; try { return fn(x); } finally { DOCS.numerique = avant; DOCS.cadre = cadre0; } }; };
+    // pièces propres à la garde à vue : absentes d'une audition libre
+    const GAVK = ["pv_notification", "declaration_droits", "avis_parquet", "avis_famille", "avis_avocat", "requisition_medecin", "certificat_gav", "pv_prolongation", "pv_fin_gav"];
+    const add = (key, m, court, fn) => { if (!S.gav && GAVK.includes(key)) return; ordre.push({ key, m, court }); docs[key] = (x) => { const avant = DOCS.numerique, cadre0 = DOCS.cadre; DOCS.numerique = S.numerique; DOCS.cadre = S.prelim ? "ENQUÊTE PRÉLIMINAIRE" : null; try { return fn(x); } finally { DOCS.numerique = avant; DOCS.cadre = cadre0; } }; };
     // visas : flagrance (art. 53 et s.) ou enquête préliminaire (art. 75 et s.)
     const vis = (fl, pr) => (S.prelim ? pr : fl);
     const PL = S.prelim; // enquête préliminaire, garde à vue des jours après la plainte
+    const AL = !S.gav; // audition libre (art. 61-1)
+    // l'issue de la mesure : défèrement, convocation remise, citation, ordonnance pénale
+    const trib = t.jur === "tp" ? "tribunal de police" : "tribunal correctionnel";
+    const issueTxt = () => {
+      const lib = `${n(A)} est laissé${e(A)} libre`;
+      if (S.issue === "defere") return `Sur instruction du procureur de la République, ${n(A)} est conduit${e(A)} sous escorte au dépôt du ${TJ.tj} pour y être déféré${e(A)}.`;
+      if (S.issue === "op") return `Sur instruction du procureur de la République, ${lib} ; la procédure est transmise au parquet, qui envisage de requérir une ordonnance pénale (art. 495).`;
+      if (S.issue === "cppv") return `Sur instruction du procureur de la République, ${n(A)} est conduit${e(A)} devant lui pour se voir notifier une convocation par procès-verbal à comparaître devant le tribunal correctionnel (art. 394).`;
+      if (S.issue === "citation") return `Sur instruction du procureur de la République, ${lib} ; ${il(A)} sera cité${e(A)} à comparaître devant le ${trib} de ${TJ.ville}.`;
+      return `Sur instruction du procureur de la République, lui remettons une convocation à comparaître devant le ${trib} de ${TJ.ville}${t.d.audience != null ? `, le ${DOCS.date(t.d.audience)} à ${t.jur === "tp" ? "9 h 30" : "13 h 30"}` : ""} (art. 390-1), dont copie est jointe à la procédure, puis ${lib}.`;
+    };
+    const issueCourt = () => ({ defere: "l'intéressé" + e(A) + " étant déféré" + e(A), op: "en vue d'une ordonnance pénale", cppv: "l'intéressé" + e(A) + " étant conduit" + e(A) + " devant le procureur pour une convocation par procès-verbal", citation: "l'intéressé" + e(A) + " étant laissé" + e(A) + " libre dans l'attente d'une citation", copj: "l'intéressé" + e(A) + " ayant reçu une convocation par officier de police judiciaire" }[S.issue] || "");
     // ce que la victime ne peut pas encore dire : l'ITT fixée par l'UMJ après son audition
     const avantUMJ = !!(E.umj && E.umj.examen > E.victime);
     const sansITT = (x) => (avantUMJ ? String(x).replace(/\s*[^.«»!?]*\b(ITT|incapacité totale)\b[^.!?]*[.!?]?/g, "").replace(/Oui, à l'unité médico-judiciaire\.?/, "Pas encore, je dois y aller.").replace(/, puis l'UMJ\./, ".").trim() : x);
@@ -314,7 +328,7 @@
     }
 
     // ================================================================ D : audition de la personne gardée à vue (dossier de jugement)
-    if (t.genre === "ci") {
+    if (t.genre !== "gav") {
       if (S.arrachage) add("pv_audition", E.aud, "Audition en garde à vue", () => {
         const rr = CR.seeded(t.sig + ":d:aud");
         const N1 = (N.audition || [])[0];
@@ -372,7 +386,7 @@
           ligne("Repas proposés", E.repas.length ? E.repas.map((m) => hm(m)).join(", ") : "aucun pendant la mesure"),
           E.prolong || irr("prolongation") ? ligne("Prolongation", "autorisée par le procureur de la République (voir procès-verbal)") : null,
           ligne("Fouille intégrale", "non"),
-          p(`À ${hm(E.fin)}, mettons fin à la mesure de garde à vue. Sur instruction du procureur de la République, ${n(A)} est conduit${e(A)} sous escorte au dépôt du ${TJ.tj} pour y être déféré${e(A)}.`),
+          p(`À ${hm(E.fin)}, mettons fin à la mesure de garde à vue. ${issueTxt()}`),
           p("La personne émarge les mentions qui précèdent."),
         ], cloture: mention("Dont procès-verbal."), signataires: ["La personne gardée à vue", `${OPJ.signe}, officier de police judiciaire`], st: stO }));
       // synthèse et bordereau, composés quand les cotes sont connues
@@ -380,16 +394,16 @@
         const liste = ordre.filter((o) => !["pv_synthese", "bordereau"].includes(o.key));
         return DOCS.pv({ cote: cote("pv_synthese"), proc: t.proc, service, unite, titre: "Procès-verbal de synthèse", jour: j(E.synthese), heure: E.synthese, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
           blocs: [
-            titre("PRÉAMBULE"), p(PL ? `Le ${DOCS.date(j(E.plainte))}, ${V ? nf(V) + " dépose plainte" : "une plainte est déposée"} au ${commLong} pour des faits de ${q0.label}, commis le ${DOCS.date(jf)}. Une enquête préliminaire est ouverte. ${n(A)} est ${S.venue === "domicile" ? `interpellé${e(A)} à son domicile le ${DOCS.date(C.jg)} à ${hm(E.interp)}` : `entendu${e(A)} sur convocation le ${DOCS.date(C.jg)}`} et placé${e(A)} en garde à vue à compter de ${hm(C.debut)}.` : S.arrachage ? `Le ${DOCS.date(jf)}, à ${hm(E.requis)}, une patrouille est requise pour un vol avec violence commis ${lieu}. ${n(A)} est interpellé${e(A)} à ${hm(E.interp)} et placé${e(A)} en garde à vue.` : `Le ${DOCS.date(jf)}, ${n(A)} est interpellé${e(A)} à ${hm(E.interp)}${lieu ? ", " + lieu.replace(/, à hauteur.*$/, "") : ""}, et placé${e(A)} en garde à vue à compter de ${hm(C.debut)}.`),
-            titre("EXPOSÉ DES FAITS"), S.arrachage ? p(`${nf(V)} déclare s'être fait arracher ${objet} alors qu'${il(V)} marchait en téléphonant${S.dit.violence ? ", puis être tombé" + e(V) + " sur le trottoir" : ""}. ${ob.retrouve ? `L'objet est découvert sur ${n(A)} lors de la fouille.` : "L'objet n'est pas retrouvé."} ${n(A)} ${t.stance === "nie" ? "conteste les faits" : t.stance === "minimise" ? "reconnaît avoir eu l'objet en sa possession, sans reconnaître le vol" : "reconnaît les faits"}.`) : p(`${N.resume || ""} ${(S.constat || [])[0] || ""} ${n(A)} ${t.stance === "nie" ? "conteste les faits" : t.stance === "minimise" ? "minimise sa participation" : "reconnaît les faits"}.`.trim()),
+            titre("PRÉAMBULE"), p(PL ? `Le ${DOCS.date(j(E.plainte))}, ${V ? nf(V) + " dépose plainte" : "une plainte est déposée"} au ${commLong} pour des faits de ${q0.label}, commis le ${DOCS.date(jf)}. Une enquête préliminaire est ouverte. ${n(A)} est ${AL ? `entendu${e(A)} librement sur convocation le ${DOCS.date(j(E.aud))}` : `${S.venue === "domicile" ? `interpellé${e(A)} à son domicile le ${DOCS.date(C.jg)} à ${hm(E.interp)}` : `entendu${e(A)} sur convocation le ${DOCS.date(C.jg)}`} et placé${e(A)} en garde à vue à compter de ${hm(C.debut)}`}.` : S.arrachage ? `Le ${DOCS.date(jf)}, à ${hm(E.requis)}, une patrouille est requise pour un vol avec violence commis ${lieu}. ${n(A)} est interpellé${e(A)} à ${hm(E.interp)} et placé${e(A)} en garde à vue.` : `Le ${DOCS.date(jf)}, ${n(A)} est interpellé${e(A)} à ${hm(E.interp)}${lieu ? ", " + lieu.replace(/, à hauteur.*$/, "") : ""}, et ${AL ? `conduit${e(A)} au service, où ${il(A)} est entendu${e(A)} librement à ${hm(E.aud)}` : `placé${e(A)} en garde à vue à compter de ${hm(C.debut)}`}.`),
+            titre("EXPOSÉ DES FAITS"), S.arrachage ? p(`${nf(V)} déclare s'être fait arracher ${objet} alors qu'${il(V)} marchait en téléphonant${S.dit.violence ? ", puis être tombé" + e(V) + " sur le trottoir" : ""}. ${ob.retrouve ? `L'objet est découvert sur ${n(A)} lors de la fouille.` : "L'objet n'est pas retrouvé."} ${n(A)} ${t.stance === "nie" ? "conteste les faits" : t.stance === "minimise" ? "reconnaît avoir eu l'objet en sa possession, sans reconnaître le vol" : "reconnaît les faits"}.`) : p(`${N.resume || ""} ${(S.constat || [])[0] || ""} ${n(A)} ${t.stance === "nie" ? "conteste les faits" : t.stance === "minimise" ? "minimise sa participation" : "reconnaît les faits"}.`.replace(/ de des /g, " des ").replace(/ de de /g, " de ").replace(/ de les /g, " des ").trim()),
             titre("ENQUÊTE"), ...liste.map((o) => p(`${o.court} (pièce n° ${cotes[o.key]}).`)),
             titre("CLÔTURE"),
             p(`De l'enquête effectuée, il ressort qu'il existe des raisons plausibles de présumer que l'infraction suivante a été commise et peut être retenue : ${q0.label}, faits prévus et réprimés par ${q0.court}.`),
-            p(`En conséquence, nous faisons parvenir au procureur de la République la présente procédure, telle que le détail en figure au bordereau d'envoi${ob.retrouve ? ", le scellé ayant fait l'objet d'une restitution sur instruction" : ""}.`),
+            p(`En conséquence, nous faisons parvenir au procureur de la République la présente procédure, telle que le détail en figure au bordereau d'envoi${ob.retrouve ? ", le scellé ayant fait l'objet d'une restitution sur instruction" : ""}${S.issue && S.issue !== "defere" ? ", " + issueCourt() : ""}.`),
           ], cloture: mention("Dont procès-verbal."), st: stO });
       });
       add("bordereau", E.synthese + 10, "Bordereau d'envoi", () => DOCS.forme({ title: "Bordereau d'envoi de la procédure", kind: "greffe", cote: cote("bordereau"), entete: [unite, `À : ${parquet}`, `Procédure n° ${t.proc}`],
-        blocs: [...ordre.filter((o) => o.key !== "bordereau").map((o) => ligne(cotes[o.key], o.court)), mention(`Procédure transmise ${at(E.synthese + 10)}${S.numerique ? " par voie dématérialisée, procédure pénale numérique (art. 801-1)" : ", en original et copie"}, à l'issue de la garde à vue, l'intéressé${e(A)} étant déféré${e(A)}.`)], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));
+        blocs: [...ordre.filter((o) => o.key !== "bordereau").map((o) => ligne(cotes[o.key], o.court)), mention(`Procédure transmise ${at(E.synthese + 10)}${S.numerique ? " par voie dématérialisée, procédure pénale numérique (art. 801-1)" : ", en original et copie"}, ${AL ? "à l'issue de l'audition libre" : "à l'issue de la garde à vue"}, ${issueCourt()}.`)], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));
     }
 
     // ================================================================ autres délits de flagrance : trames génériques
@@ -399,7 +413,7 @@
       // accord avec l'objet saisi : « deux manettes … découvertes », « une trottinette … découverte »
       const acc = ((x) => (/^(une|la) |^(des|les|deux|trois|quatre|cinq|six|plusieurs|\d+) (manettes|bouteilles|barquettes|paires|montres|chaînes|bagues|cartes|caisses|tablettes|consoles|trottinettes)\b/.test(x) ? "e" : "") + (/^(des|les|deux|trois|quatre|cinq|six|plusieurs|\d+)\s/.test(x) ? "s" : ""))(saisieTxt);
       // interpellation
-      if (PL) add("pv_interpellation", E.interp, S.venue === "domicile" ? "Interpellation" : "Présentation sur convocation", () => {
+      if (PL && S.gav) add("pv_interpellation", E.interp, S.venue === "domicile" ? "Interpellation" : "Présentation sur convocation", () => {
         const rr = CR.seeded(t.sig + ":g:interp");
         const dom = S.venue === "domicile";
         const clos = E.presentation + int(rr, 10, 30);
@@ -424,7 +438,7 @@
           jour: j(clos), heure: dom ? clos : E.interp + int(rr, 3, 8), redacteur: dom ? apj(0) : OPJ, lieu: dom ? "Agissant en enquête préliminaire, en mission hors du service" : `Nous trouvant au ${commLong}`, objet: `OBJET : ${q0.label} — ${dom ? "interpellation au domicile" : "présentation sur convocation"}`,
           blocs, cloture: mention(`Dont procès-verbal, fait et clos au ${commLong} ${at(dom ? clos : E.interp + int(rr, 3, 8))}.`), signataires: dom ? [`${apj(0).signe}, agent de police judiciaire`, `${apj(1).signe}, agent de police judiciaire`] : [`${OPJ.signe}, officier de police judiciaire`, "La personne mise en cause"], st: dom ? stA : stO });
       });
-      else add("pv_interpellation", E.interp, "Interpellation", () => {
+      else if (!PL) add("pv_interpellation", E.interp, "Interpellation", () => {
         const rr = CR.seeded(t.sig + ":g:interp");
         const clos = E.presentation + int(rr, 15, 40);
         const blocs = [
@@ -553,26 +567,38 @@
           ], cloture: mention("Dont procès-verbal, que la personne chez qui la perquisition a eu lieu signe avec nous."), signataires: ["La personne chez qui la perquisition a eu lieu", `${OPJ.signe}, officier de police judiciaire`].concat(PL ? [{ qui: "Assentiment écrit de la personne (annexe)", t: irr("perq_assentiment") ? "" : "signé", flag: irr("perq_assentiment") ? "perq_assentiment" : undefined }] : []), st: stO });
       });
       // audition du gardé à vue (dossier de jugement)
-      if (t.genre === "ci") add("pv_audition", E.aud, "Audition en garde à vue", () => {
+      if (t.genre !== "gav") add("pv_audition", E.aud, AL ? "Audition libre" : "Audition en garde à vue", () => {
         const rr = CR.seeded(t.sig + ":g:aud");
         const nie = t.stance === "nie";
-        const blocs = [
+        const avAL = AL && ch(rr, 0.45); // en audition libre, l'avocat n'est là que si la personne l'a demandé
+        const blocs = AL ? [
+          p(PL ? `${n(A)} se présente librement au service, sur convocation ${S.convocation != null ? `du ${DOCS.date(j(S.convocation))}` : "téléphonique"}, à ${hm(E.interp)}.`
+            : `${n(A)}, interpellé${e(A)} à ${hm(E.interp)} et conduit${e(A)} au service, n'est pas placé${e(A)} en garde à vue (art. 73, al. 2).`),
+          irr("al_quitter") ? p({ t: "Avant toute audition, notifions à la personne la qualification, la date et le lieu présumés de l'infraction, le droit de faire des déclarations, de répondre aux questions ou de se taire, le droit d'être assistée par un avocat et de bénéficier de conseils juridiques gratuits.", flag: "al_quitter" })
+            : p("Avant toute audition, notifions à la personne la qualification, la date et le lieu présumés de l'infraction, le droit de quitter à tout moment les locaux où elle est entendue, d'être assistée par un interprète, de faire des déclarations, de répondre aux questions ou de se taire, d'être assistée par un avocat et de bénéficier de conseils juridiques gratuits (art. 61-1)."),
+          avAL ? p(`La personne demande l'assistance d'un avocat. ${av}, avisé, est présent ; l'audition commence à ${hm(E.aud)}.`) : p(`La personne déclare ne pas souhaiter l'assistance d'un avocat${ch(rr, 0.5) ? " pour le moment" : ""}.`),
+          titre("SUR LA PERSONNALITÉ"),
+        ] : [
           irr("sans_avocat") ? p({ t: `${av}, avocat commis d'office, avisé à ${hm(C.avisAv)}, ne s'étant pas présenté, procédons à l'audition.`, flag: "sans_avocat" }) : p(`En présence de ${av}, avocat, qui s'est entretenu avec la personne pendant trente minutes, de ${hm(E.aud - 35)} à ${hm(E.aud - 5)}.`),
           p("Rappelons à la personne qu'elle a le droit, après avoir décliné son identité, de faire des déclarations, de répondre aux questions qui lui sont posées ou de se taire."),
           titre("SUR LA PERSONNALITÉ"),
+        ];
+        blocs.push(
           q("Quelle est votre situation familiale ?"), rep(A.enfants ? `Je vis avec ${moi(A.proche) || "ma famille"}, j'ai ${A.enfants} enfant${A.enfants > 1 ? "s" : ""}.` : A.proche ? `Je vis avec ${moi(A.proche)}.` : "Je vis seul" + e(A) + "."),
           q("Où demeurez-vous ?"), rep(A.heberg ? `${A.adresse}. Depuis ${pk(rr, ["deux ans", "cinq ans", "toujours"])}.` : "Je n'ai pas d'adresse fixe en ce moment, je dors chez des amis."),
           q("Quelles sont vos ressources ?"), rep(A.emploi ? `Je suis ${A.metier}, je gagne environ ${CR.money(A.revenu || 1500)} par mois.` : "Je n'ai pas de travail en ce moment."),
           q("Avez-vous déjà été condamné(e) ?"), rep(A.casier ? (t.rec ? "Oui, pour des faits du même genre, il y a moins de cinq ans." : "Une fois, il y a longtemps.") : "Jamais."),
           titre("SUR LES FAITS"),
           ...(N.audition || []).map((a, i) => [q(a.q), rep({ t: a.a.expliquer, f: i === 0 && !nie ? "G_aveu" : undefined })]),
-          saisieTxt && has("saisie") ? [q(`Que pouvez-vous nous dire de ${saisieTxt.replace(/^(\d)/, "les $1")} ${/^de |^des /.test(saisieTxt) ? "découverts" : "découvert"} ?`.replace(/de des /, "des ").replace(/de de /, "de ")), rep(nie ? "Ce n'est pas à moi." : S.stups ? (t.quoi === "usage" ? "C'est pour ma consommation." : "C'est à moi.") : "Je l'avais sur moi, oui.")] : null,
+          saisieTxt && has("saisie") ? [q(`Que pouvez-vous nous dire de ${saisieTxt.replace(/^(\d)/, "les $1")} découvert${acc || (/^de |^des /.test(saisieTxt) ? "s" : "")} ?`.replace(/de des /, "des ").replace(/de de /, "de ")), rep(nie ? (acc.endsWith("s") ? "Ce n'est pas à moi, tout ça." : "Ce n'est pas à moi.") : S.stups ? (t.quoi === "usage" ? "C'est pour ma consommation." : "C'est à moi.") : acc.endsWith("s") ? "Je les avais sur moi, oui." : "Je l'avais sur moi, oui.")] : null,
           (N.qA || []).length && !nie ? [q(N.qA[0].q), rep(N.qA[0].a[0])] : null,
           q("Avez-vous quelque chose à ajouter ?"), rep(nie ? "Je n'ai rien fait." : pk(rr, ["Je regrette.", "Je ne recommencerai pas.", "Je veux m'excuser."])),
-          irr("sans_avocat") ? null : p(`${av} ${ch(rr, 0.5) ? "n'a pas de question à poser" : "demande que soit précisée l'heure à laquelle la personne a été conduite au service ; il est répondu par référence au procès-verbal d'interpellation"}.`),
-        ];
-        return DOCS.pv({ cote: cote("pv_audition"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition de la personne gardée à vue", qualite: "Personne gardée à vue", numPV: "00" + int(rr, 101, 899), jour: j(E.aud), heure: E.aud, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
-          identite: identite(A), blocs, cloture: DOCS.clotureAudition(ville, j(E.audFin), E.audFin, il(A) === "elle" ? "elle" : "lui"), signataires: ["La personne entendue", irr("sans_avocat") ? null : `${av}, avocat`, `${OPJ.signe}, officier de police judiciaire`].filter(Boolean), st: stO });
+          (AL ? !avAL : irr("sans_avocat")) ? null : p(`${av} ${ch(rr, 0.5) ? "n'a pas de question à poser" : AL ? "demande que soit précisé le moment où la personne a été informée de ses droits ; il est répondu par référence au présent procès-verbal" : "demande que soit précisée l'heure à laquelle la personne a été conduite au service ; il est répondu par référence au procès-verbal d'interpellation"}.`),
+          // en audition libre, la suite est donnée à la fin de l'audition (la garde à vue a son procès-verbal de fin)
+          AL && S.issue ? p(`À l'issue de l'audition, ${issueTxt().replace(/^Sur/, "sur")}`) : null,
+        );
+        return DOCS.pv({ cote: cote("pv_audition"), proc: t.proc, service, unite, titre: AL ? "Procès-verbal d'audition libre" : "Procès-verbal d'audition de la personne gardée à vue", qualite: AL ? "Personne entendue librement" : "Personne gardée à vue", numPV: "00" + int(rr, 101, 899), jour: j(E.aud), heure: E.aud, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
+          identite: identite(A), blocs, cloture: DOCS.clotureAudition(ville, j(E.audFin), E.audFin, il(A) === "elle" ? "elle" : "lui"), signataires: ["La personne entendue", (AL ? avAL : !irr("sans_avocat")) ? `${av}, avocat` : null, `${OPJ.signe}, officier de police judiciaire`].filter(Boolean), st: stO });
       });
     }
 

@@ -14,8 +14,12 @@
 
   // toute affaire de flagrance avec garde à vue, du point de vue du mis en cause ; l'arrachage a son récit détaillé
   // garde à vue (en flagrance ou au bout d'une enquête préliminaire), du point de vue du mis en cause
-  SIM.supporte = (t) => !!(t && t.f && t.mesure === "gav" && (t.genre === "ci" || t.genre === "gav") && t.client === "A" && t.A && !t.PM);
-  SIM.arrachage = (t) => !!(t && t.flagrance && t.inf === "vol" && t.f && t.f.sc === "arrachage" && t.V && !(t.f.agg || []).includes("reunion"));
+  // et, pour les convocations (COPJ, ordonnance pénale, dossier de la partie civile convoquée), garde à vue ou audition libre
+  SIM.supporte = (t) => !!(t && t.f && t.A && !t.PM && (
+    (t.mesure === "gav" && (t.genre === "ci" || t.genre === "gav") && t.client === "A")
+    || ((t.mesure === "gav" || t.mesure === "al") && (t.genre === "copj" || t.genre === "op") && t.client === "A")
+    || ((t.mesure === "gav" || t.mesure === "al") && t.genre === "pc" && t.d.voiePc !== "classe" && (t.client === "V" || t.client === "P"))));
+  SIM.arrachage = (t) => !!(t && t.flagrance && (t.genre === "ci" || t.genre === "gav") && t.inf === "vol" && t.f && t.f.sc === "arrachage" && t.V && !(t.f.agg || []).includes("reunion"));
 
   // Sous l'irrégularité « heures », la mesure prend effet bien après l'interpellation : les faits précèdent l'interpellation
   // (l'ancien générateur pouvait placer l'interpellation avant les faits).
@@ -46,6 +50,14 @@
     if (!SIM.supporte(t) || !t.flagrance) return; // en préliminaire, les faits et la garde à vue sont des jours différents
     const r = CR.seeded(t.sig + ":caler");
     const h = ((t.d.h % 1440) + 1440) % 1440;
+    // audition libre en flagrance : juste après l'interpellation
+    if (t.mesure === "al") {
+      // sans garde à vue, personne ne peut être retenu jusqu'au lendemain : l'audition suit l'interpellation, même tard
+      if (C.aud < h + 45 || C.aud > h + 240) { const du = C.audFin - C.aud; C.aud = h + int(r, 50, 110); C.audFin = C.aud + du; }
+      return;
+    }
+    // faits juste après minuit et interpellation avancée (« heures ») : toute la mesure glisse, pour suivre les faits
+    if (C.interp < 25) { const dec = 25 - C.interp + int(r, 5, 40); for (const x of ["debut", "interp", "notif", "avisPq", "avisAv", "aud", "audFin"]) if (C[x] != null) C[x] += dec; }
     if (C.interp - h < 6 || C.interp - h > 40) t.d.h = Math.max(0, C.interp - int(r, 8, 22));
   };
 
@@ -68,6 +80,10 @@
     const { N, C, A, V, T } = k;
     const has = k.has, irr = k.irr, dou = k.dou;
     const S = { t, jf: t.d.faits, proc: t.proc, imprevus: [], arrachage: SIM.arrachage(t), numerique: SIM.numerique(t, k.TJ) };
+    // garde à vue ou audition libre (art. 61-1) ; issue : défèrement, convocation remise (art. 390-1), convocation par
+    // procès-verbal (art. 394), citation, ordonnance pénale, ou garde à vue en cours
+    S.mesure = t.mesure; S.gav = t.mesure === "gav";
+    S.issue = t.genre === "ci" ? "defere" : t.genre === "gav" ? null : t.genre === "op" ? "op" : t.voie === "cppv" ? "cppv" : t.voie === "citation_parquet" ? "citation" : "copj";
     const T0 = ((t.d.h % 1440) + 1440) % 1440;
     S.T0 = T0; S.sec = int(r, 5, 55);
     // ---- les faits
@@ -165,33 +181,53 @@
     S.T0 = ((t.d.h % 1440) + 1440) % 1440;
     // enquête préliminaire : la plainte d'abord, l'enquête, puis la garde à vue des jours plus tard (C est daté du jour C.jg)
     S.prelim = !t.flagrance;
+    // garde à vue ou audition libre (art. 61-1) ; issue : défèrement, convocation remise (art. 390-1), convocation par
+    // procès-verbal (art. 394), citation, ordonnance pénale, ou garde à vue en cours
     const base = S.prelim ? (C.jg - S.jf) * 1440 : 0, c = (m) => m + base;
     S.base = base;
-    E.interp = c(C.interp);
+    if (S.gav) {
+      E.interp = c(C.interp);
+      E.debut = c(C.debut); E.notif = c(C.notif); E.avisPq = c(C.avisPq); E.avisAv = c(C.avisAv);
+    } else {
+      // audition libre : interpellé puis conduit au service (flagrance, art. 73), ou venu sur convocation (préliminaire)
+      E.aud = c(C.aud); E.audFin = c(C.audFin);
+      E.interp = S.prelim ? E.aud - int(r, 5, 20) : S.T0 + int(r, 8, 30);
+      if (!S.prelim && E.aud < E.interp + 35) { const du = E.audFin - E.aud; E.aud = E.interp + int(r, 40, 80); E.audFin = E.aud + du; }
+      E.debut = S.prelim ? E.interp : E.interp + int(r, 10, 25); E.notif = E.aud;
+    }
     E.requis = Math.max(S.T0, E.interp - int(r, 8, 18));
     E.surPlace = Math.min(E.interp - 1, E.requis + int(r, 3, 7));
     E.presentation = E.interp + int(r, 7, 14);
-    E.debut = c(C.debut); E.notif = c(C.notif); E.avisPq = c(C.avisPq); E.avisAv = c(C.avisAv);
+    if (!S.gav) E.presentation = Math.min(E.presentation, E.aud - 5);
     if (S.prelim) {
       // interpellé à son domicile au petit matin, ou présent au service sur convocation
       const h = ((C.interp % 1440) + 1440) % 1440;
-      S.venue = h < 7 * 60 + 30 || (h < 11 * 60 && CR.seeded(t.sig + ":venue")() < 0.45) ? "domicile" : "convocation";
+      S.venue = S.gav && (h < 7 * 60 + 30 || (h < 11 * 60 && CR.seeded(t.sig + ":venue")() < 0.45)) ? "domicile" : "convocation";
       E.presentation = S.venue === "domicile" ? E.interp + int(r, 25, 45) : E.interp;
       // la plainte : le jour dit par le tirage, aux heures du service, après les faits
       const jp = (t.d.plainte != null ? t.d.plainte : S.jf) - S.jf;
+      // bornes : après les faits ; la veille de la mesure au plus tard, sauf mesure le jour même
+      const lo = S.T0 + 45, hi = E.debut - 600 >= lo + 60 ? E.debut - 600 : E.debut - 30;
       let mp = bureau(r, jp);
-      if (mp < S.T0 + 45) mp = S.T0 + int(r, 60, 180);
-      if (((mp % 1440) + 1440) % 1440 > 21 * 60) mp = bureau(r, Math.floor(mp / 1440) + 1, 9 * 60, 11 * 60);
-      if (mp > E.debut - 600) mp = E.debut - 1440 * int(r, 2, 6);
+      if (mp < lo) mp = lo + int(r, 15, 135);
+      const hp = ((mp % 1440) + 1440) % 1440;
+      if (hp > 21 * 60) mp = bureau(r, Math.floor(mp / 1440) + 1, 9 * 60, 11 * 60);
+      else if (hp < 8 * 60) mp = bureau(r, Math.floor(mp / 1440), 9 * 60, 11 * 60);
+      if (mp > hi) mp = hi - 1440 * int(r, 2, 6);
+      if (mp < lo) mp = Math.min(hi, lo + int(r, 15, 60));
       E.plainte = mp;
-      // les actes d'enquête entre la plainte et la garde à vue (auditions, réquisitions, expertises)
+      // les actes d'enquête entre la plainte et la garde à vue (auditions, réquisitions, expertises) : aux heures du
+      // service les jours suivants, ou dans l'intervalle quand la mesure suit de près
       const j1 = Math.floor(mp / 1440) + 1, j2 = Math.max(j1, Math.floor(E.debut / 1440) - 1);
-      E.enquete = (i) => bureau(CR.seeded(t.sig + ":enq" + i), Math.min(j2, j1 + Math.floor(((j2 - j1) * (i + 1)) / 5)));
-      S.convocation = S.venue === "convocation" ? E.debut - 1440 * int(r, 1, 4) + int(r, -120, 120) : null;
+      E.enquete = j1 <= Math.floor(E.debut / 1440) - 1
+        ? (i) => bureau(CR.seeded(t.sig + ":enq" + i), Math.min(j2, j1 + Math.floor(((j2 - j1) * (i + 1)) / 5)))
+        : (i) => Math.round(mp + ((E.debut - mp) * (i + 1)) / 7);
+      S.convocation = S.venue === "convocation" ? E.debut - 1440 * int(r, 1, S.gav ? 4 : 12) + int(r, -120, 120) : null;
     }
     S.famille = { demande: ch(r, 0.6), qui: A.proche || "sa mère", carence: ch(r, 0.25) };
     S.famille.h = E.notif + int(r, 15, 95);
     S.medecin = { demande: ch(r, STUPS.includes(t.inf) || t.inf === "alcool" ? 0.5 : 0.3) };
+    if (!S.gav) { S.famille.demande = false; S.medecin.demande = false; } // droits de la garde à vue seulement
     if (S.medecin.demande) { S.medecin.req = E.notif + int(r, 5, 15); S.medecin.examen = S.medecin.req + int(r, 50, 170); if (S.medecin.examen - S.medecin.req > 150) S.imprevus.push({ k: "medecin_tard", txt: "Le médecin requis n'a pu se déplacer qu'au bout de plus de deux heures." }); }
     S.victime = !!(V && has("plainte"));
     E.victime = S.prelim ? E.plainte : E.debut + int(r, 35, 70); E.victimeFin = E.victime + int(r, 25, 50);
@@ -203,7 +239,7 @@
     S.perq = ["stups_detention", "stups_trafic", "recel", "cambriolage", "blanchiment", "abs"].includes(t.inf);
     if (S.perq) {
       if (irr("perq_nuit")) E.perq = base + 1440 + 5 * 60 + int(r, 20, 50);
-      else { let m = E.notif + int(r, 40, 120); const h = ((m % 1440) + 1440) % 1440; if (h < 6 * 60 + 5) m += 6 * 60 + int(r, 5, 50) - h; else if (h > 20 * 60 + 30) m += 1440 - h + 6 * 60 + int(r, 5, 50); E.perq = m; }
+      else { let m = (S.gav ? E.notif : E.audFin) + int(r, 40, 120); const h = ((m % 1440) + 1440) % 1440; if (h < 6 * 60 + 5) m += 6 * 60 + int(r, 5, 50) - h; else if (h > 20 * 60 + 30) m += 1440 - h + 6 * 60 + int(r, 5, 50); E.perq = m; }
       E.perqFin = E.perq + int(r, 40, 110);
 
     }
@@ -225,6 +261,19 @@
       if (E.perqFin && E.perqFin > E.fin - 30) E.fin = E.perqFin + int(r, 40, 90);
       E.synthese = E.fin + int(r, 8, 20);
       E.repas = [12 * 60 + 15, 19 * 60 + 10, 1440 + 7 * 60 + 30, 1440 + 12 * 60 + 15].map((m) => m + base).filter((m) => m > E.debut + 20 && m < E.fin);
+    } else if (t.genre !== "gav") {
+      // garde à vue levée ou audition libre, puis convocation, citation ou ordonnance pénale : la personne repart libre
+      if (S.gav) {
+        E.aud = c(C.aud); E.audFin = c(C.audFin);
+        E.prolong = false;
+        E.fin = irr("prolongation") ? E.debut + 1440 + int(r, 30, 120) : E.audFin + int(r, 40, 180);
+        if (E.perqFin && E.perqFin > E.fin - 30) E.fin = E.perqFin + int(r, 30, 80);
+        if (E.restitution && E.restitution > E.fin - 20) E.restitution = E.fin - int(r, 20, 60);
+        E.repas = [12 * 60 + 15, 19 * 60 + 10, 1440 + 7 * 60 + 30, 1440 + 12 * 60 + 15].map((m) => m + base).filter((m) => m > E.debut + 20 && m < E.fin);
+      } else E.fin = E.audFin;
+      E.remise = E.fin + int(r, 3, 12); // convocation remise, ou personne laissée libre
+      // la synthèse attend les derniers actes (certificat de l'UMJ, restitution, perquisition)
+      E.synthese = Math.max(E.remise, E.perqFin || 0, E.umj ? E.umj.examen : 0, E.restitution || 0, E.scelle || 0) + int(r, 30, 150);
     }
     S.E = E;
     S.auteurs = { apj: { nom: t.gpx[0], style: CR.DOCS.style(CR.seeded(t.sig + ":apj")) }, opj: { nom: k.opjN, style: CR.DOCS.style(CR.seeded(t.sig + ":opj")) } };

@@ -1,6 +1,7 @@
 // Refonte du gameplay, lot 1 : simulation de l'affaire et moteur de documents (sim.js, docs.js, trames-flagrance.js).
 // Sur toutes les affaires avec garde à vue (garde à vue en cours et comparution immédiate), en flagrance (dont l'arrachage) ou
-// au bout d'une enquête préliminaire (plainte, actes d'enquête, interpellation au domicile ou présentation sur convocation) : toutes les pièces se lisent, chacune
+// au bout d'une enquête préliminaire (plainte, actes d'enquête, interpellation au domicile ou présentation sur convocation),
+// et les dossiers de convocation (COPJ, ordonnance pénale, partie civile) : garde à vue levée ou audition libre (art. 61-1) : toutes les pièces se lisent, chacune
 // sous 2 000 mots, dans leur trame ; cotes dans l'ordre des actes ; mêmes faits, irrégularités et anomalies que les
 // anciennes pièces ; chronologie de la garde à vue cohérente ; tenue, objet et témoin cohérents d'une pièce à l'autre ;
 // déterminisme. node tests/tsim.js [n] ; « échecs: 0 » attendu.
@@ -15,10 +16,12 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40 || process.env.VOIR) co
   const marques = (r) => { const m = new Set(); for (const g of segsDe(r)) { if (g.f) m.add("f:" + g.f); if (g.flag) m.add("flag:" + g.flag); if (g.paire) m.add("paire:" + g.paire); } return m; };
   const s = CR.newGame({ prenom: "A", nom: "B", mode: "carriere", seed: 3 }); CR.store.s = s;
   const rendre = (PZ, k, t) => PZ.docs[k]({ s, cs: { vars: {}, proc: { faitsDay: t.d.faits }, enq: {} }, def: {}, c: t.A, api: {} });
-  let vus = { ci: 0, gav: 0 }, mots = [], pieces = 0, nArr = 0, nNum = 0, nPap = 0, nSchema = 0, nPil = 0, nPre = 0, nDom = 0; const familles = {};
-  for (let i = 0; i < 6000 && (vus.ci < N0 || vus.gav < N0 / 2); i++) for (const genre of ["ci", "gav"]) {
-    if (vus[genre] >= (genre === "ci" ? N0 : N0 / 2)) continue;
-    const t = G.tirer("tsim" + i, genre, { day: i % 2 ? 30 : 12, inf: i % 3 === 0 ? "vol" : i % 3 === 1 ? "violences" : undefined });
+  // nombre d'affaires par genre : comparution immédiate, garde à vue en cours, convocation par OPJ, ordonnance pénale, partie civile
+  const QUOTA = { ci: N0, gav: N0 / 2, copj: N0 / 2, op: N0 / 3, pc: N0 / 3 };
+  let vus = { ci: 0, gav: 0, copj: 0, op: 0, pc: 0 }, nAL = 0, issues = {}, mots = [], pieces = 0, nArr = 0, nNum = 0, nPap = 0, nSchema = 0, nPil = 0, nPre = 0, nDom = 0; const familles = {};
+  for (let i = 0; i < 6000 && Object.keys(QUOTA).some((g) => vus[g] < QUOTA[g]); i++) for (const genre of Object.keys(QUOTA)) {
+    if (vus[genre] >= QUOTA[genre]) continue;
+    let t; try { t = G.tirer("tsim" + i, genre, { day: i % 2 ? 30 : 12, inf: i % 3 === 0 ? "vol" : i % 3 === 1 ? "violences" : undefined }); } catch (e) { continue; }
     if (!t || !SIM.supporte(t)) continue;
     vus[genre]++; familles[t.inf] = (familles[t.inf] || 0) + 1;
     // les anciennes pièces (simulation coupée), puis les nouvelles
@@ -66,29 +69,53 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40 || process.env.VOIR) co
       // enquête préliminaire : plainte aux heures du service, après les faits ; actes d'enquête entre la plainte et la garde à vue
       nPre++; if (SS.venue === "domicile") nDom++;
       const hP = ((E.plainte % 1440) + 1440) % 1440;
-      ok(E.plainte >= SS.T0 + 45 && E.plainte <= E.debut - 600 && hP >= 9 * 60 && hP <= 21 * 60, `${tag} : plainte à ${E.plainte} (faits ${SS.T0}, garde à vue ${E.debut})`);
+      ok(E.plainte >= SS.T0 + 45 && E.plainte <= E.debut - 30 && (E.debut - SS.T0 < 2880 || (hP >= 8 * 60 && hP <= 21 * 60)), `${tag} : plainte à ${E.plainte} (faits ${SS.T0}, mesure ${E.debut})`);
       for (let i = 0; i < 4; i++) ok(E.enquete(i) > E.plainte && E.enquete(i) < E.debut, `${tag} : acte d'enquête ${i} hors de l'enquête`);
-      ok(E.debut >= E.interp && E.interp - SS.base === C.interp, `${tag} : la mesure commence avant l'interpellation`);
+      ok(E.debut >= E.interp && (!SS.gav || E.interp - SS.base === C.interp), `${tag} : la mesure commence avant l'interpellation`);
       ok(SS.venue === "convocation" || ((E.interp % 1440) >= 6 * 60), `${tag} : interpellation au domicile avant 6 heures`);
       for (const k of Object.keys(PZ.docs)) { const r = rendre(PZ, k, t); if (r.bandeau) ok(r.bandeau.cadre === "ENQUÊTE PRÉLIMINAIRE", `${tag}/${k} : cadre ${r.bandeau.cadre}`); }
       ok(/plainte/i.test(PZ.titres.pv_victime || "plainte"), `${tag} : la victime n'est pas reçue en plainte`);
       if (PZ.docs.pv_saisie) ok(/assentiment/.test(DOCS.texte(rendre(PZ, "pv_saisie", t))), `${tag} : perquisition sans assentiment`);
       // l'ordre des cotes suit les jours : la plainte d'abord
-      if (PZ.cotes.pv_victime) ok(+PZ.cotes.pv_victime.slice(1) < +PZ.cotes.pv_notification.slice(1), `${tag} : la plainte après la garde à vue`);
+      if (PZ.cotes.pv_victime) ok(+PZ.cotes.pv_victime.slice(1) < +PZ.cotes[SS.gav ? "pv_notification" : "pv_audition"].slice(1), `${tag} : la plainte après la garde à vue`);
     } else {
       ok(E.interp >= SS.T0 + 5 && E.interp <= SS.T0 + 45, `${tag} : interpellation ${E.interp - SS.T0} min après les faits`);
       ok(E.surPlace > E.requis && E.surPlace < E.interp, `${tag} : arrivée de la patrouille`);
-      ok(C.debut >= E.interp, `${tag} : la mesure commence avant l'interpellation`);
+      ok(E.debut >= E.interp, `${tag} : la mesure commence avant l'interpellation`);
+    }
+    // garde à vue ou audition libre ; issue de la mesure
+    if (!SS.gav) {
+      nAL++;
+      for (const k of ["pv_notification", "declaration_droits", "avis_parquet", "avis_avocat", "pv_fin_gav", "pv_prolongation", "certificat_gav"]) ok(!PZ.docs[k], `${tag} : ${k} dans une audition libre`);
+      const au = DOCS.texte(rendre(PZ, "pv_audition", t));
+      ok(/audition libre/i.test(PZ.titres.pv_audition) && /61-1|quitter|conseils juridiques/.test(au), `${tag} : audition libre sans ses droits`);
+      ok(t.irr.includes("al_quitter") !== /droit de quitter/.test(au), `${tag} : droit de quitter les locaux (al_quitter)`);
+      ok(E.aud > E.interp && E.audFin > E.aud, `${tag} : audition libre avant l'arrivée`);
+      if (!SS.prelim) ok(E.aud >= E.presentation, `${tag} : audition libre avant la présentation à l'OPJ`);
+    } else ok(PZ.docs.pv_notification, `${tag} : garde à vue sans notification`);
+    // (les violences du pilote ont leur propre fin : le procès-verbal de comparution devant le procureur)
+    if (SS.issue && !(SIM.violencesOK && SIM.violencesOK(t))) {
+      issues[SS.issue] = (issues[SS.issue] || 0) + 1;
+      const fin = DOCS.texte(rendre(PZ, SS.gav ? "pv_fin_gav" : "pv_audition", t));
+      const re = { defere: /déféré/, copj: /390-1/, cppv: /394/, citation: /sera cité/, op: /ordonnance pénale/ }[SS.issue];
+      ok(re.test(fin), `${tag} : issue « ${SS.issue} » absente de la fin de la mesure`);
+      if (SS.issue === "copj" && t.d.audience != null) ok(fin.includes(DOCS.date(t.d.audience)), `${tag} : date d'audience de la convocation`);
+      ok(E.synthese >= (E.fin || E.audFin), `${tag} : synthèse avant la fin de la mesure`);
     }
     ok(!SS.famille.demande || SS.famille.h - E.notif <= 180, `${tag} : avis à la famille après trois heures`);
     if (genre === "ci") {
       ok(E.aud > E.avisAv && E.fin > E.audFin && E.synthese > E.fin, `${tag} : ordre audition, fin, synthèse`);
       ok(!!PZ.docs.pv_prolongation === (E.fin > E.debut + 1440 || t.irr.includes("prolongation")), `${tag} : prolongation`);
       for (const k of ["pv_audition", "pv_fin_gav", "pv_synthese", "bordereau"]) ok(PZ.docs[k], `${tag} : ${k} absent`);
-    } else for (const k of ["pv_audition", "pv_fin_gav", "pv_synthese"]) ok(!PZ.docs[k], `${tag} : ${k} dans une garde à vue en cours`);
+    } else if (genre === "gav") for (const k of ["pv_audition", "pv_fin_gav", "pv_synthese"]) ok(!PZ.docs[k], `${tag} : ${k} dans une garde à vue en cours`);
+    else {
+      for (const k of ["pv_audition", "pv_synthese", "bordereau"]) ok(PZ.docs[k], `${tag} : ${k} absent`);
+      if (SS.gav) { ok(E.aud > E.avisAv && E.fin > E.audFin, `${tag} : ordre audition, fin`); ok(PZ.docs.pv_fin_gav, `${tag} : pv_fin_gav absent`); }
+      ok(!/déféré/.test(DOCS.texte(rendre(PZ, "bordereau", t))), `${tag} : bordereau d'un défèrement`);
+    }
     if (!SS.arrachage) {
       // les heures des constatations suivent la chronologie ; la saisie n'est pas découverte deux fois
-      const interpG = DOCS.texte(rendre(PZ, "pv_interpellation", t));
+      const interpG = PZ.docs.pv_interpellation ? DOCS.texte(rendre(PZ, "pv_interpellation", t)) : "";
       ok(!interpG.includes("undefined"), `${tag} : interpellation`);
       if (PZ.docs.pv_saisie && SS.stups && SS.constatDecouvre) ok(!(DOCS.texte(rendre(PZ, "pv_saisie", t)).includes(t.f && N.saisie ? "Découvrons " + N.saisie : "§")), `${tag} : saisie découverte deux fois`);
       if (PZ.docs.pv_saisie) { const h = ((E.perq % 1440) + 1440) % 1440; ok(t.irr.includes("perq_nuit") === (h < 6 * 60), `${tag} : perquisition à ${h} min`); }
@@ -135,6 +162,8 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40 || process.env.VOIR) co
     }
   }
   mots.sort((a, b) => a - b);
+  console.log(`convocations : ${vus.copj} convocations par OPJ, ${vus.op} ordonnances pénales, ${vus.pc} dossiers de partie civile ; ${nAL} auditions libres ; issues ${JSON.stringify(issues)}`);
+  ok(nAL > 0 && issues.copj > 0 && issues.op > 0 && issues.defere > 0, "issues de la mesure : défèrement, convocation et ordonnance pénale attendus");
   console.log(`affaires : ${vus.ci} comparutions immédiates, ${vus.gav} gardes à vue (dont ${nArr} arrachages) ; ${pieces} pièces ; dossier médian ${mots[mots.length >> 1]} mots (min ${mots[0]}, max ${mots[mots.length - 1]})`);
   console.log(`violences au dossier détaillé du pilote : ${nPil} ; enquêtes préliminaires : ${nPre} (dont ${nDom} interpellations au domicile)`);
   ok(nPre > 0 && nDom > 0 && nDom < nPre, "enquêtes préliminaires : interpellation au domicile et présentation sur convocation attendues");
