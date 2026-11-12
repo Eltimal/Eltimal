@@ -6,6 +6,7 @@
 - Consigne de la 1.0 (à relire en reprenant) : https://claude.ai/artifact/5vYcLYtXT1YejTvRmmXuCx
 - Document de conception et feuille de route (cases à cocher) : https://claude.ai/artifact/CuxLGVpCzBWHchG3qY1daX — section « Feuille de route », juste avant « Sources »
 - Langue du jeu et des échanges : français.
+- Audit des mécaniques de jeu (12 novembre 2026 : inventaire chiffré du code, ce qui est prévu, dix pistes non prévues, priorités) : https://claude.ai/artifact/WiS2saHnXPwYds9exGB9Ht
 
 ## Refonte graphique façon Backbone (novembre 2026) : où on en est
 
