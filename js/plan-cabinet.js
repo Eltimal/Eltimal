@@ -101,6 +101,8 @@
       const stat = new G.Mat(W, H), work = new G.Mat(W, H), OX = Math.floor((W - REF) / 2);
       stat.ox = work.ox = OX;
       decor(stat, W);
+      const vie = { min: 600 }, monde = { sansSol: true, x0: 150, x1: 330, sol: 110, perches: [{ id: "appui", x: 226, y: 104 }, { id: "bureau", x: 316, y: 123 }], heure: () => (vie.min % 1440) / 60, pluie: false };
+      let chat = null, tPrec = -1;
       const drops = []; for (let i = 0; i < 26; i++) drops.push({ x: 172 + Math.floor(h01(i * 4.4) * 76), y: h01(i * 2.9) * 72, v: 30 + h01(i * 8.2) * 40 });
       const roofs = []; { let x = 170; while (x < 252) { const w = 9 + Math.floor(h01(x * 1.3) * 12); roofs.push({ x, w, top: 80 + Math.floor(h01(x * 2.7) * 9) }); x += w; } }
       return {
@@ -138,6 +140,14 @@
           m.set({ S: 0, D: 194 });
           for (const [x0, dir] of [[156, 1], [252, -1]]) for (let y = 15; y < 106; y++) for (let x = 0; x < 13; x++) { const f = Math.sin((x + (dir > 0 ? 0 : 3)) * 1.25); m.nx = Math.round(f * 0.6 * 127 + 128); m.px(x0 + x, y, f > 0.3 ? "#8d2630" : f < -0.4 ? "#5c151d" : "#761c26"); }
           m.nx = 128; m.set({ S: 100 }); m.r(152, 13, 116, 2, "#b08a3c");
+          // Timon passe ses journées au cabinet : sur l'appui de la fenêtre ou au coin du bureau (timon.js)
+          const T = CR.timon;
+          if (T) {
+            vie.min = o.min == null ? 600 : o.min; monde.pluie = !!o.rain;
+            if (!chat) { chat = T.create(monde); tPrec = t; }
+            if (!still) { const dt = Math.min(0.1, Math.max(0, t - tPrec)); tPrec = t; try { T.update(chat, dt, monde, {}); } catch (e) { /* le chat boude */ } }
+            if (chat.on === "appui" && chat.st !== "saut") { m.set({ E: 0, S: 0, n: [0, 0], D: 190 }); m.G = 150; try { T.draw(m, chat, 40); } catch (e) { /* le chat boude */ } m.G = 0; }
+          }
           // l'écran : la messagerie
           const un = o.unread || 0;
           m.set({ E: 150, n: [0, 0], S: 0, D: 101 }); m.r(113, 74, 56, 31, "#b4bccb"); m.r(113, 74, 56, 5, "#1f3566"); m.r(113, 79, 14, 26, "#8f9bb2");
@@ -164,6 +174,7 @@
           m.r(186, 131, 10, 2, "#b33a32"); m.vl(196, 130, 19, "#b33a32");
           // vapeur du café
           if (!still) { m.set({ E: 0, S: 0, D: 68 }); for (let i = 0; i < 5; i++) { const p = (t * 0.35 + i * 0.2) % 1; m.px(236 + Math.round(Math.sin(p * 7 + i) * 2), 126 - Math.round(p * 12), [240, 240, 240], 0.3 * (1 - p)); } }
+          if (T && chat && !(chat.on === "appui" && chat.st !== "saut")) { m.set({ E: 0, S: 0, n: [0, 0], D: 96 }); try { T.draw(m, chat, 40); } catch (e) { /* le chat boude */ } }
           // objet survolé : coins dorés
           const hv = o.hover && HOT.find((h) => h.id === o.hover);
           if (hv) { m.set({ E: 255, S: 0 }); const c = "#ffd27a", a = hv.x - 2, b = hv.y - 2, c2 = hv.x + hv.w + 1, d2 = hv.y + hv.h + 1; for (const [x, y, sx, sy] of [[a, b, 1, 1], [c2, b, -1, 1], [a, d2, 1, -1], [c2, d2, -1, -1]]) { m.hl(sx > 0 ? x : x - 5, y, 6, c); m.vl(x, sy > 0 ? y : y - 5, 6, c); } }

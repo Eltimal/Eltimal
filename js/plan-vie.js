@@ -54,6 +54,9 @@
       const stat = new G.Mat(W, H), work = new G.Mat(W, H), OX = Math.floor((W - REF) / 2);
       stat.ox = work.ox = OX; salon(stat, W);
       const drops = K.gouttes(26, 88, 80, 3), roofs = K.toits(44, 132, 78, 5);
+      // Timon vit ici aussi : canapé, appui de fenêtre, tapis (timon.js)
+      const T = CR.timon, vie = { min: 1290, rain: false }, monde = { x0: 64, x1: 318, sol: 134, perches: [{ id: "chaise", x: 232, y: 117, app: 204 }, { id: "appui", x: 90, y: 104, app: 104 }], heure: () => (vie.min % 1440) / 60, pluie: false };
+      let chat = null, tPrec = -1;
       return {
         W, H, mat: work,
         frame(t, o) {
@@ -63,9 +66,14 @@
           m.set({ S: 0, D: 184 }); for (const [x0, dir] of [[26, 1], [132, -1]]) for (let y = 12; y < 110; y++) for (let x = 0; x < 16; x++) { const f = Math.sin((x + (dir > 0 ? 0 : 3)) * 1.1); m.nx = Math.round(f * 0.6 * 127 + 128); m.px(x0 + x, y, f > 0.3 ? "#d9b55a" : f < -0.4 ? "#a8862f" : "#c39c44"); }
           m.nx = 128; m.set({ S: 100 }); m.r(22, 10, 130, 2, "#2c3038");
           K.clockHands(m, 268, 34, o.min == null ? 1290 : o.min, t, still);
-          // Timon dort sur le canapé
-          const T = CR.timon;
-          if (T) { m.set({ E: 0, S: 0, D: 136, n: [0, 0] }); try { T.render(m, 232, 117, -1, "loaf", { head: { eyes: !still && Math.floor(t * 0.13) % 5 === 4 ? "happy" : "closed" }, breath: still ? 0 : Math.sin(t * 1.6) }, t, 40); } catch (e) { /* le chat boude */ } }
+          // Timon : il vit sa vie (au repos en animations réduites)
+          if (T) {
+            vie.min = o.min == null ? 1290 : o.min; monde.pluie = !!o.rain;
+            if (!chat) { chat = T.create(monde); tPrec = t; }
+            if (!still) { const dt = Math.min(0.1, Math.max(0, t - tPrec)); tPrec = t; try { T.update(chat, dt, monde, {}); } catch (e) { /* le chat boude */ } }
+            m.set({ E: 0, S: 0, n: [0, 0], D: chat.on === "appui" ? 186 : chat.on === "chaise" ? 136 : 126 }); m.G = chat.on === "appui" && chat.st !== "saut" ? 150 : 0;
+            try { T.draw(m, chat, 40); } catch (e) { /* le chat boude */ } m.G = 0;
+          }
           // lampadaire : abat-jour
           m.set({ E: lampOn ? 140 : 0, S: 20, D: 150 }); for (let y = 38; y < 54; y++) { const half = 6 + Math.round((y - 38) * 0.5); m.set({ n: [0, -0.4] }); m.hl(332 - half, y, half * 2 + 1, y === 38 ? "#fbe9c4" : "#e9c98a"); } m.set({ n: [0, 0] });
           if (lampOn) { m.set({ E: 255, S: 0 }); m.hl(321, 54, 23, "#fff0c0"); }

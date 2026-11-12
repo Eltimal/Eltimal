@@ -12,7 +12,7 @@ const SP = __dirname, ROOT = path.resolve(__dirname, "..", ".."), NMD = path.joi
     .replace(/"js\//g, `"file://${ROOT}/js/`);
   html = "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:0'>" + html + "</body></html>";
   fs.mkdirSync(path.join(SP, "preview"), { recursive: true }); fs.writeFileSync(path.join(SP, "preview/index.html"), html);
-  const browser = await chromium.launch({ executablePath: process.env.CHROME || "/opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell", args: ["--allow-file-access-from-files"] });
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || "/opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell", args: ["--allow-file-access-from-files", "--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
   const sizes = (process.argv[2] || "1440x900,390x844").split(",");
   for (const sz of sizes) {
     const [w, h] = sz.split("x").map(Number);
@@ -20,9 +20,11 @@ const SP = __dirname, ROOT = path.resolve(__dirname, "..", ".."), NMD = path.joi
     const errs = [];
     page.on("pageerror", (e) => errs.push(String(e)));
     page.on("console", (m) => { if (m.type() === "error") errs.push(m.text()); });
+    if (process.env.HEURE) await page.clock.install({ time: new Date(process.env.HEURE) });
     await page.goto("file://" + path.join(SP, "preview/index.html"));
-    await page.waitForTimeout(+(process.argv[3] || 2500));
-    await page.screenshot({ path: path.join(SP, "out", `title_${w}x${h}.png`) });
+    if (process.env.HEURE) await page.clock.runFor(+(process.argv[3] || 2500)); else await page.waitForTimeout(+(process.argv[3] || 2500));
+    if (process.env.SCRIPT) { await page.evaluate(process.env.SCRIPT); if (process.env.HEURE) await page.clock.runFor(+(process.env.APRES || 1500)); else await page.waitForTimeout(+(process.env.APRES || 1500)); }
+    await page.screenshot({ path: path.join(SP, "out", `title_${w}x${h}${process.env.NOM ? "_" + process.env.NOM : ""}.png`) });
     console.log(sz, "errors:", errs.slice(0, 5).join(" | ") || "none");
     await page.close();
   }

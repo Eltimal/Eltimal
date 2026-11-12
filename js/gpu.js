@@ -26,7 +26,7 @@
   function Mat(W, H) {
     this.W = W; this.H = H;
     this.c = new Uint8Array(W * H * 4); this.a = new Uint8Array(W * H * 4);
-    this.E = 0; this.nx = 128; this.ny = 128; this.S = 0; this.D = 128; this.ox = 0;
+    this.E = 0; this.nx = 128; this.ny = 128; this.S = 0; this.D = 128; this.ox = 0; this.G = 0;
   }
   const M = Mat.prototype, B = PL.Buf.prototype;
   M.set = function (o) {
@@ -43,6 +43,7 @@
     x = (x | 0) + this.ox; y |= 0;
     if (x < 0 || y < 0 || x >= this.W || y >= this.H) return;
     const j = (y * this.W + x) * 4, c = typeof col === "string" ? PL.rgb(col) : col, C = this.c, A = this.a;
+    if (this.G && A[j + 3] < this.G) return; // garde : ne pas peindre par-dessus ce qui est plus près que G
     if (al == null || al >= 1) { C[j] = c[0]; C[j + 1] = c[1]; C[j + 2] = c[2]; C[j + 3] = this.E; A[j] = this.nx; A[j + 1] = this.ny; A[j + 2] = this.S; A[j + 3] = this.D; }
     else { const b = 1 - al; C[j] = C[j] * b + c[0] * al; C[j + 1] = C[j + 1] * b + c[1] * al; C[j + 2] = C[j + 2] * b + c[2] * al; C[j + 3] = C[j + 3] * b + this.E * al; }
   };

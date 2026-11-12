@@ -1578,6 +1578,13 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .hub-plan select, .hub-plan input[type="text"], .hub-plan input[type="search"], .hub-plan textarea, .modal select, .modal input[type="text"], .modal textarea { background: rgba(0,0,0,.35); border: 0; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(176,198,236,.24); }
 .hub-plan select:focus, .hub-plan input:focus, .hub-plan textarea:focus, .modal select:focus, .modal input:focus, .modal textarea:focus { outline: 0; box-shadow: inset 0 0 0 1px var(--amber); }
 .carnet select, .carnet input, .carnet textarea, .paper input, .paper select, .paper textarea, .nform select, .nform input, .nform textarea { background: #fff; box-shadow: none; border: 1px solid #c9c4dc; }
+
+/* ---------- Refonte : l'écran d'accueil dans le nouveau moteur ---------- */
+.acc-canvas.acc-gpu { image-rendering: auto; animation: none; }
+.ts:has(.acc-gpu) .ts-ui::before { inset: 0 auto 0 0; width: min(46vw, 640px); height: auto; background: linear-gradient(90deg, rgba(4,6,14,.82), rgba(4,6,14,.55) 62%, rgba(4,6,14,0)); }
+.ts:has(.acc-gpu) .ts-btn:not(.ts-primary) { background: rgba(10,14,26,.72); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); box-shadow: inset 0 0 0 1px rgba(176,198,236,.28), inset 3px 0 0 rgba(176,198,236,.4); }
+.ts:has(.acc-gpu) .ts-btn:not(.ts-primary):hover, .ts:has(.acc-gpu) .ts-btn:not(.ts-primary):focus-visible { background: rgba(232,170,60,.16); box-shadow: inset 0 0 0 1px var(--amber), inset 3px 0 0 var(--amber); }
+.ts:has(.acc-gpu) .acc-jeux { background: rgba(9,12,19,.76); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: inset 0 0 0 1px rgba(176,198,236,.18); border: 0; }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
@@ -1662,6 +1669,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/decor-lit3.js"></script>
 <script src="js/timon.js"></script>
 <script src="js/accueil.js"></script>
+<script src="js/plan-accueil.js"></script>
 <script src="js/decor-gens.js"></script>
 <script src="js/decor-salles.js"></script>
 <script src="js/ui-desk.js"></script>

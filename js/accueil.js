@@ -351,7 +351,7 @@
     S.present = (ctx) => R.present(ctx, W * sc, H * sc);
     return S;
   }
-  CR.accueil = { Scene, question };
+  CR.accueil = { Scene, question, ville, phaseOf, seasonOf, mem }; // ville, phaseOf, seasonOf, mem : repris par plan-accueil.js
 
   // ------------------------------------------------------------------ composant (remplace UI.TitleArt de title.js)
   UI.TitleArt = () => {
