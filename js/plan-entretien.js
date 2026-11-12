@@ -91,7 +91,8 @@
 
   // l'avocat, de dos, au premier plan
   function avocat(m, you) {
-    const hair = HAIR[(you && you.hc) || "dkbrown"] || HAIR.dkbrown, long = you && you.g === "f";
+    const hair = PL.hexOf(PL.mix(PL.rgb(HAIR[(you && you.hc) || "dkbrown"] || HAIR.dkbrown), [18, 16, 20], 0.64)), // à contre-jour : la couleur s'assombrit
+       long = you && you.g === "f";
     m.set({ E: 0, S: 0, D: 12 });
     // épaules : manteau sombre, col relevé, liseré de chemise
     for (let y = 158; y < 225; y++) {

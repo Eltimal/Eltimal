@@ -1,3 +1,4 @@
+// (RM=1 : animations réduites)
 // Capture de l'interface en cours de partie : node tools/shotui.js <LxH> <nom> '<script>' [attente ms]
 // Le script s'exécute dans la page après création d'une partie (variables : CR, s, click(texte), rail(nom)).
 // ex. node tools/shotui.js 1440x900 dossiers 'rail("Dossiers")'
@@ -8,7 +9,7 @@ const SP = __dirname;
   const [w, h] = (process.argv[2] || "1440x900").split("x").map(Number);
   const name = process.argv[3] || "ui", script = process.argv[4] || "", wait = +(process.argv[5] || 1500);
   const browser = await chromium.launch({ executablePath: process.env.CHROME, args: ["--allow-file-access-from-files", "--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
-  const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: process.env.DPR ? +process.env.DPR : 1 });
+  const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: process.env.DPR ? +process.env.DPR : 1, reducedMotion: process.env.RM ? "reduce" : "no-preference" });
   const errs = []; page.on("pageerror", (e) => errs.push(String(e))); page.on("console", (m) => { if (m.type() === "error" && !/ERR_TUNNEL/.test(m.text())) errs.push(m.text()); });
   await page.goto("file://" + path.join(SP, "preview/index.html"));
   await page.waitForTimeout(500);

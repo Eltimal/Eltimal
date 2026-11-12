@@ -85,7 +85,8 @@
   };
   // personnage de dos au premier plan : tête (centre cx, haut top), épaules jusqu'en bas ; o = { hc, g, coat, skin, D, H }
   K.back = function (m, cx, top, o) {
-    const hair = K.HAIR[o.hc || "dkbrown"] || K.HAIR.dkbrown, long = o.g === "f", coat = o.coat || "#2b313d", skin = o.skin || "#8a6a58";
+    const hair = PL.hexOf(mix(PL.rgb(K.HAIR[o.hc || "dkbrown"] || K.HAIR.dkbrown), [18, 16, 20], 0.58)), // à contre-jour
+       long = o.g === "f", coat = o.coat || "#2b313d", skin = o.skin || "#8a6a58";
     const cA = PL.rgb(coat), cB = mix(cA, [255, 255, 255], 0.07), sy = top + 53;
     m.set({ E: 0, S: 0, D: o.D == null ? 12 : o.D });
     for (let y = sy; y < (o.H || 225); y++) {
