@@ -270,21 +270,49 @@
     const spec = lu >= CR.INDICE_T2 ? CR.indicesPiece(cs, doc) : [];
     return html`<div className="indice" role="note"><span className="pix">Indice · mode assisté</span><p>${CR.INDICE_METHODE}</p>${spec.map((t, i) => html`<p key=${i}>${t}</p>`)}</div>`;
   };
+  // Une pièce lue au bureau. Dossier de travail (lot 2) : cliquer une phrase la propose entière ; sélectionner à la souris
+  // annote au mot près ; cliquer une annotation la rouvre (UI.SegPop, ui-travail.js).
   const DocView = ({ s, cs, doc, go, kind }) => {
     const [pop, setPop] = useState(null);
+    const selT = useRef(0);
+    const posPop = (el) => {
+      const r = el.getBoundingClientRect();
+      const host = el.closest(".docview").getBoundingClientRect();
+      return { x: r.left - host.left, y: r.bottom - host.top + 4 };
+    };
     const onSeg = (seg, e) => {
-      const r = e.currentTarget.getBoundingClientRect();
-      const host = e.currentTarget.closest(".docview").getBoundingClientRect();
-      setPop({ seg, x: r.left - host.left, y: r.bottom - host.top + 4 });
+      if (Date.now() - selT.current < 400) return; // la sélection vient d'ouvrir la fenêtre
+      const el = e.currentTarget, mk = e.target.closest && e.target.closest("[data-an]");
+      const p = +el.dataset.p, sI = +el.dataset.s, t = CR.segText(seg) ? (typeof seg === "string" ? seg : seg.t) : "";
+      const range = isNaN(p) ? null : { debut: { p, s: sI, o: 0 }, fin: { p, s: sI, o: t.length } };
+      setPop(Object.assign({ seg, range, annot: mk ? mk.dataset.an : null }, posPop(el)));
+    };
+    // sélection libre : la position (paragraphe, phrase, caractère) de chaque bout de la sélection
+    const posDe = (node, off) => {
+      const el = (node.nodeType === 3 ? node.parentElement : node).closest(".seg");
+      if (!el || el.dataset.p == null) return null;
+      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let n = 0, x;
+      while ((x = w.nextNode())) { if (x === node) return { p: +el.dataset.p, s: +el.dataset.s, o: n + off, el }; n += x.textContent.length; }
+      return node === el ? { p: +el.dataset.p, s: +el.dataset.s, o: 0, el } : null;
+    };
+    const onUp = () => {
+      const sel = window.getSelection && window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.anchorNode) return;
+      const a = posDe(sel.anchorNode, sel.anchorOffset), b = posDe(sel.focusNode, sel.focusOffset);
+      if (!a || !b) return;
+      selT.current = Date.now();
+      const range = { debut: { p: a.p, s: a.s, o: a.o }, fin: { p: b.p, s: b.s, o: b.o } };
+      setPop(Object.assign({ seg: null, range }, posPop(b.el)));
     };
     const ref = doc && doc.ref;
     const k = ref && (ref.doc || ref.mail);
     const vig = CR.dec && CR.dec.docScene ? CR.dec.docScene(doc) : null;
-    return html`<div className="docview" onClick=${(e) => { if (!e.target.closest(".seg") && !e.target.closest(".pop")) setPop(null); }}>
+    return html`<div className="docview" onMouseUp=${onUp} onClick=${(e) => { if (!e.target.closest(".seg") && !e.target.closest(".pop") && Date.now() - selT.current > 400) setPop(null); }}>
       ${vig && html`<div className="doc-vignette"><${UI.Panorama} name=${vig} opts=${Object.assign(CR.dec.stageOpts(s), { nom: "" })} /></div>`}
       <${Paper} doc=${doc} cs=${cs} interactive=${true} onSeg=${onSeg} kind=${kind} />
       <${UI.IndiceBox} s=${s} cs=${cs} doc=${doc} k=${k} />
-      ${pop && html`<${UI.SegPop} key=${CR.segText(pop.seg)} s=${s} cs=${cs} seg=${pop.seg} refInfo=${Object.assign({ hid: doc.hid }, ref)} x=${pop.x} y=${pop.y} go=${go} onClose=${() => setPop(null)} />`}
+      ${pop && html`<${UI.SegPop} key=${JSON.stringify(pop.range) + (pop.annot || "")} s=${s} cs=${cs} seg=${pop.seg} doc=${doc} range=${pop.range} annotId=${pop.annot} refInfo=${Object.assign({ hid: doc.hid }, ref)} x=${pop.x} y=${pop.y} go=${go} onClose=${() => { setPop(null); if (window.getSelection) window.getSelection().removeAllRanges(); }} />`}
     </div>`;
   };
   UI.DocView = DocView;
@@ -352,7 +380,7 @@
     const c = CR.client(cs);
     const tasks = CR.caseTasks(s, cs);
     const textes = CR.pinnedTexts(s, cs);
-    const tabs = [["actions", "Actions"], ["carnet", `Bloc-notes (${cs.notes.length})`], ["textes", `Textes (${textes.length})`], ["pieces", `Pièces (${cs.docs.length})`], ["irreg", `Irrégularités (${cs.issues.length})`], ["enquete", "Enquête"], ["proc", "Procédure"], ["chrono", "Chronologie"]];
+    const tabs = [["actions", "Actions"], ["carnet", `Bloc-notes (${cs.notes.length})`], ["textes", `Textes (${textes.length})`], ["pieces", `Pièces (${cs.docs.length})`], ["travail", `Dossier de travail (${(cs.travail && cs.travail.annots.length) || 0})`], ["irreg", `Irrégularités (${cs.issues.length})`], ["enquete", "Enquête"], ["proc", "Procédure"], ["chrono", "Historique"]];
     if (cs.status === "closed" && cs.debrief) tabs.unshift(["debrief", "Débrief"]);
     const pres = CR.acteur(cs.actors.president);
     return html`<div className="panel casefile">
@@ -391,7 +419,7 @@
           ${(() => { const d = cs.docs.find((x) => x.id === docSel); const doc = d ? CR.renderDoc(s, cs, d) : null; return doc ? html`<${DocView} s=${s} cs=${cs} doc=${Object.assign({}, doc, { paras: UI.segmentize(doc.paras), hid: d.vars && d.vars.hid, ref: { doc: d.id, key: d.key, titre: d.title } })} go=${go} kind=${d.dir === "out" ? "out" : doc.kind} />` : null; })()}
         </div>` : html`<div className="doc-lire">${UI.DossierReel && cs.docs.some((d) => d.dir !== "out") && html`<${Btn} small icon="cases" onClick=${() => setLecteur(true)}>Lire en feuillets</${Btn}>`}</div><ul className="doc-list">
           ${cs.docs.length === 0 && html`<li className="empty">Aucune pièce.</li>`}
-          ${cs.docs.slice().reverse().map((d) => html`<li key=${d.id}><button className="doc-row" onClick=${() => setDocSel(d.id)}><span className=${cx("dir", d.dir)}>${d.dir === "out" ? "Envoyé" : "Reçu"}</span><span>${d.title}</span><span className="small muted">${CR.fmtDate(d.day, "short")}</span></button></li>`)}
+          ${cs.docs.slice().reverse().sort((x, y) => (CR.TRAV && CR.TRAV.aOnglet(cs, y.id) ? 1 : 0) - (CR.TRAV && CR.TRAV.aOnglet(cs, x.id) ? 1 : 0)).map((d) => html`<li key=${d.id}><button className=${cx("doc-row", CR.TRAV && CR.TRAV.aOnglet(cs, d.id) && "doc-onglet")} onClick=${() => setDocSel(d.id)}><span className=${cx("dir", d.dir)}>${d.dir === "out" ? "Envoyé" : "Reçu"}</span><span>${d.title}</span><span className="small muted">${CR.fmtDate(d.day, "short")}</span></button></li>`)}
         </ul>`)}
       ${tab === "pieces" && lecteur && UI.DossierReel && (() => {
         // pièces reçues, dans l'ordre des cotes quand elles en ont, sinon dans l'ordre d'arrivée
@@ -408,12 +436,13 @@
       ${tab === "irreg" && html`<div className="cf-irreg">
         <p className="small muted">Le jeu ne signale rien : c'est en lisant les pièces que vous trouvez ce qui cloche. Une nullité ne se soulève que sur ce que vous avez relevé ici.</p>
         <ul className="issue-list">
-          ${cs.issues.length === 0 && html`<li className="empty">Rien de relevé. Dans une pièce, cliquez un passage, puis « Relever une irrégularité ».</li>`}
-          ${cs.issues.map((i) => html`<li key=${i.id}><${Icon} n="flag" /> ${i.type ? html`<${Tag}>${CR.irregTypeLabel(i.type)}</${Tag}> ` : null}« ${i.text} »${i.avec ? html` <span className="small">— à comparer avec « ${i.avec} »</span>` : null}${i.comment ? html` <span className="small muted">${i.comment}</span>` : null} <span className="small muted">${i.ref && i.ref.titre ? i.ref.titre + " · " : ""}${CR.fmtDate(i.day, "short")}</span>${i.ref && i.ref.doc && cs.docs.some((d) => d.id === i.ref.doc) ? html` <button className="link small" onClick=${() => { setTab("pieces"); setDocSel(i.ref.doc); }}>voir la pièce</button>` : null} <button className="link small" onClick=${() => { CR.retirerIrreg(cs, i.id); bump(); }}>retirer</button></li>`)}
+          ${cs.issues.length === 0 && html`<li className="empty">Rien de relevé. Dans une pièce, cliquez une phrase ou sélectionnez un passage, puis « Relever une irrégularité ».</li>`}
+          ${cs.issues.map((i) => html`<li key=${i.id}><${Icon} n="flag" /> ${i.type ? html`<${Tag}>${CR.irregTypeLabel(i.type)}</${Tag}> ` : null}« ${i.text} »${i.avec ? html` <span className="small">— à comparer avec « ${i.avec} »</span>` : null}${i.comment ? html` <span className="small muted">${i.comment}</span>` : null}${i.article ? html` <span className="small">— art. ${i.article}${i.regime && CR.TRAV ? " · " + CR.TRAV.label(CR.TRAV.REGIMES, i.regime) : ""}${i.grief && CR.TRAV ? " · " + CR.TRAV.label(CR.TRAV.GRIEFS, i.grief).toLowerCase() : ""}</span>` : null} <span className="small muted">${i.ref && i.ref.titre ? i.ref.titre + " · " : ""}${CR.fmtDate(i.day, "short")}</span>${i.ref && i.ref.doc && cs.docs.some((d) => d.id === i.ref.doc) ? html` <button className="link small" onClick=${() => { setTab("pieces"); setDocSel(i.ref.doc); }}>voir la pièce</button>` : null} <button className="link small" onClick=${() => { const ir = cs.travail && cs.travail.irregs.find((z) => z.issue === i.id); if (ir) CR.TRAV.retirerIrreg(cs, ir.id); else CR.retirerIrreg(cs, i.id); bump(); }}>retirer</button></li>`)}
         </ul>
         ${cs.issues.length > 0 && cs.status !== "closed" && html`<p><${Btn} small icon="library" onClick=${() => go.scene({ type: "library", caseId: cs.id, focus: CR.planFocus(cs) })}>Chercher le fondement dans le code annoté</${Btn}></p>`}
         ${(cs.surl || []).length > 0 && html`<div className="sub-head">Passages surlignés</div><ul className="issue-list">${cs.surl.map((h) => html`<li key=${h.id}><span className="surl-mark">${h.t}</span> <span className="small muted">${h.ref && h.ref.titre ? h.ref.titre : ""}</span> <button className="link small" onClick=${() => { CR.desurligner(cs, h.t); bump(); }}>retirer</button></li>`)}</ul>`}
       </div>`}
+      ${tab === "travail" && UI.TravailPanel && html`<${UI.TravailPanel} s=${s} cs=${cs} openDoc=${(id) => { setTab("pieces"); setDocSel(id); }} />`}
       ${tab === "enquete" && html`<${UI.EnquetePanel} s=${s} cs=${cs} openDoc=${(id) => { setTab("pieces"); setDocSel(id); }} />`}
       ${tab === "proc" && html`<div className="proc">
         <table className="tbl"><tbody>${CR.PROC.resume(s, cs).map(([k, v]) => html`<tr key=${k}><td className="muted">${k}</td><td>${v}</td></tr>`)}</tbody></table>

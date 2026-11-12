@@ -82,12 +82,22 @@ async function fillDraft(w, doc, CR, cs, o = {}) {
   if (v) await click(w, v);
   await sleep(80);
 }
-// Relève une irrégularité comme le joueur : cliquer le passage, « Relever une irrégularité », qualifier, envoyer au bloc-notes
-async function releve(w, doc, seg, type) {
+// saisie dans un champ, comme au clavier (React écoute « input »)
+function saisir(w, el, v) {
+  const proto = el.tagName === "TEXTAREA" ? w.HTMLTextAreaElement.prototype : el.tagName === "SELECT" ? w.HTMLSelectElement.prototype : w.HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, "value").set.call(el, v);
+  el.dispatchEvent(new w.Event(el.tagName === "SELECT" ? "change" : "input", { bubbles: true }));
+}
+// Relève une irrégularité comme le joueur (dossier de travail, lot 2) : cliquer le passage, « Relever une irrégularité »,
+// les quatre éléments (le passage, le texte violé, le régime, le grief), « Relever »
+async function releve(w, doc, seg, o) {
   if (!seg) throw new Error("passage introuvable");
+  o = typeof o === "object" && o ? o : {};
   await click(w, seg);
   await click(w, findBtn(doc, "Relever une irrégularité"));
-  if (type) { const chip = [...doc.querySelectorAll(".pop-types .nchip")].find((b) => texts(b).startsWith(type)); if (chip) await click(w, chip); }
-  await click(w, findBtn(doc, "Envoyer au bloc-notes"));
+  saisir(w, doc.querySelector(".pop-article"), o.article || "63-1"); await sleep(20);
+  const reg = [...doc.querySelectorAll(".pop-regimes .nchip")][o.regime || 0]; if (reg) await click(w, reg);
+  const gr = [...doc.querySelectorAll(".pop-griefs .nchip")][o.grief || 0]; if (gr) await click(w, gr);
+  await click(w, findBtn(doc, /^Relever$/));
 }
-module.exports = { waitFor, rail, runCall, openCase, taskBtn, runTask, fillDraft, releve };
+module.exports = { waitFor, rail, runCall, openCase, taskBtn, runTask, fillDraft, releve, saisir };

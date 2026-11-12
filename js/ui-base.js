@@ -106,13 +106,35 @@
     const flagged = cs ? new Set(cs.issues.map((n) => n.text)) : new Set();
     const surl = cs ? new Set((cs.surl || []).map((h) => h.t)) : new Set();
     const k = doc.kind || kind;
-    const segEl = (seg, j, inner) => {
+    // dossier de travail (lot 2) : les annotations du joueur sur cette pièce, en couleur, au caractère près
+    const ans = interactive && cs && CR.TRAV && doc.ref ? CR.TRAV.annotsDe(cs, doc.ref) : [];
+    const avantEg = (x, y) => x.p < y.p || (x.p === y.p && x.s <= y.s);
+    const decoupe = (t, i, j) => {
+      const L = [];
+      for (const a of ans) {
+        if (!avantEg(a.debut, { p: i, s: j }) || !avantEg({ p: i, s: j }, a.fin)) continue;
+        const x = a.debut.p === i && a.debut.s === j ? a.debut.o : 0, y = a.fin.p === i && a.fin.s === j ? a.fin.o : t.length;
+        if (y > x) L.push({ x, y, a });
+      }
+      if (!L.length) return null;
+      const bornes = [...new Set([0, t.length].concat(...L.map((r) => [r.x, r.y])))].sort((u, v) => u - v);
+      const out = [];
+      for (let b = 0; b < bornes.length - 1; b++) {
+        const u = bornes[b], v = bornes[b + 1], sur = L.filter((r) => r.x <= u && r.y >= v);
+        const top = sur[sur.length - 1];
+        out.push(top ? html`<mark key=${b} className=${UI.cx("an", "an-" + top.a.coul, top.a.note && "an-noted")} data-an=${top.a.id}>${t.slice(u, v)}</mark>` : t.slice(u, v));
+      }
+      return out;
+    };
+    const segEl = (seg, j, inner, i) => {
       const t = typeof seg === "string" ? seg : seg.t;
       if (!t) return null;
       if (!interactive) return html`<span key=${j}>${inner || t}</span>`;
       const tt = t.trim();
-      return html`<span key=${j} className=${UI.cx("seg", noted.has(tt) && "seg-noted", surl.has(tt) && "seg-surl", flagged.has(tt) && "seg-flagged")} onClick=${(e) => onSeg && onSeg(seg, e)} tabIndex="0" onKeyDown=${(e) => { if (e.key === "Enter") onSeg && onSeg(seg, e); }}>${inner || t}</span>`;
+      return html`<span key=${j} data-p=${i} data-s=${j} className=${UI.cx("seg", noted.has(tt) && "seg-noted", surl.has(tt) && "seg-surl", flagged.has(tt) && "seg-flagged")} onClick=${(e) => onSeg && onSeg(seg, e)} tabIndex="0" onKeyDown=${(e) => { if (e.key === "Enter") onSeg && onSeg(seg, e); }}>${inner || (i != null && decoupe(t, i, j)) || t}</span>`;
     };
+    // notes en marge, sous le paragraphe où commence l'annotation
+    const marges = (i) => ans.filter((a) => a.note && a.debut.p === i).map((a) => html`<div key=${"m" + a.id} className=${UI.cx("an-marge", "an-" + a.coul)} data-an=${a.id}>${a.note}</div>`);
     // pièce composée par le moteur de documents (docs.js) : bandeau du service, styles de paragraphe, feuillets signés
     const B = doc.bandeau, PS = doc.pstyle;
     const signes = doc.numerique ? [] : (doc.sigs || []).map((g) => g.qui); // en numérique, une signature unique en fin d'acte
@@ -133,18 +155,22 @@
       ${doc.video && !compact && UI.VideoExtrait && html`<${UI.VideoExtrait} spec=${doc.video} />`}
       ${doc.capture && !compact && UI.CaptureSim && html`<${UI.CaptureSim} sig=${doc.capture.sig} />`}
       ${doc.to && html`<p className="paper-to">À : ${doc.to}</p>`}
-      ${(doc.paras || []).map((p, i) => (PS && PS[i] === "saut" ? pied(p.map((x) => (typeof x === "string" ? x : x.t)).join(""), i) : html`<p key=${i} className=${PS && PS[i] ? "pp-" + PS[i] : null}>${p.map((seg, j) => segEl(seg, j))}</p>`))}
+      ${(doc.paras || []).map((p, i) => (PS && PS[i] === "saut" ? pied(p.map((x) => (typeof x === "string" ? x : x.t)).join(""), i) : [html`<p key=${i} className=${PS && PS[i] ? "pp-" + PS[i] : null}>${p.map((seg, j) => segEl(seg, j, null, i))}</p>`].concat(marges(i))))}
       ${doc.schema && doc.schema.length && !compact && UI.SchemaCorporel && html`<${UI.SchemaCorporel} lesions=${doc.schema} />`}
       ${B && doc.feuillets > 1 && pied(`Feuillet ${doc.feuillets} / ${doc.feuillets}`, "fin")}
       ${doc.sigs && doc.sigs.length > 0 && html`<div className="paper-sigs">${doc.sigs.map((g, i) => {
         const shown = g.t === "signé" ? "(signature)" : g.t || "—";
-        const seg = { t: `Signature — ${g.qui} : ${g.t === "signé" ? "signée" : g.t || "aucune"}`, flag: g.flag, f: g.f };
-        return html`<div key=${"g" + i} className="psig"><span className="psig-qui">${g.qui}</span>${segEl(seg, "s" + i, html`<span className=${g.t === "signé" ? "psig-ok" : g.t ? "psig-txt" : "psig-vide"}>${shown}</span>`)}</div>`;
+        const seg = UI.sigSeg(g);
+        return html`<div key=${"g" + i} className="psig"><span className="psig-qui">${g.qui}</span>${segEl(seg, 0, html`<span className=${g.t === "signé" ? "psig-ok" : g.t ? "psig-txt" : "psig-vide"}>${shown}</span>`, (doc.paras || []).length + i)}</div>`;
       })}</div>`}
       ${doc.signed && html`<p className="paper-sign">${doc.signed}</p>`}
       ${doc.tampon && html`<div className="tampon">${doc.tampon}</div>`}
     </article>`;
   };
+  // une case de signature comme passage annotable (elle peut porter une irrégularité : signature absente)
+  UI.sigSeg = (g) => ({ t: `Signature — ${g.qui} : ${g.t === "signé" ? "signée" : g.t || "aucune"}`, flag: g.flag, f: g.f });
+  // la pièce telle que l'annotation la lit : paragraphes, puis une ligne par case de signature
+  UI.docAnnot = (doc) => Object.assign({}, doc, { paras: (doc.paras || []).concat((doc.sigs || []).map((g) => [UI.sigSeg(g)])) });
   // Découpe les paragraphes en phrases cliquables
   UI.segmentize = function (paras) {
     return (paras || []).map((p) => {

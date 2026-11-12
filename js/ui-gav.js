@@ -114,11 +114,15 @@
     const def = CR.caseDef(cs);
     const raw = def.docs[sel];
     const doc = raw ? (typeof raw === "function" ? raw({ s, cs, def, api: CR.api(s, cs) }) : raw) : null;
-    const d = doc ? Object.assign({}, doc, { paras: UI.segmentize(doc.paras) }) : null;
+    const titreP = (def.docTitles && def.docTitles[sel]) || (doc && doc.title) || sel;
+    // lue au commissariat : la pièce n'est pas versée au dossier, elle se reconnaît à sa clé
+    const d = doc ? Object.assign({}, doc, { paras: UI.segmentize(doc.paras), ref: { key: "gav:" + sel, titre: titreP } }) : null;
     const onSeg = (seg, e) => {
-      const r = e.currentTarget.getBoundingClientRect();
-      const host = e.currentTarget.closest(".docview").getBoundingClientRect();
-      setPop({ seg, x: r.left - host.left, y: r.bottom - host.top + 4 });
+      const el = e.currentTarget, r = el.getBoundingClientRect();
+      const host = el.closest(".docview").getBoundingClientRect();
+      const p = +el.dataset.p, sI = +el.dataset.s, t = typeof seg === "string" ? seg : seg.t || "";
+      const mk = e.target.closest && e.target.closest("[data-an]");
+      setPop({ seg, range: isNaN(p) ? null : { debut: { p, s: sI, o: 0 }, fin: { p, s: sI, o: t.length } }, annot: mk ? mk.dataset.an : null, x: r.left - host.left, y: r.bottom - host.top + 4 });
     };
     const text = pop ? segText(pop.seg).trim() : "";
     return html`<div className="gav-card">
@@ -127,7 +131,7 @@
       <div className="docview" onClick=${(e) => { if (!e.target.closest(".seg") && !e.target.closest(".pop")) setPop(null); }}>
         <${Paper} doc=${d} cs=${cs} interactive=${true} onSeg=${onSeg} kind="pv" />
         <${UI.IndiceBox} s=${s} cs=${cs} doc=${d} k=${"gav:" + sel} />
-        ${pop && html`<${UI.SegPop} key=${text} s=${s} cs=${cs} seg=${pop.seg} refInfo=${{ key: sel, titre: (def.docTitles && def.docTitles[sel]) || (d && d.title) || sel }} x=${pop.x} y=${pop.y} src="gav" onClose=${() => setPop(null)} />`}
+        ${pop && html`<${UI.SegPop} key=${text + JSON.stringify(pop.range) + (pop.annot || "")} s=${s} cs=${cs} seg=${pop.seg} doc=${d} range=${pop.range} annotId=${pop.annot} refInfo=${d.ref} x=${pop.x} y=${pop.y} src="gav" onClose=${() => setPop(null)} />`}
       </div>
       <${Btn} kind="primary" onClick=${() => { CR.spend(s, 12, "gav"); bump(); next(); }}>Rendre les pièces · 12 min</${Btn}>
     </div>`;

@@ -146,19 +146,22 @@ const REVELE = /irrégularit|aucune autorisation|aucune ordonnance|nullit|ne men
   await P.openCase(w, doc, "Kaddour");
   await click(w, [...doc.querySelectorAll(".tab")].find((t) => /^Pièces/.test(texts(t))));
   await click(w, [...doc.querySelectorAll(".doc-row")].find((r) => /Commission rogatoire/.test(texts(r))));
+  // dossier de travail (lot 2) : annoter le passage de la commission rogatoire, puis relever la perquisition en le rapprochant
   const crSeg = [...doc.querySelectorAll(".docview .seg")].find((x) => /exécutée dans les formes/.test(texts(x)));
-  await click(w, crSeg); await click(w, findBtn(doc, "Surligner"));
-  ok(!!doc.querySelector(".docview .seg-surl"), "le passage surligné est marqué");
+  await click(w, crSeg); await click(w, findBtn(doc, "À vérifier"));
+  ok(!!doc.querySelector(".docview mark.an-verifier"), "le passage annoté est marqué");
   await click(w, [...doc.querySelectorAll(".tab")].find((t) => /^Pièces/.test(texts(t))));
   await click(w, [...doc.querySelectorAll(".doc-row")].find((r) => /Perquisition/.test(texts(r))));
   const pSeg = [...doc.querySelectorAll(".docview .seg")].find((x) => /5 h 30/.test(texts(x)));
   await click(w, pSeg); await click(w, findBtn(doc, "Relever une irrégularité"));
-  await click(w, [...doc.querySelectorAll(".pop-types .nchip")].find((b) => /Incohérence/.test(texts(b))));
   const sel = doc.querySelector(".pop-avec select");
-  ok(!!sel && sel.options.length === 2, "l'incohérence propose le passage surligné de l'autre pièce");
-  if (sel) { sel.value = sel.options[1].value; sel.dispatchEvent(new w.Event("change", { bubbles: true })); await sleep(30); }
-  await click(w, findBtn(doc, "Envoyer au bloc-notes"));
-  ok(cs.issues.some((i) => i.flag === "perq_nuit" && i.type === "incoherence" && /formes/.test(i.avec || "")), "irrégularité relevée par l'interface, reliée à la commission rogatoire");
+  ok(!!sel && sel.options.length === 2, "l'irrégularité propose de rapprocher le passage annoté de l'autre pièce");
+  if (sel) { P.saisir(w, sel, sel.options[1].value); await sleep(30); }
+  P.saisir(w, doc.querySelector(".pop-article"), "59"); await sleep(20);
+  await click(w, [...doc.querySelectorAll(".pop-regimes .nchip")][1]);
+  await click(w, [...doc.querySelectorAll(".pop-griefs .nchip")].find((b) => /domicile/.test(texts(b))));
+  await click(w, findBtn(doc, /^Relever$/));
+  ok(cs.issues.some((i) => i.flag === "perq_nuit" && i.type === "incoherence" && /formes/.test(i.avec || "") && i.article === "59"), "irrégularité relevée par l'interface, reliée à la commission rogatoire");
   ok(!!doc.querySelector(".docview .seg-flagged"), "le passage relevé est souligné");
   // une ancienne sauvegarde : irrégularité sans type, pas de surlignage ni d'enquête
   const old = JSON.parse(CR.serialize(s));

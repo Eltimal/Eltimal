@@ -1725,6 +1725,51 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .pv-capture { margin: 6px 0 14px; display: grid; gap: 4px; }
 .pv-capture canvas { width: 100%; max-width: 480px; aspect-ratio: 4 / 3; background: #050607; image-rendering: pixelated; }
 .pv-capture figcaption { font: .76rem/1.3 var(--f-ui); color: var(--ink-2); }
+
+/* ---------- dossier de travail (lot 2) : annotations, marges, plan, chronologie ---------- */
+.paper mark.an { color: inherit; padding: 0 1px; border-radius: 2px; cursor: pointer; }
+.an-charge { background: rgba(214, 74, 60, .30); box-shadow: inset 0 -2px 0 rgba(168, 40, 30, .55); }
+.an-decharge { background: rgba(70, 168, 92, .30); box-shadow: inset 0 -2px 0 rgba(36, 120, 58, .55); }
+.an-procedure { background: rgba(70, 120, 214, .28); box-shadow: inset 0 -2px 0 rgba(36, 72, 168, .55); }
+.an-verifier { background: rgba(250, 210, 60, .45); box-shadow: inset 0 -2px 0 rgba(170, 130, 20, .5); }
+.paper mark.an-noted { text-decoration: underline dotted; text-underline-offset: 3px; }
+.an-marge { font: 500 1.08rem/1.25 "Caveat", var(--f-ui); color: #23306e; margin: -.45em 0 .8em 1.4em; padding-left: 8px; border-left: 3px solid currentColor; background: none !important; box-shadow: none !important; }
+.an-marge.an-charge { color: #8a2218; } .an-marge.an-decharge { color: #1f6a34; } .an-marge.an-procedure { color: #23306e; } .an-marge.an-verifier { color: #7a5a08; }
+.pop .nchip.an-chip { color: #1d1d22; border-color: transparent; }
+.pop .nchip.an-chip.on, .travail .nchip.an-chip.on { outline: 2px solid #1d1d22; outline-offset: 1px; color: #1d1d22; }
+.pop-coul { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 12px 2px; }
+.pop-travail .pop-quote { padding: 8px 12px 0; }
+.pop-actions { display: flex; flex-direction: column; }
+.pop-form input[type=text], .pop-form input[type=date], .pop-form input[type=time] { background: var(--bg2); color: inherit; border: 1px solid var(--line2); font: .84rem var(--f-ui); padding: 4px 6px; }
+.pop-form input[type=text] { width: 100%; }
+.travail .nchip { display: inline-block; padding: 3px 8px; font-size: .74rem; border: 1px solid var(--line2); border-radius: 99px; background: var(--bg2); color: inherit; }
+.travail .nchip.on { background: #8a1c1c; border-color: #8a1c1c; color: #fff; }
+.an-list { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 10px; }
+.an-list > li { background: var(--bg2); border: 1px solid var(--line2); padding: 8px 10px; }
+.an-cite { padding: 0 3px; }
+.travail .an-cite, .travail .v-cell { color: #f3ecda; }
+.an-list .an-marge { margin: 6px 0 0 4px; color: #e7dcc0 !important; }
+.an-tools { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; align-items: center; }
+.an-vs { margin: 0 4px; color: var(--muted); }
+.chrono-list { list-style: none; padding: 0; margin: 8px 0; border-left: 2px solid var(--line2); color: #f3ecda; }
+.travail .an-list > li, .travail .moyen, .travail .versions { color: #f3ecda; }
+.chrono-list > li { position: relative; padding: 4px 0 4px 14px; }
+.chrono-list > li::before { content: ""; position: absolute; left: -5px; top: 11px; width: 8px; height: 8px; background: var(--amber); }
+.chrono-quand { font-weight: 700; font-variant-numeric: tabular-nums; }
+.chrono-ecart { color: var(--amber); margin: 0 0 2px; font-variant-numeric: tabular-nums; }
+.chrono-ajout { flex-wrap: wrap; margin-top: 8px; }
+.versions-wrap { overflow-x: auto; }
+.versions th, .versions td { vertical-align: top; text-align: left; min-width: 140px; }
+.v-cell { padding: 3px 5px; margin-bottom: 4px; color: var(--ink); }
+.plan-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 8px 0; }
+@media (max-width: 760px) { .plan-cols { grid-template-columns: 1fr; } }
+.plan-col { background: var(--bg2); border: 1px solid var(--line2); padding: 8px; min-width: 0; }
+.plan-col h4 { margin: 0 0 6px; }
+.moyen { border-top: 1px solid var(--line2); padding: 6px 0; }
+.moyen-cotes { margin: 4px 0; padding-left: 16px; font-size: .86rem; }
+.moyen-irr { color: var(--muted); margin-top: 2px; }
+.doc-row.doc-onglet { box-shadow: inset 4px 0 0 var(--amber); }
+.onglet-mark { display: inline-block; width: 10px; height: 16px; background: var(--amber); margin-right: 6px; }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
@@ -1764,6 +1809,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/generator.js"></script>
 <script src="js/equipe.js"></script>
 <script src="js/dossier.js"></script>
+<script src="js/travail.js"></script>
 <script src="js/cat-base.js"></script>
 <script src="js/cat-personnes.js"></script>
 <script src="js/cat-biens.js"></script>
@@ -1824,6 +1870,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/ui-plan.js"></script>
 <script src="js/ui-scenes.js"></script>
 <script src="js/ui-gav.js"></script>
+<script src="js/ui-travail.js"></script>
 <script src="js/ui-court.js"></script>
 <script src="js/ui-moments.js"></script>
 <script src="js/carriere.js"></script>
