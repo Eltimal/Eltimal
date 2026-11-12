@@ -1,0 +1,39 @@
+# Publie le jeu à chaque push : l'app installée le télécharge au lancement suivant (electron/maj.js).
+# Publication « jeu-<numéro> » avec deux pièces : jeu.json.gz et manifest.json. Les 10 dernières sont gardées.
+name: Publier le jeu
+on:
+  push:
+    branches: [claude/permanence-mac-app-graphics-wege0b, main]
+    paths: ["index.html", "js/**", "lib/**", "fonts/**", "electron/maj.js", "electron/paquet-jeu.js"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: publier-jeu
+  cancel-in-progress: false
+jobs:
+  jeu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Fabriquer le paquet
+        run: node electron/paquet-jeu.js
+      - name: Publier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          N=$(node -p "require('./dist-jeu/manifest.json').numero")
+          if gh release view "jeu-$N" >/dev/null 2>&1; then echo "jeu-$N déjà publié"; exit 0; fi
+          gh release create "jeu-$N" dist-jeu/jeu.json.gz dist-jeu/manifest.json \
+            --title "Jeu n° $N" --notes "Commit ${GITHUB_SHA::7} sur ${GITHUB_REF_NAME}" --target "$GITHUB_SHA" --latest=false
+      - name: Garder les 10 dernières publications du jeu
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 100 --json tagName --jq '.[].tagName' | grep '^jeu-' | sort -t- -k2 -nr | tail -n +11 \
+            | xargs -r -I{} gh release delete {} --yes --cleanup-tag
