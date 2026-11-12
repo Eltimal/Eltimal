@@ -3,7 +3,7 @@
 name: Publier le jeu
 on:
   push:
-    branches: [claude/permanence-mac-app-graphics-wege0b, main]
+    branches: [claude/permanence-mac-app-graphics-wege0b, claude/keen-heisenberg-nk0cv3, main]
     paths: ["index.html", "js/**", "lib/**", "fonts/**", "electron/maj.js", "electron/paquet-jeu.js"]
   workflow_dispatch:
 permissions:
