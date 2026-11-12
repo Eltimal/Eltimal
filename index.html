@@ -1544,6 +1544,40 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .staged .q-btn:hover:not(:disabled), .staged .choice:hover:not(:disabled), .staged .decide-opt:hover:not(:disabled) { background: rgba(232,170,60,.13); box-shadow: inset 3px 0 0 var(--amber); transform: translateX(2px); }
 .staged .stg-cap .pix { font-size: calc(12px * var(--tz)); }
 @media (prefers-reduced-motion: reduce) { .staged .q-btn, .staged .choice, .staged .decide-opt, .staged .transcript .tline { transition: none; } .staged .q-btn:hover, .staged .choice:hover, .staged .decide-opt:hover { transform: none; } }
+
+/* ---------- Refonte : habillage du contenu des rubriques et des fenêtres (verre sombre, lignes à liseré) ---------- */
+.modal-wrap { background: rgba(3,5,9,.6); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.modal { background: rgba(10,13,21,.9); border: 0; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(176,198,236,.18), inset 0 1px 0 rgba(255,255,255,.06), 0 26px 70px rgba(0,0,0,.7); -webkit-backdrop-filter: blur(9px) saturate(1.15); backdrop-filter: blur(9px) saturate(1.15); animation: stg-in .28s steps(5) both; }
+.modal-head { border-bottom: 1px solid rgba(176,198,236,.14); } .modal-foot { border-top: 1px solid rgba(176,198,236,.14); }
+.hub-plan .matter, .hub-plan .case-card, .hub-plan .task, .hub-plan .mail, .hub-plan .doc-row, .hub-plan .glance, .hub-plan .court-call, .modal .matter, .modal .task, .modal .doc-row, .modal .decide-opt, .modal .q-btn, .modal .choice {
+  background: rgba(255,255,255,.04); border: 0; border-radius: 2px; box-shadow: inset 2px 0 0 rgba(176,198,236,.22); transition: background .12s, box-shadow .12s, transform .12s; }
+.hub-plan .matter:hover, .hub-plan .case-card:hover, .hub-plan .task:hover:not(:disabled), .hub-plan .mail:hover, .hub-plan .doc-row:hover, .modal .matter:hover, .modal .task:hover:not(:disabled), .modal .doc-row:hover, .modal .decide-opt:hover:not(:disabled), .modal .q-btn:hover:not(:disabled), .modal .choice:hover {
+  background: rgba(232,170,60,.11); box-shadow: inset 3px 0 0 var(--amber); transform: translateX(2px); }
+.hub-plan .mail.unread { box-shadow: inset 3px 0 0 var(--amber); background: rgba(232,170,60,.06); }
+.hub-plan .mail.important.unread { box-shadow: inset 3px 0 0 var(--bad); }
+.hub-plan .mail.on { background: rgba(176,198,236,.12); box-shadow: inset 3px 0 0 #b0c6ec; }
+.hub-plan .task.urgent { background: rgba(232,170,60,.09); box-shadow: inset 3px 0 0 var(--amber); }
+.hub-plan .task-ico { background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 1px rgba(176,198,236,.2); border-radius: 2px; }
+.hub-plan .case-card { box-shadow: inset 0 0 0 1px rgba(176,198,236,.14); } .hub-plan .case-card:hover { box-shadow: inset 0 0 0 1px var(--amber); transform: translateY(-2px); }
+.hub-plan .chip, .modal .chip { background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(176,198,236,.2); border-radius: 2px; }
+.hub-plan .chip:hover, .modal .chip:hover { box-shadow: inset 0 0 0 1px rgba(176,198,236,.5); }
+.hub-plan .chip.on, .modal .chip.on { background: var(--amber); color: var(--amber-ink); box-shadow: none; }
+.hub-plan .tabs, .modal .tabs { border-bottom: 1px solid rgba(176,198,236,.14); }
+.hub-plan .banner, .modal .banner { background: rgba(255,255,255,.04); box-shadow: inset 3px 0 0 rgba(176,198,236,.4); border-radius: 2px; }
+.hub-plan .banner.ok, .modal .banner.ok { background: rgba(60,160,110,.1); box-shadow: inset 3px 0 0 var(--ok); }
+.hub-plan .banner.warn, .modal .banner.warn { background: rgba(232,170,60,.1); box-shadow: inset 3px 0 0 var(--warn); }
+.hub-plan .banner.bad, .modal .banner.bad { background: rgba(220,90,70,.1); box-shadow: inset 3px 0 0 var(--bad); }
+.modal .reglages, .modal .rg-t { background: rgba(255,255,255,.04); border: 0; box-shadow: inset 0 0 0 1px rgba(176,198,236,.16); border-radius: 2px; }
+.modal .rg-t.on { background: rgba(232,170,60,.14); box-shadow: inset 0 0 0 1px var(--amber); }
+.toast { background: rgba(10,13,21,.9); border: 0; border-radius: 2px; box-shadow: inset 4px 0 0 var(--amber), inset 0 0 0 1px rgba(176,198,236,.18), 0 12px 30px rgba(0,0,0,.55); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px); }
+.toast.t-bad { box-shadow: inset 4px 0 0 var(--bad), inset 0 0 0 1px rgba(176,198,236,.18), 0 12px 30px rgba(0,0,0,.55); }
+.toast.t-warn { box-shadow: inset 4px 0 0 var(--warn), inset 0 0 0 1px rgba(176,198,236,.18), 0 12px 30px rgba(0,0,0,.55); }
+.toast.t-good { box-shadow: inset 4px 0 0 var(--ok), inset 0 0 0 1px rgba(176,198,236,.18), 0 12px 30px rgba(0,0,0,.55); }
+.hub-plan .ringbar { background: rgba(43,33,18,.86); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: inset 0 -1px 0 rgba(232,170,60,.5); }
+@media (prefers-reduced-motion: reduce) { .modal { animation: none; } .hub-plan .matter, .hub-plan .case-card, .hub-plan .task, .hub-plan .mail, .hub-plan .doc-row { transition: none; } .hub-plan .matter:hover, .hub-plan .case-card:hover, .hub-plan .task:hover, .hub-plan .mail:hover, .hub-plan .doc-row:hover { transform: none; } }
+.hub-plan select, .hub-plan input[type="text"], .hub-plan input[type="search"], .hub-plan textarea, .modal select, .modal input[type="text"], .modal textarea { background: rgba(0,0,0,.35); border: 0; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(176,198,236,.24); }
+.hub-plan select:focus, .hub-plan input:focus, .hub-plan textarea:focus, .modal select:focus, .modal input:focus, .modal textarea:focus { outline: 0; box-shadow: inset 0 0 0 1px var(--amber); }
+.carnet select, .carnet input, .carnet textarea, .paper input, .paper select, .paper textarea, .nform select, .nform input, .nform textarea { background: #fff; box-shadow: none; border: 1px solid #c9c4dc; }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
