@@ -58,7 +58,7 @@ function menu() {
 // Cherche une mise à jour ; « demande » = lancée depuis le menu (on répond même quand il n'y a rien)
 async function rechercher(demande) {
   const win = BrowserWindow.getAllWindows()[0];
-  const r = await MAJ.verifier({ cle: MAJ.lireCle(__dirname), userData: app.getPath("userData"), numeroActuel: JEU.numero, api: process.env.LP_MAJ_API, depot: process.env.LP_MAJ_DEPOT });
+  const r = await MAJ.verifier({ cle: MAJ.lireCle(__dirname), userData: app.getPath("userData"), numeroActuel: JEU.numero, appDir: APP_DIR, api: process.env.LP_MAJ_API, depot: process.env.LP_MAJ_DEPOT });
   MAJ_ETAT = r;
   global.lpMaj = r;
   if (!win || win.isDestroyed()) return r;

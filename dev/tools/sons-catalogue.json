@@ -1,0 +1,242 @@
+{
+  "_lisez_moi": "Sources des sons du jeu, toutes en CC0. bsb = BigSoundBank.com (Joseph Sardin, CC0), kenney = Kenney Interface Sounds (CC0). type nappe : un long fond stéréo, compressé puis normalisé ; type ponctuel : découpé en coups séparés (silences), chaque coup normalisé. Régénérer : node dev/tools/fabriquer-sons.js",
+  "nappes": {
+    "cabinet": {
+      "src": [
+        "bsb:0080:0:150"
+      ],
+      "titre": "Appartement parisien, fenêtre fermée"
+    },
+    "appart": {
+      "src": [
+        "bsb:0081:20:150"
+      ],
+      "titre": "Appartement parisien, fenêtre ouverte"
+    },
+    "nuit": {
+      "src": [
+        "bsb:0680"
+      ],
+      "titre": "Paris la nuit, place Saint-Augustin"
+    },
+    "rue": {
+      "src": [
+        "bsb:2722:0:120",
+        "bsb:1713:0:110"
+      ],
+      "titre": "Rue d'Aubervilliers ; petite rue parisienne"
+    },
+    "pluie_toit": {
+      "src": [
+        "bsb:1293"
+      ],
+      "titre": "Pluie sur un toit de voiture",
+      "mono": true
+    },
+    "pluie_forte": {
+      "src": [
+        "bsb:1294"
+      ],
+      "titre": "Grosse pluie sur un toit de voiture",
+      "mono": true
+    },
+    "pluie_rue": {
+      "src": [
+        "bsb:0621"
+      ],
+      "titre": "Nuit après la pluie"
+    },
+    "horloge": {
+      "src": [
+        "bsb:2815"
+      ],
+      "titre": "Tic-tac mécanique",
+      "mono": true
+    },
+    "public": {
+      "src": [
+        "bsb:0624",
+        "bsb:2561:0:90"
+      ],
+      "titre": "Restaurant ; café des Capucins"
+    },
+    "hall": {
+      "src": [
+        "bsb:0685:0:100",
+        "bsb:2561:100:90"
+      ],
+      "titre": "Groupe qui discute ; café des Capucins"
+    },
+    "couloir": {
+      "src": [
+        "bsb:0874:0:110"
+      ],
+      "titre": "Couloir d'une maternité"
+    },
+    "metro": {
+      "src": [
+        "bsb:3040:0:110"
+      ],
+      "titre": "Ancien métro parisien, intérieur"
+    },
+    "voiture": {
+      "src": [
+        "bsb:1078:0:110"
+      ],
+      "titre": "Périphérique parisien depuis l'habitacle"
+    }
+  },
+  "ponctuels": {
+    "clavier": {
+      "src": [
+        "bsb:0229",
+        "bsb:1733"
+      ],
+      "max": 10,
+      "titre": "Claviers d'ordinateur"
+    },
+    "chaise": {
+      "src": [
+        "bsb:0666"
+      ],
+      "max": 8,
+      "titre": "Chaise sur du carrelage"
+    },
+    "talons": {
+      "src": [
+        "bsb:0166"
+      ],
+      "max": 8,
+      "titre": "Pas en talons"
+    },
+    "pas": {
+      "src": [
+        "bsb:0179"
+      ],
+      "max": 8,
+      "titre": "Pas en chaussons sur carrelage"
+    },
+    "cles": {
+      "src": [
+        "bsb:0378"
+      ],
+      "max": 6,
+      "titre": "Serrure et grosse clé"
+    },
+    "porte": {
+      "src": [
+        "bsb:0787"
+      ],
+      "max": 4,
+      "titre": "Porte de placard"
+    },
+    "papier": {
+      "src": [
+        "bsb:0785"
+      ],
+      "max": 10,
+      "titre": "Papier"
+    },
+    "sonnerie": {
+      "src": [
+        "bsb:3299"
+      ],
+      "max": 4,
+      "titre": "Sonnerie Socotel"
+    },
+    "cadran": {
+      "src": [
+        "bsb:2631"
+      ],
+      "max": 3,
+      "titre": "Cadran rotatif"
+    },
+    "sirene": {
+      "src": [
+        "bsb:2731:20:14"
+      ],
+      "max": 1,
+      "entier": true,
+      "titre": "Sirène de véhicule"
+    },
+    "metro_arrivee": {
+      "src": [
+        "bsb:3041:0:30",
+        "bsb:3043:0:30"
+      ],
+      "entier": true,
+      "stereo": true,
+      "titre": "Métro : arrêt et départ"
+    },
+    "ui_clic": {
+      "src": [
+        "kenney:click_001",
+        "kenney:click_002",
+        "kenney:click_003",
+        "kenney:click_004",
+        "kenney:click_005"
+      ],
+      "entier": true
+    },
+    "ui_onglet": {
+      "src": [
+        "kenney:switch_001",
+        "kenney:switch_002",
+        "kenney:switch_003",
+        "kenney:switch_004"
+      ],
+      "entier": true
+    },
+    "ui_ouvrir": {
+      "src": [
+        "kenney:open_001",
+        "kenney:open_002",
+        "kenney:open_003"
+      ],
+      "entier": true
+    },
+    "ui_erreur": {
+      "src": [
+        "kenney:error_004",
+        "kenney:error_006"
+      ],
+      "entier": true
+    },
+    "ui_alerte": {
+      "src": [
+        "kenney:question_001",
+        "kenney:question_002"
+      ],
+      "entier": true
+    },
+    "ui_bien": {
+      "src": [
+        "kenney:confirmation_001",
+        "kenney:confirmation_002"
+      ],
+      "entier": true
+    },
+    "ui_note": {
+      "src": [
+        "kenney:pluck_001",
+        "kenney:pluck_002"
+      ],
+      "entier": true
+    },
+    "ui_surligne": {
+      "src": [
+        "kenney:scratch_001",
+        "kenney:scratch_002",
+        "kenney:scratch_003"
+      ],
+      "entier": true
+    },
+    "ui_mail": {
+      "src": [
+        "kenney:glass_001",
+        "kenney:glass_002"
+      ],
+      "entier": true
+    }
+  }
+}

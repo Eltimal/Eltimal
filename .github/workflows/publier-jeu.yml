@@ -1,5 +1,5 @@
 # Publie le jeu à chaque push sur une branche claude/* ou main (la session du gameplay et celle des graphismes) : l'app installée le télécharge au lancement suivant (electron/maj.js).
-# Publication « jeu-<numéro> » avec deux pièces : jeu.json.gz et manifest.json. Les 10 dernières sont gardées.
+# Publication « jeu-<numéro> » : jeu.json.gz (complet, pour les anciennes apps), jeu-leger.json.gz et sons.json.gz (téléchargé seulement s'il a changé), manifest.json. Les 10 dernières sont gardées.
 name: Publier le jeu
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
         run: |
           N=$(node -p "require('./dist-jeu/manifest.json').numero")
           if gh release view "jeu-$N" >/dev/null 2>&1; then echo "jeu-$N déjà publié"; exit 0; fi
-          gh release create "jeu-$N" dist-jeu/jeu.json.gz dist-jeu/manifest.json \
+          gh release create "jeu-$N" dist-jeu/jeu.json.gz dist-jeu/jeu-leger.json.gz dist-jeu/manifest.json $(ls dist-jeu/sons.json.gz 2>/dev/null) \
             --title "Jeu n° $N" --notes "Commit ${GITHUB_SHA::7} sur ${GITHUB_REF_NAME}" --target "$GITHUB_SHA" --latest=false
       - name: Garder les 10 dernières publications du jeu
         env:

@@ -39,7 +39,7 @@
     const o = c.createOscillator(), o2 = c.createOscillator(), a = c.createGain(), f = c.createBiquadFilter(), fq = hz(midi);
     f.type = "lowpass";
     if (type === "nappe") {
-      o.type = "sawtooth"; o2.type = "sawtooth"; o.frequency.value = fq; o2.frequency.value = fq * 1.004; f.frequency.value = 520;
+      o.type = "triangle"; o2.type = "sine"; o.frequency.value = fq; o2.frequency.value = fq * 1.003; f.frequency.value = 900; // plus de dents de scie : elles bourdonnaient
       a.gain.setValueAtTime(0.0001, quand); a.gain.linearRampToValueAtTime(g, quand + dur * 0.4); a.gain.linearRampToValueAtTime(0.0001, quand + dur * 1.15);
     } else if (type === "basse") {
       o.type = "sine"; o2.type = "triangle"; o.frequency.value = fq; o2.frequency.value = fq; f.frequency.value = 300;

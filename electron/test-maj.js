@@ -19,7 +19,14 @@ function fabriquer(numero, o) {
   if (o.intrus) fichiers[o.intrus] = Buffer.from("x").toString("base64");
   const paquet = zlib.gzipSync(Buffer.from(JSON.stringify({ numero, commit: "abc", fichiers })));
   const manifest = { numero, commit: "abc", date: "2026-11-12", enveloppeMin: o.enveloppeMin || 1, sha256: o.sha || crypto.createHash("sha256").update(paquet).digest("hex") };
-  return { paquet, manifest };
+  let paquetSons = null;
+  if (o.sons) { // { empreinte, contenu } : un faux dossier sons/
+    const fs2 = { "js/sons/essai.js": Buffer.from(o.sons.contenu).toString("base64") };
+    paquetSons = zlib.gzipSync(Buffer.from(JSON.stringify({ empreinte: o.sons.empreinte, fichiers: fs2 })));
+    manifest.sons = { empreinte: o.sons.empreinte, sha256: crypto.createHash("sha256").update(paquetSons).digest("hex") };
+    manifest.leger = { sha256: manifest.sha256 }; // ici le paquet du jeu ne contient pas de sons : il sert aussi de paquet léger
+  }
+  return { paquet, manifest, paquetSons };
 }
 
 // Faux GitHub : /repos/<depot>/releases, pièces servies par redirection vers un autre hôte (localhost ↔ 127.0.0.1)
@@ -34,7 +41,8 @@ function fauxGithub() {
       const port = srv.address().port;
       const liste = etat.publications.map((p, i) => ({ tag_name: p.tag, draft: false, assets: [
         { name: "manifest.json", url: `http://localhost:${port}/piece/${i}/manifest` },
-        { name: "jeu.json.gz", url: `http://localhost:${port}/piece/${i}/paquet` } ] }));
+        { name: "jeu.json.gz", url: `http://localhost:${port}/piece/${i}/paquet` },
+        ...(p.paquetSons ? [{ name: "jeu-leger.json.gz", url: `http://localhost:${port}/piece/${i}/paquet` }, { name: "sons.json.gz", url: `http://localhost:${port}/piece/${i}/sons` }] : []) ] }));
       rep.writeHead(200, { "Content-Type": "application/json" }); return rep.end(JSON.stringify(liste));
     }
     if (u.pathname.startsWith("/piece/")) {
@@ -42,7 +50,7 @@ function fauxGithub() {
     }
     if (u.pathname.startsWith("/stock/")) {
       const [, , i, quoi] = u.pathname.split("/"); const p = etat.publications[Number(i)];
-      rep.writeHead(200); return rep.end(quoi === "manifest" ? JSON.stringify(p.manifest) : p.paquet);
+      rep.writeHead(200); return rep.end(quoi === "manifest" ? JSON.stringify(p.manifest) : quoi === "sons" ? p.paquetSons : p.paquet);
     }
     rep.writeHead(404); rep.end();
   });
@@ -51,7 +59,7 @@ function fauxGithub() {
 
 (async () => {
   const { srv, etat, api } = await fauxGithub();
-  const pub = (numero, o) => { const f = fabriquer(numero, o); etat.publications.unshift({ tag: "jeu-" + numero, manifest: f.manifest, paquet: f.paquet }); };
+  const pub = (numero, o) => { const f = fabriquer(numero, o); etat.publications.unshift({ tag: "jeu-" + numero, manifest: f.manifest, paquet: f.paquet, paquetSons: f.paquetSons }); };
 
   // ---------- 1. le module seul
   const ud = fs.mkdtempSync(path.join(os.tmpdir(), "lp-maj-"));
@@ -82,6 +90,19 @@ function fauxGithub() {
   pub(15); await v({ numeroActuel: 14 }); pub(16); await v({ numeroActuel: 15 });
   const restants = fs.readdirSync(path.join(ud, "jeu")).filter((n) => /^\d+$/.test(n)).sort();
   note("seules la version actuelle et la précédente restent", restants.join(",") === "15,16", restants.join(","));
+  // les sons : téléchargés quand ils changent, recopiés sinon (depuis la version téléchargée ou depuis l'app)
+  pub(17, { sons: { empreinte: "s1", contenu: "un" } }); etat.vus = []; r = await v({ numeroActuel: 16 });
+  const lus = (n) => { try { return fs.readFileSync(path.join(ud, "jeu", String(n), "js", "sons", "essai.js"), "utf8"); } catch (e) { return null; } };
+  note("sons nouveaux téléchargés", r.etat === "pret" && lus(17) === "un" && etat.vus.some((x) => x.chemin === "/stock/0/sons"), JSON.stringify(r));
+  pub(18, { sons: { empreinte: "s1", contenu: "un" } }); etat.vus = []; r = await v({ numeroActuel: 17 });
+  note("sons inchangés recopiés, pas retéléchargés", r.etat === "pret" && lus(18) === "un" && !etat.vus.some((x) => x.chemin.endsWith("/sons")), etat.vus.map((x) => x.chemin).join(" "));
+  fs.mkdirSync(path.join(appDir, "js", "sons"), { recursive: true }); fs.writeFileSync(path.join(appDir, "js", "sons", "essai.js"), "livre");
+  fs.writeFileSync(path.join(appDir, "electron", "jeu-version.json"), JSON.stringify({ numero: 10, sons: "s2" }));
+  pub(19, { sons: { empreinte: "s2", contenu: "livre" } }); etat.vus = []; r = await v({ numeroActuel: 18, appDir });
+  note("sons de l'app réutilisés", r.etat === "pret" && lus(19) === "livre" && !etat.vus.some((x) => x.chemin.endsWith("/sons")));
+  const fauxSons = fabriquer(20, { sons: { empreinte: "s3", contenu: "trois" } }); fauxSons.manifest.sons.sha256 = "0".repeat(64);
+  etat.publications.unshift({ tag: "jeu-20", manifest: fauxSons.manifest, paquet: fauxSons.paquet, paquetSons: fauxSons.paquetSons }); r = await v({ numeroActuel: 19, appDir });
+  note("sons abîmés refusés", r.etat === "erreur" && /sons/.test(r.detail) && MAJ.versionTelechargee(ud).numero === 19, r.detail);
   fs.writeFileSync(path.join(ud, "jeu", "actuel.json"), "{abîmé");
   note("pointeur abîmé : retour à la version livrée", MAJ.jeuACharger(appDir, ud).source === "livree");
 
