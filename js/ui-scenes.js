@@ -14,7 +14,7 @@
   const PLAN_OF = { conference: "rdv", parloir: "parloir", commissariat: "entretien" };
   const callPlan = (s, call) => {
     const n = call.scene || (s.at === "commissariat" || (CR.placeOf(s, s.at) || {}).type === "commissariat" ? "commissariat" : null);
-    const p = n ? PLAN_OF[n] : call.who ? null : "appel"; // un tiers au bout du fil (permanence, greffe) : pas de plan
+    const p = n ? PLAN_OF[n] : call.who ? "standard" : "appel"; // un tiers au bout du fil (permanence, greffe, confrère) : à son bureau
     return p && UI.planOk && UI.planOk(p) ? p : null;
   };
   // main.js demande si la scène se joue en plein cadre (le fond du lieu n'est alors pas monté)
@@ -117,9 +117,9 @@
     const mood = phase !== "talk" && advice.length ? "soulage" : lastTag === "bad" ? (cs.camp === "pc" ? "cry" : "defi") : patience < 30 ? "worried" : null;
     const faceExpr = talking ? (mood === "cry" ? "cry" : "talk") : mood || "neutral";
     const plan = callPlan(s, call);
-    const cap = plan === "appel" ? "Au téléphone" : plan === "parloir" ? "Parloir avocat" : plan === "entretien" ? "Local avocat" : "Rendez-vous au cabinet";
+    const cap = plan === "appel" || plan === "standard" ? "Au téléphone" : plan === "parloir" ? "Parloir avocat" : plan === "entretien" ? "Local avocat" : "Rendez-vous au cabinet";
     return html`<div className=${cx("scene call-scene", plan && "staged")}>
-      ${plan && html`<${UI.Plan} key=${plan} name=${plan} opts=${{ min: s.min, rain: CR.dec.rainy(s), look, expr: mood || "neutral", talk: talking, you: CR.youLook(s) }} />
+      ${plan && html`<${UI.Plan} key=${plan} name=${plan} opts=${{ min: s.min, rain: CR.dec.rainy(s), look: plan === "standard" ? who.look || CR.px.lookFrom("tiers" + (who.nom || ""), { age: 44 }) : look, expr: mood || "neutral", talk: talking, you: CR.youLook(s) }} />
       <div className="stg-shade"></div>
       <div className="stg-top"><div className="stg-cap"><span className="pix">${cap}</span><span className="stg-sub">${who.nom || c.prenom + " " + c.nom} · ${CR.fmtTime(s.min)}</span></div></div>`}
       <div className="call-side">

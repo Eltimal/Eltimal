@@ -48,6 +48,9 @@
     for (let y = y0; y < y1; y++) { const k = (y - y0) / (y1 - y0), a = Math.round(x0 - e * k), b = Math.round(x1 + e * k); m.set({ E: 0, n: [0, -0.86], S: S == null ? 90 : S, D: Math.round(d0 + (d1 - d0) * k) }); for (let x = a; x <= b; x++) m.px(x, y, PL.h2((x + y * 2) >> 3, y) < 0.16 ? colA : colB); }
   }
 
+  // partagés avec les plans suivants (plan-vie.js)
+  Object.assign(K, { heure, vitre, gouttes, toits, bras, plateau });
+
   // ------------------------------------------------------------ rendez-vous au cabinet
   const DESK = 120;
   function cabinet(m, W) {

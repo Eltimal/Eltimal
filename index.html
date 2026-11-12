@@ -1516,6 +1516,13 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .jury-scene.staged .assis { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
 .jury-scene.staged .transcript { background: rgba(6,9,15,.84); max-height: 40vh; }
 @media (prefers-reduced-motion: reduce) { .call-scene.staged .call-side, .call-scene.staged .call-main, .neg-scene.staged .neg-talk, .neg-scene.staged .neg-form { animation: none; } }
+
+/* ---------- Refonte : le soir et le matin chez soi (plan du salon) ---------- */
+.chez-soi-plan.staged { position: fixed; inset: 0; z-index: 45; background: #04060a; overflow: hidden; }
+.chez-card { position: absolute; left: 50%; bottom: max(26px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(720px, calc(100% - 44px)); box-sizing: border-box; padding: 16px 20px; background: rgba(9,13,21,.88); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); box-shadow: inset 0 0 0 2px #2c3850; }
+.chez-soi-plan .stg-shade { inset: 72% 0 0 0; }
+.chez-card p { margin: 0 0 10px; }
+.chez-btns { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
@@ -1587,6 +1594,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/plan-gav.js"></script>
 <script src="js/plan-audience.js"></script>
 <script src="js/plan-rencontres.js"></script>
+<script src="js/plan-vie.js"></script>
 <script src="js/plan-cabinet.js"></script>
 <script src="js/title.js"></script>
 <script src="js/carte.js"></script>

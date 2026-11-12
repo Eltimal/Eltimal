@@ -37,6 +37,8 @@
     return this;
   };
   M.copy = function (o) { this.c.set(o.c); this.a.set(o.a); };
+  // compatibilité avec les dessins faits pour CR.lum.Buf (Timon) : mat(plan, lumière reçue, lumière propre)
+  M.mat = function (Z, L, E) { this.E = E || 0; this.nx = 128; this.ny = 128; return this; };
   M.px = function (x, y, col, al) {
     x = (x | 0) + this.ox; y |= 0;
     if (x < 0 || y < 0 || x >= this.W || y >= this.H) return;

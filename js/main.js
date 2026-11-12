@@ -251,7 +251,9 @@
     const affFin = CR.GEN2.VIE && CR.GEN2.VIE.affaireFinie(s) && !s.flags.affaireFinieVu && !scene && !pendingDeb;
     // refonte : hors scène, le lieu où l'on est remplit l'écran ; au cabinet, les objets du bureau mènent aux rubriques,
     // et les autres rubriques s'ouvrent en feuille par-dessus (.hub-sheet)
-    const back = UI.planOk && UI.planOk("cabinet") && !(fullScene && (["gav", "court"].includes(scene.type) || (UI.sceneStaged && UI.sceneStaged(s, scene))));
+    // le soir et le matin se passent chez soi, dans le plan du salon
+    const chezSoi = !!(modal && (modal.type === "soir" || modal.type === "matin") && UI.planOk && UI.planOk("domicile"));
+    const back = UI.planOk && UI.planOk("cabinet") && !chezSoi && !(fullScene && (["gav", "court"].includes(scene.type) || (UI.sceneStaged && UI.sceneStaged(s, scene))));
     const hub = back && !fullScene;
     const hubHot = (id) => { if (id === "telephone" && s.ring) { answer(true); return; } go.nav(id); };
     return html`<div className=${cx("game", fullScene && "in-scene", s.night && "is-night", back && "hub-plan", back && (fullScene || ui.panel !== "bureau") && "hub-sheet")}>
@@ -284,12 +286,29 @@
       ${modal && modal.type === "menu" && html`<${MenuModal} s=${s} onClose=${() => setModal(null)} />`}
       ${modal && modal.type === "wait" && html`<${UI.Modal} title=${`${modal.pl.nom} : fermé`} onClose=${() => setModal(null)} footer=${html`<${Btn} onClick=${() => setModal(null)}>Faire autre chose</${Btn}><${Btn} kind="primary" onClick=${() => { const m = modal; setModal(null); CR.spend(s, m.until - s.min, "idle", { fixed: true }); doRun(m.cs, m.t); bump(); }}>Attendre jusqu'à ${CR.fmtTime(modal.until)}</${Btn}>`}><p>Il est ${CR.fmtTime(s.min)}. ${CR.HORAIRES[modal.pl.horaires].label}.</p><p className="small muted">Attendre sur un banc du hall coûte peu d'énergie, mais le temps passe pour tous vos dossiers.</p></${UI.Modal}>`}
       ${modal && modal.type === "confirmEnd" && html`<${UI.Modal} title="Rentrer si tôt ?" onClose=${() => setModal(null)} footer=${html`<${Btn} onClick=${() => setModal(null)}>Rester</${Btn}><${Btn} kind="primary" onClick=${go.rentrer}>Rentrer</${Btn}>`}><p>Il n'est que ${CR.fmtTime(s.min)} un jour ouvré. Les appels de l'après-midi iront sur la messagerie vocale. Un après-midi tranquille aide à récupérer.</p></${UI.Modal}>`}
-      ${modal && modal.type === "soir" && html`<${UI.Modal} wide className="chez-soi" title="Chez vous" onClose=${() => setModal(null)} footer=${html`<${Btn} onClick=${() => setModal(null)}>Finalement, rester</${Btn}><${Btn} kind="primary" icon="moon" onClick=${go.dormir}>Dormir</${Btn}>`}>
+      ${chezSoi && modal.type === "soir" && html`<div className="chez-soi-plan staged">
+        <${UI.Plan} name="domicile" opts=${{ min: s.min, rain: CR.dec.rainy(s), ringing: !!s.ring }} /><div className="stg-shade"></div>
+        <div className="stg-top"><div className="stg-cap"><span className="pix">Chez vous</span><span className="stg-sub">${CR.fmtTime(s.min)}</span></div></div>
+        <div className="chez-card">
+          <p>Il est ${CR.fmtTime(s.min)}. Vous posez la robe et le cartable. Une nuit à cette heure-ci vous rendra environ ${Math.round(CR.recoveryFor(s))} points d'énergie.</p>
+          ${s.ring && html`<p className="small muted">Le téléphone sonne encore : si vous dormez, l'appel ira sur la messagerie vocale.</p>`}
+          <div className="chez-btns"><${Btn} onClick=${() => setModal(null)}>Finalement, rester</${Btn}><${Btn} kind="primary" icon="moon" onClick=${go.dormir}>Dormir</${Btn}></div>
+        </div>
+      </div>`}
+      ${chezSoi && modal.type === "matin" && html`<div className="chez-soi-plan staged">
+        <${UI.Plan} name="domicile" opts=${{ min: CR.DAY_START - 50, rain: CR.dec.rainy(s), ringing: false }} /><div className="stg-shade"></div>
+        <div className="stg-top"><div className="stg-cap"><span className="pix">${CR.fmtDate(s.day, "long")}</span><span className="stg-sub">Chez vous · ${CR.fmtTime(CR.DAY_START - 50)}</span></div></div>
+        <div className="chez-card">
+          <p>Vous avez dormi${s.lastDayStats ? html` et récupéré ${Math.round(s.lastDayStats.rec)} points d'énergie` : ""}. Le café est chaud, il est temps d'y aller.</p>
+          <div className="chez-btns"><${Btn} kind="primary" onClick=${() => setModal(null)}>Partir au cabinet</${Btn}></div>
+        </div>
+      </div>`}
+      ${modal && !chezSoi && modal.type === "soir" && html`<${UI.Modal} wide className="chez-soi" title="Chez vous" onClose=${() => setModal(null)} footer=${html`<${Btn} onClick=${() => setModal(null)}>Finalement, rester</${Btn}><${Btn} kind="primary" icon="moon" onClick=${go.dormir}>Dormir</${Btn}>`}>
         <div className="chez-soi-art"><${UI.Panorama} name="domicile" opts=${Object.assign(CR.dec.stageOpts(s), { unread: 0, ringing: false })} /></div>
         <p>Il est ${CR.fmtTime(s.min)}. Vous posez la robe et le cartable. Une nuit à cette heure-ci vous rendra environ ${Math.round(CR.recoveryFor(s))} points d'énergie.</p>
         ${s.ring && html`<p className="small muted">Le téléphone sonne encore : si vous dormez, l'appel ira sur la messagerie vocale.</p>`}
       </${UI.Modal}>`}
-      ${modal && modal.type === "matin" && html`<${UI.Modal} wide className="chez-soi" title=${CR.fmtDate(s.day, "long")} onClose=${() => setModal(null)} footer=${html`<${Btn} kind="primary" onClick=${() => setModal(null)}>Partir au cabinet</${Btn}>`}>
+      ${modal && !chezSoi && modal.type === "matin" && html`<${UI.Modal} wide className="chez-soi" title=${CR.fmtDate(s.day, "long")} onClose=${() => setModal(null)} footer=${html`<${Btn} kind="primary" onClick=${() => setModal(null)}>Partir au cabinet</${Btn}>`}>
         <div className="chez-soi-art"><${UI.Panorama} name="domicile" opts=${Object.assign(CR.dec.stageOpts(s), { min: CR.DAY_START - 50, unread: 0, ringing: false })} /></div>
         <p>Vous avez dormi${s.lastDayStats ? html` et récupéré ${Math.round(s.lastDayStats.rec)} points d'énergie` : ""}. Le café est chaud, il est temps d'y aller.</p>
       </${UI.Modal}>`}
