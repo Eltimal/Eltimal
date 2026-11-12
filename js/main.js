@@ -251,7 +251,7 @@
     const affFin = CR.GEN2.VIE && CR.GEN2.VIE.affaireFinie(s) && !s.flags.affaireFinieVu && !scene && !pendingDeb;
     // refonte : hors scène, le lieu où l'on est remplit l'écran ; au cabinet, les objets du bureau mènent aux rubriques,
     // et les autres rubriques s'ouvrent en feuille par-dessus (.hub-sheet)
-    const back = UI.planOk && UI.planOk("cabinet") && !(fullScene && ["gav", "court"].includes(scene.type));
+    const back = UI.planOk && UI.planOk("cabinet") && !(fullScene && (["gav", "court"].includes(scene.type) || (UI.sceneStaged && UI.sceneStaged(s, scene))));
     const hub = back && !fullScene;
     const hubHot = (id) => { if (id === "telephone" && s.ring) { answer(true); return; } go.nav(id); };
     return html`<div className=${cx("game", fullScene && "in-scene", s.night && "is-night", back && "hub-plan", back && (fullScene || ui.panel !== "bureau") && "hub-sheet")}>

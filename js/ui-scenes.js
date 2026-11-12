@@ -10,6 +10,23 @@
 
   // =================================================================== ENTRETIEN / APPEL / PARLOIR
   // def.calls[key] = { opening:[seg], topics:[{id,q,a:[seg],cost,tag,unlock,need,fx,ends,flag}], start:[ids], patience, close, advice, scene, who }
+  // refonte : plan plein cadre d'une rencontre (rendez-vous, parloir, local avocat) ou de l'appel téléphonique
+  const PLAN_OF = { conference: "rdv", parloir: "parloir", commissariat: "entretien" };
+  const callPlan = (s, call) => {
+    const n = call.scene || (s.at === "commissariat" || (CR.placeOf(s, s.at) || {}).type === "commissariat" ? "commissariat" : null);
+    const p = n ? PLAN_OF[n] : call.who ? null : "appel"; // un tiers au bout du fil (permanence, greffe) : pas de plan
+    return p && UI.planOk && UI.planOk(p) ? p : null;
+  };
+  // main.js demande si la scène se joue en plein cadre (le fond du lieu n'est alors pas monté)
+  const stagedMemo = new WeakMap();
+  UI.sceneStaged = (s, scene) => {
+    if (!scene || !UI.planOk) return false;
+    if (scene.type === "neg") return UI.planOk("rdv");
+    if (scene.type !== "call") return false;
+    let v = stagedMemo.get(scene);
+    if (v === undefined) { const cs = s.cases[scene.caseId]; try { v = !!(cs && callPlan(s, buildCall(s, cs, scene.call))); } catch (e) { v = false; } stagedMemo.set(scene, v); }
+    return v;
+  };
   UI.CallScene = ({ s, cs, callKey, onDone }) => {
     const def = CR.caseDef(cs);
     const c = CR.client(cs);
@@ -99,9 +116,14 @@
     // le visage suit l'échange : défi ou larmes après une question qui blesse, soulagement quand on le rassure
     const mood = phase !== "talk" && advice.length ? "soulage" : lastTag === "bad" ? (cs.camp === "pc" ? "cry" : "defi") : patience < 30 ? "worried" : null;
     const faceExpr = talking ? (mood === "cry" ? "cry" : "talk") : mood || "neutral";
-    return html`<div className="scene call-scene">
+    const plan = callPlan(s, call);
+    const cap = plan === "appel" ? "Au téléphone" : plan === "parloir" ? "Parloir avocat" : plan === "entretien" ? "Local avocat" : "Rendez-vous au cabinet";
+    return html`<div className=${cx("scene call-scene", plan && "staged")}>
+      ${plan && html`<${UI.Plan} key=${plan} name=${plan} opts=${{ min: s.min, rain: CR.dec.rainy(s), look, expr: mood || "neutral", talk: talking, you: CR.youLook(s) }} />
+      <div className="stg-shade"></div>
+      <div className="stg-top"><div className="stg-cap"><span className="pix">${cap}</span><span className="stg-sub">${who.nom || c.prenom + " " + c.nom} · ${CR.fmtTime(s.min)}</span></div></div>`}
       <div className="call-side">
-        ${sceneName ? html`<div className="mini-stage"><${UI.SceneCanvas} name=${sceneName} opts=${{ min: s.min, client: look, clientExpr: faceExpr }} /></div>` : html`<${Portrait} look=${look} size=${176} expr=${faceExpr} />`}
+        ${plan ? null : sceneName ? html`<div className="mini-stage"><${UI.SceneCanvas} name=${sceneName} opts=${{ min: s.min, client: look, clientExpr: faceExpr }} /></div>` : html`<${Portrait} look=${look} size=${176} expr=${faceExpr} />`}
         <strong>${who.nom || c.prenom + " " + c.nom}</strong>
         <span className="small muted">${call.label || (callKey === "intake" ? "Premier entretien" : callKey === "update" ? "Point sur le dossier" : "Appel")} · ${CR.fmtDuration(elapsed)}</span>
         <div className="patience"><span className="pix">Patience</span><${Meter} value=${Math.max(0, p)} tone=${p < 30 ? "bad" : p < 55 ? "warn" : "ok"} /></div>
@@ -222,8 +244,12 @@
       else setAmount(Math.round((amount + n.lastCounter.amount) / 2 / 50) * 50);
     };
     const look = CR.px.clientLook(c, cs.def);
-    return html`<div className="scene neg-scene">
-      <div className="neg-stage"><${UI.SceneCanvas} name="conference" opts=${{ min: s.min, client: look, clientExpr: last && last.verdict === "leave" ? "angry" : last && last.verdict === "accept" ? "smile" : "neutral" }} /></div>
+    const negExpr = last && last.verdict === "leave" ? "angry" : last && last.verdict === "accept" ? "smile" : "neutral";
+    const staged = UI.planOk && UI.planOk("rdv");
+    return html`<div className=${cx("scene neg-scene", staged && "staged")}>
+      ${staged ? html`<${UI.Plan} name="rdv" opts=${{ min: s.min, rain: CR.dec.rainy(s), look, expr: negExpr, you: CR.youLook(s) }} />
+      <div className="stg-shade"></div>
+      <div className="stg-top"><div className="stg-cap"><span className="pix">Honoraires · rendez-vous au cabinet</span><span className="stg-sub">${c.prenom} ${c.nom} · ${CR.fmtTime(s.min)}</span></div></div>` : html`<div className="neg-stage"><${UI.SceneCanvas} name="conference" opts=${{ min: s.min, client: look, clientExpr: negExpr }} /></div>`}
       <${UI.Coach} k="honoraires" s=${s} />
       <div className="neg-body">
         <div className="neg-talk">

@@ -650,8 +650,9 @@
     };
     const roomOpts = { min: s.min, rain: CR.dec.rainy(s), season: CR.dec.seasonOf(s), rouge: true, jures: assis.length, camp: cs.camp === "pc" ? "pc" : "defense", box: true, looks: { president: CR.acteur(cs.actors.president) ? CR.px.acteurLook(CR.acteur(cs.actors.president)) : undefined, jures: assis.map((x) => x.look), you: CR.youLook(s), client: CR.px.clientLook(CR.client(cs), cs.def) }, speaker: "president" };
     roomOpts.sig = CR.dec.sigOf(roomOpts);
-    return html`<div className="scene jury-scene">
-      <div className="court-stage jury-stage"><${UI.Room} name="assises" opts=${roomOpts} /></div>
+    const staged = UI.planOk && UI.planOk("audience");
+    return html`<div className=${cx("scene jury-scene", staged && "staged")}>
+      ${staged ? html`<${UI.Plan} name="audience" opts=${Object.assign({}, roomOpts, { room: "assises" })} /><div className="stg-shade"></div>` : html`<div className="court-stage jury-stage"><${UI.Room} name="assises" opts=${roomOpts} /></div>`}
       <div className="jury-head"><span className="pix">Formation du jury — ${titre}</span><p className="small">Récusations : défense ${mesR}/${recD} · ministère public ${mpR}/${recM} · jurés désignés ${assis.length}/${n}</p></div>
       <div className="jury-grid">
         ${j && assis.length < 6 && html`<div className="juror juror-big"><${Portrait} look=${j.look} size=${72} /><div className="juror-txt"><strong>${j.nom}</strong><span className="small">${j.age} ans · ${j.commune}</span><span className="small muted">${j.metier}</span></div>
