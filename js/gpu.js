@@ -126,7 +126,7 @@ void main() {
     if (uLd[i].z > 0.0) { float cd = dot(normalize(-L.xy + vec2(0.0001)), uLd[i].xy); f *= smoothstep(uLd[i].z - uLd[i].w, uLd[i].z + uLd[i].w, cd); }
     sum += uLc[i].rgb * (f * nd);
   }
-  o = vec4(c.rgb * sum + c.rgb * c.a * uEm, a.b);
+  o = vec4(c.rgb * sum * (1.0 - c.a * 0.8) + c.rgb * c.a * uEm, a.b);
 }`;
   // 2. reflets du sol : ce qui est au-dessus de la ligne de sol se reflète dans les pixels brillants
   const FS_REFL = HEAD + `

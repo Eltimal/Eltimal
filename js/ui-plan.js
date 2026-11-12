@@ -4,8 +4,28 @@
    (tests jsdom), l'appelant garde alors l'ancienne mise en page. */
 (function () {
   const CR = window.CR, UI = CR.UI, { html } = UI;
-  const { useEffect, useRef } = React;
+  const { useEffect, useRef, useState } = React;
   UI.planOk = (name) => !!(CR.gpu && CR.gpu.ok() && CR.plans && CR.plans[name]);
+
+  // largeur du plan, en pixels du plan, pour un cadre donné
+  UI.planW = (plan, cw, ch) => Math.max(plan.REF - 80, Math.min(640, Math.ceil(plan.H * cw / ch / 2) * 2));
+
+  // Plan dont les objets se cliquent (le cabinet) : onHot(id) ; l'objet survolé est signalé au plan (opts.hover)
+  UI.PlanHub = ({ name, opts, onHot }) => {
+    const plan = CR.plans[name], ref = useRef(null);
+    const [dim, setDim] = useState({ w: 1440, h: 900 }), [hover, setHover] = useState(null);
+    useEffect(() => {
+      const upd = () => { const el = ref.current; if (el) setDim({ w: el.clientWidth || 1440, h: el.clientHeight || 900 }); };
+      upd(); window.addEventListener("resize", upd);
+      return () => window.removeEventListener("resize", upd);
+    }, []);
+    const W = UI.planW(plan, dim.w, dim.h), OX = Math.floor((W - plan.REF) / 2), hot = plan.HOT || [];
+    return html`<div className="plan-hub" ref=${ref}>
+      <${UI.Plan} name=${name} opts=${Object.assign({}, opts, { hover })} />
+      ${hot.map((h) => html`<button key=${h.id} type="button" className="plan-hot" aria-label=${h.label} style=${{ left: (OX + h.x) / W * 100 + "%", top: h.y / plan.H * 100 + "%", width: h.w / W * 100 + "%", height: h.h / plan.H * 100 + "%" }}
+        onMouseEnter=${() => setHover(h.id)} onMouseLeave=${() => setHover((x) => (x === h.id ? null : x))} onFocus=${() => setHover(h.id)} onBlur=${() => setHover(null)} onClick=${() => onHot && onHot(h.id)}><span className="pano-tip">${h.label}</span></button>`)}
+    </div>`;
+  };
 
   UI.Plan = ({ name, opts, className }) => {
     const ref = useRef(null), optsRef = useRef(opts);
@@ -23,7 +43,7 @@
         const dpr = Math.min(2, window.devicePixelRatio || 1), cw = c.clientWidth || window.innerWidth || 1280, ch = c.clientHeight || window.innerHeight || 800;
         const pw = Math.round(cw * dpr), ph = Math.round(ch * dpr);
         if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
-        const W = Math.max(plan.REF - 80, Math.min(640, Math.ceil(plan.H * cw / ch / 2) * 2));
+        const W = UI.planW(plan, cw, ch);
         if (!inst || inst.W !== W) { inst = plan.make(W); lastMat = -1; }
       };
       const paint = (now) => {

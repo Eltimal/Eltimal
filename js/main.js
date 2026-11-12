@@ -249,9 +249,13 @@
     const fullScene = scene && !isModalScene && sceneEl;
     const tutoFin = s.mode === "tutoriel" && s.flags.tutoFini && !s.flags.tutoFiniVu && !scene && !pendingDeb;
     const affFin = CR.GEN2.VIE && CR.GEN2.VIE.affaireFinie(s) && !s.flags.affaireFinieVu && !scene && !pendingDeb;
-    return html`<div className=${cx("game", fullScene && "in-scene", s.night && "is-night")}>
+    // refonte : au cabinet, l'écran du bureau est le plan plein cadre ; ses objets mènent aux rubriques
+    const hub = !fullScene && ui.panel === "bureau" && UI.planOk && UI.planOk("cabinet") && CR.dec.sceneFor(s) === "cabinet";
+    const hubHot = (id) => { if (id === "telephone" && s.ring) { answer(true); return; } go.nav(id); };
+    return html`<div className=${cx("game", fullScene && "in-scene", s.night && "is-night", hub && "hub-plan")}>
+      ${hub && html`<${UI.PlanHub} name="cabinet" opts=${CR.dec.stageOpts(s)} onHot=${hubHot} />`}
       <${UI.HUD} s=${s} onMenu=${() => setModal({ type: "menu" })} onNav=${go.nav} />
-      ${!fullScene && html`<${UI.Stage} s=${s} onNav=${go.nav} onAnswer=${answer} />`}
+      ${!fullScene && !hub && html`<${UI.Stage} s=${s} onNav=${go.nav} onAnswer=${answer} />`}
       ${!fullScene && html`<${UI.RingBar} s=${s} onAnswer=${answer} />`}
       ${fullScene ? html`<main className="scene-host">
           <div className="scene-top"><span className="pix">${scene.caseId && s.cases[scene.caseId] ? CR.caseTitle(s, s.cases[scene.caseId]) : ""}</span></div>

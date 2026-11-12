@@ -48,7 +48,15 @@ Kevin a demandé de refaire toute la **forme** du jeu au niveau d'une production
   - Écran titre : bouton « Tranche pilote » (seulement avec WebGL 2) : garde à vue de l'affaire `a02_sac` à 2 h 15, partie marquée `s.pilote` que `CR.autosave` n'enregistre pas.
   - Outils (après `node tools/shot.js`) : `node tools/shotplan.js entretien 1440x900 <ms> '<options>'` (le plan seul), `node tools/shotgav.js` (la scène montée seule), `DPR=2 node tools/shotpilote.js` (parcours depuis l'écran titre, vérifie qu'aucune sauvegarde n'est écrite). Les captures passent par un rendu logiciel : la fluidité ne se mesure que sur le Mac.
   - Tests passés : t1, t2, t3, t15 gav, t17, t20, tson.
-  - **Attendu de Kevin** : son avis sur ce plan (image, fluidité, chaleur de la machine). Suite prévue du pilote : les autres phases de la garde à vue (geôles, bureau d'audition), l'arrivée au commissariat, puis la comparution immédiate ; interface de dialogue allégée ; musique.
+- **Pilote validé par Kevin le 12 novembre 2026** (« ce réalisme dans le point de vue et la D.A ») : on continue dans cette direction, lieu par lieu.
+- **Le cabinet (12 novembre 2026)** — écran principal du jeu quand on est au cabinet, rubrique Bureau.
+  - `js/plan-cabinet.js` (`CR.plans.cabinet`) : vue depuis le fauteuil, 360 × 225. `HOT` : six objets cliquables (mêmes identifiants que l'ancien décor : bibliotheque, carte, messagerie, telephone, dossiers, agenda). `frame(t, o)` lit `CR.dec.stageOpts(s)` (`min`, `rain`, `unread`, `ringing`, `voicemail`, `files`) plus `hover` ; la lumière suit l'heure (`sun`, `dusk`), la lampe s'allume quand le jour baisse. Zones réservées à l'interface : rangées 0 à 18 (en-tête), colonnes 0 à 46 (navigation), rangées 146 et plus (panneau du jour). Détails animés : ne pas les décrire au joueur.
+  - `js/ui-plan.js` : `UI.PlanHub` (plan + boutons posés sur les objets, coins dorés et nom au survol), `UI.planW`.
+  - `js/main.js` : `hub` (au cabinet, rubrique Bureau, WebGL 2) → classe `.hub-plan` sur `.game`, `UI.PlanHub` à la place de `UI.Stage`, téléphone qui décroche s'il sonne. Les autres rubriques gardent l'ancienne mise en page. CSS « Refonte : le cabinet » à la fin de la feuille.
+  - `js/gpu.js` : un pixel lumineux (`E`) reçoit d'autant moins la lumière ambiante (écrans et ciels ne se brûlent plus en plein jour).
+  - Captures : `node tools/shotplan.js cabinet 1440x900 3000 '{"min":630,"look":null}'`, `node tools/shotui.js 1440x900 hub 's.min = 1290; CR.store.bump();' 2000` (`HOVER='.plan-hot[aria-label=Dossiers]'` pour un survol).
+  - Tests passés : t1, t2, t17, t20, tson ; parcours du pilote inchangé.
+  - Suite prévue : les autres rubriques sur le même fond (messagerie à l'écran, dossiers, agenda), les autres phases de la garde à vue, l'arrivée au commissariat, la comparution immédiate ; interface de dialogue allégée ; musique. Fluidité et chaleur sur le MacBook Air : toujours à confirmer par Kevin.
 
 ## Version 1.0 : où on en est
 
