@@ -173,7 +173,23 @@ Démo « Démarrez une procédure | Prise de date », dossier « Durand / Dupont
 ## Messagerie pénale
 
 - Diapositive : depuis le menu « Messages » ou depuis un dossier ; renseigner les champs du formulaire ; ajouter les documents et envoyer à la juridiction.
-- Le formulaire lui-même n'est pas encore dans les captures reçues.
+- **« Nouveau message pénal »** (depuis la messagerie, barre « Que voulez vous rechercher ? ») : Destinataire(s) * et Destinataire(s) en copie, chacun avec une icône de carnet ; Objet * (liste déroulante, valeur vue : « ap-communication-de-piece ») ; mention « Le message sera généré automatiquement à partir de la complétion des champs suivants » ; bloc **Client** : Statut * (liste ; valeur vue : « Témoin assisté »), Nom (0/60 caractères) *, Prénom (0/35 caractères) *, Date de naissance (calendrier) ; bloc **Procédure** : Identification (liste), Numéro d'identification (0/15 caractères), Commissariat ou Gendarmerie en charge, Date d'audience, Date du jugement, Nature de l'infraction, Nom du mis en cause, Prénom du mis en cause ; « *Champs nécessaires » ; boutons Annuler, Enregistrer, Suivant (grisé tant que les champs requis manquent).
+- **Annuaire des destinataires** (fenêtre « Destinataires ») : Type de juridiction et Juridiction en listes, champ « Que voulez vous rechercher ? », onglet « Annuaire pour Communication Electronique Pénale (CEP) » ; vide, « Aucun résultat pour votre recherche ». Pour Tribunal judiciaire / ALBI, « 1 - 8 sur 8 » : TJ-ALBI/CEP/BO · cep.bo.tj-albi@justice.fr ; TJ-ALBI/CEP/CORR01 · cep.corr01.tj-albi@justice.fr ; TJ-ALBI/CEP/COURDASSISES · cep.courdassises.tj-albi@justice.fr ; TJ-ALBI/CEP/INSTRUCTION01 · cep.instruction01.tj-albi@justice.fr ; TJ-ALBI/CEP/JAP01 · cep.jap01.tj-albi@justice.fr ; TJ-ALBI/CEP/JE01 · cep.je01.tj-albi@justice.fr ; TJ-ALBI/CEP/OPD · cep.opd.tj-albi@justice.fr ; une huitième ligne hors de l'écran. Une ligne choisie se surligne en bleu ; boutons Annuler, Ajouter. Sens des sigles à vérifier avant de les reproduire : BO (bureau d'ordre ?), OPD (?). Le schéma d'adresse est « cep.<service>.tj-<ville>@justice.fr ».
+- **Annuaire des avocats** (même fenêtre, pour la copie) : onglet « Annuaire des avocats », recherche par nom (« CERON » → « Francis CERON · TEST »), filtre « Tous les barreaux, ADMIN, AG… » ; en pied, les destinataires retenus en pastilles, rangée « A » (cep.bo.tj-albi@justice.fr ×) et rangée « Cc » ; boutons Annuler, Ajouter. Le message pénal n'admet qu'un destinataire, mais des confrères en copie.
+- **Étape 2, « Message généré automatiquement »** : lien « Modifier les informations pré-remplies » ; corps composé par la plateforme et modifiable (« Client / Témoin assisté - LOZA Emile / / Procédure / … ») ; compteur « 100 caractères / 65535 » ; « Ajouter votre(vos) fichier(s) » (trombone) ; case « Je confirme que le contenu du message et le(s) document(s) joint(s) sont conformes à ce que je désire envoyer. * » ; boutons Annuler, Enregistrer, Envoyer (grisé tant que la case n'est pas cochée).
+- **Le message pénal envoyé** : de « 999012.rougeotalain@avocat-conseil.fr », « Envoyé le 03/10/2025 • 17h43 » ; objet « ap-communication-de-piece » ; « Associer à un dossier » ; Envoyé à : cep.bo.tj-albi@justice.fr (petite pastille rouge à côté, sans doute l'avis de réception pas encore revenu : à confirmer), Copie à : Francis CERON, Expéditeur : Alain ROUGEOT ; corps « Client / Témoin assisté - LOZA Emile / Procédure / — / Madame, Monsieur, … » ; « Taille du message : 78 Ko » ; « Ajouter l'AR aux documents » grisé (pas encore d'avis de réception).
+- **Liste des envoyés** : un destinataire validé porte une coche verte (« ✓ "CHAMBRE A" <ccl.tgi-test13@justice.gouv.fr> »), pagination « 1 - 17 sur 285 ».
+
+## Tableau de bord : compléments
+
+- Avec la météo renseignée, la tuile affiche « 1 TJ indisponible / 0 CA indisponible / Météo des services ». Le numéro de version figure en pied de la barre latérale (« version 2.29.3 »).
+- e-Partage sécurisé est une entrée de la barre latérale ; son écran n'est pas dans les captures.
+
+## Ce que la messagerie pénale apprend au jeu
+
+- **L'annuaire découpe chaque tribunal en services** (bureau d'ordre, chambre correctionnelle, cour d'assises, instruction, application des peines, juge des enfants…). Choisir le bon service est le geste à apprendre : une demande d'actes envoyée au bureau correctionnel au lieu du cabinet d'instruction n'arrive pas au juge.
+- **Le corps du message est fabriqué par la plateforme** à partir des champs Client et Procédure : le joueur remplit un formulaire structuré, ce qui convient aux saisies du jeu sans texte libre.
+- **Le statut du client** (témoin assisté, mis en examen, prévenu, partie civile…) est un champ requis : se tromper de qualité est une erreur visible.
 
 ## Ce que la prise de date apprend au jeu
 
@@ -189,4 +205,4 @@ Démo « Démarrez une procédure | Prise de date », dossier « Durand / Dupont
 
 ## Ce qu'il manque encore
 
-Kevin envoie la suite. À relever à réception, en priorité pour le pénal : le formulaire du message pénal et l'annuaire des CEP, son avis de réception, la réception d'un lien PLEX.
+Kevin envoie la suite. À relever à réception, en priorité pour le pénal : les listes complètes des champs Objet, Statut et Identification du message pénal ; l'avis de réception d'un message pénal ; la réception d'un lien PLEX ; l'écran e-Partage.
