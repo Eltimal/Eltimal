@@ -7,6 +7,7 @@
 - Document de conception et feuille de route (cases à cocher) : https://claude.ai/artifact/CuxLGVpCzBWHchG3qY1daX — section « Feuille de route », juste avant « Sources »
 - Langue du jeu et des échanges : français.
 - Audit des mécaniques de jeu (12 novembre 2026 : inventaire chiffré du code, ce qui est prévu, dix pistes non prévues, priorités) : https://claude.ai/artifact/WiS2saHnXPwYds9exGB9Ht
+- Audit de la diversité des affaires (12 novembre 2026 : 3 000 tirages ; faits variés, mais noms, magistrats, enquêteurs, déroulé et issue répétitifs ; priorités) : https://claude.ai/artifact/SWAQM7RJKowYbJfB8mEqYe
 
 ## Refonte graphique façon Backbone (novembre 2026) : où on en est
 
