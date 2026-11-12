@@ -4,6 +4,17 @@
 
 Règle d'usage : le jeu reprend les structures et les formules d'usage, jamais les noms ni les faits des pièces réelles lues (elles concernent de vraies personnes).
 
+## Plafond de lecture (décision de Kevin, 12 novembre 2026)
+
+Chaque pièce doit se lire en 5 à 10 minutes au plus. À environ 200 mots par minute pour un texte juridique dense : 1 000 mots visés (3 pages), 2 000 mots au plus (5 à 6 pages). Cette règle remplace « vingt pages en vrai, vingt dans le jeu ».
+
+- Les trames ci-dessous restent complètes : toutes les rubriques, toutes les formules d'usage, chacune plus courte.
+- Les longueurs réelles mesurées servent de repère de forme, pas de cible.
+- Un jugement simple fait 2 à 3 pages ; le plus complexe 5. Une ordonnance de renvoi tient sous le plafond même pour une affaire lourde : exposé resserré, citations par cotes.
+- Un gros dossier a plus de pièces, pas des pièces plus longues.
+- Les répétitions et le remplissage administratif se résument (« [suivent les mentions d'usage] ») ; les pièces de pure forme tiennent en quelques lignes.
+- Test à prévoir : aucune pièce produite au-delà de 2 000 mots.
+
 ## Sources lues
 
 | Source | Ce que c'est | Sert pour |
