@@ -505,6 +505,39 @@ Onze lots, dans cet ordre, chacun jouable et testé avant le suivant. Le pilote 
 - [ ] **9. Bibliothèque.** Texte intégral des codes, si la licence et le poids le permettent.
 - [ ] **10. Affaires écrites et tutoriel.** Reprise des douze affaires dans le nouveau moteur.
 
+## Contenus durs : règles assouplies
+
+Décision de Kevin du 12 novembre 2026, après une affaire de viol sur mineur jouée : les règles actuelles empêchent de traiter l'affaire, il faut les assouplir le plus possible. Principe retenu : le dossier contient tout ce qu'un vrai dossier contient et tout ce dont l'avocat a besoin pour défendre ou représenter la victime, écrit comme l'écrivent les enquêteurs, les médecins et les juges, c'est-à-dire de façon clinique et factuelle.
+
+### Ce qui change pour les mineurs victimes d'infractions sexuelles
+
+Aujourd'hui ces affaires sont réduites à la procédure (« des faits de nature sexuelle », examen et audition résumés en une ligne). Elles deviennent des dossiers complets :
+
+- **Les faits qualifiés.** La nature de chaque acte en termes juridiques et médicaux (attouchement, pénétration et sa nature), le lieu, la période, la fréquence, l'âge de l'enfant à chaque période, le lien d'autorité ou de famille, la façon dont le silence a été obtenu (secret, menaces, cadeaux).
+- **L'audition enregistrée de l'enfant** (art. 706-52) rapportée en substance, avec quelques mots de l'enfant cités quand ils portent un enjeu juridique (la pénétration, la contrainte, la chronologie, une variation entre deux auditions), sans détail descriptif au-delà.
+- **La révélation et son contexte** : à qui, quand, dans quels termes, ce que le confident a fait ensuite.
+- **L'examen médico-légal** avec ses constatations cliniques ou leur absence, et ce qu'elle signifie (un examen normal n'exclut pas les faits).
+- **Les expertises** : retentissement chez l'enfant, personnalité et dangerosité du mis en cause.
+- **Les messages saisis** décrits par l'enquêteur dans leur nature et leur fréquence (demandes de secret, propositions de rencontre, emprise), sans reproduction de contenu sexuel.
+- **Les questions de droit propres à ces affaires**, chacune à vérifier sur le texte avant d'être codée : viol et agression sexuelle sur mineur de quinze ans et écart d'âge, inceste, prescription, administrateur ad hoc, huis clos, confrontation et audition de l'enfant à l'audience, qualification de la pénétration, cumul avec la corruption de mineur ou les images.
+- **Les noms** : dans les pièces du dossier, l'enfant porte son nom, comme dans une vraie procédure ; les initiales restent pour ce qui serait public (presse, décision diffusée).
+
+### Pour les victimes majeures
+
+Les descriptions restent cliniques mais deviennent complètes : tous les actes utiles à la qualification, les variations entre les déclarations, les éléments sur le consentement, la contrainte et la surprise.
+
+### Ce qui ne change pas
+
+Ces limites restent fermes, quel que soit le réglage :
+
+- **Aucune description sexualisée, sensorielle ou détaillée d'actes sexuels sur un mineur**, ni aucune reproduction de messages sexuels adressés à un mineur. Le registre est celui du procès-verbal et du rapport médical, jamais celui du récit.
+- **Aucune image d'un mineur victime**, et aucune description d'images ou de vidéos d'abus. Leur existence, leur nombre, leur date et leur placement sous scellé figurent au dossier ; leur contenu, jamais. Le metteur en scène des images n'est jamais utilisé pour ces affaires.
+- Le réglage de contenu (« réaliste », « adouci ») reste proposé au joueur ; ce qui précède définit le réglage « réaliste ».
+
+### Où le changer dans le code
+
+`js/cat-crimes-sexuels.js` (contextes marqués `procedural`, fonctions `audMineur` et `procMineur`), `js/gen-pieces-crim.js` et `js/gen-instruction.js` (variable `proc` qui remplace le nom et résume les pièces), `js/cat-crimes.js` (photos désactivées), et la règle de contenu de la fiche de reprise. À faire avec le lot 7 (instruction et assises), qui réécrit ces pièces, ou avant si Kevin le demande.
+
 ## Limites et points à vérifier
 
 Quatre limites sont assumées, et rien de ce qui suit n'entre dans le jeu avant vérification sur le texte.
