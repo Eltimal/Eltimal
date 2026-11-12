@@ -1,4 +1,4 @@
-// La Permanence — refonte du gameplay, lot 1 : lire le dossier (UI.DossierReel, UI.DossierPilote)
+// La Permanence — refonte du gameplay, lot 1 : lire le dossier en feuillets (UI.DossierReel), ouvert depuis l'onglet Pièces d'un dossier
 // Le dossier se lit comme un vrai : un bordereau, des cotes, des feuillets qu'on tourne. Aucune phrase prédécoupée,
 // aucun passage signalé. Le temps de lecture se compte (200 mots par minute) : il nourrira l'horloge du plan.
 // Clavier : ← → tournent les feuillets, ↑ ↓ changent de pièce, Début et Fin vont au premier et au dernier feuillet.
@@ -86,7 +86,7 @@
 
   // ------------------------------------------------------------------ Le dossier
   // props : S (simulation), stade ("gav" : pièces de l'article 63-4-1 ; "copie" : dossier complet), onClose, pied (zone libre)
-  // props : docs (pièces déjà au format du lecteur, voir UI.lecteurDe) ou S (simulation du pilote) ; onClose(minutes lues)
+  // props : docs (pièces déjà au format du lecteur, voir UI.lecteurDe) ou S (simulation CR.SIMV, pièces composées par CR.DOCSV) ; onClose(minutes lues)
   UI.DossierReel = function DossierReel({ S, stade, onClose, entete, docs: fournies, proc, titre, sousTitre }) {
     const docs = useMemo(() => fournies || (stade === "gav" ? DOCS.consultables(S, S.a.entretien.m) : DOCS.dossier(S)), [fournies, S && S.sig, stade]);
     const [id, setId] = useState(docs[0] && docs[0].id);
@@ -204,35 +204,4 @@
     return html`<figure className="pv-schema"><${Toile} S=${null} spec=${{ type: "schema", lesions }} /><figcaption>Schéma corporel : ${lesions.map((l, i) => `${i + 1}. ${l}`).join(" ; ")}</figcaption></figure>`;
   };
 
-  // ------------------------------------------------------------------ Le pilote : une affaire de flagrance à graine fixe
-  // Première affaire prise en charge par la simulation qui réunit plainte, témoin, images, et une irrégularité à trouver.
-  const pilotes = {};
-  UI.dossierPilote = function (n) {
-    if (pilotes[n]) return pilotes[n];
-    let k = 0;
-    for (let i = 0; i < 6000; i++) {
-      const t = CR.GEN2.tirer("pilote-gameplay:" + i, "gav", {});
-      if (!t || !SIM.supporte(t)) continue;
-      const riche = t.preuves.includes("video") && t.preuves.includes("temoin") && t.preuves.includes("plainte") && (t.voie === "copj" || t.voie === "ci");
-      if (n === 0 && !(riche && t.irr.length === 1 && t.doutes.length)) continue;
-      if (k++ < n && n > 0) continue;
-      return (pilotes[n] = SIM.simuler(t));
-    }
-    return null;
-  };
-  UI.DossierPilote = function DossierPilote({ onClose }) {
-    const [n, setN] = useState(0);
-    const [stade, setStade] = useState("copie");
-    const S = useMemo(() => UI.dossierPilote(n), [n]);
-    if (!S) return html`<div className="dr"><p className="dr-vide">Aucune affaire à montrer.</p><button type="button" className="dr-fermer" onClick=${onClose}>Retour</button></div>`;
-    const outils = html`<div className="dr-pilote">
-      <p>Pilote de la refonte du gameplay, lot 1. Tout ce dossier sort d'une même simulation de l'affaire : rien n'y est signalé, rien n'est enregistré.</p>
-      <div className="dr-pil-btns">
-        <button type="button" className=${cx(stade === "gav" && "on")} onClick=${() => setStade("gav")}>En garde à vue</button>
-        <button type="button" className=${cx(stade === "copie" && "on")} onClick=${() => setStade("copie")}>Copie du dossier</button>
-      </div>
-      <button type="button" onClick=${() => setN(n + 1)}>Une autre affaire</button>
-    </div>`;
-    return html`<${UI.DossierReel} key=${S.sig + stade} S=${S} stade=${stade} onClose=${onClose} entete=${outils} />`;
-  };
 })();

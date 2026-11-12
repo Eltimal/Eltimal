@@ -88,23 +88,6 @@ const { boot, sleep, click, findBtn, texts } = require("./harness");
   ok(med(mots.dossier) >= 4500 && med(mots.audition) >= 550, "pièces trop courtes", `${med(mots.dossier)} / ${med(mots.audition)}`);
   ok(!SIM.supporte(G.tirer("tsim:x", "copj", {}) || {}), "une affaire hors périmètre est prise en charge");
 
-  // le lecteur : ouvrir le pilote depuis l'écran titre, tourner les feuillets, changer de pièce et d'affaire, refermer
-  await sleep(200);
-  const b = findBtn(doc, /^Pilote : le dossier/); ok(!!b, "bouton du pilote absent de l'écran titre");
-  if (b) {
-    await click(w, b); await sleep(120);
-    ok(doc.querySelectorAll(".dr-page").length >= 1 && doc.querySelectorAll(".dr-piece").length >= 15, "le dossier ne s'ouvre pas");
-    const etat = () => (doc.querySelector(".dr-page") || { getAttribute: () => "" }).getAttribute("aria-label");
-    const e0 = etat(); w.dispatchEvent(new w.KeyboardEvent("keydown", { key: "ArrowRight" })); await sleep(60); ok(etat() !== e0, "la flèche ne tourne pas le feuillet", e0);
-    w.dispatchEvent(new w.KeyboardEvent("keydown", { key: "ArrowDown" })); await sleep(60); const e1 = etat();
-    await click(w, [...doc.querySelectorAll(".dr-piece")].find((x) => /audition$/.test(texts(x.querySelector(".dr-pt"))))); ok(/QUESTION/.test(texts(doc.querySelector(".dr-table-lecture"))) && etat() !== e1, "la pièce choisie ne s'affiche pas");
-    ok(!doc.querySelector(".dr [class*=surl], .dr [class*=seg-], .dr mark"), "un passage est signalé dans une pièce");
-    await click(w, findBtn(doc, /^En garde à vue/)); ok(doc.querySelectorAll(".dr-piece").length <= 3 && doc.querySelectorAll(".dr-piece").length >= 1, "pièces consultables en garde à vue (lecteur)");
-    const p0 = texts(doc.querySelector(".dr-rail header")); await click(w, findBtn(doc, /^Copie du dossier/)); const s0 = texts(doc.querySelector(".dr-rail ol"));
-    await click(w, findBtn(doc, /^Une autre affaire/)); ok(texts(doc.querySelector(".dr-rail ol")) !== s0 || p0 !== texts(doc.querySelector(".dr-rail header")), "« Une autre affaire » ne change rien");
-    await click(w, findBtn(doc, /^Refermer le dossier/)); ok(!doc.querySelector(".dr") && !!findBtn(doc, /^Nouvelle partie/), "le dossier ne se referme pas");
-    ok(!CR.store.s, "le pilote a créé une partie");
-  }
   console.log(`affaires : ${n} · scènes : ${JSON.stringify(sc)} · irrégularités : ${JSON.stringify(irrVu)} · images : ${images}`);
   console.log(`mots (médiane) — dossier : ${med(mots.dossier)} · audition : ${med(mots.audition)} · plainte : ${med(mots.plainte)}`);
   for (const [k, v] of Object.entries(pb)) console.log(`  ${k} : ${v}`);

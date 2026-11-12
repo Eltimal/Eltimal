@@ -108,7 +108,7 @@
     },
   });
   // une affaire jouée par son code a son propre emplacement : la carrière en cours n'est pas touchée
-  CR.autosave = () => { const s = CR.store.s; if (s && !s.gameOver && !s.pilote) Saves.save(s.mode === "affaire" ? "affaire" : "auto", s); };
+  CR.autosave = () => { const s = CR.store.s; if (s && !s.gameOver) Saves.save(s.mode === "affaire" ? "affaire" : "auto", s); };
 
   // =================================================================== Application
   const MODAL_SCENES = ["decide", "conflict", "withdraw", "mentor", "grievance", "library", "permanences"];
@@ -457,14 +457,6 @@
     useEffect(() => { Saves.list().then(setSaves); }, [Saves.backend]);
     const auto = saves && saves.find((x) => x.slot === "auto");
     const look = useMemo(() => CR.px.lookFrom("joueur" + seed, { outfit: "robe", age: 28 }), [seed]);
-    // Tranche pilote de la refonte : une garde à vue de nuit, sans sauvegarde (s.pilote coupe CR.autosave)
-    const pilote = () => {
-      const st = CR.newGame({ prenom: prenom.trim() || "Camille", nom: nom.trim() || "Durand", look, mode: "carriere" });
-      st.pilote = true; st.settings.coach = false; st.min = 2 * 60 + 15; st.at = "commissariat";
-      const cs = CR.openCase(st, "a02_sac");
-      CR.store.s = st; bump();
-      setTimeout(() => { if (UI._setScene && CR.store.s === st) UI._setScene({ type: "gav", caseId: cs.id }); }, 80);
-    };
     const start = (m, debut) => {
       const p = prenom.trim() || "Camille";
       const n = nom.trim() || "Durand";
@@ -486,8 +478,6 @@
     const hh = clock.getHours(), mm = String(clock.getMinutes()).padStart(2, "0");
     const nuit = hh >= 21 || hh < 7;
     const others = saves ? saves.filter((x) => x.slot !== "auto") : [];
-    // Pilote de la refonte du gameplay (lot 1) : le dossier d'une garde à vue de flagrance, hors partie
-    if (mode === "dossier" && UI.DossierPilote) return html`<${UI.DossierPilote} onClose=${() => setMode("menu")} />`;
     return html`<div className="ts">
       <${UI.TitleArt} />
       <div className="ts-ui">
@@ -504,8 +494,6 @@
               ${auto && html`<button type="button" className="ts-btn ts-primary" onClick=${async () => { const st = await Saves.load("auto"); if (st) { CR.store.s = st; bump(); } }}>Reprendre<small>${auto.meta.nom} · ${auto.meta.date}${auto.meta.mode === "tutoriel" ? " · tutoriel" : ""}</small></button>`}
               <button type="button" className=${cx("ts-btn", !auto && "ts-primary")} onClick=${() => setMode("new")}>Nouvelle partie</button>
               <button type="button" className="ts-btn" onClick=${() => setMode("code")}>Jouer une affaire par son code</button>
-              ${UI.planOk && UI.planOk("entretien") && html`<button type="button" className="ts-btn" onClick=${pilote}>Tranche pilote<small>Refonte : l'entretien de garde à vue · rien n'est enregistré</small></button>`}
-              ${UI.DossierPilote && html`<button type="button" className="ts-btn" onClick=${() => setMode("dossier")}>Pilote : le dossier<small>Refonte du gameplay · pièces à leur vraie forme, tirées d'une simulation de l'affaire</small></button>`}
               ${others.length > 0 && html`<button type="button" className="ts-btn" onClick=${() => setMode("load")}>Charger une partie</button>`}
               <button type="button" className="ts-btn" onClick=${() => fileRef.current && fileRef.current.click()}>Importer une sauvegarde</button>
               <button type="button" className="ts-btn" onClick=${() => setMode("reglages")}>Réglages</button>

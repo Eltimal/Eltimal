@@ -89,6 +89,35 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40 || process.env.VOIR) co
     ok(!/ITT/.test(vict.split("\n").slice(0, 25).join(" ")) || t.quoi === "itt", `${tag} : la victime cite l'ITT avant l'examen`);
     if (SS.fuite !== "pied") ok(!/parti en courant|en courant vers/.test(DOCS.texte(rendre(PZ, PZ.docs.pv_temoin ? "pv_temoin" : "pv_victime", t))), `${tag} : fuite à pied racontée pour une fuite ${SS.fuite}`);
   }
+  // le lecteur en feuillets, en partie : onglet Pièces d'un dossier de violences, « Lire en feuillets », tourner, refermer
+  {
+    const { w, doc } = env, { click, findBtn, texts } = require("./harness"), P = require("./play");
+    const s2 = CR.newGame({ prenom: "A", nom: "B", mode: "carriere", seed: 5 }); s2.settings.coach = false; CR.store.s = s2;
+    let tv = null; for (let i = 0; i < 4000 && !tv; i++) { const x = G.tirer("tlec" + i, "ci", { day: s2.day, inf: "violences" }); if (x && SIM.violencesOK && SIM.violencesOK(x) && x.preuves.includes("video")) tv = x; }
+    ok(!!tv, "aucune affaire de violences pour le lecteur");
+    if (tv) {
+      const p = { gen: 2, id: "g_ci_99", kind: "ci", day: s2.day, niveau: CR.contenu(s2), t: tv, inf: tv.inf }; G.prepare(p); s2.generated = s2.generated || []; s2.generated.push(p);
+      const def = G.def(p); def.id = p.id; CR.CASES[p.id] = def; const cs = CR.openCase(s2, p.id); cs.status = "active";
+      for (const k of Object.keys(def.docs)) CR.fileDoc(s2, cs, { key: k, title: (def.docTitles || {})[k] || k });
+      CR.store.bump(); await sleep(120);
+      await P.openCase(w, doc, tv.A.nom); await sleep(60);
+      await click(w, findBtn(doc, /^Pièces/)); await sleep(60);
+      const lire = findBtn(doc, /Lire en feuillets/); ok(!!lire, "bouton « Lire en feuillets » absent");
+      if (lire) {
+        const min0 = s2.min, jour0 = s2.day;
+        await click(w, lire); await sleep(120);
+        ok(doc.querySelectorAll(".dr-page").length >= 1 && doc.querySelectorAll(".dr-piece").length >= 12, "le lecteur ne s'ouvre pas sur le dossier");
+        ok(/D1/.test(texts(doc.querySelector(".dr-rail"))), "le rail des cotes ne montre pas D1");
+        const etat = () => (doc.querySelector(".dr-page") || { getAttribute: () => "" }).getAttribute("aria-label");
+        const e0 = etat(); w.dispatchEvent(new w.KeyboardEvent("keydown", { key: "ArrowRight" })); await sleep(60); ok(etat() !== e0, "la flèche ne tourne pas le feuillet");
+        const e1 = etat(); w.dispatchEvent(new w.KeyboardEvent("keydown", { key: "ArrowDown" })); await sleep(60); ok(etat() !== e1, "la flèche ne change pas de pièce");
+        ok(!doc.querySelector(".dr [class*=seg-], .dr mark"), "un passage est signalé dans le lecteur");
+        await click(w, findBtn(doc, /^Refermer le dossier/)); await sleep(60);
+        ok(!doc.querySelector(".dr"), "le lecteur ne se referme pas");
+        ok(s2.day > jour0 || s2.min > min0, "le temps de lecture n'est pas compté");
+      }
+    }
+  }
   mots.sort((a, b) => a - b);
   console.log(`affaires : ${vus.ci} comparutions immédiates, ${vus.gav} gardes à vue (dont ${nArr} arrachages) ; ${pieces} pièces ; dossier médian ${mots[mots.length >> 1]} mots (min ${mots[0]}, max ${mots[mots.length - 1]})`);
   console.log(`violences au dossier détaillé du pilote : ${nPil}`);
