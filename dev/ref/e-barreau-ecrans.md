@@ -1,6 +1,6 @@
 # e-Barreau : relevé des écrans (lot 0)
 
-Relevé écran par écran de la démo vidéo du CNB (« Accédez au Nouvel e-Barreau », « Retrouvez vos dossiers », « Le dossier | Créez un nouveau dossier », « Recherchez vos audiences », « Recherchez une déclaration d'appel », « Démarrez une procédure ») (captures fournies par Kevin le 12 novembre 2026, compte de démonstration « Maître Alain ROUGEOT », juridictions fictives « TEST1 », dates de septembre 2025). Les captures elles-mêmes ne sont pas versées au dépôt. Ce relevé sert à reconstituer le poste de travail du jeu : on reprend la structure, les libellés et les parcours ; on ne reproduit ni le logo du CNB ni ses illustrations.
+Relevé écran par écran de la démo vidéo du CNB (« Accédez au Nouvel e-Barreau », « Retrouvez vos dossiers », « Le dossier | Créez un nouveau dossier », « Recherchez vos audiences », « Recherchez une déclaration d'appel », « Démarrez une procédure | Prise de date », « Constitution automatique ») (captures fournies par Kevin le 12 novembre 2026, compte de démonstration « Maître Alain ROUGEOT », juridictions fictives « TEST1 », dates de septembre 2025). Les captures elles-mêmes ne sont pas versées au dépôt. Ce relevé sert à reconstituer le poste de travail du jeu : on reprend la structure, les libellés et les parcours ; on ne reproduit ni le logo du CNB ni ses illustrations.
 
 Complète la section « Étalon vérifié : e-Barreau et communication électronique pénale » de l'onglet « Refonte du gameplay » du document de conception.
 
@@ -120,9 +120,36 @@ Complète la section « Étalon vérifié : e-Barreau et communication électron
 - Les noms d'intimés portent parfois un préfixe en capitales (« A.M.A. », « C.C.E. ») dont la démo ne donne pas le sens : à vérifier avant de le reproduire.
 - En pénal, l'appel se fait par déclaration au greffe (art. 502) : cet écran ne sert pas au pénal. Il compte pour les dossiers de victimes portés au civil.
 
-## Démarrer une procédure
+## Démarrer une procédure : prise de date (procédure civile)
 
-- Diapositive : créer un dossier ou ouvrir un dossier existant, puis « Actions du dossier » > « Démarrer une procédure ».
+Démo « Démarrez une procédure | Prise de date », dossier « Durand / Dupont », juridiction en « Recherche hors juridiction ».
+
+- **Barre du haut en mode hors juridiction** : « Recherche hors juridiction » ; type « Par mots clés » ; champ « Rechercher sur l'ensemble des dossiers déjà consultés ». Le sous-menu Dossiers se réduit alors à Mes dossiers, Se constituer, Consultation du rôle, Tribunal de Commerce (Recherche de DA et Recherche « non constitué » disparaissent).
+- **Un dossier à plusieurs procédures** : une rangée d'onglets de procédure au-dessus des six onglets, par exemple « Fond • N° de rôle à mettre à jour · TI • TEST1 », « Déclaration d'appel • N° de rôle à … · CA », un autre « Fond », puis « TI • TEST1 ». La mention « N° de rôle à mettre à jour » est en orange.
+- Dans l'onglet informations d'une telle procédure, bandeau orangé : « En attente de numéro de rôle. Associer le numéro de rôle à cette procédure » (lien). Événements du type « Action : Mise à jour de l'utilisateur Joël DUPONT · 14 juin 2024 • 17h27 · Par Maître Alain ROUGEOT ».
+- **Actions du dossier quand une procédure est ouverte** : Démarrer une procédure, Créer un nouveau message, Créer un évènement, Mettre à jour le n° RG, Supprimer cette procédure.
+- **Écran 1** : « Veuillez choisir l'action à lancer sur votre dossier. » Un seul bouton : « Procédure civile ». Illustration d'un avocat tenant une balance à droite (ne pas reproduire).
+- **Écran 2, « Choix de la juridiction »** : « Veuillez choisir le type de juridiction. » Tribunal Judiciaire, Cour d'appel, Tribunal de Commerce ; lien « ‹ Retour ».
+- **Écran 3, « Type de procédure »** : étiquette « TJ • TEST » en haut à droite ; « Veuillez choisir une procédure. » Inscription en référé ; Placement au fond : réserver une date d'audience ou placer au fond.
+- **Écran 4, « Placement au fond »** (étiquette « TJ • TEST • Placement au fond ») : « Vous souhaitez réserver une date d'audience pour une procédure au fond ? Si la nature de votre affaire figure dans la liste déroulante ci-dessous, vous pouvez prendre date par la voie électronique. Attention : l'acte introductif d'instance devra faire l'objet d'un placement par la suite. » Liste des natures (CNB Nature fond Test, CNB Test fond, CNB TEST TERM, CONSTRUCTION…). « Si la nature de votre affaire ne figure pas dans la liste ci-dessus, vous ne pouvez pas prendre une date par la voie électronique. Vous devez donc prendre une date auprès du greffe de la juridiction par tout autre moyen. » Bouton « Réserver une date d'audience ». Puis, sous un filet : « Vous souhaitez procéder au placement d'une affaire ? Cliquez sur ce bouton pour continuer » et « Placer au fond ».
+- **Écran 5, parties** : bandeau rose « « Les champs avec un astérisque dans cet écran sont requis par le logiciel de la juridiction. Veuillez compléter, en conformité avec les dispositions du Code de procédure civile, l'ensemble des mentions obligatoires applicable selon votre procédure et qui figurent, au besoin, dans l'espace « Autres champs ». » ». Bloc « Client(s) » avec « × Informations à compléter » en rouge et « Ajouter des représentants ». Une carte par partie : avatar jaune, nom, rôle à choisir (« Demandeur »), corbeille, crayon, chevron. Champs : Nom (6/60caractères) *, Prénom (4/35caractères) *, Genre * (Masculin), Civilité * (en rouge, « Champ obligatoire non complété »), Majorité * (Majeur), Type d'adresse * (Adresse personnelle), Adresse (14/120caractères) *, Ville/Pays (5/30caractères) *, puis « + Autres Champs ». Les compteurs de caractères sont ceux du logiciel du greffe.
+- **Écran 6, documents** : « La taille totale de vos documents ne doit pas dépasser 10 Mo. » ; en rouge « Joindre a minima le projet d'assignation afin de pouvoir réserver une date. » ; zone en pointillés « Ajouter votre(vos) fichier(s) · Glissez votre fichier ou téléchargez-le ». Bouton « Valider » grisé (curseur interdit) tant que rien n'est joint. Une fois joint : « Mes documents · projet-d-assignation.pdf · 77.4 Ko · Visualiser · Supprimer » et la case « J'ai visualisé le(s) document(s) et je confirme qu'il(s) est (sont) conforme(s) à ce que je désire envoyer. »
+- **Écran 7, date** : Nature du placement au fond avec RO (TUTELLES) ; Délais (« Délai 1 : 15 jours : 15 ») ; Dates d'audience (« 12-07-2024 à 09:00 : Paul Cezanne », le dernier terme étant sans doute le nom de la salle ou de la chambre) ; « *Champs nécessaires » ; bouton bleu « Réserver une date ».
+- **Écran 8, récapitulatif** : parties (Paul DURAND · Demandeur ; Alain ROUGEOT · Avocat) ; « Adversaire(s) » (Joël DUPONT · Défendeur) ; « Informations » : Choix de la procédure (Procédure Civile), Juridiction (TEST), Adresse du Tribunal (--), Destinataire (ccl.tgi-test10@justice.gouv.fr), Représentation (Non), Nature (TUTELLES), Délais (Délai 1 : 15 jours), Date de première audience réservée (12 juillet 2024 • 900 • CHAMBRE B), Document (projet-d-assignation.pdf, en lien).
+- **Après l'envoi, onglet messages du dossier** : barre de progression jaune en haut ; « + Nouveau message » ; Messages reçus 0, Messages envoyés 1, Brouillons 0, Corbeille 0 ; barre d'outils (case à cocher, actualiser) ; « Afficher 10 éléments / 0 - 0 » avec « ‹ › » ; une ligne : pastille « TJ », « Affaire Durand … », petite icône rouge, « ccl.tgi-test10@justice.gouv.fr », objet « <ASAF> Saisine de Maître ROUGEOT n° CNBF : 9990… », trombone, « 20 juin 2024 ».
+- Adresses : la messagerie civile écrit à des adresses en « ccl.tgi-…@justice.gouv.fr » ; le guide du barreau de Paris donne pour la communication électronique pénale des adresses « cep.XXX@justice.fr ». Deux familles d'adresses à ne pas confondre en jeu.
+
+## Constitution automatique (procédure civile)
+
+- Diapositive : menu Dossiers, puis Se constituer ; recherche par numéro RG ou autrement ; vérifier les informations transmises par la juridiction et envoyer.
+- **Mes dossiers, vue d'une cour d'appel** : les noms portent le numéro en suffixe (« S.C.M. LEFEBVRE GROUP / FAUCHEUXIER Estelle veuve Merlet_1/25/00055 ») ; nature et numéro (« Déclaration d'appel 25/00059 », « Autre saisine 25/00062 », « Déclaration de saisine 25/00061 ») ; des badges bleu nuit signalent une échéance : « conclure 908 », « Article 908 » (délai de l'appelant pour conclure, art. 908 CPC).
+- **Se constituer** : Type de juridiction * (Tribunal Judiciaire, Cour d'appel) ; Juridiction concernée ; un avertissement en rouge, partiellement caché, qui finit par « …de procédure civile et notamment de postulation. »
+
+## Ce que la prise de date apprend au jeu
+
+- **« Démarrer une procédure » ne propose que la procédure civile.** Rien ne s'introduit au pénal par e-Barreau : citation directe et plainte avec constitution de partie civile partent par commissaire de justice ou par message pénal (D. 591, 7°). Dans le jeu, ce parcours sert seulement aux dossiers de victimes portés au civil (référé-expertise, liquidation du préjudice).
+- **Les champs à compteur et la civilité obligatoire** sont de bons gestes de jeu : un formulaire de greffe incomplet bloque l'envoi.
+- **Le second original** : après la prise de date, le tutoriel du CNB (cité par l'étalon) demande d'envoyer au greffe une « Transmission second original ». L'oublier est un piège réaliste.
 
 ## Notifications
 
@@ -130,4 +157,4 @@ Complète la section « Étalon vérifié : e-Barreau et communication électron
 
 ## Ce qu'il manque encore
 
-Kevin envoie la suite. À relever à réception, en priorité pour le pénal : le message pénal et l'annuaire des CEP, l'envoi et l'accusé de réception, la réception d'un lien PLEX, la constitution, la messagerie générale.
+Kevin envoie la suite. À relever à réception, en priorité pour le pénal : le message pénal et l'annuaire des CEP, l'envoi et l'accusé de réception, la réception d'un lien PLEX, la fin de la constitution, la messagerie générale.
