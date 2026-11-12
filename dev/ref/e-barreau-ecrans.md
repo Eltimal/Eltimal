@@ -1,6 +1,6 @@
 # e-Barreau : relevé des écrans (lot 0)
 
-Relevé écran par écran de la démo vidéo du CNB « Accédez au Nouvel e-Barreau », « Retrouvez vos dossiers » et « Le dossier | Créez un nouveau dossier » (captures fournies par Kevin le 12 novembre 2026, compte de démonstration « Maître Alain ROUGEOT », juridictions fictives « TEST1 », dates de septembre 2025). Les captures elles-mêmes ne sont pas versées au dépôt. Ce relevé sert à reconstituer le poste de travail du jeu : on reprend la structure, les libellés et les parcours ; on ne reproduit ni le logo du CNB ni ses illustrations.
+Relevé écran par écran de la démo vidéo du CNB (« Accédez au Nouvel e-Barreau », « Retrouvez vos dossiers », « Le dossier | Créez un nouveau dossier », « Recherchez vos audiences », « Recherchez une déclaration d'appel », « Démarrez une procédure ») (captures fournies par Kevin le 12 novembre 2026, compte de démonstration « Maître Alain ROUGEOT », juridictions fictives « TEST1 », dates de septembre 2025). Les captures elles-mêmes ne sont pas versées au dépôt. Ce relevé sert à reconstituer le poste de travail du jeu : on reprend la structure, les libellés et les parcours ; on ne reproduit ni le logo du CNB ni ses illustrations.
 
 Complète la section « Étalon vérifié : e-Barreau et communication électronique pénale » de l'onglet « Refonte du gameplay » du document de conception.
 
@@ -86,6 +86,48 @@ Complète la section « Étalon vérifié : e-Barreau et communication électron
 
 - Filtres en pastilles : Tout, Délégué, Événements ; mêmes lignes que les événements.
 
+## Mes dossiers, après création
+
+- Le dossier nouvellement créé (« TEST A ») apparaît en tête de « Dossiers consultés récemment », sans juridiction ni numéro, pastille de couleur neutre (dossier sans procédure). Info-bulle au survol de la pastille : « Accéder à ce dossier ».
+
+## Changer de juridiction
+
+- Un clic sur le sélecteur de juridiction de la barre du haut déplie un panneau « Choisissez la juridiction » : boutons Tribunal judiciaire, Cour d'appel, Recherche hors juridiction ; liste de la juridiction (« Cour d'appel : TEST1 ») ; bouton bleu « Enregistrer ».
+
+## Rechercher ses audiences
+
+- Deux chemins (diapositive de la démo) : la barre de recherche du haut, depuis l'accueil ou le menu Dossiers, avec le type « Par audiences » ; ou l'agenda.
+- **Formulaire « Par audiences »** : « Sélectionnez une plage de date » (De, À, avec calendrier) ; « Sélectionnez une plage horaire » (De heures minutes, À heures minutes) ; Type d'audience (liste, ici « Greffier en chef ») ; Service/Chambre (« Toutes ») ; bouton « Rechercher », grisé tant que la plage n'est pas remplie.
+- **Résultat** : pastille « Du 02/01/2025 au 13/08/2025 ⊗ » dans la barre ; bouton bleu « Exporter en PDF » ; « Mes dossiers déjà consultés » (lignes « Dossier 1 MI Loris VERANDA/TOTALENERGIES · CA • TEST1 · 25/00020 », « Dossier 4 MI Elodie HUGO/ORANGE · 25/00024 », « MARS C/ STE AVRIL · Numéro interne 2025/01 · 25/00027 ») avec pagination « 7 - 9 sur 10 » (info-bulle « suivant ») ; puis « Dossiers supplémentaires disponibles auprès de la juridiction » (« S.A.R.L. ACCOR / LE MINISTÈRE PUBLIC_22/00041 · CA »).
+- **Export PDF** « Liste des dossiers par dates d'audiences » : rappel des critères (« Dossiers correspondants aux critères choisis (du 02/01/2025 au 13/08/2025) : Début de la plage horaire : 00:00 · Fin de la plage horaire : 23:50 · Service/Chambre : Toutes · Type d'audience : Tous ») ; puis un tableau par « Date d'audience : 10/06/2025 », les dates en ordre décroissant (10/06, 26/05, 13/05, 21/04…). En-tête du tableau sur fond magenta : Début · N. rôle · N. interne · Service / Chambre · Premier appelant · Premier intimé · Type d'affaire / Acte. Exemple de ligne : 09:00 · 1/25/00024 · (vide) · 1ère Chambre · A.S.L. GREENPEACE FRANCE · C.C.E. AIRBUS · Contentieux ; ou 10:00 · 1/22/00041 · 1ère Chambre · S.A.R.L. ACCOR · LE MINISTÈRE PUBLIC · Contentieux.
+
+## Agenda
+
+- En haut, deux cases cochables : « Mes audiences » avec la liste « Juridiction(s) » (recherche par saisie, une étoile par juridiction : TEST · TJ, TEST1 · TJ, TEST · CA, TEST1 · CA) et « Mon agenda » avec la liste « Tous les rendez-vous ».
+- Navigation « ‹ › Septembre 2025 » ; boutons Mois (actif, bleu), Semaine, Jour ; bouton bleu « + Nouvel évènement ».
+- Vue mois : bandeau des jours (LUNDI … DIMANCHE) sur fond bleu nuit, cases blanches numérotées en haut à droite, jour courant dans un rond bleu (« 30 »), jours hors du mois grisés.
+- Événements en barres gris-bleu (« Test prod », « Invitation à Ceron - 1 », « Test sans procédure », « Test mail reçu », « Test invitation reçu - prod- 2 ») ; au-delà de deux par jour, « +2 en plus » ; un événement sans rappel (« test sans rappel ») s'affiche en barre blanche bordée.
+- Les audiences de la juridiction choisie s'ajoutent en barres précédées d'une puce magenta : « 25/00042 / C.C.E. MALIK IMPORT », « 25/00039 / DUREUXIER Thomas ».
+- **Fiche d'une audience** (au clic) : bandeau magenta à gauche avec la date (« 24 sept. ») ; « 25/00039 / DUREUXIER Thomas » ; lien « Voir le dossier RG 25/00039 » ; CA ; Horaire : 09:00 ; Lieu d'audience : TEST1 ; Salle • Escalier • Etage : • • ; Président : ; Greffier : ; lien « Voir les affaires » ; croix de fermeture. Président et greffier peuvent rester vides.
+
+## Rechercher une déclaration d'appel (procédure civile)
+
+- Trois chemins (diapositive) : par numéro de DA, par plage de dates, ou par le menu Dossiers / Recherche de DA.
+- Page « Consultation des déclarations d'appel pour lesquelles l'avocat est constitué » : liste « CA concerné * » (AGEN, AIX-EN-PROVENCE, AMIENS, ANGERS, BASSE-TERRE, BASTIA…).
+- Une fois la cour choisie, deux cartes : « Rechercher le dossier par n° de déclaration d'appel » (champ « Numéro de Déclaration d'Appel * », bouton Rechercher) ; « Ou chercher le dossier autrement » (Date de début de période *, Date de fin de période *, bouton Rechercher).
+- **Une DA** : bouton « Retour » ; onglet « Numéro de DA - 25/00001 · CA - TEST1 » ; deux onglets à icône (informations, parties) ; Etat : Inscrite ; Date de saisine : 28/01/2025 ; NAC : 00A-Sans indication de la nature d'affaires ; Nature particulière : 0A-Sans procédure particulière.
+- **Liste par période** : colonnes Numéro de DA (25/00022) · Numéro de rôle du dossier (25/00055) · Premier appelant (DUPONT Claire) · Premier intimé (A.M.A. SARL DUPONT & FILS) · Date de saisine (11/07/2025) ; pagination « 7 - 10 sur 10 ».
+- Les noms d'intimés portent parfois un préfixe en capitales (« A.M.A. », « C.C.E. ») dont la démo ne donne pas le sens : à vérifier avant de le reproduire.
+- En pénal, l'appel se fait par déclaration au greffe (art. 502) : cet écran ne sert pas au pénal. Il compte pour les dossiers de victimes portés au civil.
+
+## Démarrer une procédure
+
+- Diapositive : créer un dossier ou ouvrir un dossier existant, puis « Actions du dossier » > « Démarrer une procédure ».
+
+## Notifications
+
+- Quand il y en a, l'entrée « Notifications (1) » de la barre latérale porte une pastille rouge sur la cloche.
+
 ## Ce qu'il manque encore
 
-Kevin envoie la suite (message pénal, annuaire des CEP, envoi et accusé de réception, PLEX, agenda, constitution…). À relever à réception.
+Kevin envoie la suite. À relever à réception, en priorité pour le pénal : le message pénal et l'annuaire des CEP, l'envoi et l'accusé de réception, la réception d'un lien PLEX, la constitution, la messagerie générale.
