@@ -9,7 +9,7 @@ const POLICES = ["Source Sans 3", "Spectral", "Courier Prime", "Silkscreen", "Ca
 const res = []; const note = (nom, ok, detail) => { res.push(ok); console.log((ok ? "ok    " : "ÉCHEC ") + nom + (detail ? " — " + detail : "")); };
 
 async function lancer() {
-  const opts = { env: Object.assign({}, process.env, { LP_USER_DATA: donnees }) };
+  const opts = { env: Object.assign({}, process.env, { LP_USER_DATA: donnees, LP_MAJ_OFF: "1" }) };
   if (process.env.APP) { opts.executablePath = process.env.APP; opts.args = []; } else { opts.executablePath = require("electron"); opts.args = [process.env.SRC || racine]; }
   if (process.platform === "linux") opts.args.push("--no-sandbox");
   const app = await electron.launch(opts);

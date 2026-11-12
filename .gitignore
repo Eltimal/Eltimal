@@ -4,3 +4,7 @@ dev/tests/save_ch1.json
 .DS_Store
 dev/tools/out/
 dev/tools/preview/
+livraison/
+dist-jeu/
+electron/jeu-version.json
+electron/maj-cle.txt

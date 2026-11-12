@@ -7,9 +7,11 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --mac",
-    "build:zip": "electron-builder --mac zip --arm64 --x64",
-    "test:app": "node electron/test-app.js"
+    "build": "node electron/paquet-jeu.js --version-livree && electron-builder --mac",
+    "build:zip": "node electron/paquet-jeu.js --version-livree && electron-builder --mac zip --arm64 --x64",
+    "test:app": "node electron/test-app.js",
+    "paquet": "node electron/paquet-jeu.js",
+    "test:maj": "node electron/test-maj.js"
   },
   "devDependencies": {
     "electron": "45.3.0",
@@ -27,7 +29,10 @@
       "js/**",
       "lib/**",
       "fonts/**",
-      "electron/main.js"
+      "electron/main.js",
+      "electron/maj.js",
+      "electron/jeu-version.json",
+      "electron/maj-cle.txt"
     ],
     "mac": {
       "category": "public.app-category.simulation-games",
