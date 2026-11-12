@@ -71,9 +71,11 @@
     }
     // le numéro total de feuillets est connu à la fin
     for (let i = 0; i < paras.length; i++) if (pstyle[i] === "saut") paras[i] = [paras[i][0] + ` / ${feuillet}`];
+    // procédure pénale numérique : une signature électronique unique, sans signature par feuillet (art. 801-1)
+    const sigs = (o.sigs || []).map((g) => (DOCS.numerique && g.t === "signé" ? Object.assign({}, g, { t: "signature électronique" }) : g));
     const doc = {
       title: o.title, kind: o.kind || "pv", trame: o.trame || "pv", cote: o.cote, bandeau: o.bandeau || null,
-      entete: o.entete || [], paras, pstyle, sigs: o.sigs || [], feuillets: feuillet, signataires: o.signataires || null, mots: total,
+      entete: o.entete || [], paras, pstyle, sigs, feuillets: feuillet, signataires: o.signataires || null, mots: total, numerique: !!DOCS.numerique,
     };
     if (o.video) doc.video = o.video;
     return doc;
@@ -86,7 +88,7 @@
     const cadre = o.cadre || "FLAGRANT DÉLIT";
     const bandeau = {
       service: o.service, unite: o.unite, cadre, titre: o.titre.toUpperCase(), qualite: o.qualite ? o.qualite.toUpperCase() : null,
-      grille: [["Procédure", o.proc], ["PV n°", o.numPV || "—"], ["Pièce", o.cote], ["Année", String(CR.ymd(o.jour).y)]],
+      grille: [["Procédure", o.proc], ["PV n°", o.numPV || "—"], ["Pièce", o.cote], ["Année", String(CR.ymd(o.jour).y)]].concat(DOCS.numerique ? [["Support", "procédure pénale numérique"]] : []),
     };
     const ouv = [
       DOCS.p(`Le ${DOCS.jour(o.jour)} à ${DOCS.heures(o.heure)} minutes,`),
@@ -112,7 +114,7 @@
     });
   };
   // formule de clôture d'une audition
-  DOCS.clotureAudition = (lieu, jour, heure, qui) => DOCS.mention(`Fait et clos à ${lieu}, le ${DOCS.date(jour)} à ${DOCS.heures(heure)}. Lecture faite par ${qui === "lui" ? "lui-même" : qui === "elle" ? "elle-même" : qui}, ${qui === "elle" ? "elle" : "il"} persiste et signe avec nous, n'ayant rien à changer, à ajouter ou à retrancher.`);
+  DOCS.clotureAudition = (lieu, jour, heure, qui) => DOCS.mention(`Fait et clos à ${lieu}, le ${DOCS.date(jour)} à ${DOCS.heures(heure)}. Lecture faite par ${qui === "lui" ? "lui-même" : qui === "elle" ? "elle-même" : qui}, ${qui === "elle" ? "elle" : "il"} persiste et signe avec nous${DOCS.numerique ? " sur la tablette de signature, après lecture de l'acte à l'écran (art. D. 589-4)" : ""}, n'ayant rien à changer, à ajouter ou à retrancher.`);
 
   // ---------------------------------------------------------------- pièce courte de pure forme (réquisition, avis, billet, bordereau)
   DOCS.forme = function (o) {

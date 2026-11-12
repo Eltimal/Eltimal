@@ -45,7 +45,7 @@
     const av = (CR.ACTEURS.find((a) => a.role === "adverse") || { nom: "Me Lucas Pernot" }).nom;
     const stO = S.auteurs.opj.style, stA = S.auteurs.apj.style;
     const bav = (st) => st.bavard;
-    const ob = S.objet, objet = ob.nom, lobjet = defi(objet);
+    const ob = S.objet || { nom: "", type: "", retrouve: false }, objet = ob.nom, lobjet = defi(objet);
     const j = (m) => DOCS.jourDe(jf, m);
     const at = (m) => `le ${DOCS.date(j(m))} à ${hm(m)}`;
     const lieu = S.lieu.texte;
@@ -53,7 +53,7 @@
     const parquet = TJ.parquet;
     const docs = {}, titres = {}, ordre = [];
     // chaque pièce : sa minute (pour les cotes), son titre court, sa fonction de composition
-    const add = (key, m, court, fn) => { ordre.push({ key, m, court }); docs[key] = fn; };
+    const add = (key, m, court, fn) => { ordre.push({ key, m, court }); docs[key] = (x) => { const avant = DOCS.numerique; DOCS.numerique = S.numerique; try { return fn(x); } finally { DOCS.numerique = avant; } }; };
     const cotes = {};
     const cote = (key) => cotes[key] || "D?";
     const identite = (x, extra) => Object.assign({ nom: x.nom, prenom: x.prenom, g: x.g, naissance: x.naissance, adresse: x.adresse, tel: x.tel, metier: x.metier }, extra || {});
@@ -61,7 +61,7 @@
     const moi = (x) => String(x || "").replace(/^son /, "mon ").replace(/^sa /, "ma ").replace(/^ses /, "mes ");
 
     // ================================================================ D : interpellation
-    add("pv_interpellation", E.interp, "Interpellation", () => {
+    if (S.arrachage) add("pv_interpellation", E.interp, "Interpellation", () => {
       const rr = CR.seeded(t.sig + ":d:interp");
       const sv = S.savoirs.V, sT = S.savoirs.T;
       const signal = sv.tenue ? `individu de sexe ${A.g === "f" ? "féminin" : "masculin"}, ${sv.age}, ${sv.taille}, vêtu${e(A)} d'${sv.tenue.texte.replace(/^une? /, (m0) => (m0 === "une " ? "une " : "un "))}` : `individu de sexe ${A.g === "f" ? "féminin" : "masculin"}, jeune, vêtements sombres`;
@@ -104,7 +104,7 @@
       const avant = [p(`Constatons la présentation devant nous, à ${hm(E.presentation)}, de la personne interpellée ${lieu.replace(/, à hauteur.*$/, "")} par ${apjTxt(0)} et ${apjTxt(1)}, dont l'identité suit :`)];
       const blocs = [
         p({ t: `Placement en garde à vue de ${n(A)}, né${e(A)} ${A.naissance}, ${A.metier}, décidé par l'officier de police judiciaire, avec effet à ${hm(C.debut)}${irr("heures") ? ", heure de sa présentation à l'officier de police judiciaire" : ", heure de l'interpellation"}.`, f: "G_debut", flag: irr("heures") ? "heures" : undefined }),
-        p(`Motifs : il existe des raisons plausibles de soupçonner qu'${il(A)} a commis ou tenté de commettre ${q0.label.startsWith("vol") ? "un vol" : `des faits de ${q0.label}`}, délit puni d'une peine d'emprisonnement, le ${DOCS.date(jf)} vers ${hm(S.T0)}, ${lieu}. La mesure constitue l'unique moyen de permettre l'exécution des investigations impliquant sa présence (1°), de garantir sa présentation devant le procureur de la République (2°) et d'empêcher toute pression sur la victime et le témoin (4°) (art. 62-2).`),
+        p(`Motifs : il existe des raisons plausibles de soupçonner qu'${il(A)} a commis ou tenté de commettre ${q0.label.startsWith("vol") ? "un vol" : `des faits de ${q0.label}`}, délit puni d'une peine d'emprisonnement, le ${DOCS.date(jf)} vers ${hm(S.T0)}, ${lieu}. La mesure constitue l'unique moyen de permettre l'exécution des investigations impliquant sa présence (1°), de garantir sa présentation devant le procureur de la République (2°)${V || T ? " et d'empêcher toute pression sur la victime et les témoins (4°)" : " et d'empêcher la modification des preuves et indices matériels (3°)"} (art. 62-2).`),
         p({ t: `Avis au procureur de la République à ${hm(E.avisPq)}.`, flag: irr("avis_parquet") ? "avis_parquet" : undefined }),
         p(`L'avis, adressé par courriel à la permanence du ${parquet.replace(/^Parquet/, "parquet")}, comporte la qualification notifiée et les motifs du placement.`),
         p([notifTexte]),
@@ -151,7 +151,7 @@
         ligne("Personne placée en garde à vue", `${A.nom.toUpperCase()} ${A.prenom}, né${e(A)} ${A.naissance}`),
         ligne("Début de la mesure", `${DOCS.date(C.jg)}, ${hm(C.debut)}`),
         ligne("Qualification notifiée", q0.label),
-        ligne("Motifs (art. 62-2)", "1°, 2° et 4°"),
+        ligne("Motifs (art. 62-2)", V || T ? "1°, 2° et 4°" : "1°, 2° et 3°"),
         ligne("Officier de police judiciaire", OPJ.signe),
         p({ t: `Avis au procureur de la République à ${hm(E.avisPq)}.`, flag: irr("avis_parquet") ? "avis_parquet" : undefined }),
         mention("Transmis par courriel à l'adresse de la permanence du parquet."),
@@ -197,7 +197,7 @@
     }
 
     // ================================================================ D : audition de la victime (plainte)
-    add("pv_victime", E.victime, "Audition de la victime", () => {
+    if (S.arrachage) add("pv_victime", E.victime, "Audition de la victime", () => {
       const rr = CR.seeded(t.sig + ":d:vict");
       const sv = S.savoirs.V;
       // la plainte du catalogue, sans ce que la victime ne peut pas encore savoir (l'ITT est fixée le lendemain)
@@ -230,7 +230,7 @@
     });
 
     // ================================================================ D : audition du témoin
-    if (has("temoin") && T) add("pv_temoin", E.temoin, "Audition du témoin", () => {
+    if (S.arrachage && has("temoin") && T) add("pv_temoin", E.temoin, "Audition du témoin", () => {
       const rr = CR.seeded(t.sig + ":d:tem");
       const sT = S.savoirs.T;
             const blocs = [
@@ -251,7 +251,7 @@
     });
 
     // ================================================================ D : scellé et restitution
-    if (ob.retrouve) {
+    if (S.arrachage && ob.retrouve) {
       add("pv_scelle", E.scelle, "Saisie et scellé", () => DOCS.pv({ cote: cote("pv_scelle"), proc: t.proc, service, unite, titre: "Procès-verbal de saisie et de placement sous scellé", jour: j(E.scelle), heure: E.scelle, redacteur: OPJ, visa: "Vu les articles 54, 56 et 57 du code de procédure pénale,", lieu: `Nous trouvant au ${commLong}`,
         blocs: [
           p(`En présence de ${n(A)}, saisissons ${objet} découvert lors de la fouille consécutive à son interpellation.`),
@@ -263,7 +263,7 @@
     }
 
     // ================================================================ D : UMJ (réquisition et certificat)
-    if (E.umj && t.f.itt != null) {
+    if (S.arrachage && E.umj && t.f.itt != null) {
       const ittU = t.quoi === "itt" ? t.f2.itt : t.f.itt;
       add("requisition_umj", E.umj.req, "Réquisition à l'UMJ", () => DOCS.forme({ title: "Réquisition à personne qualifiée — examen de la victime", cote: cote("requisition_umj"), entete: [unite, `Procédure n° ${t.proc} — cote ${cote("requisition_umj")}`],
         blocs: [p(`Nous, ${OPJ.nom}, ${OPJ.qualite}, vu l'article 60 du code de procédure pénale, requérons le médecin de l'${TJ.umj} à l'effet d'examiner ${nf(V)}, de décrire les lésions éventuelles, de dire si elles sont compatibles avec les faits déclarés et de fixer la durée de l'incapacité totale de travail.`), mention(`Fait ${at(E.umj.req)}.`)], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));
@@ -307,7 +307,7 @@
 
     // ================================================================ D : audition de la personne gardée à vue (dossier de jugement)
     if (t.genre === "ci") {
-      add("pv_audition", E.aud, "Audition en garde à vue", () => {
+      if (S.arrachage) add("pv_audition", E.aud, "Audition en garde à vue", () => {
         const rr = CR.seeded(t.sig + ":d:aud");
         const N1 = (N.audition || [])[0];
         const nie = t.stance === "nie", min = t.stance === "minimise";
@@ -352,7 +352,7 @@
       add("pv_fin_gav", E.fin, "Fin de garde à vue", () => DOCS.pv({ cote: cote("pv_fin_gav"), proc: t.proc, service, unite, titre: "Procès-verbal de fin de garde à vue et de déroulement de la mesure", qualite: "Personne gardée à vue", jour: j(E.fin), heure: E.fin, redacteur: OPJ, visa: "Vu les articles 63-8 et 64 du code de procédure pénale,", lieu: `Nous trouvant au ${commLong}`,
         blocs: [
           titre("DÉROULEMENT DE LA MESURE"),
-          ligne("Motifs", "art. 62-2, 1°, 2° et 4°"),
+          ligne("Motifs", V || T ? "art. 62-2, 1°, 2° et 4°" : "art. 62-2, 1°, 2° et 3°"),
           ligne("Début de la mesure", `${DOCS.date(C.jg)} à ${hm(C.debut)}`),
           ligne("Notification des droits", hm(irr("interprete") ? C.debut + 15 : E.notif)),
           ligne("Avis au procureur", hm(E.avisPq)),
@@ -372,8 +372,8 @@
         const liste = ordre.filter((o) => !["pv_synthese", "bordereau"].includes(o.key));
         return DOCS.pv({ cote: cote("pv_synthese"), proc: t.proc, service, unite, titre: "Procès-verbal de synthèse", jour: j(E.synthese), heure: E.synthese, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
           blocs: [
-            titre("PRÉAMBULE"), p(`Le ${DOCS.date(jf)}, à ${hm(E.requis)}, une patrouille est requise pour un vol avec violence commis ${lieu}. ${n(A)} est interpellé${e(A)} à ${hm(E.interp)} et placé${e(A)} en garde à vue.`),
-            titre("EXPOSÉ DES FAITS"), p(`${nf(V)} déclare s'être fait arracher ${objet} alors qu'${il(V)} marchait en téléphonant${S.dit.violence ? ", puis être tombé" + e(V) + " sur le trottoir" : ""}. ${ob.retrouve ? `L'objet est découvert sur ${n(A)} lors de la fouille.` : "L'objet n'est pas retrouvé."} ${n(A)} ${t.stance === "nie" ? "conteste les faits" : t.stance === "minimise" ? "reconnaît avoir eu l'objet en sa possession, sans reconnaître le vol" : "reconnaît les faits"}.`),
+            titre("PRÉAMBULE"), p(S.arrachage ? `Le ${DOCS.date(jf)}, à ${hm(E.requis)}, une patrouille est requise pour un vol avec violence commis ${lieu}. ${n(A)} est interpellé${e(A)} à ${hm(E.interp)} et placé${e(A)} en garde à vue.` : `Le ${DOCS.date(jf)}, ${n(A)} est interpellé${e(A)} à ${hm(E.interp)}${lieu ? ", " + lieu.replace(/, à hauteur.*$/, "") : ""}, et placé${e(A)} en garde à vue à compter de ${hm(C.debut)}.`),
+            titre("EXPOSÉ DES FAITS"), S.arrachage ? p(`${nf(V)} déclare s'être fait arracher ${objet} alors qu'${il(V)} marchait en téléphonant${S.dit.violence ? ", puis être tombé" + e(V) + " sur le trottoir" : ""}. ${ob.retrouve ? `L'objet est découvert sur ${n(A)} lors de la fouille.` : "L'objet n'est pas retrouvé."} ${n(A)} ${t.stance === "nie" ? "conteste les faits" : t.stance === "minimise" ? "reconnaît avoir eu l'objet en sa possession, sans reconnaître le vol" : "reconnaît les faits"}.`) : p(`${N.resume || ""} ${(S.constat || [])[0] || ""} ${n(A)} ${t.stance === "nie" ? "conteste les faits" : t.stance === "minimise" ? "minimise sa participation" : "reconnaît les faits"}.`.trim()),
             titre("ENQUÊTE"), ...liste.map((o) => p(`${o.court} (pièce n° ${cotes[o.key]}).`)),
             titre("CLÔTURE"),
             p(`De l'enquête effectuée, il ressort qu'il existe des raisons plausibles de présumer que l'infraction suivante a été commise et peut être retenue : ${q0.label}, faits prévus et réprimés par ${q0.court}.`),
@@ -381,10 +381,168 @@
           ], cloture: mention("Dont procès-verbal."), st: stO });
       });
       add("bordereau", E.synthese + 10, "Bordereau d'envoi", () => DOCS.forme({ title: "Bordereau d'envoi de la procédure", kind: "greffe", cote: cote("bordereau"), entete: [unite, `À : ${parquet}`, `Procédure n° ${t.proc}`],
-        blocs: [...ordre.filter((o) => o.key !== "bordereau").map((o) => ligne(cotes[o.key], o.court)), mention(`Procédure transmise ${at(E.synthese + 10)}, à l'issue de la garde à vue, l'intéressé${e(A)} étant déféré${e(A)}.`)], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));
+        blocs: [...ordre.filter((o) => o.key !== "bordereau").map((o) => ligne(cotes[o.key], o.court)), mention(`Procédure transmise ${at(E.synthese + 10)}${S.numerique ? " par voie dématérialisée, procédure pénale numérique (art. 801-1)" : ", en original et copie"}, à l'issue de la garde à vue, l'intéressé${e(A)} étant déféré${e(A)}.`)], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));
     }
 
-    // ---- cotes : l'ordre chronologique des actes
+    // ================================================================ autres délits de flagrance : trames génériques
+    if (!S.arrachage) {
+      const contr = ["stups_usage", "stups_detention", "stups_trafic", "recel", "defaut_permis", "outrage", "rebellion", "violences_pdap"].includes(t.inf);
+      const saisieTxt = N.saisie || "";
+      // accord avec l'objet saisi : « deux manettes … découvertes », « une trottinette … découverte »
+      const acc = ((x) => (/^(une|la) |^(des|les|deux|trois|quatre|cinq|six|plusieurs|\d+) (manettes|bouteilles|barquettes|paires|montres|chaînes|bagues|cartes|caisses|tablettes|consoles|trottinettes)\b/.test(x) ? "e" : "") + (/^(des|les|deux|trois|quatre|cinq|six|plusieurs|\d+)\s/.test(x) ? "s" : ""))(saisieTxt);
+      // interpellation
+      add("pv_interpellation", E.interp, "Interpellation", () => {
+        const rr = CR.seeded(t.sig + ":g:interp");
+        const clos = E.presentation + int(rr, 15, 40);
+        const blocs = [
+          p(`Étant en patrouille portée à bord du véhicule sérigraphié ${S.indicatif}, revêtus de nos uniformes et porteurs de nos insignes, en compagnie de ${apjTxt(1)}, ${SF.paris ? `dans le ${SF.arr} arrondissement` : `à ${SF.nom}`},`),
+          irr("controle_identite") ? p({ t: "Agissant dans le cadre d'une patrouille de sécurisation, remarquons un individu qui, à notre vue, détourne le regard et presse le pas. Procédons au contrôle de son identité.", flag: "controle_identite" })
+            : contr && (!CR.CAT.INF[t.inf].controle || CR.CAT.INF[t.inf].controle(t.f)) ? p(`Agissant sur réquisitions écrites du procureur de la République en date du ${DOCS.date(jf - 1)}, prises en application de l'article 78-2, aux fins de recherche et de poursuite d'infractions à la législation sur les stupéfiants, le port d'armes et le vol, dans le périmètre du quartier.`) : null,
+          ...(S.constat || []).map((x) => p(x)),
+          ...(N.conc || []).filter((c) => c.inf !== "arme_b").map((c) => p({ t: c.constat, f: c.fait })),
+          irr("fouille") ? p({ t: `Sans attendre l'officier de police judiciaire, le gardien de la paix ${t.gpx[1].split(" ")[1]} procède à la fouille des poches et du sac de l'intéressé${saisieTxt ? ` ; y découvrons ${saisieTxt}` : ""}.`, flag: "fouille" })
+            : S.constatDecouvre ? p("Les objets découverts sont conservés en l'état et remis à l'officier de police judiciaire pour placement sous scellé.")
+            : saisieTxt && has("saisie") && !S.perq ? p(`Palpation de sécurité, puis, en présence de l'officier de police judiciaire, fouille : découverte de ${saisieTxt}.`) : p("Palpation de sécurité : rien à signaler."),
+          p({ t: `Interpellation à ${hm(E.interp)}.`, paire: irr("heures") ? "heures" : undefined, f: "G_interp" }),
+          irr("interprete") ? p({ t: `La personne s'exprime avec difficulté en français ; ${il(A)} est ${A.etranger}. Ses réponses se font par gestes et par mots isolés.`, f: "G_langue", paire: "interprete" })
+            : p(`La personne décline son identité : ${n(A)}, ${A.age} ans, ${A.metier}${dou("doute_ident") ? `, vêtu${e(A)} d'${pk(rr, ["un blouson noir et d'un jean", "un manteau beige", "un sweat blanc à capuche"])}` : ""}.`),
+          t.camera ? p({ t: { violences: "Les faits se sont déroulés devant un établissement dont la façade est équipée d'une caméra.", rebellion: "Le contrôle a lieu devant un bureau de tabac dont la vitrine est équipée d'une caméra." }[t.inf] || "Une caméra privée est fixée sur la façade du commerce voisin.", f: "G_camera" })
+            : has("video") ? p("Le secteur est couvert par une caméra de vidéoprotection.") : p("Aucune caméra n'est relevée à proximité."),
+          bav(stA) ? p(`L'intéressé${e(A)} ne fait aucune difficulté pendant le transport et garde le silence.`) : null,
+          p(`Conduite au ${commLong} ; présentation à l'officier de police judiciaire de quart, ${OPJ.signe.charAt(0).toLowerCase() + OPJ.signe.slice(1)}, à ${hm(E.presentation)}.`),
+        ];
+        return DOCS.pv({ cote: cote("pv_interpellation"), proc: t.proc, service, unite, cadre: "FLAGRANT DÉLIT", titre: "Procès-verbal d'interpellation", numPV: "00" + int(rr, 101, 899),
+          jour: j(clos), heure: clos, redacteur: apj(0), visa: "Vu les articles 53, 73 et 21 du code de procédure pénale,", lieu: "Agissant en flagrant délit", objet: `OBJET : ${q0.label} — interpellation`,
+          blocs, cloture: mention(`Dont procès-verbal, fait et clos au ${commLong} ${at(clos)}.`), signataires: [`${apj(0).signe}, agent de police judiciaire`, `${apj(1).signe}, agent de police judiciaire`], st: stA });
+      });
+      // victime
+      if (S.victime) add("pv_victime", E.victime, V.agent ? "Audition du fonctionnaire" : "Audition de la victime", () => {
+        const rr = CR.seeded(t.sig + ":g:vict");
+        const pl = (N.plainte || []).map((x) => guill(x));
+        const conj = /^violences_conj/.test(t.inf);
+        const blocs = [
+          p("Entendons la personne dénommée ci-dessus, qui nous déclare :"),
+          ...pl.map((x, i) => decl({ t: `« ${x} »`, f: i === 0 ? "G_plainte" : undefined })),
+          dou("doute_ident") ? decl({ t: `« Il portait ${pk(rr, ["un survêtement rouge", "une doudoune verte", "un bob noir et des lunettes"])}. Je ne l'avais jamais vu. Je ne suis pas sûr${e(V)} de pouvoir le reconnaître. »`, f: "G_doute_ident" }) : null,
+          t.quoi === "vulnerable" ? decl({ t: "« Je vis seule, je fais mes courses et je gère mes comptes moi-même, mon fils passe le dimanche. »", f: "G_autonome" }) : null,
+          t.quoi === "itt" ? decl({ t: `« Aux urgences, le médecin m'a donné ${t.f.itt} jours d'arrêt. »`, f: "G_itt_urg" }) : null,
+          titre("QUESTIONS ET RÉPONSES"),
+          ...(N.qV || []).map((x) => [q(x.q), rep(x.a[0])]),
+          S.blessures.length ? [q("Avez-vous été blessé(e) ?"), rep(`Oui, ${S.blessures[0]}.`.replace("Oui, une", "Oui, j'ai une").replace("Oui, un ", "Oui, j'ai un ").replace("Oui, des", "Oui, j'ai des"))] : null,
+          T ? [q("D'autres personnes ont-elles assisté aux faits ?"), rep(conj ? "Les voisins ont dû entendre." : "Oui, il y avait du monde autour.")] : null,
+          V.agent ? [q("Déposez-vous plainte ?"), rep("Oui, je dépose plainte et me constitue partie civile.")] : [q("Déposez-vous plainte ?"), rep(conj ? "Oui. Je ne veux plus que ça recommence." : "Oui, je dépose plainte.")],
+          V.agent ? null : p("Informons la victime de ses droits (art. 10-2) : obtenir réparation de son préjudice, se constituer partie civile, être assistée d'un avocat, être aidée par un service d'aide aux victimes, saisir le cas échéant la commission d'indemnisation des victimes d'infractions."),
+          conj ? p("Lui faisons connaître la possibilité de solliciter une ordonnance de protection auprès du juge aux affaires familiales. Renseignons avec elle la grille d'évaluation du danger, jointe à la procédure.".replace("avec elle", "avec " + lui(V))) : null,
+          S.blessures.length && E.umj ? p(`Lui remettons une réquisition à l'effet d'être examiné${e(V)} par l'unité médico-judiciaire.`) : null,
+        ];
+        return DOCS.pv({ cote: cote("pv_victime"), proc: t.proc, service, unite, titre: V.agent ? "Procès-verbal d'audition de fonctionnaire victime" : "Procès-verbal d'audition de la victime", qualite: "Victime", numPV: "00" + int(rr, 101, 899), jour: j(E.victime), heure: E.victime, redacteur: OPJ,
+          lieu: `Nous trouvant au ${commLong}`, identite: identite(V), blocs, cloture: DOCS.clotureAudition(ville, j(E.victimeFin), E.victimeFin, V.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
+      });
+      // témoin
+      if (has("temoin") && T) add("pv_temoin", E.temoin, "Audition du témoin", () => {
+        const rr = CR.seeded(t.sig + ":g:tem");
+        const lt = (N.temoin || []).filter((x) => t.quoi !== "reunion" || !/deux|Ils étaient/.test(x));
+        const blocs = [
+          p("Entendons la personne dénommée ci-dessus, qui nous déclare :"),
+          ...lt.map((x) => decl(`« ${guill(x)} »`)),
+          dou("temoin_contra") ? decl({ t: `« ${pk(rr, t.inf === "vol" ? ["Je ne suis pas sûr que ce soit lui ; il y avait beaucoup de monde.", "Celui qui a pris le téléphone était plus grand, je crois.", "Je l'ai vu de dos seulement."] : t.inf === "outrage" ? ["Je n'ai pas entendu d'insulte. Il parlait fort, c'est tout.", "C'est un des policiers qui l'a insulté en premier."] : ["Je ne peux pas dire qui a commencé. Les deux criaient.", "Ce n'est pas lui qui a frappé en premier, c'est l'autre.", "Je n'ai pas vu de coup, honnêtement. J'ai vu une bousculade."])} »`, f: "G_temoin_contra" }) : null,
+          dou("legitime_defense") ? decl({ t: "« L'autre homme a sorti une bouteille et s'est jeté sur lui le premier. Lui s'est défendu, il a mis un coup pour se dégager. »", f: "G_ld" }) : null,
+          dou("doute_ident") && !V ? decl({ t: "« Je ne pourrais pas le reconnaître, il faisait nuit et il avait une capuche. »", f: "G_doute_ident" }) : null,
+          t.quoi === "reunion" ? decl({ t: "« Il était seul. Personne ne l'aidait. Les autres regardaient. »", f: "G_seul" }) : null,
+          t.quoi === "violence" ? decl({ t: "« Il a pris le téléphone et il est parti en courant. Il ne l'a pas touchée. »", f: "G_sans_violence" }) : null,
+          t.quoi === "mort" ? decl({ t: `« Il a crié : “Je vais te casser les jambes.” Je n'ai pas entendu parler de tuer. »`, f: "G_mots" }) : null,
+          t.inf === "blessures_routieres" && t.quoi ? decl({ t: `« ${t.quoi === "r_telephone" ? "Je crois qu'il avait son téléphone, mais je ne suis pas sûr." : t.quoi === "r_vitesse" ? "Il roulait vite, mais je ne saurais pas dire combien." : "Je ne sais pas s'il avait bu."} »`, f: "G_circ_doute" }) : null,
+          titre("QUESTIONS ET RÉPONSES"),
+          q("Où vous trouviez-vous exactement ?"), rep(pk(rr, ["À une dizaine de mètres.", "Juste à côté.", "De l'autre côté de la rue.", "Chez moi, juste à côté."])),
+          q("Connaissez-vous les personnes en cause ?"), rep(pk(rr, ["Non, aucune.", "De vue seulement.", "Non."])),
+          q("Avez-vous quelque chose à ajouter ?"), rep(pk(rr, ["Non.", "Non, c'est tout ce que j'ai vu.", "Je suis prêt à revenir si besoin."])),
+        ];
+        return DOCS.pv({ cote: cote("pv_temoin"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition de témoin", qualite: "Témoin", numPV: "00" + int(rr, 101, 899), jour: j(E.temoin), heure: E.temoin, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
+          identite: { nom: T.nom, prenom: T.prenom, g: T.g, adresse: T.adresse, metier: T.metier }, blocs, cloture: DOCS.clotureAudition(ville, j(E.temoinFin), E.temoinFin, T.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
+      });
+      // médecin légiste de la victime
+      if (E.umj && t.f.itt != null && V) {
+        const ittU = t.quoi === "itt" ? t.f2.itt : t.f.itt;
+        add("requisition_umj", E.umj.req, "Réquisition à l'UMJ", () => DOCS.forme({ title: "Réquisition à personne qualifiée — examen de la victime", cote: cote("requisition_umj"), entete: [unite, `Procédure n° ${t.proc} — cote ${cote("requisition_umj")}`],
+          blocs: [p(`Nous, ${OPJ.nom}, ${OPJ.qualite}, vu l'article 60 du code de procédure pénale, requérons le médecin de l'${TJ.umj} à l'effet d'examiner ${nf(V)}, de décrire les lésions éventuelles, de dire si elles sont compatibles avec les faits déclarés et de fixer la durée de l'incapacité totale de travail.`), mention(`Fait ${at(E.umj.req)}.`)], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));
+        add("certificat", E.umj.examen, "Certificat de l'UMJ", () => {
+          const rr = CR.seeded(t.sig + ":g:umj");
+          const les = S.blessures.length ? S.blessures : ["pas de lésion traumatique récente objectivée"];
+          return DOCS.forme({ title: "Certificat médical — unité médico-judiciaire", kind: "courrier", cote: cote("certificat"), entete: [`${TJ.umj} · AP-HP`, `Réquisition de l'officier de police judiciaire — procédure n° ${t.proc}`],
+            blocs: [
+              p(`Je soussigné${pk(rr, ["", "e"])}, Dr ${pk(rr, ["Élise Vannier", "Marc Dubreuil", "Nora Belhadj"])}, médecin légiste, certifie avoir examiné ${at(E.umj.examen)}, sur réquisition du ${DOCS.date(j(E.umj.req))}, une personne qui me dit s'appeler ${n(V)}, ${V.age} ans.`),
+              titre("COMMÉMORATIFS"), p(`La personne déclare avoir été victime de violences le ${DOCS.date(jf)}${/^violences_conj/.test(t.inf) ? ", de la part de son conjoint ou ancien conjoint" : ""}.`),
+              titre("DOLÉANCES"), p(`« ${pk(rr, ["J'ai mal quand je bouge.", "J'ai du mal à dormir depuis.", "J'ai des maux de tête."])} »`),
+              titre("EXAMEN CLINIQUE"), ...les.map((l) => p(Maj(l) + ".")),
+              titre("CONCLUSION"),
+              p({ t: `Conclusion : l'incapacité totale de travail, au sens pénal, est fixée à ${ittU}${ittU <= 8 ? ` (${["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit"][ittU]})` : ""} jour${ittU > 1 ? "s" : ""}, sous réserve de complications.`, f: t.quoi === "itt" ? "G_itt_umj" : "G_itt" }),
+              mention("Certificat remis à la seule autorité requérante."),
+            ], sigs: ["Le médecin légiste"] });
+        });
+      }
+      // objet volé retrouvé : scellé, puis restitution
+      if (S.objetRetrouve) {
+        add("pv_scelle", E.scelle, "Saisie et scellé", () => DOCS.pv({ cote: cote("pv_scelle"), proc: t.proc, service, unite, titre: "Procès-verbal de saisie et de placement sous scellé", jour: j(E.scelle), heure: E.scelle, redacteur: OPJ, visa: "Vu les articles 54, 56 et 57 du code de procédure pénale,", lieu: `Nous trouvant au ${commLong}`,
+          blocs: [p(`En présence de ${n(A)}, saisissons ${saisieTxt}, découvert${acc} lors de son interpellation.`), p(`${acc.endsWith("s") ? "Les" : acc ? "La" : "Le"} plaçons sous scellé n° UN, fermé, après inventaire.`), p(`L'intéressé${e(A)} déclare : « ${t.stance === "reconnait" ? "Oui, c'est ce que j'ai pris." : t.stance === "minimise" ? "Je voulais payer." : "Ce n'est pas à moi."} »`)],
+          cloture: mention("Dont procès-verbal, que la personne signe avec nous."), signataires: ["La personne gardée à vue", `${OPJ.signe}, officier de police judiciaire`], st: stO }));
+        add("pv_restitution", E.restitution, "Restitution", () => DOCS.forme({ title: "Procès-verbal de restitution", cote: cote("pv_restitution"), entete: [unite, `Procédure n° ${t.proc} — cote ${cote("pv_restitution")}`],
+          blocs: [p(`Sur instruction du procureur de la République, restituons à ${nf(V)}, qui en justifie la propriété, ${saisieTxt} placé${acc} sous scellé n° UN.`), mention(`Fait ${at(E.restitution)}.`)], sigs: ["La victime", `${OPJ.signe}, officier de police judiciaire`] }));
+      }
+      // stupéfiants : pesée et test
+      if (E.pesee != null) add("pv_pesee", E.pesee, "Pesée et test", () => {
+        const rr = CR.seeded(t.sig + ":g:pes");
+        const produit = { cannabis: "au cannabis", cocaine: "à la cocaïne", crack: "à la cocaïne base (crack)", mdma: "à la MDMA", ketamine: "à la kétamine" }[t.f.produit] || "à un produit stupéfiant";
+        const [drogue, ...argent] = saisieTxt.split(/ et (?=[\d\s]+ ?€)/);
+        return DOCS.pv({ cote: cote("pv_pesee"), proc: t.proc, service, unite, titre: "Procès-verbal de pesée et de test", jour: j(E.pesee), heure: E.pesee, redacteur: OPJ, visa: "Vu les articles 54 et 60 du code de procédure pénale,", lieu: `Nous trouvant au ${commLong}`,
+          blocs: [
+            p(`En présence de ${n(A)}, procédons à la pesée des produits saisis : ${drogue}.`),
+            p(`Pesée sur balance de précision du service : poids brut ${String(t.f.quantite != null ? Math.round(t.f.quantite * (1.03 + rr() * 0.05) * 10) / 10 : "—").replace(".", ",")} g, emballages compris.`),
+            p({ t: `Test de détection rapide : réaction positive ${produit}.`, f: S.constatDecouvre ? "G_saisie" : undefined }),
+            argent.length ? p(`Comptage des espèces saisies : ${argent.join(" et ").replace(/ en espèces$/, "")}, en coupures diverses, placées sous scellé distinct.`) : null,
+            p("Plaçons le tout sous scellé fermé, pour analyse par le laboratoire de toxicologie."),
+          ], cloture: mention("Dont procès-verbal, que la personne signe avec nous."), signataires: ["La personne gardée à vue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
+      });
+      // perquisition au domicile, pendant la mesure
+      if (S.perq) add("pv_saisie", E.perq, "Perquisition et saisie", () => {
+        const rr = CR.seeded(t.sig + ":g:perq");
+        const deja = S.constatDecouvre && S.stups;
+        return DOCS.pv({ cote: cote("pv_saisie"), proc: t.proc, service, unite, titre: "Procès-verbal de perquisition et de saisie", jour: j(E.perq), heure: E.perq, redacteur: OPJ, visa: "Vu les articles 56, 57 et 59 du code de procédure pénale,", lieu: `Nous transportant au domicile de ${n(A)}, ${A.adresse}`,
+          blocs: [
+            p({ t: `Le ${DOCS.date(j(E.perq))}, à ${hm(E.perq)}, nous transportons au domicile de ${n(A)}, ${A.adresse}, en flagrance (art. 56), et procédons à une perquisition en sa présence.`, flag: irr("perq_nuit") ? "perq_nuit" : undefined }),
+            p(`${Maj(il(A))} est extrait${e(A)} de la cellule de garde à vue et conduit${e(A)} sur les lieux, menotté${e(A)}. ${pk(rr, ["L'appartement comprend une entrée, un séjour, une cuisine et une chambre.", "Studio d'une pièce avec coin cuisine et salle d'eau.", "Appartement de deux pièces au troisième étage."])}`),
+            deja ? p(pk(rr, ["Dans la chambre, sur une étagère, découvrons une balance électronique de précision et un rouleau de sachets de conditionnement.", "Rien de nature à intéresser l'enquête n'est découvert dans les pièces visitées.", "Dans un tiroir de la cuisine, découvrons des sachets vides de type zip."]))
+              : p({ t: `Découvrons ${saisieTxt || "des objets en lien avec les faits"}, que nous plaçons sous scellé n° ${int(rr, 2, 9)}.`, f: "G_saisie" }),
+            ...(N.conc || []).filter((c) => c.inf === "arme_b").map((c) => p({ t: c.constat, f: c.fait })),
+            t.quoi === "usage" ? p({ t: "Aucune balance, aucun conditionnement, aucune somme d'argent n'est découvert.", f: "G_conso" }) : null,
+            p(`Fin des opérations à ${hm(E.perqFin)}. Retour au service, réintégration en cellule.`),
+          ], cloture: mention("Dont procès-verbal, que la personne chez qui la perquisition a eu lieu signe avec nous."), signataires: ["La personne chez qui la perquisition a eu lieu", `${OPJ.signe}, officier de police judiciaire`], st: stO });
+      });
+      // audition du gardé à vue (dossier de jugement)
+      if (t.genre === "ci") add("pv_audition", E.aud, "Audition en garde à vue", () => {
+        const rr = CR.seeded(t.sig + ":g:aud");
+        const nie = t.stance === "nie";
+        const blocs = [
+          irr("sans_avocat") ? p({ t: `${av}, avocat commis d'office, avisé à ${hm(C.avisAv)}, ne s'étant pas présenté, procédons à l'audition.`, flag: "sans_avocat" }) : p(`En présence de ${av}, avocat, qui s'est entretenu avec la personne pendant trente minutes, de ${hm(E.aud - 35)} à ${hm(E.aud - 5)}.`),
+          p("Rappelons à la personne qu'elle a le droit, après avoir décliné son identité, de faire des déclarations, de répondre aux questions qui lui sont posées ou de se taire."),
+          titre("SUR LA PERSONNALITÉ"),
+          q("Quelle est votre situation familiale ?"), rep(A.enfants ? `Je vis avec ${moi(A.proche) || "ma famille"}, j'ai ${A.enfants} enfant${A.enfants > 1 ? "s" : ""}.` : A.proche ? `Je vis avec ${moi(A.proche)}.` : "Je vis seul" + e(A) + "."),
+          q("Où demeurez-vous ?"), rep(A.heberg ? `${A.adresse}. Depuis ${pk(rr, ["deux ans", "cinq ans", "toujours"])}.` : "Je n'ai pas d'adresse fixe en ce moment, je dors chez des amis."),
+          q("Quelles sont vos ressources ?"), rep(A.emploi ? `Je suis ${A.metier}, je gagne environ ${CR.money(A.revenu || 1500)} par mois.` : "Je n'ai pas de travail en ce moment."),
+          q("Avez-vous déjà été condamné(e) ?"), rep(A.casier ? (t.rec ? "Oui, pour des faits du même genre, il y a moins de cinq ans." : "Une fois, il y a longtemps.") : "Jamais."),
+          titre("SUR LES FAITS"),
+          ...(N.audition || []).map((a, i) => [q(a.q), rep({ t: a.a.expliquer, f: i === 0 && !nie ? "G_aveu" : undefined })]),
+          saisieTxt && has("saisie") ? [q(`Que pouvez-vous nous dire de ${saisieTxt.replace(/^(\d)/, "les $1")} ${/^de |^des /.test(saisieTxt) ? "découverts" : "découvert"} ?`.replace(/de des /, "des ").replace(/de de /, "de ")), rep(nie ? "Ce n'est pas à moi." : S.stups ? (t.quoi === "usage" ? "C'est pour ma consommation." : "C'est à moi.") : "Je l'avais sur moi, oui.")] : null,
+          (N.qA || []).length && !nie ? [q(N.qA[0].q), rep(N.qA[0].a[0])] : null,
+          q("Avez-vous quelque chose à ajouter ?"), rep(nie ? "Je n'ai rien fait." : pk(rr, ["Je regrette.", "Je ne recommencerai pas.", "Je veux m'excuser."])),
+          irr("sans_avocat") ? null : p(`${av} ${ch(rr, 0.5) ? "n'a pas de question à poser" : "demande que soit précisée l'heure à laquelle la personne a été conduite au service ; il est répondu par référence au procès-verbal d'interpellation"}.`),
+        ];
+        return DOCS.pv({ cote: cote("pv_audition"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition de la personne gardée à vue", qualite: "Personne gardée à vue", numPV: "00" + int(rr, 101, 899), jour: j(E.aud), heure: E.aud, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
+          identite: identite(A), blocs, cloture: DOCS.clotureAudition(ville, j(E.audFin), E.audFin, il(A) === "elle" ? "elle" : "lui"), signataires: ["La personne entendue", irr("sans_avocat") ? null : `${av}, avocat`, `${OPJ.signe}, officier de police judiciaire`].filter(Boolean), st: stO });
+      });
+    }
+
+    // ---- cotes : l'ordre chronologique des actes, pièces d'avant comprises (k.reste : celles que le moteur ne compose pas)
+    for (const x of k.reste || []) if (!docs[x.key]) ordre.push(x);
     ordre.sort((a, b) => a.m - b.m);
     ordre.forEach((o, i) => { cotes[o.key] = "D" + (i + 1); titres[o.key] = `${o.court} (D${i + 1})`; });
     return { docs, titres, ordre, cotes };

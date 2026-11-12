@@ -115,7 +115,7 @@
     };
     // pièce composée par le moteur de documents (docs.js) : bandeau du service, styles de paragraphe, feuillets signés
     const B = doc.bandeau, PS = doc.pstyle;
-    const signes = (doc.sigs || []).map((g) => g.qui);
+    const signes = doc.numerique ? [] : (doc.sigs || []).map((g) => g.qui); // en numérique, une signature unique en fin d'acte
     const pied = (txt, key) => html`<div key=${key} className="pv-feuillet"><span className="pv-f-n">${txt}</span>${signes.map((q, i) => html`<span key=${i} className="pv-f-sig">${q}</span>`)}</div>`;
     return html`<article className=${UI.cx("paper", k && "paper-" + k, compact && "paper-compact", doc.trame && "paper-trame")}>
       ${B && html`<div className="pv-bandeau">
