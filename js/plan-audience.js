@@ -3,8 +3,8 @@
    à gauche, la personne que vous assistez de dos à côté de vous. Trois habillages : tribunal (bois clair),
    cour (boiseries sombres, tenture rouge), cabinet (bureau du juge).
    360 × 225 ; l'interface couvre le bas (rangées 128 et plus).
-   o : room (salle, tpe, chins, ccd, assises, cabinet_ji), juges (1, 3, 5), box, camp, looks { president, parquet,
-   greffier, client, you, adverse }, speaker, court (retire, attente : le tribunal délibère), min, reduce. */
+   o : room (salle, tpe, chins, ccd, assises, cabinet_ji), juges (1, 3, 5), jures (0, 6, 9 : un rang derrière la cour),
+   box, camp, looks { president, parquet, greffier, client, you, adverse, jures [] }, speaker, court (retire, attente : le tribunal délibère), min, reduce. */
 (function () {
   const CR = window.CR, G = CR.gpu, PL = CR.lum, K = CR.planKit;
   const PLANS = (CR.plans = CR.plans || {});
@@ -55,14 +55,27 @@
           const k2 = skinOf(o);
           if (k2 !== key) { key = k2; S = SKIN[k2]; decor(stat, W, o, S); }
           m.copy(stat);
-          K.clockHands(m, 318, cab ? 30 : 24, o.min == null ? 840 : o.min, t, still);
+          const nj = Math.min(9, o.jures || 0);
+          if (!nj) K.clockHands(m, 318, cab ? 30 : 24, o.min == null ? 840 : o.min, t, still);
           if (cab) { const hr = ((o.min || 840) % 1440) / 60, day = hr > 8 && hr < 18; for (let y = 17; y < 74; y++) { const k = (y - 17) / 57; m.set({ E: day ? 140 : 60, D: 170, n: [0, 0], S: 0 }); m.hl(239, y, 80, day ? mix([150, 190, 230], [222, 230, 238], k) : mix([14, 20, 40], [70, 46, 40], k * k)); } m.set({ E: 0, S: 30, D: 168 }); m.vl(278, 17, 57, "#e2e5df"); m.hl(239, 44, 80, "#e2e5df"); }
           const sp = o.speaker || K.speaker(), parti = o.court === "retire" || o.court === "attente";
           const lights = [];
           const spot = (x, y, d) => lights.push({ x: OX + x, y, d, r: 90, c: [1, 0.96, 0.86], i: 0.9, wrap: 0.6 });
-          // fauteuils, puis magistrats (les côtés d'abord, le président en dernier)
+          // les jurés : un rang surélevé derrière la cour, de part et d'autre du président
           const xs = seats(n);
-          for (const x of xs) { m.set({ E: 0, n: [0, 0], S: 30, D: 150 }); m.r(x + 9, 30, 46, 72, S.chair); m.r(x + 13, 26, 38, 4, S.chair); m.set({ n: [0, -0.6] }); m.hl(x + 13, 25, 38, mix(PL.rgb(S.chair), [255, 255, 255], 0.25)); m.set({ n: [0, 0] }); for (const [a, b] of [[x + 12, 30], [x + 51, 30]]) { m.set({ S: 140 }); m.px(a, b, "#c9a24a"); } }
+          if (nj) {
+            const pas = Math.min(60, 372 / nj), jx0 = Math.round(180 - pas * (nj - 1) / 2 - 32);
+            if (!parti) for (let i = 0; i < nj; i++) {
+              const lk = (L.jures && L.jures[i]) || CR.px.lookFrom("jure" + i, { age: 28 + (i * 11) % 40 });
+              act("ju" + i, 11.3 + i * 1.9)(m, t, { look: lk, expr: "neutral", talk: false, still, x: Math.round(jx0 + i * pas), y: 7, D: 162 });
+            }
+            m.set({ E: 0, n: [0, -0.8], S: 100, D: 156 }); m.r(-OX, 53, W, 4, S.deskL); m.hl(-OX, 53, W, mix(PL.rgb(S.deskL), [255, 255, 255], 0.2));
+            m.set({ n: [0, 0], S: 40, D: 154 }); m.r(-OX, 57, W, 47, S.desk); m.hl(-OX, 57, W, S.deskD);
+            for (let x = -OX + 6; x < W - OX - 30; x += 40) { m.r(x, 62, 32, 26, S.deskD); m.hl(x, 87, 32, S.deskL); m.vl(x + 31, 62, 26, S.deskL); }
+            lights.push({ x: OX + 180, y: 10, d: 120, r: 300, c: S.key, i: 0.8, wrap: 0.6 });
+          }
+          // fauteuils, puis magistrats (les côtés d'abord, le président en dernier)
+          for (const x of xs) { if (nj) { m.set({ E: 0, n: [0, 0], S: 30, D: 150 }); m.r(x + 11, 64, 42, 38, S.chair); m.set({ n: [0, -0.6] }); m.hl(x + 11, 63, 42, mix(PL.rgb(S.chair), [255, 255, 255], 0.25)); m.set({ n: [0, 0] }); continue; } m.set({ E: 0, n: [0, 0], S: 30, D: 150 }); m.r(x + 9, 30, 46, 72, S.chair); m.r(x + 13, 26, 38, 4, S.chair); m.set({ n: [0, -0.6] }); m.hl(x + 13, 25, 38, mix(PL.rgb(S.chair), [255, 255, 255], 0.25)); m.set({ n: [0, 0] }); for (const [a, b] of [[x + 12, 30], [x + 51, 30]]) { m.set({ S: 140 }); m.px(a, b, "#c9a24a"); } }
           if (!parti) xs.forEach((x, i) => {
             const pres = i === xs.length - 1, lk = pres ? (L.president || CR.px.lookFrom("presidence", { outfit: "robe", age: 56 })) : CR.px.lookFrom("assesseur" + i + (L.president ? L.president.hand || L.president.hc : ""), { outfit: (L.president && L.president.outfit) || "robe", age: 46 + i * 7 });
             act("j" + i, 1.7 + i * 2.3)(m, t, { look: lk, expr: "neutral", talk: pres && (sp === "president" || sp === "juge" || sp === "ji" || sp === "jld"), still, x, y: cab ? 44 : 36, D: 140 });
