@@ -91,6 +91,14 @@
   function rue(m, W, c, o) {
     const X0 = -m.ox, wet = c.rain ? 1 : 0;
     for (let y = SW; y < RD; y++) { m.set({ E: 0, n: [0, -1], S: wet ? 130 : 30, D: FAC - 2 - (y - SW) * 2 }); for (let x = X0; x < X0 + W; x++) m.px(x, y, y === RD - 1 ? "#b9b6ae" : (x + (y - SW) * 5) % 13 === 0 || y === SW ? "#6f6e6a" : PL.h2(x, y) < 0.15 ? "#807f7a" : "#8a8984"); }
+    if (o.eau) { // le quai et la rivière à la place de la chaussée
+      for (let y = RD; y < RD + 9; y++) { m.set({ E: 0, n: [0, 0], S: 20, D: FAC - 20 }); for (let x = X0; x < X0 + W; x++) m.px(x, y, y === RD ? "#c9c2ae" : (x + (y % 6 < 3 ? 0 : 8)) % 16 === 0 || y % 3 === 0 ? "#7d7666" : "#958d7a"); }
+      for (let x = X0 + 12; x < X0 + W; x += 46) { m.set({ S: 140 }); m.r(x, RD + 4, 3, 3, "#2a2d31"); }
+      const eau = mix([14, 30, 38], mix(c.bot, [40, 70, 80], 0.6), 0.25 + c.sun0 * 0.45);
+      for (let y = RD + 9; y < H; y++) { const k = (y - RD) / (H - RD); m.set({ E: Math.round(c.sun0 * 30), n: [0, -1], S: 245, D: Math.round((FAC - 24) * (1 - k)) }); for (let x = X0; x < X0 + W; x++) m.px(x, y, PL.h2(x >> 2, y) < 0.2 ? lighter(eau, 0.07) : eau); }
+      m.set({ E: 0, n: [0, 0] });
+      return;
+    }
     for (let y = RD; y < H; y++) {
       const k = (y - RD) / (H - RD);
       m.set({ n: [0, -1], S: wet ? 215 : 70, D: Math.round((FAC - 20) * (1 - k)) });
@@ -125,24 +133,37 @@
     for (let i = 0; i < 150; i++) { const sp = 150 + h01(i * 2.3) * 110, x = X0 + ((h01(i * 9.7) * (W + 60) - (still ? 0 : t * 22)) % (W + 60) + W + 60) % (W + 60) - 30, y = ((h01(i * 4.1) * H + (still ? 0 : t * sp)) % H); m.line(x, y, x - 1, y + 5, [200, 212, 236], 0.22 + h01(i) * 0.2); }
     if (!still) { m.set({ E: 90, D: 60 }); for (let i = 0; i < 26; i++) { const p = (t * 1.7 + h01(i * 3.3)) % 1, x = X0 + Math.floor(h01(i * 6.1 + Math.floor(t * 1.7 + h01(i * 3.3))) * W), y = RD + 2 + Math.floor(h01(i * 8.7) * 20); m.hl(x - Math.round(p * 2), y, 1 + Math.round(p * 4), [190, 204, 228], 0.5 * (1 - p)); } }
   }
+  // un passant : 28 rangées de haut, pieds en (x, y) ; o : coat, skin, hair, scarf, dir, step (0, 1 ou -1 : à l'arrêt), bag, parapluie, D
+  const COATS = ["#2a303c", "#4a3a34", "#3a4a44", "#55323a", "#6b5a3a", "#1f2228"], SKINS = ["#d9a887", "#a8765a", "#6a4634", "#e6bfa0"], SCARF = ["#a8323a", "#c9a24a", "#27407a", "#d9d5cb", "#3f6a4a"];
+  function bonhomme(m, x, y, o) {
+    const coat = rgb(o.coat), cd = darker(coat, 0.3), st = o.step, d = o.dir || 1;
+    m.set({ E: 0, S: 0, D: o.D, n: [0, 0] });
+    // jambes et chaussures
+    const a = st < 0 ? 0 : st ? 1 : -1;
+    m.r(x - 3 - (st < 0 ? 0 : a * d), y - 9, 3, 8 - (a > 0 ? 1 : 0), "#22252c"); m.r(x + 1 + (st < 0 ? 0 : a * d), y - 9, 3, 8 - (a < 0 ? 1 : 0), "#2a2e36");
+    m.r(x - 3 - (st < 0 ? 0 : a * d) + (d > 0 ? 0 : -1), y - 1 - (a > 0 ? 1 : 0), 4, 1, "#0f1114"); m.r(x + 1 + (st < 0 ? 0 : a * d) + (d > 0 ? 0 : -1), y - 1 - (a < 0 ? 1 : 0), 4, 1, "#0f1114");
+    // manteau, modelé en volume
+    for (let yy = y - 22; yy < y - 8; yy++) { const half = yy < y - 20 ? 3 : 4; for (let q = -half; q <= half; q++) { m.nx = Math.round(q / (half + 1) * 0.8 * 127 + 128); m.px(x + q, yy, Math.abs(q) === half || yy === y - 9 ? cd : coat); } }
+    m.nx = 128; m.vl(x + d, y - 20, 11, cd, 0.5);
+    // bras qui balance, sac
+    const sw = st < 0 ? 0 : a; m.set({ D: o.D - 1 }); m.r(x - 5 + (d > 0 ? 0 : 9) - sw * d, y - 20, 2, 9, cd); m.px(x - 5 + (d > 0 ? 0 : 9) - sw * d, y - 11, o.skin);
+    if (o.bag) { m.set({ S: 40 }); m.r(x + (d > 0 ? -7 : 5) - sw * d, y - 11, 4, 5, "#5a3a22"); m.hl(x + (d > 0 ? -7 : 5) - sw * d, y - 11, 4, "#7d5632"); m.set({ S: 0 }); }
+    // écharpe, tête, cheveux
+    m.set({ D: o.D }); m.r(x - 3, y - 23, 7, 2, o.scarf); m.orb(x, y - 26, 3, 3.2, o.skin, 0.7); m.r(x - 3, y - 30, 7, 3, o.hair); m.r(x - 3 - (d > 0 ? 0 : -5), y - 28, 2, 3, o.hair);
+    if (o.parapluie) { m.set({ n: [0, -0.7] }); for (let q = 0; q < 5; q++) m.hl(x - 4 - q * 2 + d, y - 38 + q, 9 + q * 4, q === 4 ? "#15181d" : o.parapluie); m.set({ n: [0, 0] }); m.vl(x + d * 2, y - 33, 13, "#15181d"); }
+  }
   function passants(m, W, t, still, c, seed) {
     const X0 = -m.ox, n = c.hr > 7 && c.hr < 22 ? 4 : 1;
     for (let i = 0; i < n; i++) {
-      const sp = (8 + h01(i * 3.7 + seed) * 7) * (i % 2 ? -1 : 1), x = Math.round(X0 + (((h01(i * 9.1 + seed) * (W + 40) + (still ? 0 : t * sp)) % (W + 40)) + W + 40) % (W + 40) - 20), y = SW + 3 + (i % 2) * 3;
-      const st = still ? 0 : Math.floor(t * 4 + i) % 2, coat = ["#2a303c", "#4a3a34", "#3a4a44", "#55323a"][Math.floor(h01(i * 5.3 + seed) * 4)], skin = ["#d9a887", "#a8765a", "#6a4634", "#e6bfa0"][Math.floor(h01(i * 2.9 + seed) * 4)];
-      m.set({ E: 0, S: 0, D: FAC - 8 - (i % 2) * 6 });
-      m.orb(x, y - 17, 2.2, 2.4, skin, 0.7); m.set({ n: [0, 0] }); m.r(x - 2, y - 20, 5, 2, h01(i + seed) < 0.5 ? "#2a2220" : "#5a4030");
-      for (let yy = y - 14; yy < y - 5; yy++) { m.nx = 100; m.px(x - 3, yy, coat); m.nx = 128; m.r(x - 2, yy, 5, 1, coat); m.nx = 156; m.px(x + 3, yy, coat); } m.nx = 128;
-      m.r(x - 2 + (st ? 0 : -1), y - 5, 2, 5, "#1f2228"); m.r(x + 1 + (st ? 0 : 1), y - 5, 2, 5, "#1f2228");
-      if (c.rain) { m.set({ n: [0, -0.7] }); for (let j = 0; j < 4; j++) m.hl(x - 3 - j * 2 + (sp > 0 ? 1 : -1), y - 26 + j, 7 + j * 4, j === 3 ? "#15181d" : ["#7a2a2f", "#27407a", "#2c3038", "#3f6a4a"][i % 4]); m.set({ n: [0, 0] }); m.vl(x + (sp > 0 ? 1 : -1), y - 22, 8, "#15181d"); }
-      else if (h01(i * 7.7 + seed) < 0.5) { m.set({ S: 30 }); m.r(x + (sp > 0 ? -5 : 4), y - 9, 3, 4, "#5a3a22"); }
+      const sp = (9 + h01(i * 3.7 + seed) * 8) * (i % 2 ? -1 : 1), x = Math.round(X0 + (((h01(i * 9.1 + seed) * (W + 40) + (still ? 0 : t * sp)) % (W + 40)) + W + 40) % (W + 40) - 20);
+      bonhomme(m, x, SW + 4 + (i % 2) * 3, { coat: COATS[Math.floor(h01(i * 5.3 + seed) * COATS.length)], skin: SKINS[Math.floor(h01(i * 2.9 + seed) * 4)], hair: h01(i + seed) < 0.5 ? "#2a2220" : h01(i + seed) < 0.8 ? "#5a4030" : "#b8b4ac", scarf: SCARF[Math.floor(h01(i * 6.1 + seed) * SCARF.length)], dir: sp > 0 ? 1 : -1, step: still ? -1 : Math.floor(t * 4.5 + i) % 2, bag: h01(i * 7.7 + seed) < 0.6, parapluie: c.rain ? ["#7a2a2f", "#27407a", "#2c3038", "#3f6a4a"][i % 4] : null, D: FAC - 8 - (i % 2) * 6 });
     }
   }
   function voiture(m, W, t, still, c, L, OX, seed) {
     if (still) return; const X0 = -m.ox, cyc = 13 + h01(seed) * 6, ph = (t + seed * 3) % cyc, dir = Math.floor((t + seed * 3) / cyc) % 2 ? -1 : 1;
     if (ph > 4.2) return;
     const x = Math.round(dir > 0 ? X0 - 50 + ph / 4.2 * (W + 100) : X0 + W + 50 - ph / 4.2 * (W + 100)), y = RD + 18, col = ["#b9bec4", "#2a3440", "#7a2a2f", "#e9e6dc", "#1f2228"][Math.floor(h01(Math.floor((t + seed * 3) / cyc) * 3.7 + seed) * 5)];
-    m.set({ E: 0, S: 190, D: 110 });
+    m.set({ E: 0, S: 0, D: 110 });
     for (let j = 0; j < 7; j++) { m.set({ n: [0, j < 2 ? -0.7 : 0] }); m.r(x - 20, y - 8 + j, 40, 1, j === 6 ? darker(col, 0.4) : col); }
     for (let j = 0; j < 6; j++) { const a = 5 - j; m.set({ n: [0, j === 0 ? -0.7 : 0] }); m.r(x - 11 - (dir > 0 ? 0 : 2) + Math.round(a * 0.6), y - 14 + j, 24 - a, 1, j === 0 ? col : "#1c2630"); }
     m.set({ n: [0, 0], S: 0 }); for (const wx of [x - 12, x + 12]) { m.r(wx - 2, y - 4, 5, 5, "#111316"); m.r(wx - 3, y - 3, 7, 3, "#111316"); m.px(wx, y - 2, "#8d949c"); }
@@ -153,6 +174,68 @@
     m.set({ E: 0, n: [0, 0], S: 120, D: FAC - 6 }); m.vl(x, y - 2, 30, "#c9cdd0"); m.set({ S: 0 });
     for (let i = 0; i < 18; i++) { const wv = still ? 0 : Math.round(Math.sin(t * 3 + i * 0.55) * (i / 9)), col = i < 6 ? "#27407a" : i < 12 ? "#ecebe0" : "#b33a32"; m.nx = Math.round(Math.cos(t * 3 + i * 0.55) * 40 + 128); m.vl(x + 1 + i, y + wv, 12, col); } m.nx = 128;
   }
+
+  // ------------------------------------------------------------ le détail animé de chaque lieu (ANIM, clé `anim` de LIEUX) — ne pas les décrire au joueur
+  const ANIM = {
+    pigeons(m, t, still, c, P, L, OX) {
+      if (c.sun0 < 0.2) return; const vol = !still && t % 23 > 20.5 ? (t % 23 - 20.5) / 2.5 : 0;
+      for (let i = 0; i < 6; i++) {
+        const bx = (P.pig || 150) + i * 9 + Math.round(h01(i * 3.3) * 6), by = SW + 5 + (i % 3), up = vol ? Math.sin(vol * Math.PI) * (40 + i * 6) : 0, dx = vol ? Math.sin(vol * Math.PI) * (i - 2.5) * 14 : 0, pk = !still && !vol && Math.floor(t * 2.3 + i * 1.7) % 4 === 0 ? 1 : 0;
+        m.set({ E: 0, S: 0, D: FAC - 6, n: [0, -0.4] }); const x = Math.round(bx + dx), y = Math.round(by - up);
+        m.r(x, y - 2, 4, 2, i % 3 ? "#7d8490" : "#a9aeb6"); m.px(x + (i % 2 ? 4 : -1), y - 3 + pk, "#565c68");
+        if (vol) { const f = Math.floor(t * 12 + i) % 2; m.r(x - 1, y - 3 - f * 2, 6, 1, "#c9cdd4"); } else m.px(x + 1, y, "#c8323a");
+      }
+      m.set({ n: [0, 0] });
+    },
+    tram(m, t, still, c, P, L, OX, W) {
+      if (still) return; const X0 = -m.ox, cyc = 31, ph = (t + 9) % cyc, dir = Math.floor((t + 9) / cyc) % 2 ? -1 : 1; if (ph > 7) return;
+      const len = 150, x0 = Math.round(dir > 0 ? X0 - len - 10 + ph / 7 * (W + len + 20) : X0 + W + 10 - ph / 7 * (W + len + 20)), y = RD + 34, nuit = c.sun0 < 0.6;
+      m.set({ E: 0, S: 0, D: 80 });
+      for (let j = 0; j < 22; j++) { m.set({ n: [0, j < 2 ? -0.7 : 0], E: 0 }); m.r(x0, y - 24 + j, len, 1, j < 2 ? "#eef1f0" : j > 15 ? (j === 21 ? "#3a3f44" : "#2f8f5a") : "#eef1f0"); }
+      for (let q = 6; q < len - 12; q += 18) { m.set({ E: nuit ? 120 : 10, S: 0, n: [0, 0] }); m.r(x0 + q, y - 20, 14, 9, nuit ? "#e8cf9a" : "#3a4a5a"); if (nuit && h01(q) < 0.6) { m.set({ E: 60 }); m.r(x0 + q + 4, y - 16, 4, 5, "#3a3440"); } }
+      for (const q of [30, 74, 118]) { m.set({ E: 0, S: 0 }); m.r(x0 + q, y - 20, 1, 18, "#9aa0a4"); }
+      m.set({ E: 0, S: 0 }); m.r(x0 + len / 2 - 1, y - 30, 2, 6, "#3a3f44"); m.hl(x0 + len / 2 - 8, y - 31, 16, "#3a3f44");
+      m.set({ E: 255, S: 0 }); m.r(dir > 0 ? x0 + len - 2 : x0, y - 8, 2, 3, "#fff6d0"); m.set({ E: 0 });
+      if (nuit) L.push({ x: OX + x0 + len / 2, y: y - 12, d: 70, r: 120, c: [1, 0.9, 0.7], i: 1.1, wrap: 0.7 }, { x: OX + (dir > 0 ? x0 + len + 16 : x0 - 16), y: y - 6, d: 76, r: 70, c: [1, 0.95, 0.8], i: 1.4, wrap: 0.6, haze: 0.1, hr: 24 });
+    },
+    ambulance(m, t, still, c, P, L, OX) {
+      const x = 318, y = RD + 13;
+      m.set({ E: 0, S: 0, D: FAC - 30 }); for (let j = 0; j < 17; j++) { m.set({ n: [0, j < 2 ? -0.7 : 0] }); m.r(x - 22, y - 18 + j, j < 8 ? 34 : 46, 1, j === 9 || j === 10 ? "#d8322e" : j === 16 ? "#9da2a8" : "#f2f3f1"); }
+      m.set({ n: [0, 0], S: 0 }); m.r(x + 13, y - 9, 9, 5, "#1c2630"); m.r(x - 8, y - 15, 2, 6, "#2f6fd0"); m.r(x - 10, y - 13, 6, 2, "#2f6fd0");
+      for (const wx of [x - 13, x + 15]) { m.r(wx - 2, y - 3, 5, 5, "#111316"); m.r(wx - 3, y - 2, 7, 3, "#111316"); m.px(wx, y - 1, "#8d949c"); }
+      const b = still ? 0.3 : Math.pow(Math.max(0, Math.sin(t * 6.2)), 2);
+      m.set({ E: Math.round(70 + b * 185) }); m.r(x - 16, y - 20, 4, 2, "#3a6aff"); m.set({ E: 0 });
+      if (b > 0.02) L.push({ x: OX + x - 14, y: y - 20, d: FAC - 34, r: 150, c: [0.2, 0.42, 1], i: 2 * b, wrap: 0.6, haze: 0.26 * b, hr: 40 });
+    },
+    peniche(m, t, still, c, P, L, OX, W) {
+      const X0 = -m.ox;
+      // rides de la rivière
+      m.set({ E: Math.round(30 + c.sun0 * 60), n: [0, -1], S: 245, D: 60 });
+      for (let i = 0; i < 70; i++) { const y = RD + 12 + Math.floor(h01(i * 3.7) * (H - RD - 14)), x = X0 + ((h01(i * 9.3) * W + (still ? 0 : t * (5 + h01(i) * 6))) % W), w = 2 + Math.floor(h01(i * 5.1) * 6 * (y - RD) / 60); m.hl(Math.round(x), y, w, [190, 214, 222], 0.16 + h01(i * 2.2) * 0.2); }
+      const cyc = 58, ph = still ? 20 : t % cyc; if (ph > 40) return;
+      const len = 120, x0 = Math.round(X0 - len - 10 + ph / 40 * (W + len + 20)), y = RD + 46, nuit = c.sun0 < 0.6;
+      m.set({ E: 0, S: 0, D: 70, n: [0, 0] }); for (let j = 0; j < 9; j++) m.r(x0 + (j > 6 ? (j - 6) * 2 : 0), y - 9 + j, len - (j > 6 ? (j - 6) * 4 : 0), 1, j === 0 ? "#8a2a2a" : j < 2 ? "#3a3f48" : "#20242a");
+      m.r(x0 + 8, y - 20, 30, 11, "#d9d5c8"); m.set({ n: [0, -0.7] }); m.r(x0 + 6, y - 22, 34, 2, "#3a3f48"); m.set({ n: [0, 0] });
+      for (const q of [12, 22, 31]) { m.set({ E: nuit ? 210 : 0, S: 0 }); m.r(x0 + q, y - 17, 5, 5, nuit ? "#ffe2a6" : "#2a3440"); }
+      m.set({ E: 0, S: 0 }); for (let q = 46; q < len - 8; q += 16) m.r(x0 + q, y - 12, 13, 3, "#4a4640");
+      if (nuit) L.push({ x: OX + x0 + 22, y: y - 14, d: 66, r: 70, c: [1, 0.82, 0.55], i: 1.2, wrap: 0.7, haze: 0.1, hr: 22 });
+    },
+    velo(m, t, still, c, P, L, OX, W) {
+      if (still) return; const X0 = -m.ox, cyc = 19, ph = (t + 4) % cyc; if (ph > 5) return;
+      const x = Math.round(X0 + W + 20 - ph / 5 * (W + 40)), y = RD + 12, pd = Math.floor(t * 6) % 2;
+      m.set({ E: 0, S: 0, D: FAC - 28, n: [0, 0] });
+      for (const wx of [x - 8, x + 8]) { for (let a = 0; a < 12; a++) m.px(Math.round(wx + Math.cos(a * 0.524) * 4), Math.round(y - 4 + Math.sin(a * 0.524) * 4), "#15181d"); m.px(wx, y - 4, "#8d949c"); }
+      m.line(x - 8, y - 4, x - 2, y - 10, "#c8323a"); m.line(x - 2, y - 10, x + 6, y - 10, "#c8323a"); m.line(x + 6, y - 10, x + 8, y - 4, "#c8323a"); m.line(x - 2, y - 10, x + 1, y - 4, "#c8323a"); m.line(x - 8, y - 13, x - 8, y - 4, "#2c3038");
+      m.set({ S: 0 }); m.line(x + 1, y - 4, x + 1 + (pd ? 2 : -2), y - 7, "#22252c"); m.line(x + 1 + (pd ? 2 : -2), y - 7, x + 4, y - 12, "#22252c");
+      for (let yy = y - 21; yy < y - 12; yy++) m.r(x - 1 - Math.round((y - 12 - yy) * 0.5), yy, 5, 1, "#3f6a8a"); m.line(x - 4, y - 19, x - 8, y - 13, "#3f6a8a");
+      m.orb(x - 6, y - 24, 2.6, 2.8, "#d9a887", 0.7); m.r(x - 9, y - 27, 6, 2, "#e8c66a");
+      m.set({ E: 255 }); m.px(x - 10, y - 12, "#fff6d0"); m.px(x + 10, y - 9, "#ff3a2a"); m.set({ E: 0 });
+    },
+    file(m, t, still, c, P) {
+      if (c.hr < 8 || c.hr > 17.5) return;
+      for (let i = 0; i < 4; i++) bonhomme(m, 284 - i * 11, SW + 5, { coat: COATS[(i * 2 + P.seed) % COATS.length], skin: SKINS[(i + P.seed) % 4], hair: i % 2 ? "#2a2220" : "#5a4030", scarf: SCARF[(i + 1) % SCARF.length], dir: 1, step: -1, bag: i % 2 === 0, parapluie: c.rain ? ["#2c3038", "#7a2a2f"][i % 2] : null, D: FAC - 8 });
+    },
+  };
 
   // ------------------------------------------------------------ éclairage commun
   function lumieres(c, OX, W) {
@@ -205,7 +288,7 @@
       L.push({ x: OX + cx, y: SW - 34, d: FAC - 22, r: 96, c: [0.3, 0.5, 1], i: 1.7, wrap: 0.6, haze: 0.26, hr: 34 }, { x: OX + cx, y: SW - 8, d: FAC - 26, r: 74, c: [0.85, 0.95, 1], i: 1.5, wrap: 0.6, haze: 0.14, hr: 26 });
       // voiture de patrouille au bord du trottoir
       const vx = cx + 62, vy = RD + 12;
-      m.set({ E: 0, S: 190, D: FAC - 30 }); for (let j = 0; j < 7; j++) { m.set({ n: [0, j < 2 ? -0.7 : 0] }); m.r(vx - 22, vy - 8 + j, 44, 1, j === 3 ? "#1f4fd0" : j === 6 ? "#9da2a8" : "#eef0f2"); }
+      m.set({ E: 0, S: 0, D: FAC - 30 }); for (let j = 0; j < 7; j++) { m.set({ n: [0, j < 2 ? -0.7 : 0] }); m.r(vx - 22, vy - 8 + j, 44, 1, j === 3 ? "#1f4fd0" : j === 6 ? "#9da2a8" : "#eef0f2"); }
       for (let j = 0; j < 6; j++) { m.set({ n: [0, j === 0 ? -0.7 : 0] }); m.r(vx - 12 + Math.round((5 - j) * 0.6), vy - 14 + j, 25 - (5 - j), 1, j === 0 ? "#eef0f2" : "#1c2630"); }
       m.set({ n: [0, 0], S: 0 }); for (const wx of [vx - 13, vx + 13]) { m.r(wx - 2, vy - 4, 5, 5, "#111316"); m.r(wx - 3, vy - 3, 7, 3, "#111316"); m.px(wx, vy - 2, "#8d949c"); } m.r(vx - 5, vy - 16, 10, 2, "#2c3038");
       P.gyro = [vx, vy - 17];
@@ -259,23 +342,24 @@
       haussmann(m, X0 - 8, 66 - X0 + 8, 60, c, P.seed, { stone: "#bdb7aa" }); haussmann(m, 298, X0 + W - 298 + 8, 56, c, P.seed + 3, { stone: "#bdb7aa" });
       const bloc = (x0, x1, y0, y1, d) => {
         for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
-          const gx = (x - x0) % 7, gy = (y - y0) % 6, cell = Math.floor((x - x0) / 7) * 13.7 + Math.floor((y - y0) / 6) * 7.3, al = nuit && h01(cell + P.seed) < (c.hr < 23 ? 0.3 : 0.08);
+          const gx = (x - x0) % 7, gy = (y - y0) % 6, cell = Math.floor((x - x0) / 7) * 13.7 + Math.floor((y - y0) / 6) * 7.3, al = nuit && h01(cell + P.seed) < (c.hr < 23 ? 0.2 : 0.06);
           if (gx === 0 || gy === 0) { m.set({ E: 0, S: 60, D: d, n: [gx === 0 ? -0.4 : 0, gy === 0 ? -0.5 : 0] }); m.px(x, y, gy === 0 ? "#dfe4ea" : "#b9c2cc"); }
-          else { m.set({ E: al ? 200 : Math.round(c.sun0 * 46), S: al ? 0 : 230, D: d, n: [0, 0] }); m.px(x, y, al ? (h01(cell) < 0.7 ? "#dcecff" : "#ffe9c0") : mix(verre, [255, 255, 255], h01(cell * 1.3) * 0.1 + (1 - (y - y0) / (y1 - y0)) * 0.16 * c.sun0 + (Math.abs(((x - x0) + (y - y0) * 2) % 46 - 6) < 4 ? 0.1 * c.sun0 : 0))); }
+          else { m.set({ E: al ? 115 : Math.round(c.sun0 * 46), S: al ? 0 : 230, D: d, n: [0, 0] }); m.px(x, y, al ? (h01(cell) < 0.7 ? "#b9cbe2" : "#e6cf9c") : mix(verre, [255, 255, 255], h01(cell * 1.3) * 0.1 + (1 - (y - y0) / (y1 - y0)) * 0.16 * c.sun0 + (Math.abs(((x - x0) + (y - y0) * 2) % 46 - 6) < 4 ? 0.1 * c.sun0 : 0))); }
         }
         m.set({ E: 0, S: 60, n: [0, -0.7], D: d }); m.r(x0 - 2, y0 - 2, x1 - x0 + 4, 2, "#eef1f4"); m.set({ n: [0, 0] });
       };
-      bloc(124, 240, 2, 38, FAC + 24); bloc(100, 264, 42, 72, FAC + 12); bloc(74, 290, 76, 104, FAC);
+      bloc(124, 240, 0, 28, FAC + 24); bloc(100, 264, 32, 58, FAC + 12); bloc(74, 290, 62, 88, FAC);
       // terrasses plantées entre les blocs
-      for (const [y, x0, x1] of [[40, 100, 124], [40, 240, 264], [74, 74, 100], [74, 264, 290]]) for (let x = x0 + 3; x < x1 - 2; x += 6) { m.set({ E: 0, S: 0, D: FAC + 6 }); m.orb(x, y - 2, 4, 4, ["#3f6a3a", "#a8622a", "#4f7d45"][Math.floor(h01(x + y) * 3)], 0.8); }
+      for (const [y, x0, x1] of [[30, 100, 124], [30, 240, 264], [60, 74, 100], [60, 264, 290]]) for (let x = x0 + 3; x < x1 - 2; x += 6) { m.set({ E: 0, S: 0, D: FAC + 6 }); m.orb(x, y - 2, 4, 4, ["#3f6a3a", "#a8622a", "#4f7d45"][Math.floor(h01(x + y) * 3)], 0.8); }
       // le socle : hall vitré, auvent, plaque
-      m.set({ E: 0, S: 60, D: FAC - 2, n: [0, -0.7] }); m.r(66, 104, 232, 3, "#eef1f4"); m.set({ n: [0, 0] });
-      m.set({ E: nuit ? 190 : 30, S: nuit ? 0 : 220 }); m.r(70, 107, 224, 11, nuit ? "#ffe6b8" : "#6d8096"); m.set({ E: nuit ? 110 : 0, S: 0 }); for (let x = 70; x < 294; x += 9) m.vl(x, 107, 11, nuit ? "#b08a4a" : "#dfe4ea");
-      m.set({ E: 0 }); m.r(168, 106, 28, 12, "#2c3440"); m.set({ E: 220 }); m.r(170, 108, 11, 10, "#fff2d0"); m.r(183, 108, 11, 10, "#fff2d0"); m.set({ E: 0 });
-      plaque(m, o.plaque || "TRIBUNAL DE PARIS", 182, 95, "#f1ede2", "#23262e", true, false);
-      L.push({ x: OX + 182, y: 112, d: FAC - 24, r: 150, c: [1, 0.86, 0.6], i: nuit ? 1.6 : 0.3, wrap: 0.6, haze: nuit ? 0.18 : 0, hr: 40 }, { x: OX + 90, y: 112, d: FAC - 20, r: 80, c: [1, 0.86, 0.6], i: nuit ? 1 : 0, wrap: 0.6 }, { x: OX + 274, y: 112, d: FAC - 20, r: 80, c: [1, 0.86, 0.6], i: nuit ? 1 : 0, wrap: 0.6 });
+      m.set({ E: 0, S: 60, D: FAC - 2, n: [0, -0.7] }); m.r(66, 88, 232, 3, "#eef1f4"); m.set({ n: [0, 0] });
+      m.set({ E: nuit ? 105 : 30, S: nuit ? 0 : 220 }); m.r(70, 91, 224, 27, nuit ? "#e2c088" : "#6d8096"); m.set({ E: nuit ? 60 : 0, S: 0 }); for (let x = 70; x < 294; x += 14) m.vl(x, 91, 27, nuit ? "#8a6a3a" : "#dfe4ea"); m.hl(70, 100, 224, nuit ? "#8a6a3a" : "#dfe4ea");
+      if (nuit) { m.set({ E: 40 }); for (let x = 80; x < 290; x += 23) if (Math.abs(x - 182) > 20) m.r(x, 106, 4, 12, "#3a3020"); }
+      m.set({ E: 0, n: [0, -0.7] }); m.r(160, 95, 44, 2, "#eef1f4"); m.set({ n: [0, 0] }); m.r(166, 97, 32, 21, "#2c3440"); m.set({ E: 170 }); m.r(168, 99, 13, 19, "#fff2d0"); m.r(183, 99, 13, 19, "#fff2d0"); m.set({ E: 0 });
+      plaque(m, o.plaque || "TRIBUNAL DE PARIS", 182, 76, "#f1ede2", "#23262e", true, false);
+      L.push({ x: OX + 182, y: 108, d: FAC - 24, r: 120, c: [1, 0.86, 0.6], i: nuit ? 0.9 : 0.2, wrap: 0.6, haze: nuit ? 0.1 : 0, hr: 36 }, { x: OX + 100, y: 110, d: FAC - 20, r: 70, c: [1, 0.86, 0.6], i: nuit ? 0.6 : 0, wrap: 0.6 }, { x: OX + 264, y: 110, d: FAC - 20, r: 70, c: [1, 0.86, 0.6], i: nuit ? 0.6 : 0, wrap: 0.6 });
     },
-    vif(m, t, still, c, o, P) { drapeau(m, 132, SW - 44, t, still); },
+    vif(m, t, still, c, o, P) { drapeau(m, 112, SW - 56, t, still); },
   };
 
   // ---- pierre de taille : palais de la Cité, maison du barreau, Hôtel-Dieu
@@ -299,7 +383,7 @@
       m.set({ n: [0, -0.7] }); m.r(a - 4, top + 3, b - a + 8, 3, sl); m.set({ n: [0, 0] }); m.r(a - 2, top + 6, b - a + 4, 6, st); m.hl(a - 2, top + 11, b - a + 4, sd);
       if (P.fronton) { for (let y = top - 22; y < top + 3; y++) { const half = Math.round((y - (top - 22)) * (b - a + 8) / 2 / 25); m.set({ n: [0, -0.3] }); m.hl(184 - half, y, half * 2, st); m.set({ n: [0, -0.8] }); m.px(184 - half, y, sl); m.px(184 + half - 1, y, sl); } m.set({ n: [0, 0] }); for (let y = top - 14; y < top; y++) { const half = Math.round((y - (top - 16)) * 3.6); m.hl(184 - half, y, half * 2, sd, 0.55); } m.set({ S: 160 }); m.orb(184, top - 6, 4, 4, "#c9a24a", 0.6); m.set({ S: 0 }); }
       if (P.enseigne) plaque(m, P.enseigne, 184, top + 6 - (P.fronton ? 0 : 0), P.fg || "#e8c66a", P.bg || "#23262e", !!P.lit, false);
-      if (P.urgences) { const e = plaque(m, "URGENCES", 274, SW - 34, "#ffffff", "#c8242a", true, false); L.push({ x: OX + 274, y: SW - 28, d: FAC - 14, r: 70, c: [1, 0.25, 0.2], i: 1.4, wrap: 0.6, haze: 0.2, hr: 26 }); m.set({ E: 150 }); m.r(262, SW - 22, 24, 22, "#cfe2f4"); m.set({ E: 90 }); m.vl(274, SW - 22, 22, "#6d8096"); m.set({ E: 0 }); L.push({ x: OX + 274, y: SW - 10, d: FAC - 16, r: 56, c: [0.85, 0.95, 1], i: 0.8, wrap: 0.6 }); plaque(m, "UMJ", 246, SW - 18, "#ffffff", "#1f3f9a", false, false); }
+      if (P.urgences) { const e = plaque(m, "URGENCES", 274, SW - 34, "#ffffff", "#c8242a", true, false); L.push({ x: OX + 274, y: SW - 28, d: FAC - 14, r: 60, c: [1, 0.25, 0.2], i: 0.8, wrap: 0.6, haze: 0.08, hr: 22 }); m.set({ E: 85 }); m.r(262, SW - 22, 24, 22, "#b4c8dc"); m.set({ E: 90 }); m.vl(274, SW - 22, 22, "#6d8096"); m.set({ E: 0 }); L.push({ x: OX + 274, y: SW - 10, d: FAC - 16, r: 50, c: [0.85, 0.95, 1], i: 0.35, wrap: 0.6 }); plaque(m, "UMJ", 246, SW - 18, "#ffffff", "#1f3f9a", false, false); }
       // grand degré, grille dorée
       for (let j = 0; j < 6; j++) { m.set({ n: [0, -0.8], S: 30, D: FAC - 6 - j * 2 }); m.r(a - 6 - j * 3, SW - 12 + j * 2, b - a + 12 + j * 6, 1, sl); m.set({ n: [0, 0] }); m.r(a - 6 - j * 3, SW - 11 + j * 2, b - a + 12 + j * 6, 1, sd); }
       if (P.grille) for (const [g0, g1] of [[72, a - 22], [b + 22, 292]]) { m.set({ S: 230, D: FAC - 18, n: [0.4, 0] }); for (let x = g0; x < g1; x += 3) { m.vl(x, SW - 20, 20, x % 9 === 0 ? "#e8c66a" : "#1d2026"); if (x % 9 === 0) m.px(x, SW - 22, "#ffe9a0"); } m.set({ n: [0, 0] }); m.hl(g0, SW - 17, g1 - g0, "#c9a24a"); m.hl(g0, SW - 3, g1 - g0, "#1d2026"); }
@@ -356,8 +440,9 @@
             const m = work; m.copy(stat);
             const lum = lumieres(c, OX, W), L = lum.L.concat(fixes);
             F.vif(m, t, still, c, o, Q, L, OX);
-            passants(m, W, t, still, c, P.seed); voiture(m, W, t, still, c, L, OX, P.seed); pluie(m, W, t, still, c);
-            return { t, floorY: RD, reflK: 1.15, wet: c.rain ? 0.85 : 0.3, grain: 0.03, vig: 0.42, bloom: 0.55 + (1 - c.sun) * 0.6, tint: c.sun > 0.5 ? [1, 1, 1] : [0.94, 0.98, 1.08], amb: lum.amb, lights: L };
+            if (P.anim && ANIM[P.anim]) ANIM[P.anim](m, t, still, c, Q, L, OX, W);
+            passants(m, W, t, still, c, P.seed); if (!P.eau) voiture(m, W, t, still, c, L, OX, P.seed); pluie(m, W, t, still, c);
+            return { t, floorY: P.eau ? RD + 9 : RD, reflK: P.eau ? 0.8 : 1.15, wet: P.eau ? 0.8 : c.rain ? 0.85 : 0.3, grain: 0.03, vig: 0.42, bloom: 0.55 + (1 - c.sun) * 0.6, tint: c.sun > 0.5 ? [1, 1, 1] : [0.94, 0.98, 1.08], amb: lum.amb, lights: L };
           },
         };
       },
@@ -366,20 +451,20 @@
   const LIEUX = {
     commissariat: { fam: "poste", seed: 3, lampes: [34, 304] },
     gendarmerie: { fam: "poste", seed: 11, gend: true, arbres: [52, 318], lampes: [30, 300] },
-    palais: { fam: "tour", seed: 5, arbres: [40, 322], lampes: [20, 112, 252, 340] },
-    cite: { fam: "pierre", seed: 7, fronton: true, fleche: true, grille: true, arbres: [], lampes: [84, 280] },
-    ordre: { fam: "pierre", seed: 13, cols: 4, enseigne: "MAISON DU BARREAU", drapeau: 96, arbres: [44, 320] },
-    umj: { fam: "pierre", seed: 17, cols: 5, enseigne: "HÔTEL-DIEU", bg: "#3a2e26", urgences: true, arbres: [48] },
-    spip: { fam: "moderne", seed: 19, enseigne: "SPIP DE PARIS" },
-    cj: { fam: "rue", seed: 23, plaque: true },
-    sante: { fam: "prison", seed: 29, mur: "#a39880", nom: "MAISON D'ARRÊT", arbres: [330], lampes: [40, 244], parloirs: true, zebra: false },
-    fresnes: { fam: "prison", seed: 31, mur: "#b08a6e", nom: "CENTRE PÉNITENTIAIRE", arbres: [], lampes: [36, 250], parloirs: true, zebra: false },
-    fleury: { fam: "prison", seed: 37, mur: "#b4b1a8", nom: "FLEURY-MÉROGIS", arbres: [], lampes: [36, 250], parloirs: true, zebra: false },
-    melun: { fam: "prison", seed: 41, mur: "#c2b594", nom: "CENTRE DE DÉTENTION", arbres: [326, 344], lampes: [40, 246], mirador: false, zebra: false },
+    palais: { fam: "tour", seed: 5, anim: "tram", arbres: [40, 322], lampes: [20, 112, 252, 340] },
+    cite: { fam: "pierre", seed: 7, anim: "pigeons", pig: 140, fronton: true, fleche: true, grille: true, arbres: [], lampes: [84, 280] },
+    ordre: { fam: "pierre", seed: 13, anim: "pigeons", pig: 210, cols: 4, enseigne: "MAISON DU BARREAU", drapeau: 96, arbres: [44, 320] },
+    umj: { fam: "pierre", seed: 17, anim: "ambulance", cols: 5, enseigne: "HÔTEL-DIEU", bg: "#3a2e26", urgences: true, arbres: [48], lampes: [30, 336] },
+    spip: { fam: "moderne", seed: 19, anim: "velo", enseigne: "SPIP DE PARIS" },
+    cj: { fam: "rue", seed: 23, anim: "velo", plaque: true },
+    sante: { fam: "prison", seed: 29, anim: "file", mur: "#a39880", nom: "MAISON D'ARRÊT", arbres: [330], lampes: [40, 244], parloirs: true, zebra: false },
+    fresnes: { fam: "prison", seed: 31, anim: "file", mur: "#b08a6e", nom: "CENTRE PÉNITENTIAIRE", arbres: [], lampes: [36, 250], parloirs: true, zebra: false },
+    fleury: { fam: "prison", seed: 37, anim: "file", mur: "#b4b1a8", nom: "FLEURY-MÉROGIS", arbres: [], lampes: [36, 250], parloirs: true, zebra: false },
+    melun: { fam: "prison", seed: 41, anim: "peniche", eau: true, mur: "#c2b594", nom: "CENTRE DE DÉTENTION", arbres: [326, 344], lampes: [40, 246], mirador: false, zebra: false },
     poissy: { fam: "prison", seed: 43, mur: "#9c8f7a", nom: "MAISON CENTRALE", arbres: [334], lampes: [38, 248], zebra: false },
-    faits: { fam: "rue", seed: 47, enseigne: "nom" },
-    rue: { fam: "rue", seed: 53 },
+    faits: { fam: "rue", seed: 47, anim: "pigeons", pig: 96, enseigne: "nom" },
+    rue: { fam: "rue", seed: 53, anim: "pigeons", pig: 250 },
   };
   for (const k in LIEUX) PLANS[k] = fabrique(LIEUX[k]);
-  CR.planExt = { LIEUX, FAM };
+  CR.planExt = { LIEUX, FAM, ANIM };
 })();
