@@ -64,7 +64,10 @@
           // les jurés : un rang surélevé derrière la cour, de part et d'autre du président
           const xs = seats(n);
           if (nj) {
-            const pas = Math.min(60, 372 / nj), jx0 = Math.round(180 - pas * (nj - 1) / 2 - 32);
+            // l'horloge et le médaillon passeraient derrière les têtes : on les efface
+            m.set({ E: 0, n: [0, 0], S: 30, D: 170 }); m.r(305, 11, 26, 26, S.pan); for (let x = 300; x < 336; x += 12) { m.vl(x, 11, 26, S.panD); m.vl(x + 1, 11, 26, S.panL); }
+            for (let x = 169; x < 192; x++) { const f = Math.sin(x * 0.9); m.vl(x, 11, 22, f > 0.4 ? "#8a2029" : f < -0.4 ? "#5a1219" : "#74181f"); }
+            const pas = Math.min(60, 352 / nj), jx0 = Math.round(180 - pas * (nj - 1) / 2 - 32);
             if (!parti) for (let i = 0; i < nj; i++) {
               const lk = (L.jures && L.jures[i]) || CR.px.lookFrom("jure" + i, { age: 28 + (i * 11) % 40 });
               act("ju" + i, 11.3 + i * 1.9)(m, t, { look: lk, expr: "neutral", talk: false, still, x: Math.round(jx0 + i * pas), y: 7, D: 162 });
