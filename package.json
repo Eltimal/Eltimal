@@ -11,7 +11,8 @@
     "build:zip": "node electron/paquet-jeu.js --version-livree && electron-builder --mac zip --arm64 --x64",
     "test:app": "node electron/test-app.js",
     "paquet": "node electron/paquet-jeu.js",
-    "test:maj": "node electron/test-maj.js"
+    "test:maj": "node electron/test-maj.js",
+    "test:son": "node electron/test-son.js"
   },
   "devDependencies": {
     "electron": "45.3.0",

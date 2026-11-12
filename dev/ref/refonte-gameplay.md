@@ -1,14 +1,14 @@
-<!-- Copie de l'onglet « Refonte du gameplay » du document de conception (https://claude.ai/artifact/CuxLGVpCzBWHchG3qY1daX#784c4d9e-bd1e), exportée le 12 novembre 2026 pour qu'une conversation sans accès au document puisse la lire. En cas d'écart, le document fait foi ; mettre à jour cette copie après chaque modification de l'onglet. Le schéma « une simulation, cinq vues » n'est pas reproduit : la simulation de l'affaire (faits minute par minute, enquête acte par acte, ce que chaque personne sait, ignore ou cache) produit cinq vues : pièces, paroles, images, délibéré, débrief. -->
+<!-- Copie de l'onglet « Refonte du gameplay » du document de conception (https://claude.ai/artifact/CuxLGVpCzBWHchG3qY1daX#784c4d9e-bd1e), exportée le 12 novembre 2026 (mise à jour le 12 novembre 2026 : mécaniques de jeu) pour qu'une conversation sans accès au document puisse la lire. En cas d'écart, le document fait foi ; mettre à jour cette copie après chaque modification de l'onglet. Le schéma « une simulation, cinq vues » n'est pas reproduit : la simulation de l'affaire (faits minute par minute, enquête acte par acte, ce que chaque personne sait, ignore ou cache) produit cinq vues : pièces, paroles, images, délibéré, débrief. -->
 
 # Refonte du gameplay
 
 Nov 12, 2026 · @Kevin Garcia
 
-Le jeu garde ses règles de droit mais change tout ce que le joueur lit, dit et écrit : pièces et débats à la longueur réelle, plus aucune liste qui tend la bonne réponse, et le métier écrit de l'avocat pénaliste au complet. Cet onglet remplace les sections de l'onglet principal qui décrivent la boucle de jeu, les mécaniques et le délibéré, là où elles le contredisent.
+Le jeu garde ses règles de droit mais change tout ce que le joueur lit, dit et écrit : pièces et débats à la longueur réelle, plus aucune liste qui tend la bonne réponse, le métier écrit de l'avocat pénaliste au complet, et des mécaniques (honoraires, arrivée des clients, peines, imprévus) calibrées sur la réalité. Cet onglet remplace les sections de l'onglet principal qui décrivent la boucle de jeu, les mécaniques et le délibéré, là où elles le contredisent.
 
 ## Décisions prises
 
-Neuf décisions arrêtées avec Kevin le 12 novembre 2026 cadrent toute la refonte.
+Dix décisions arrêtées avec Kevin le 12 novembre 2026 cadrent toute la refonte.
 
 1. **Pédagogie d'abord.** Après beaucoup de parties, le joueur doit avoir les réflexes, la méthode et la connaissance des textes d'un pénaliste débutant. Rien n'est simplifié pour le confort.
 2. **Forme réelle, lecture courte.** Chaque pièce garde la trame, les formules et les rubriques d'une vraie pièce, mais se lit en 5 à 10 minutes au plus (décision de Kevin du 12 novembre 2026, qui remplace la règle « vingt pages en vrai, vingt dans le jeu »). Un gros dossier a plus de pièces, pas des pièces plus longues.
@@ -19,6 +19,7 @@ Neuf décisions arrêtées avec Kevin le 12 novembre 2026 cadrent toute la refon
 7. **Le métier écrit au complet.** Plateforme du barreau, canaux de transmission, actes, requêtes, citations et assignations, au plus près de la pratique.
 8. **Accord avec les graphismes.** Le jeu se joue dans les plans plein écran de la refonte graphique, pas dans des feuilles posées dessus.
 9. **Réécriture autorisée.** Tout module du jeu peut être réécrit pour que l'ensemble fasse système. Le droit vérifié, le catalogue d'infractions et le calcul des délais sont repris, pas réinventés.
+10. **Toutes les mécaniques refaites.** Honoraires, arrivée des clients, permanences, peines prononcées, imprévus, temps, trésorerie et réputation sont retravaillés, calibrés sur sources et tirés de la simulation (décision du 12 novembre 2026, voir « Les mécaniques de jeu : toutes refaites »).
 
 ## Niveau de réalisme visé
 
@@ -424,6 +425,17 @@ Le délibéré par addition de poids est remplacé par un raisonnement, et le ju
 
 Le profil du magistrat (sévérité, formalisme, mémoire des audiences passées) pèse sur l'appréciation, plus sur un seuil.
 
+### La charge de la preuve
+
+Constat de Kevin du 12 novembre 2026, mesuré sur 2 000 affaires générées ([audit des mécaniques](https://claude.ai/artifact/WiS2saHnXPwYds9exGB9Ht)) : 36 à 50 % des affaires sont perdues d'avance, 1 à 4 % seulement ont des charges sous le seuil, et la meilleure défense ne gagne qu'une affaire sur cinq. Les pièces à charge s'additionnent d'office, le doute ne vient que du tirage, et la plaidoirie ne pèse pas sur la culpabilité. Le tribunal de la refonte suit quatre règles :
+
+- **Élément par élément.** L'élément matériel, l'imputation à la personne et l'élément moral sont prouvés chacun à part ; il suffit qu'un seul manque pour que le doute profite au prévenu.
+- **Des pièces qu'on discute.** La force d'une pièce dépend de sa fiabilité dans la simulation ; la défense l'entame par une contradiction relevée, un témoin mis en difficulté à la barre, une contre-expertise.
+- **Une plaidoirie qui compte.** Démontrer une lacune de preuve peut emporter la relaxe.
+- **Des dossiers fragiles en proportion réelle.** La part de relaxes est calée sur les statistiques du ministère de la Justice (à vérifier).
+
+Pas de correction provisoire du calcul actuel avant la refonte (décision de Kevin du 12 novembre 2026).
+
 ### Le jugement écrit
 
 Trame complète : composition, parties, rappel de la procédure et des faits, réponse à chaque moyen, motifs sur la culpabilité, motifs sur la peine, action civile, « Par ces motifs », voies de recours. Même exigence pour les ordonnances du juge des libertés, les arrêts et les décisions d'application des peines.
@@ -469,16 +481,42 @@ Le plan plein écran est le plateau de jeu : on agit sur ce qu'on voit, et l'inf
 | L'état du bureau | Dossier urgent, répondeur, agenda du jour, pile de courrier |
 | Les lieux nouveaux | Greffe, bureau du juge de l'application des peines, commission d'indemnisation, étude du commissaire de justice |
 
+## Les mécaniques de jeu : toutes refaites
+
+Décision de Kevin du 12 novembre 2026 : toutes les mécaniques de jeu sont retravaillées, pas seulement ce que le joueur lit. Elles reposent aujourd'hui sur des formules inventées (un coefficient, un tirage, une jauge) ; elles deviennent des conséquences de la simulation, calibrées sur sources comme le droit.
+
+Trois règles valent pour chacune :
+
+- **Calibrée sur la réalité.** Chaque chiffre (prix, barème, fréquence, quantum) vient d'une source lue et porte la mention « vérifié » ou « estimation », comme les chiffres de l'équipe aujourd'hui.
+- **Tirée de la simulation.** Ce qui arrive découle de l'état du monde et des personnes (ressources du client, charge du tribunal, casier), pas d'un multiplicateur.
+- **Un geste du métier.** Chaque mécanique demande au joueur ce qu'un avocat ferait : rédiger la convention, relancer, demander un renvoi, préparer le dossier de personnalité.
+
+| Mécanique | Aujourd'hui dans le jeu | Ce qu'elle devient | Lot |
+| --- | --- | --- | --- |
+| Honoraires | Taux horaire = 150 € + 1,3 € par point de réputation clients ; forfait = forfait de l'affaire × (0,85 + réputation / 230) ; marchandage en tours selon cinq tempéraments | Convention d'honoraires écrite (forfait, temps passé, complément de résultat), provision, factures, relances, impayés, contestation devant le bâtonnier ; prix d'après les pratiques relevées en pénal ; ce que le client peut payer vient de sa situation simulée (revenus, proches, détention) | 6 bis |
+| Aide juridictionnelle et commission d'office | Dossiers de permanence sans honoraires négociés | Rétribution au barème (unités de valeur par procédure), attestation de fin de mission, délai de paiement, règles sur les honoraires complémentaires | 6 bis |
+| Arrivée des clients | Chaque jour, 16 % de chances + 0,3 % par point de réputation (× 0,3 hors jours ouvrables), dont 14 % de revenants | Flux tiré du monde : permanences au tableau, désignations, anciens clients et leurs proches, confrères qui transmettent, jour et saison ; volume d'un pénaliste débutant à établir sur sources | 6 bis |
+| Permanences | Créneaux signés librement | Tableau du barreau (inscription, rotation, nombre de permanences accessibles à un jeune avocat), rétribution, conflits d'agenda | 6 bis |
+| Peines prononcées | Réquisitions × (0,78 + 0,44 × sévérité du juge), −8 % par point de personnalité, ±6 % de hasard, +5 % en fin de journée, puis règles d'aménagement | Le tribunal choisit la nature puis le quantum d'après les faits, le casier, la personnalité et la peine encourue, et motive chaque choix (art. 132-1 CP, 132-19 pour la prison ferme), dans les ordres de grandeur des condamnations publiées par le ministère de la Justice ; plus de multiplication des réquisitions | 4 |
+| Imprévus | Tirés une fois à l'ouverture du dossier (qui ment, qui ne vient pas, qui ne paie pas, la famille, l'appel du parquet, la presse), déclenchés à date | Nés de la simulation : chaque personne a ses raisons (témoin qui se rétracte, client interpellé de nouveau), le monde a les siennes (renvoi faute d'escorte, audience surchargée, panne de la plateforme, deux audiences à la même heure, grève, maladie) ; fréquences calibrées, jamais annoncés, chacun appelle un geste (demande de renvoi, note en délibéré, appel au confrère) | 1 |
+| Temps et énergie | Énergie de 0 à 100 qui ralentit le texte et les actions sous 50 | Durée réelle de chaque tâche (lire une pièce, rédiger, trajet, attente au palais) ; la fatigue se lit dans l'agenda et les erreurs, pas dans une jauge | 6 |
+| Trésorerie et charges | Charges fixes mensuelles (loyer 850 €, URSSAF et CNBF 750 €, Ordre et assurance 95 €, logiciels 140 €, téléphone 55 €, prélèvement personnel 1 700 €) ; faillite après deux mois de découvert | Cotisations calculées sur le revenu réel avec leurs échéances et régularisations, TVA, comptabilité, prêt d'installation | 6 bis |
+| Réputation | Trois jauges chiffrées | Ce que disent les clients, les magistrats (mémoire) et les confrères ; plus de chiffre affiché | 6 |
+| Carrière, équipe, mémoire, cassation | Formules propres à chaque module | Repris pour le droit et les chiffres vérifiés, recalés sur les nouvelles mécaniques (conditions de grade, paie, effets d'une audience) | 6 bis |
+
+Avant de coder, il faut un étalon de plus (voir « À vérifier avant d'écrire ») : prix pratiqués, barème de l'aide juridictionnelle, cotisations d'un avocat libéral débutant, flux de dossiers, peines prononcées par infraction, fréquence des renvois.
+
 ## Ce qui est réécrit, ce qui est conservé
 
-Les règles de droit sont reprises ; tout ce qui fabrique du texte ou propose un choix est réécrit.
+Les règles de droit sont reprises ; tout ce qui fabrique du texte ou propose un choix est réécrit ; toutes les mécaniques de jeu sont refaites sur sources.
 
 | Sort | Modules | Pourquoi |
 | --- | --- | --- |
-| Conservé | `core.js` (calendrier), `procedure.js` (stades, délais, recevabilité, peines), `cat-*.js` (infractions, récidive, concours), `actors.js`, `citations.js`, `map.js`, `metro.js`, `carte.js`, `systems.js` (vivier, honoraires, permanences), `equipe.js`, `carriere.js`, `memoire.js`, `cassation.js`, `son.js`, moteurs graphiques et plans | Ils fixent les règles ou le décor, pas le texte |
+| Conservé | `core.js` (calendrier), `procedure.js` (stades, délais, recevabilité, peines encourues, règles d'aménagement), `cat-*.js` (infractions, récidive, concours), `actors.js`, `citations.js`, `map.js`, `metro.js`, `carte.js`, `son.js`, moteurs graphiques et plans | Ils fixent les règles ou le décor, pas le texte |
 | Étendu | `law-fr.js` (catalogue d'actes et canaux), `gen-monde.js` (personnes et lieux), `gen-parole.js` (voix, registres), `code-annote.js` et `texts.js` (texte intégral), `directeur.js` (choix selon les lacunes), `revision.js` | La base est bonne, le périmètre trop court |
 | Réécrit | `gen-moteur.js`, `gen-affaire.js`, `gen-tribunal.js`, `gen-instruction.js`, `gen-pieces.js`, `gen-pieces-crim.js`, `pieces.js`, `flow-common.js`, `flow-penal.js`, `flow-audience.js`, `plaidoirie.js`, `dossier.js`, la fonction de délibéré de `procedure.js`, `ui-scenes.js`, `ui-gav.js`, `ui-court.js`, `ui-desk.js`, `ui-base.js` | Ils produisent les textes courts, les listes de choix et les jauges |
-| Absorbé | `repliques.js`, `retournements.js`, `gen-vie.js` | Leurs effets (variantes, retournements, personnages autonomes) deviennent des propriétés de la simulation |
+| Refait sur sources | `systems.js` (honoraires, aide juridictionnelle, arrivée des clients, permanences, trésorerie), le calcul de la peine prononcée dans `procedure.js` (`P.calculerPeine`), les charges fixes, le temps et l'énergie dans `engine.js`, `equipe.js`, `carriere.js`, `memoire.js`, `cassation.js` | Leur droit et leurs chiffres vérifiés sont gardés ; leurs formules de jeu sont inventées et doivent suivre la pratique |
+| Absorbé | `repliques.js`, `retournements.js`, `gen-vie.js` | Leurs effets (variantes, retournements, personnages autonomes, imprévus) deviennent des propriétés de la simulation |
 | Nouveau | Simulation de l'affaire, moteur de documents et trames, metteur en scène des images, dossier de travail, poste de travail et canaux, tribunal qui raisonne, grille de compétences | N'existent pas |
 
 - **Affaires écrites et tutoriel.** Les douze affaires deviennent des simulations à graine fixe, avec leurs contraintes d'auteur (faits, irrégularité, enjeu). Elles sont reprises en dernier.
@@ -490,20 +528,54 @@ Les règles de droit sont reprises ; tout ce qui fabrique du texte ou propose un
 
 ## Ordre des lots et pilote
 
-Onze lots, dans cet ordre, chacun jouable et testé avant le suivant. Le pilote que Kevin juge sur son Mac est une seule affaire de flagrance jouée de la garde à vue à la veille de l'audience, avec les lots 1 à 3 réduits à cette affaire.
+Douze lots, dans cet ordre, chacun jouable et testé avant le suivant. Le pilote que Kevin juge sur son Mac est une seule affaire de flagrance jouée de la garde à vue à la veille de l'audience, avec les lots 1 à 3 réduits à cette affaire.
 
 - [ ] **0. Étalons.** Vérifier sur sources les trames, les longueurs et le droit de la voie électronique ; recueillir les pièces réelles anonymisées et les captures que Kevin peut fournir.
-- [ ] **1. Simulation et pièces.** Simulation fine, moteur de documents, dossier complet de flagrance pour un délit (une douzaine de trames), image de vidéosurveillance.
+- [ ] **1. Simulation et pièces.** Simulation fine, moteur de documents, dossier complet de flagrance pour un délit (une douzaine de trames), image de vidéosurveillance, imprévus nés de la simulation.
 - [ ] **2. Dossier de travail.** Sélection libre, marges, onglets, liens, chronologie, tableau des versions, plan de défense, irrégularité en quatre éléments.
 - [ ] **3. Entretien et audition.** Client modélisé, questions composées, oral qui s'efface, conseil sujet par sujet, audition intégrale.
 - [ ] **Pilote jugé par Kevin.**
-- [ ] **4. Audience et tribunal.** Gestes toujours disponibles, débats intégraux, réquisitoire, délibéré raisonné, jugement écrit complet.
+- [ ] **4. Audience et tribunal.** Gestes toujours disponibles, débats intégraux, réquisitoire, délibéré raisonné, charge de la preuve élément par élément, peine choisie et motivée, jugement écrit complet.
 - [ ] **5. Poste de travail.** Plateforme du barreau, canaux, actes du jugement et des recours, contradictoire.
 - [ ] **6. Sans guidage.** Fin des jauges et de l'onglet Actions, cabinet par objets, grille de compétences, débrief corrigé, mode assisté.
+- [ ] **6 bis. Économie du cabinet.** Convention d'honoraires et facturation, aide juridictionnelle, arrivée des clients, tableau des permanences, trésorerie et cotisations, carrière et équipe recalées.
 - [ ] **7. Instruction et assises.** Dossier criminel au volume réel, actes de l'instruction, chambre de l'instruction, procès d'assises.
 - [ ] **8. Après jugement et victimes.** Application des peines, casier, indemnisation, volet civil et assignation.
 - [ ] **9. Bibliothèque.** Texte intégral des codes, si la licence et le poids le permettent.
 - [ ] **10. Affaires écrites et tutoriel.** Reprise des douze affaires dans le nouveau moteur.
+
+## Contenus durs : règles assouplies
+
+Décision de Kevin du 12 novembre 2026, après une affaire de viol sur mineur jouée : les règles actuelles empêchent de traiter l'affaire, il faut les assouplir le plus possible. Principe retenu : le dossier contient tout ce qu'un vrai dossier contient et tout ce dont l'avocat a besoin pour défendre ou représenter la victime, écrit comme l'écrivent les enquêteurs, les médecins et les juges, c'est-à-dire de façon clinique et factuelle.
+
+### Ce qui change pour les mineurs victimes d'infractions sexuelles
+
+Aujourd'hui ces affaires sont réduites à la procédure (« des faits de nature sexuelle », examen et audition résumés en une ligne). Elles deviennent des dossiers complets :
+
+- **Les faits qualifiés.** La nature de chaque acte en termes juridiques et médicaux (attouchement, pénétration et sa nature), le lieu, la période, la fréquence, l'âge de l'enfant à chaque période, le lien d'autorité ou de famille, la façon dont le silence a été obtenu (secret, menaces, cadeaux).
+- **L'audition enregistrée de l'enfant** (art. 706-52) rapportée en substance, avec quelques mots de l'enfant cités quand ils portent un enjeu juridique (la pénétration, la contrainte, la chronologie, une variation entre deux auditions), sans détail descriptif au-delà.
+- **La révélation et son contexte** : à qui, quand, dans quels termes, ce que le confident a fait ensuite.
+- **L'examen médico-légal** avec ses constatations cliniques ou leur absence, et ce qu'elle signifie (un examen normal n'exclut pas les faits).
+- **Les expertises** : retentissement chez l'enfant, personnalité et dangerosité du mis en cause.
+- **Les messages saisis** décrits par l'enquêteur dans leur nature et leur fréquence (demandes de secret, propositions de rencontre, emprise), sans reproduction de contenu sexuel.
+- **Les questions de droit propres à ces affaires**, chacune à vérifier sur le texte avant d'être codée : viol et agression sexuelle sur mineur de quinze ans et écart d'âge, inceste, prescription, administrateur ad hoc, huis clos, confrontation et audition de l'enfant à l'audience, qualification de la pénétration, cumul avec la corruption de mineur ou les images.
+- **Les noms** : dans les pièces du dossier, l'enfant porte son nom, comme dans une vraie procédure ; les initiales restent pour ce qui serait public (presse, décision diffusée).
+
+### Pour les victimes majeures
+
+Les descriptions restent cliniques mais deviennent complètes : tous les actes utiles à la qualification, les variations entre les déclarations, les éléments sur le consentement, la contrainte et la surprise.
+
+### Ce qui ne change pas
+
+Ces limites restent fermes, quel que soit le réglage :
+
+- **Aucune description sexualisée, sensorielle ou détaillée d'actes sexuels sur un mineur**, ni aucune reproduction de messages sexuels adressés à un mineur. Le registre est celui du procès-verbal et du rapport médical, jamais celui du récit.
+- **Aucune image d'un mineur victime**, et aucune description d'images ou de vidéos d'abus. Leur existence, leur nombre, leur date et leur placement sous scellé figurent au dossier ; leur contenu, jamais. Le metteur en scène des images n'est jamais utilisé pour ces affaires.
+- Le réglage de contenu (« réaliste », « adouci ») reste proposé au joueur ; ce qui précède définit le réglage « réaliste ».
+
+### Où le changer dans le code
+
+`js/cat-crimes-sexuels.js` (contextes marqués `procedural`, fonctions `audMineur` et `procMineur`), `js/gen-pieces-crim.js` et `js/gen-instruction.js` (variable `proc` qui remplace le nom et résume les pièces), `js/cat-crimes.js` (photos désactivées), et la règle de contenu de la fiche de reprise. À faire avec le lot 7 (instruction et assises), qui réécrit ces pièces, ou avant si Kevin le demande.
 
 ## Limites et points à vérifier
 
@@ -526,6 +598,10 @@ Quatre limites sont assumées, et rien de ce qui suit n'entre dans le jeu avant 
 - [ ] Procédure civile électronique pour les dossiers de victimes.
 - [ ] Licence et poids du texte intégral des codes.
 - [ ] Les incohérences relevées dans l'audit : voulues ou accidentelles.
+- [ ] Prix pratiqués en défense pénale (forfaits, taux horaires) et barème de l'aide juridictionnelle en vigueur.
+- [ ] Cotisations et charges d'un avocat libéral débutant à Paris (URSSAF, CNBF, Ordre, assurance) et leurs échéances.
+- [ ] Flux de dossiers d'un pénaliste débutant et fonctionnement du tableau des permanences.
+- [ ] Peines prononcées par infraction et par juridiction (statistiques du ministère de la Justice), taux et motifs de renvoi.
 
 ### Pages repérées, pas encore lues
 

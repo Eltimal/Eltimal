@@ -22,7 +22,7 @@ const lireJson = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); }
 // Version livrée dans l'app (écrite au moment du build par electron/paquet-jeu.js --version-livree)
 function versionLivree(appDir) {
   const v = lireJson(path.join(appDir, "electron", "jeu-version.json"));
-  return { numero: v && Number.isInteger(v.numero) ? v.numero : 0, commit: v && v.commit, dossier: appDir, source: "livree" };
+  return { numero: v && Number.isInteger(v.numero) ? v.numero : 0, commit: v && v.commit, sons: v && v.sons, dossier: appDir, source: "livree" };
 }
 
 // Version téléchargée en dernier, si elle est complète
@@ -32,7 +32,8 @@ function versionTelechargee(userData) {
   if (!a || !Number.isInteger(a.numero)) return null;
   const dossier = path.join(base, String(a.numero));
   if (!fs.existsSync(path.join(dossier, "index.html"))) return null;
-  return { numero: a.numero, commit: a.commit, dossier, source: "telechargee" };
+  const v = lireJson(path.join(dossier, "electron", "jeu-version.json"));
+  return { numero: a.numero, commit: a.commit, sons: v && v.sons, dossier, source: "telechargee" };
 }
 
 // Le jeu à charger : la plus récente des deux
@@ -67,12 +68,30 @@ function obtenir(url, entetes, delai, sauts) {
   });
 }
 
-// Extrait un paquet (JSON compressé : { numero, commit, fichiers: { chemin: base64 } }) dans un dossier neuf
-function installer(paquet, manifest, userData) {
+// Copie un dossier (marche aussi depuis l'archive app.asar, que fs d'Electron sait lire mais pas copier d'un bloc)
+function copier(de, vers) {
+  fs.mkdirSync(vers, { recursive: true });
+  for (const n of fs.readdirSync(de)) {
+    const a = path.join(de, n), b = path.join(vers, n);
+    if (fs.statSync(a).isDirectory()) copier(a, b); else fs.writeFileSync(b, fs.readFileSync(a));
+  }
+}
+// Vérifie et décode le paquet des sons : { empreinte, fichiers: { "js/sons/…": base64 } }
+function lireSons(paquetSons, manifest) {
+  if (crypto.createHash("sha256").update(paquetSons).digest("hex") !== manifest.sons.sha256) throw new Error("empreinte différente : paquet des sons abîmé");
+  const s = JSON.parse(zlib.gunzipSync(paquetSons).toString("utf8"));
+  if (s.empreinte !== manifest.sons.empreinte) throw new Error("sons différents du manifeste");
+  for (const c of Object.keys(s.fichiers)) if (c.includes("..") || path.isAbsolute(c) || !c.startsWith("js/sons/")) throw new Error("chemin refusé : " + c);
+  return s.fichiers;
+}
+// Extrait un paquet (JSON compressé : { numero, commit, fichiers: { chemin: base64 } }) dans un dossier neuf.
+// sons : { fichiers } (paquet des sons téléchargé) ou { depuis: dossier contenant js/sons/ } (sons inchangés, recopiés)
+function installer(paquet, manifest, userData, sons) {
   const empreinte = crypto.createHash("sha256").update(paquet).digest("hex");
-  if (empreinte !== manifest.sha256) throw new Error("empreinte différente : paquet abîmé");
+  if (empreinte !== (sons && manifest.leger ? manifest.leger.sha256 : manifest.sha256)) throw new Error("empreinte différente : paquet abîmé");
   const contenu = JSON.parse(zlib.gunzipSync(paquet).toString("utf8"));
   if (contenu.numero !== manifest.numero) throw new Error("numéro du paquet différent du manifeste");
+  // paquet léger : son empreinte est celle de manifest.leger
   const chemins = Object.keys(contenu.fichiers || {});
   if (!chemins.includes("index.html")) throw new Error("paquet sans index.html");
   for (const c of chemins) {
@@ -87,8 +106,10 @@ function installer(paquet, manifest, userData) {
     fs.mkdirSync(path.dirname(f), { recursive: true });
     fs.writeFileSync(f, Buffer.from(contenu.fichiers[c], "base64"));
   }
+  if (sons && sons.fichiers) for (const c of Object.keys(sons.fichiers)) { const f = path.join(tmp, c); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, Buffer.from(sons.fichiers[c], "base64")); }
+  else if (sons && sons.depuis) copier(path.join(sons.depuis, "js", "sons"), path.join(tmp, "js", "sons"));
   fs.mkdirSync(path.join(tmp, "electron"), { recursive: true });
-  fs.writeFileSync(path.join(tmp, "electron", "jeu-version.json"), JSON.stringify({ numero: manifest.numero, commit: manifest.commit, date: manifest.date }));
+  fs.writeFileSync(path.join(tmp, "electron", "jeu-version.json"), JSON.stringify({ numero: manifest.numero, commit: manifest.commit, date: manifest.date, sons: manifest.sons ? manifest.sons.empreinte : null }));
   fs.rmSync(final, { recursive: true, force: true });
   fs.renameSync(tmp, final);
   const ptr = path.join(base, "actuel.json");
@@ -139,8 +160,14 @@ async function verifier(o) {
     const manifest = JSON.parse((await charger("manifest.json", 15000)).toString("utf8"));
     if (manifest.numero !== numero) return { etat: "erreur", detail: "manifeste incohérent" };
     if ((manifest.enveloppeMin || 1) > ENVELOPPE) return { etat: "enveloppe", numero };
-    const paquet = await charger("jeu.json.gz", 180000);
-    installer(paquet, manifest, o.userData);
+    // le jeu léger et les sons à part (recopiés d'une version déjà présente s'ils n'ont pas changé), sinon le paquet complet
+    let paquet, sons = null;
+    if (manifest.sons && manifest.leger && piece("jeu-leger.json.gz") && piece("sons.json.gz")) {
+      paquet = await charger("jeu-leger.json.gz", 180000);
+      const deja = [versionTelechargee(o.userData), o.appDir ? versionLivree(o.appDir) : null].find((x) => x && x.sons === manifest.sons.empreinte && fs.existsSync(path.join(x.dossier, "js", "sons")));
+      sons = deja ? { depuis: deja.dossier } : { fichiers: lireSons(await charger("sons.json.gz", 600000), manifest) };
+    } else paquet = await charger("jeu.json.gz", 600000);
+    installer(paquet, manifest, o.userData, sons);
     nettoyer(o.userData, numero);
     return { etat: "pret", numero };
   } catch (e) {

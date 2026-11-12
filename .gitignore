@@ -8,3 +8,4 @@ livraison/
 dist-jeu/
 electron/jeu-version.json
 electron/maj-cle.txt
+dev/tools/sons-src/
