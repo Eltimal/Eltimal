@@ -486,6 +486,8 @@
     const hh = clock.getHours(), mm = String(clock.getMinutes()).padStart(2, "0");
     const nuit = hh >= 21 || hh < 7;
     const others = saves ? saves.filter((x) => x.slot !== "auto") : [];
+    // Pilote de la refonte du gameplay (lot 1) : le dossier d'une garde à vue de flagrance, hors partie
+    if (mode === "dossier" && UI.DossierPilote) return html`<${UI.DossierPilote} onClose=${() => setMode("menu")} />`;
     return html`<div className="ts">
       <${UI.TitleArt} />
       <div className="ts-ui">
@@ -503,6 +505,7 @@
               <button type="button" className=${cx("ts-btn", !auto && "ts-primary")} onClick=${() => setMode("new")}>Nouvelle partie</button>
               <button type="button" className="ts-btn" onClick=${() => setMode("code")}>Jouer une affaire par son code</button>
               ${UI.planOk && UI.planOk("entretien") && html`<button type="button" className="ts-btn" onClick=${pilote}>Tranche pilote<small>Refonte : l'entretien de garde à vue · rien n'est enregistré</small></button>`}
+              ${UI.DossierPilote && html`<button type="button" className="ts-btn" onClick=${() => setMode("dossier")}>Pilote : le dossier<small>Refonte du gameplay · pièces à leur vraie forme, tirées d'une simulation de l'affaire</small></button>`}
               ${others.length > 0 && html`<button type="button" className="ts-btn" onClick=${() => setMode("load")}>Charger une partie</button>`}
               <button type="button" className="ts-btn" onClick=${() => fileRef.current && fileRef.current.click()}>Importer une sauvegarde</button>
               <button type="button" className="ts-btn" onClick=${() => setMode("reglages")}>Réglages</button>
