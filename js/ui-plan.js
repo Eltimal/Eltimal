@@ -60,6 +60,7 @@
       },
     };
   }
+  // secours : un décor éclairé sans plan dessiné (plan-ext.js les couvre tous aujourd'hui)
   if (CR.dec && CR.dec.LIT && CR.gpu) { CR.plans = CR.plans || {}; for (const k in CR.dec.LIT) if (!CR.plans[k]) CR.plans[k] = planExterieur(k); }
 
   // Fond plein cadre du lieu où l'on est : son plan (pièce de la refonte ou extérieur repris de CR.dec.LIT)
