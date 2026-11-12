@@ -1725,6 +1725,11 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .pv-schema { margin: 10px 0 14px; display: flex; gap: 14px; align-items: flex-start; }
 .pv-schema canvas { width: 110px; height: 220px; flex: none; border: 1px solid rgba(0, 0, 0, .15); background: #fff; }
 .pv-schema figcaption { font: .78rem/1.4 var(--f-ui); color: var(--ink-2); }
+
+/* ---- Capture de caméra du pilote des violences dans une pièce ---- */
+.pv-capture { margin: 6px 0 14px; display: grid; gap: 4px; }
+.pv-capture canvas { width: 100%; max-width: 480px; aspect-ratio: 4 / 3; background: #050607; image-rendering: pixelated; }
+.pv-capture figcaption { font: .76rem/1.3 var(--f-ui); color: var(--ink-2); }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
@@ -1836,6 +1841,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/docs-violences.js"></script>
 <script src="js/sim-image.js"></script>
 <script src="js/ui-dossier.js"></script>
+<script src="js/trames-violences.js"></script>
 <script src="js/main.js"></script>
 
 </body></html>

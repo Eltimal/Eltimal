@@ -131,6 +131,7 @@
       </div>`}
       ${doc.title && !B && html`<h3 className="paper-title">${doc.title}</h3>`}
       ${doc.video && !compact && UI.VideoExtrait && html`<${UI.VideoExtrait} spec=${doc.video} />`}
+      ${doc.capture && !compact && UI.CaptureSim && html`<${UI.CaptureSim} sig=${doc.capture.sig} />`}
       ${doc.to && html`<p className="paper-to">À : ${doc.to}</p>`}
       ${(doc.paras || []).map((p, i) => (PS && PS[i] === "saut" ? pied(p.map((x) => (typeof x === "string" ? x : x.t)).join(""), i) : html`<p key=${i} className=${PS && PS[i] ? "pp-" + PS[i] : null}>${p.map((seg, j) => segEl(seg, j))}</p>`))}
       ${doc.schema && doc.schema.length && !compact && UI.SchemaCorporel && html`<${UI.SchemaCorporel} lesions=${doc.schema} />`}

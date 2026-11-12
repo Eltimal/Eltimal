@@ -512,7 +512,8 @@
         : /labo|adn|telephonie|captures|releve|fichier|expertise|autopsie/.test(k) ? fin - 90 : C.debut + 180);
       const resteKeys = Object.keys(docs).filter((k) => !HORS.includes(k) && !k.startsWith("justif_"));
       kS.reste = resteKeys.map((k) => ({ key: k, m: minuteDe(k), court: (titres[k] || k).replace(/ \(D\d+\)$/, "") }));
-      const PS = CR.SIM.pieces(t, kS, SS);
+      // violences en comparution immédiate : le dossier détaillé du pilote (trames-violences.js), sinon le moteur générique
+      const PS = (CR.SIM.piecesViolences && CR.SIM.piecesViolences(t, kS, docs)) || CR.SIM.pieces(t, kS, SS);
       ordreSim = PS.ordre.map((o) => o.key);
       for (const k of Object.keys(cotes)) delete cotes[k];
       Object.assign(cotes, PS.cotes);
@@ -522,7 +523,7 @@
     }
 
     // ---------------------------------------------------------------- Listes : ce que l'avocat voit, et quand
-    const proc = ordreSim ? ordreSim.slice() : Object.keys(docs).filter((k) => !["enq_video", "esr", "casier", "convocation", "avis_classement", "pv_auteur", "proposition_cjip"].includes(k) && !k.startsWith("justif_"));
+    const proc = ordreSim ? ordreSim.filter((k) => k !== "casier" && k !== "esr") : Object.keys(docs).filter((k) => !["enq_video", "esr", "casier", "convocation", "avis_classement", "pv_auteur", "proposition_cjip"].includes(k) && !k.startsWith("justif_"));
     const listes = {
       gav: ["pv_notification", "pv_interpellation", "certificat_gav"].filter((k) => docs[k]),
       dossier: proc.concat(["casier"]).concat(docs.esr ? ["esr"] : []),

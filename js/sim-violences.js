@@ -139,9 +139,12 @@
 
   // ------------------------------------------------------------------ La simulation
   const cache = {};
-  SIM.simuler = function (t) {
+  // ext.C (facultatif) : la chronologie de la garde à vue du jeu (gen-pieces.js) — interpellation, notification, avis au
+  // parquet et à l'avocat, audition — que la simulation suit au lieu de la tirer, pour que pièces et scènes disent les mêmes heures.
+  SIM.simuler = function (t, ext) {
     if (!SIM.supporte(t)) return null;
-    if (cache[t.sig] && cache[t.sig].t === t) return cache[t.sig];
+    const XC = ext && ext.C;
+    if (!XC && cache[t.sig] && cache[t.sig].t === t) return cache[t.sig];
     const R = (k) => fil(t.sig + ":sim" + SIM.VERSION + ":" + k);
     const f = t.f, has = (p) => t.preuves.includes(p), irr = (i) => (t.irr || []).includes(i), doute = (d) => (t.doutes || []).includes(d);
     const S = { t, sig: t.sig, j0: t.d.faits, genre: t.genre, voie: t.voie, P: {}, faits: [], actes: [], irr: [], notes: {} };
@@ -216,7 +219,7 @@
     V0.roleA = V0.innocent ? "present" : "frappe";
 
     // --- chronologie des faits (minutes depuis minuit du jour des faits)
-    const T0 = t.d.h, ecart = (((t.d.debut - t.d.h) % 1440) + 1440) % 1440 || 12, TI = T0 + ecart;
+    const T0 = t.d.h, ecart = (((t.d.debut - t.d.h) % 1440) + 1440) % 1440 || 12, TI = XC ? Math.max(T0 + 6, XC.interp) : T0 + ecart;
     S.T0 = T0; S.TI = TI; S.nuit = nuit(T0);
     const fait = (m, id, qui, quoi, plus) => S.faits.push(Object.assign({ m, id, qui, quoi }, plus || {}));
     const avant = f.sc === "bar" ? rf.int(50, 110) : rf.int(4, 25);
@@ -273,16 +276,17 @@
     const ctrl = irr("controle_identite");
     A1.designation = ctrl ? null : acte(TAR + 1, "designation", "V", "la victime désigne un individu qui s'éloigne");
     A1.interp = acte(TI, "interpellation", "G1", ctrl ? "contrôle d'identité puis interpellation" : "interpellation", { fond: ctrl ? "78-2" : "53, 73", controle: ctrl });
-    const TC = TI + re.int(7, 16);
+    const TN0 = XC ? (irr("interprete") ? XC.debut + 15 : XC.notif) : null;
+    const TC = XC ? Math.min(TI + re.int(7, 16), TN0 - 3) : TI + re.int(7, 16);
     A1.arrPoste = acte(TC, "arrivee_poste", "G1", "arrivée au service et présentation à l'officier de police judiciaire");
     if (ivresse) A1.ethylo = acte(TC + 2, "ethylo", "G2", "dépistage puis mesure de l'imprégnation alcoolique", { taux: V0.taux });
     // placement et notification : un seul procès-verbal ; tardif sans raison écrite si l'irrégularité est tirée
-    const TN = irr("gav_notif") ? TI + re.int(82, 135) : TC + re.int(4, 14);
+    const TN = XC ? TN0 : irr("gav_notif") ? TI + re.int(82, 135) : TC + re.int(4, 14);
     A1.notif = acte(TN, "notification", "OPJ", "placement en garde à vue et notification des droits", { fond: "62-2, 63, 63-1", effet: TI, interprete: irr("interprete") ? false : null });
-    const TAP = irr("avis_parquet") ? Math.max(TN + 50, TI + re.int(105, 190)) : TN + re.int(2, 9);
+    const TAP = XC ? XC.avisPq : irr("avis_parquet") ? Math.max(TN + 50, TI + re.int(105, 190)) : TN + re.int(2, 9);
     A1.avis = acte(TAP, "avis_parquet", "OPJ", "avis au procureur de la République", { fond: "63" });
     const D = (S.droits = { avocat: true, commis: true, proche: re.ch(0.55), employeur: A.emploi && re.ch(0.12), medecin: ivresse || re.ch(0.45), silence: false });
-    A1.avisAvocat = acte(TN + re.int(4, 11), "avis_avocat", "OPJ", "appel à la permanence pénale du barreau", { fond: "63-3-1" });
+    A1.avisAvocat = acte(XC ? XC.avisAv : TN + re.int(4, 11), "avis_avocat", "OPJ", "appel à la permanence pénale du barreau", { fond: "63-3-1" });
     if (D.proche) A1.avisProche = acte(TN + re.int(12, 40), "avis_proche", "OPJ", `avis à ${A.proche || "un proche"}`, { fond: "63-2" });
     A1.fouille = acte(TN + re.int(6, 13), "fouille", "G2", "inventaire des effets personnels", { argent: re.int(0, 14) * 5 + re.int(0, 4), tel: true });
     if (has("saisie")) A1.scelle = acte(A1.fouille.m + 3, "scelle", "OPJ", f.arme ? `saisie et placement sous scellé de ${f.arme}` : `saisie et placement sous scellé de ${A.sig.haut}`, { objet: f.arme || `${A.sig.haut} ${accorde(A.sig.haut, A.sig.hautCoul)}`, no: "UN" });
@@ -302,7 +306,8 @@
     let TAU;
     if (sansAv) { TAU = A1.avisAvocat.m + re.int(22, 45); A1.entretien = acte(TAU + re.int(35, 70), "entretien", "AV", "entretien confidentiel avec l'avocat", { fin: 0 }); A1.entretien.fin = A1.entretien.m + re.int(15, 30); }
     else { A1.entretien = acte(TE, "entretien", "AV", "entretien confidentiel avec l'avocat", { fin: TE + (t.genre === "gav" ? 30 : re.int(18, 30)) }); TAU = A1.entretien.fin + re.int(4, 16); }
-    const dureeAud = re.int(32, 58);
+    const dureeAud = XC && XC.aud != null ? XC.audFin - XC.aud : re.int(32, 58);
+    if (XC && XC.aud != null && t.genre === "ci") { TAU = XC.aud; if (!sansAv) { A1.entretien.m = TAU - re.int(38, 50); A1.entretien.fin = A1.entretien.m + 30; } else { A1.entretien.m = TAU + dureeAud + re.int(20, 50); A1.entretien.fin = A1.entretien.m + re.int(15, 30); } }
     A1.audition = acte(TAU, "audition", "OPJ", "audition de la personne gardée à vue", { fin: TAU + dureeAud, avocat: !sansAv });
     // le même officier ne regarde pas les images pendant qu'il entend : l'exploitation glisse après l'audition
     if (A1.video && A1.video.m < A1.audition.fin + 3 && TAU < A1.video.fin + 3) { const d = A1.video.fin - A1.video.m; A1.video.m = A1.audition.fin + re.int(6, 20); A1.video.fin = A1.video.m + d; }
@@ -392,7 +397,7 @@
 
     // --- ce que chacun sait et dit
     S.dires = dires(S);
-    cache[t.sig] = S;
+    if (!XC) cache[t.sig] = S;
     return S;
   };
 

@@ -5,7 +5,7 @@
 // déterminisme. node tests/tsim.js [n] ; « échecs: 0 » attendu.
 const { boot, sleep } = require("./harness");
 let fails = 0;
-const ok = (c, m) => { if (!c) { fails++; if (fails < 40) console.log("ÉCHEC", m); } };
+const ok = (c, m) => { if (!c) { fails++; if (fails < 40 || process.env.VOIR) console.log("ÉCHEC", m); } };
 (async () => {
   const env = boot(); const { CR } = env; await sleep(100);
   const G = CR.GEN2, SIM = CR.SIM, DOCS = CR.DOCS;
@@ -14,10 +14,10 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40) console.log("ÉCHEC", 
   const marques = (r) => { const m = new Set(); for (const g of segsDe(r)) { if (g.f) m.add("f:" + g.f); if (g.flag) m.add("flag:" + g.flag); if (g.paire) m.add("paire:" + g.paire); } return m; };
   const s = CR.newGame({ prenom: "A", nom: "B", mode: "carriere", seed: 3 }); CR.store.s = s;
   const rendre = (PZ, k, t) => PZ.docs[k]({ s, cs: { vars: {}, proc: { faitsDay: t.d.faits }, enq: {} }, def: {}, c: t.A, api: {} });
-  let vus = { ci: 0, gav: 0 }, mots = [], pieces = 0, nArr = 0, nNum = 0, nPap = 0, nSchema = 0; const familles = {};
+  let vus = { ci: 0, gav: 0 }, mots = [], pieces = 0, nArr = 0, nNum = 0, nPap = 0, nSchema = 0, nPil = 0; const familles = {};
   for (let i = 0; i < 6000 && (vus.ci < N0 || vus.gav < N0 / 2); i++) for (const genre of ["ci", "gav"]) {
     if (vus[genre] >= (genre === "ci" ? N0 : N0 / 2)) continue;
-    const t = G.tirer("tsim" + i, genre, { day: i % 2 ? 30 : 12, inf: i % 3 === 0 ? "vol" : undefined });
+    const t = G.tirer("tsim" + i, genre, { day: i % 2 ? 30 : 12, inf: i % 3 === 0 ? "vol" : i % 3 === 1 ? "violences" : undefined });
     if (!t || !SIM.supporte(t)) continue;
     vus[genre]++; familles[t.inf] = (familles[t.inf] || 0) + 1;
     // les anciennes pièces (simulation coupée), puis les nouvelles
@@ -53,9 +53,11 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40) console.log("ÉCHEC", 
     for (const m of fOld) ok(fNew.has(m), `${tag} : fait ${m} perdu du dossier`);
     mots.push(total);
     // cotes : uniques, consécutives
-    const cs = Object.values(PZ.cotes).map((c) => +c.slice(1)).sort((a, b) => a - b);
+    // cotes : D1… sans trou ; une sous-cote (D4/1) suit sa cote ; le bordereau n'en a pas
+    const cs = [...new Set(Object.values(PZ.cotes).filter(Boolean).map((c) => +String(c).replace(/^D(\d+).*/, "$1")))].sort((a, b) => a - b);
     ok(cs.every((c, i) => c === i + 1), `${tag} : cotes ${cs.join(",")}`);
-    ok(Object.keys(PZ.cotes).every((k) => PZ.titres[k].endsWith(`(${PZ.cotes[k]})`)), `${tag} : titre sans sa cote`);
+    ok(Object.keys(PZ.cotes).every((k) => !PZ.cotes[k] || PZ.titres[k].endsWith(`(${PZ.cotes[k]})`)), `${tag} : titre sans sa cote`);
+    if (SIM.violencesOK && SIM.violencesOK(t)) nPil++;
     // chronologie
     const SS = SIM.simuler(t, { N, C: PZ.C, VID: null, SF: CR.MONDE.lieuxDe(t).F, TJ: CR.MONDE.lieuxDe(t).TJ, opjN: "Brigadier-chef X Y", has: (x) => t.preuves.includes(x), irr: (x) => t.irr.includes(x), dou: (x) => t.doutes.includes(x), A: t.A, V: t.V, T: t.T, q: t.q });
     const E = SS.E, C = PZ.C;
@@ -89,6 +91,7 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40) console.log("ÉCHEC", 
   }
   mots.sort((a, b) => a - b);
   console.log(`affaires : ${vus.ci} comparutions immédiates, ${vus.gav} gardes à vue (dont ${nArr} arrachages) ; ${pieces} pièces ; dossier médian ${mots[mots.length >> 1]} mots (min ${mots[0]}, max ${mots[mots.length - 1]})`);
+  console.log(`violences au dossier détaillé du pilote : ${nPil}`);
   console.log(`procès-verbaux : ${nNum} en procédure numérique, ${nPap} sur papier ; ${nSchema} certificats avec schéma corporel`);
   ok(nNum > 0 && nPap > 0, "un seul support de dossier rencontré");
   console.log("délits :", Object.entries(familles).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(", "));

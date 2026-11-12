@@ -23,7 +23,8 @@
     const cam = spec.type === "camera";
     useEffect(() => {
       const c = ref.current; if (!c || !CR.SIMIMG) return;
-      try { if (cam) CR.SIMIMG.dessiner(c, CR.SIMIMG.scene(S)); else CR.SIMIMG.schema(c, spec.lesions || []); } catch (e) { /* canevas factice des tests */ }
+      const SS = S || (spec.sig && CR.SIM && CR.SIM.simvCache && CR.SIM.simvCache[spec.sig]);
+      try { if (cam) { if (SS) CR.SIMIMG.dessiner(c, CR.SIMIMG.scene(SS)); } else CR.SIMIMG.schema(c, spec.lesions || []); } catch (e) { /* canevas factice des tests */ }
     }, [S && S.sig, spec.type, (spec.lesions || []).join("|")]);
     return html`<canvas ref=${ref} className=${cam ? "dr-cam" : "dr-schema"} width=${cam ? 640 : 220} height=${cam ? 480 : 440} role="img" aria-label=${cam ? "Capture de vidéoprotection" : "Schéma corporel"}></canvas>`;
   }
@@ -156,6 +157,12 @@
   const txt = (p) => p.map((x) => (typeof x === "string" ? x : x.t || "")).join("");
   UI.lecteurDe = function (doc, meta) {
     meta = meta || {};
+    // pièce du pilote des violences : sa forme d'origine, avec la simulation pour l'image de la caméra
+    if (doc.lecteur) {
+      const L = doc.lecteur, sig = doc.capture && doc.capture.sig;
+      const fix = (b) => (b.k === "image" && b.spec && b.spec.type === "camera" ? Object.assign({}, b, { spec: Object.assign({ sig }, b.spec) }) : b);
+      return Object.assign({}, L, { id: meta.id || L.id, cote: meta.cote || L.cote, titre: meta.titre || L.titre, date: meta.date || "", proc: meta.proc || null, blocs: L.blocs.map(fix), feuillets: L.feuillets.map((f) => f.map(fix)) });
+    }
     const B = doc.bandeau, PS = doc.pstyle || [];
     const feuillets = [[]];
     const pousser = (b) => feuillets[feuillets.length - 1].push(b);
@@ -187,6 +194,10 @@
       id: meta.id || doc.cote || doc.title, cote: meta.cote || doc.cote || null, titre: meta.titre || doc.title, date: meta.date || "", proc: meta.proc || null,
       forme: B ? "pv" : "forme", blocs, feuillets: feuillets.filter((f) => f.length), piedSig: B && !doc.numerique ? sigs.map((g) => g.qui) : null, mots: CR.DOCS ? CR.DOCS.mots(doc) : 0,
     };
+  };
+  // la capture de la caméra du pilote des violences dans une pièce (UI.Paper)
+  UI.CaptureSim = function CaptureSim({ sig }) {
+    return html`<figure className="pv-capture"><${Toile} S=${null} spec=${{ type: "camera", sig }} /><figcaption>Capture extraite de l'enregistrement, telle que versée en planche au procès-verbal.</figcaption></figure>`;
   };
   // le schéma corporel dans une pièce (UI.Paper) : siège des lésions numéroté sur une silhouette
   UI.SchemaCorporel = function SchemaCorporel({ lesions }) {
