@@ -97,6 +97,32 @@
     if (irr("gav_notif")) fact("G_notif", { label: "Ses droits notifiés plus de deux heures après le début de la mesure", key: true, why: "Un retard que ne justifie aucune circonstance insurmontable entraîne la nullité de la garde à vue (art. 63-1)." });
     if (irr("interprete")) fact("G_langue", { label: `${A.g === "f" ? "Elle" : "Il"} comprend mal le français`, key: true, why: "La personne qui ne comprend pas le français a droit à un interprète à chaque étape (art. 63-1)." });
 
+    // ---------------------------------------------------------------- vidéo jouée par le moteur (js/video.js)
+    // Arrachage à pied, fuite vers le métro : la caméra de la sortie de la station filme la scène. La tenue de l'auteur
+    // à l'image est celle que décrit l'interpellation, sauf doute sur l'identification : les chaussures diffèrent alors.
+    const VID = (() => {
+      if (!CR.video || t.inf !== "vol" || !t.f || t.f.sc !== "arrachage" || !has("video") || N.video || !V || !A) return null;
+      if ((t.f.agg || []).includes("reunion")) return null; // plusieurs auteurs : le moteur n'en joue qu'un
+      if (!(N.constat || []).some((x) => /à pied, qui s'est enfui vers le métro/.test(x))) return null;
+      const rv = CR.seeded(t.sig + ":video");
+      const objet = /chaîne|collier/.test(t.f.objet) ? "chaine" : /montre|bracelet/.test(t.f.objet) ? "poignet" : "telephone";
+      const violence = t.quoi !== "violence" && (t.f.itt > 0 || (t.f.agg || []).includes("violence0"));
+      const h = ((d.h % 1440) + 1440) % 1440;
+      // lever et coucher du soleil à Paris, heure légale, au milieu de chaque mois
+      const SOL = [[520, 1035], [485, 1080], [440, 1130], [435, 1235], [385, 1275], [350, 1315], [365, 1310], [405, 1270], [450, 1210], [490, 1145], [475, 1030], [515, 1015]][CR.ymd(jf).m - 1];
+      const mode = h >= SOL[0] + 20 && h < SOL[1] - 20 ? "jour" : h >= SOL[0] - 30 && h < SOL[1] + 30 ? "soir" : rv() < 0.6 ? "ir" : "soir";
+      const tenueClient = CR.video.tenue(t.sig + ":tenue", { hauts: ["sweat", "sweat", "doudoune", "blouson", "survet"], capuche: 0.7, chauss: pk(rv, ["blanches", "blanches", "noires"]) });
+      const tenueImage = Object.assign({}, tenueClient);
+      if (dou("doute_ident")) tenueImage.chauss = tenueClient.chauss === "blanches" ? "noires" : "blanches";
+      const s0 = (((h - 2) * 60 - 9) % 86400 + 86400) % 86400, p2 = (x) => String(x).padStart(2, "0");
+      const spec = {
+        faits: "arrache", graine: t.sig, mode, cam: "CAM 04", fuite: "escalier",
+        date: CR.fmtDate(jf, "num").replace(/\//g, "-"), heure: `${p2(Math.floor(s0 / 3600))}:${p2(Math.floor(s0 / 60) % 60)}:${p2(s0 % 60)}`,
+        objet, violence, victime: { g: V.g, agee: V.age >= 68, telephone: true }, auteur: { g: A.g, tenue: tenueImage },
+      };
+      return { spec, tenueClient, S: CR.video.extrait(spec) };
+    })();
+
     // ---------------------------------------------------------------- D : interpellation ou plainte
     const contr = ["stups_usage", "stups_detention", "stups_trafic", "recel", "defaut_permis", "outrage", "rebellion", "violences_pdap"].includes(t.inf);
     if (t.flagrance) {
@@ -108,7 +134,8 @@
         ...(N.conc || []).filter((c) => c.inf !== "arme_b").map((c) => [{ t: c.constat, f: c.fait }]),
         irr("fouille") ? [{ t: `Sans attendre l'officier de police judiciaire, le gardien de la paix ${t.gpx[1].split(" ")[1]} procède à la fouille des poches et du sac de l'intéressé${N.saisie ? ` ; y découvrons ${N.saisie}` : ""}.`, flag: "fouille" }] : N.saisie && has("saisie") ? [`Palpation de sécurité, puis, en présence de l'officier de police judiciaire, fouille : découverte de ${N.saisie}.`] : ["Palpation de sécurité : rien à signaler."],
         [{ t: `Interpellation à ${hm(t.mesure === "gav" ? C.interp : d.h + 15)}.`, paire: irr("heures") ? "heures" : undefined, f: "G_interp" }],
-        irr("interprete") ? [{ t: `La personne s'exprime avec difficulté en français ; ${il(A)} est ${A.etranger}. Ses réponses se font par gestes et par mots isolés.`, f: "G_langue", paire: "interprete" }] : [`La personne décline son identité : ${n(A)}, ${A.age} ans, ${A.metier}${dou("doute_ident") ? `, vêtu${e(A)} d'${pk(r, ["un blouson noir et d'un jean", "un manteau beige", "un sweat blanc à capuche"])}` : ""}.`],
+        irr("interprete") ? [{ t: `La personne s'exprime avec difficulté en français ; ${il(A)} est ${A.etranger}. Ses réponses se font par gestes et par mots isolés.`, f: "G_langue", paire: "interprete" }] : [`La personne décline son identité : ${n(A)}, ${A.age} ans, ${A.metier}${(() => { const x = dou("doute_ident") ? pk(r, ["un blouson noir et d'un jean", "un manteau beige", "un sweat blanc à capuche"]) : null; return VID ? `, vêtu${e(A)} ${CR.video.vetu(VID.tenueClient, A.g)}` : x ? `, vêtu${e(A)} d'${x}` : ""; })()}.`],
+        VID && irr("interprete") ? [`${n(A)} est vêtu${e(A)} ${CR.video.vetu(VID.tenueClient, A.g)}.`] : null,
         t.camera ? [{ t: { violences: "Les faits se sont déroulés devant un établissement dont la façade est équipée d'une caméra.", rebellion: "Le contrôle a lieu devant un bureau de tabac dont la vitrine est équipée d'une caméra." }[t.inf] || "Une caméra privée est fixée sur la façade du commerce voisin.", f: "G_camera" }] : ["Aucune caméra n'est relevée à proximité."],
         [`Conduite au ${SF.paris ? SF.commCourt.replace("commissariat", "commissariat central") : SF.commCourt} ; présentation à l'officier de police judiciaire à ${hm((t.mesure === "gav" ? C.interp : d.h + 15) + 8)}.`],
         ["Dont procès-verbal."],
@@ -193,6 +220,20 @@
       [N.video.scene],
       [{ t: N.video.ident, f: "G_video" }],
     ], sigs: [{ qui: "L'officier de police judiciaire", t: S }] }));
+    else if (VID) add("pv_video", "Exploitation vidéo", () => {
+      const X = VID.S, lis = X.lisible(), hs = (h) => { const [hh, mm, ss] = h.split(" ")[1].split(":"); return `${+hh} h ${mm} min ${ss} s`; };
+      const vue = { ir: "de nuit, l'image est en infrarouge, en noir et blanc", soir: "de nuit, l'image est en couleur, sous l'éclairage public", jour: "l'image est en couleur" }[X.mode];
+      return { title: "Procès-verbal d'exploitation des images de vidéoprotection", kind: "video", entete: ent("pv_video"), video: VID.spec, paras: [
+        [`Exploitation des images de la caméra de vidéoprotection de la sortie de la station de métro la plus proche, remises par le service de sûreté de la RATP, horodatage du ${CR.fmtDate(jf, "num")}.`],
+        [`La caméra, fixée en hauteur, filme en plongée le trottoir et la sortie de la station ; ${vue}, à ${X.fps} images par seconde.`],
+        ...X.moments.map((m) => [`${hs(m.h)} — ${m.txt}`]),
+        [`L'individu porte ${lis.A.image.replace(/^(\S+)/, (w) => (/^(doudoune|veste)/.test(lis.A.image) ? "une " : "un ") + w)}.`],
+        dou("doute_ident") ? [{ t: "La qualité des images ne permet pas de distinguer les traits du visage de l'auteur ; sa silhouette et ses vêtements sont visibles.", f: "G_doute_ident" }] : [{ t: `La silhouette, les vêtements et la démarche correspondent à ceux de ${n(A)} lors de son interpellation.`, f: "G_video" }],
+        t.quoi === "violence" ? [{ t: "Aucun geste de violence n'est visible : l'objet est saisi d'un geste rapide, la victime n'est pas touchée.", f: "G_sans_violence" }] : null,
+        X.sauts.length ? [`L'enregistrement présente ${X.sauts.length === 1 ? "une interruption" : X.sauts.length + " interruptions"} : ${X.sauts.map(([a0, b0]) => `de ${hs(X.horodatage(a0))} à ${hs(X.horodatage(b0))}`).join(", ")}.`] : null,
+        ["Une planche de captures est jointe ; les images utiles sont gravées sur un disque placé sous scellé."],
+      ].filter(Boolean), sigs: [{ qui: "L'officier de police judiciaire", t: S }] };
+    });
     else if (has("video")) add("pv_video", "Exploitation vidéo", () => ({ title: "Procès-verbal d'exploitation des images de vidéoprotection", kind: "video", entete: ent("pv_video"), paras: [
       [`Exploitation des images ${t.inf === "vol" && t.f.sc === "magasin" ? "du système de vidéosurveillance du magasin" : t.inf === "violences" && t.f.sc === "transport" ? "des caméras de la RATP" : (SF.paris ? "de la caméra de vidéoprotection de la Ville de Paris la plus proche" : `de la caméra de vidéoprotection de la ville de ${SF.ville} la plus proche`)}, horodatage du ${CR.fmtDate(jf, "num")}.`],
       [`${hm(d.h - 2)} — ${N.resume}`],

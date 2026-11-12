@@ -1,5 +1,6 @@
 // Planche d'un extrait de vidéosurveillance (js/video.js), rendue dans Node sans navigateur.
 // node tools/shotvideo.js [graine] [mode ir|soir|jour] [temps,séparés,par,virgules] [échelle] [grainetenues]
+// Réglages de l'extrait en JSON : OPTS='{"objet":"telephone","violence":false}'
 // Image : tools/out/video-<graine>-<mode>.png ; affiche aussi ce que l'image permet (lisible()).
 const fs = require("fs"), path = require("path"), zlib = require("zlib");
 require(path.join(__dirname, "../../js/video.js"));
@@ -16,7 +17,7 @@ function png(w, h, rgba) {
 }
 
 const graine = process.argv[2] || "1", mode = process.argv[3] || "ir";
-const S = V.extrait({ graine, mode, grainetenues: process.argv[6] || undefined });
+const S = V.extrait(Object.assign({ graine, mode, grainetenues: process.argv[6] || undefined }, process.env.OPTS ? JSON.parse(process.env.OPTS) : {}));
 const temps = process.argv[4] ? process.argv[4].split(",").map(Number) : [S.scn.tG - 2.5, S.scn.tG - 0.6, S.scn.tG + 0.35, S.scn.tG + 0.9, S.scn.tG + 1.6, S.scn.tG + 2.6, S.scn.tG + 6, S.scn.tG + 9];
 const sc = +(process.argv[5] || 2), cols = 2, rows = Math.ceil(temps.length / cols), W = V.W * sc, H = V.H * sc, gap = 4;
 const OW = cols * W + (cols + 1) * gap, OH = rows * H + (rows + 1) * gap, out = new Uint8ClampedArray(OW * OH * 4).fill(30);

@@ -1585,6 +1585,27 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .ts:has(.acc-gpu) .ts-btn:not(.ts-primary) { background: rgba(10,14,26,.72); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); box-shadow: inset 0 0 0 1px rgba(176,198,236,.28), inset 3px 0 0 rgba(176,198,236,.4); }
 .ts:has(.acc-gpu) .ts-btn:not(.ts-primary):hover, .ts:has(.acc-gpu) .ts-btn:not(.ts-primary):focus-visible { background: rgba(232,170,60,.16); box-shadow: inset 0 0 0 1px var(--amber), inset 3px 0 0 var(--amber); }
 .ts:has(.acc-gpu) .acc-jeux { background: rgba(9,12,19,.76); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: inset 0 0 0 1px rgba(176,198,236,.18); border: 0; }
+
+/* ---- Vidéosurveillance dans une pièce (ui-video.js) ---- */
+.vx { margin: 4px 0 18px; display: grid; gap: 8px; font-family: var(--f-ui); }
+.vx-ecran { background: #050607; border-radius: 4px; overflow: hidden; }
+.vx-ecran canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; cursor: pointer; }
+.vx-frise { position: relative; height: 18px; }
+.vx-frise input { position: absolute; inset: 0; width: 100%; margin: 0; accent-color: var(--bleu); }
+.vx-marques { position: absolute; left: 7px; right: 7px; top: 0; height: 4px; pointer-events: none; }
+.vx-marques b { position: absolute; top: 0; height: 4px; background: var(--ink-2); opacity: .45; }
+.vx-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.vx-vit { display: inline-flex; gap: 2px; }
+.vx-v { font: 600 .78rem/1 var(--f-ui); padding: 6px 8px; border: 1px solid rgba(0, 0, 0, .22); background: transparent; color: var(--ink); border-radius: 3px; cursor: pointer; }
+.vx-v.on { background: var(--bleu); border-color: var(--bleu); color: #fff; }
+.vx-horo { margin-left: auto; font: .78rem/1.2 var(--f-mono); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.vx-planche { display: grid; gap: 6px; }
+.vx-pl-t { font: 600 .74rem/1 var(--f-ui); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); }
+.vx-vigns { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+.vx-vign { display: grid; gap: 3px; padding: 0; border: 1px solid rgba(0, 0, 0, .22); background: transparent; cursor: pointer; text-align: left; border-radius: 3px; overflow: hidden; }
+.vx-vign canvas { display: block; width: 100%; aspect-ratio: 16 / 9; background: #050607; }
+.vx-vign span { font: .72rem/1 var(--f-mono); color: var(--ink-2); padding: 2px 5px 5px; }
+.vx-vign:focus-visible, .vx-v:focus-visible { outline: 2px solid var(--bleu); outline-offset: 2px; }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
@@ -1605,6 +1626,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/flow-penal.js"></script>
 <script src="js/flow-audience.js"></script>
 <script src="js/pixel.js"></script>
+<script src="js/video.js"></script>
 <script src="js/cases/tutoriel.js"></script>
 <script src="js/cases/a02-sac.js"></script>
 <script src="js/cases/a03-crpc.js"></script>
@@ -1646,6 +1668,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/pieces.js"></script>
 <script src="js/code-annote.js"></script>
 <script src="js/ui-base.js"></script>
+<script src="js/ui-video.js"></script>
 <script src="js/portraits.js"></script>
 <script src="js/ui-pixel.js"></script>
 <!-- Refonte graphique : le moteur de lumière se charge avant la carte et les décors ; décors éclairés, Timon et accueil après decor-int.js -->

@@ -252,6 +252,14 @@
     enq_metro: (x) => ({
       title: "Procès-verbal de constat — images de vidéosurveillance", kind: "video",
       entete: [CJ, "Rue de Clignancourt, 75018 Paris"],
+      // l'extrait joué par le moteur (js/video.js), calé seconde par seconde sur le constat ci-dessous
+      video: {
+        faits: "arrache", graine: "a02_metro", mode: "jour", cam: "CAM 02", sauts: 1,
+        date: CR.fmtDate(x.cs.proc.faitsDay, "num").replace(/\//g, "-"), heure: "12:50:25",
+        objet: "sac", couleurObjet: "rouge", violence: true, fuite: "gauche", regardeFuite: false, secours: 11.1, auSol: 16.55,
+        victime: { g: "f", agee: true, telephone: false, tenue: { haut: "manteau", hautC: "beige", tete: null } },
+        auteur: { g: "m", tenue: { haut: "sweat", hautC: "gris", bas: "jean", basC: "jean", chauss: "blanches", tete: null, sac: null } },
+      },
       paras: [
         [`À la requête de M. Yanis Mebarki, représenté par ${me(x)}, exerçant son droit d'accès aux images le concernant, je me suis rendue le ${D(x.cs.enq && x.cs.enq.video_metro ? x.cs.enq.video_metro.day + 1 : x.cs.proc.faitsDay + 1)} au poste de sûreté de la station Marcadet–Poissonniers, où l'agent de permanence m'a présenté les images de la caméra de la sortie rue Ordener.`],
         [`Horodatage de l'enregistreur : ${N(x.cs.proc.faitsDay)}.`],

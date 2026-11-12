@@ -120,6 +120,7 @@
         ${(caption.left || caption.right) && html`<div className="cap-box"><div className="cap-left">${caption.left}</div><div className="cap-right">${caption.right}</div></div>`}
       </div>`}
       ${doc.title && html`<h3 className="paper-title">${doc.title}</h3>`}
+      ${doc.video && !compact && UI.VideoExtrait && html`<${UI.VideoExtrait} spec=${doc.video} />`}
       ${doc.to && html`<p className="paper-to">À : ${doc.to}</p>`}
       ${(doc.paras || []).map((p, i) => html`<p key=${i}>${p.map((seg, j) => segEl(seg, j))}</p>`)}
       ${doc.sigs && doc.sigs.length > 0 && html`<div className="paper-sigs">${doc.sigs.map((g, i) => {

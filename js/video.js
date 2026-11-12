@@ -105,6 +105,14 @@
     };
   }
   V.tenue = (graine, o) => tenue(rng(graine), o);
+  // « d'un sweat à capuche gris, d'un jean bleu et de baskets blanches » (procès-verbal d'interpellation)
+  V.vetu = function (t, g) {
+    const H_ = HAUTS[t.haut], cH = COUL[t.hautC], B_ = BAS[t.bas], cB = COUL[t.basC], C_ = CHAUSS[t.chauss], f = g === "f";
+    let s = `${H_.g === "f" ? "d'une" : "d'un"} ${H_.nom} ${cH[H_.g]}, d'un ${B_.nom} ${cB.m} et de ${C_.nom}`;
+    if (t.tete === "casquette" || t.tete === "bonnet") s += `, coiffé${f ? "e" : ""} ${t.tete === "casquette" ? "d'une" : "d'un"} ${t.tete} ${COUL[t.teteC][t.tete === "casquette" ? "f" : "m"]}`;
+    if (t.sac) s += `, porte${f ? "use" : "ur"} d'${t.sac === "sacoche" ? "une sacoche en bandoulière" : "un sac à dos"}`;
+    return s;
+  };
   V.decrire = function (t) {
     const H_ = HAUTS[t.haut], cH = COUL[t.hautC], B_ = BAS[t.bas], cB = COUL[t.basC];
     const parts = [`${H_.nom} ${cH[H_.g]}`, `${B_.nom} ${cB.m}`, CHAUSS[t.chauss].nom];
@@ -352,10 +360,10 @@
       if (b.poches) Object.assign(o, { sL: 0.2, eL: 0.35, aL: 0.25, sR: 0.2, eR: 0.35, aR: 0.25 });
       return P(o);
     },
-    marche(u, t, b, ph) { return marche(ph, 1); },
+    marche(u, t, b, ph) { const p = marche(ph, 1); if (b.tel) Object.assign(p, { sR: 0.75, eR: 2.2, aR: 0.6 }); return p; },
     court(u, t, b, ph) { return course(ph, 1); },
     tourne(u, t) { return P({ head: 0.1, hL: 0.1 * Math.sin(u * 6), hR: -0.1 * Math.sin(u * 6) }); },
-    arrache(u, t, b, ph, A, S) { const cible = S._sac && S._sac.pos; return P({ lean: 0.22, hL: 0.35, kL: 0.4, hR: -0.15, kR: 0.2, py: 0.9, sL: -0.3, eL: 0.6, ikR: cible }); },
+    arrache(u, t, b, ph, A, S) { const cible = S._cible; return P({ lean: 0.22, hL: 0.35, kL: 0.4, hR: -0.15, kR: 0.2, py: 0.9, sL: -0.3, eL: 0.6, ikR: cible }); },
     tire(u) { return P({ lean: -0.12 - 0.1 * u, hL: -0.3, kL: 0.35, hR: 0.45, kR: 0.5, py: 0.86, sL: 0.6, aL: 0.5, eL: 0.9, sR: lerp(0.9, -0.5, u), eR: lerp(0.2, 0.9, u), aR: 0.3 }); },
     tiree(u) { return P({ lean: 0.35 + 0.2 * u, sL: 1.2, eL: 0.3, sR: 1.3, eR: 0.4, aR: 0.2, hL: 0.25, kL: 0.3, hR: -0.3, kR: 0.2, head: 0.2 }); },
     tombe(u, t, b) {
@@ -374,6 +382,8 @@
       return mix(genou, P({ lean: 0.1 }), smooth((u - 0.7) / 0.3));
     },
     penche(u, t) { return P({ py: 0.58, lean: 0.55, hL: 1.5, kL: 1.9, hR: 0.6, kR: 1.0, sL: 0.9, eL: 0.6, sR: 1.1, eR: 0.5, aR: 0.2 }); },
+    sursaut(u) { return P({ lean: -0.12, sL: 0.9, eL: 1.3, aL: 0.4, sR: 0.9, eR: 1.3, aR: 0.4, hL: -0.2, kL: 0.2, head: -0.1 }); },
+    cou(u) { return P({ lean: 0.08, sL: 0.95, eL: 2.35, aL: 0.55, sR: 0.95, eR: 2.35, aR: 0.55, head: 0.1 }); },
     montre(u, t) { return P({ sR: 1.45, eR: 0.05, aR: 0.35, head: 0.05, lean: -0.02 }); },
     sonne(u, t) { return P({ sR: 0.75, eR: 2.2, aR: 0.6, head: 0.05 }); },
   };
@@ -452,6 +462,7 @@
       const pb = A.beats[k - 1], bl = clamp((t - b.t0) / (b.fondu || 0.28), 0, 1);
       if (bl < 1) pose = mix(GESTES[pb.a](1, pb.d, pb, ph, A, S), pose, smooth(bl));
     }
+    if (A.agee) pose.lean += 0.1;
     const gy = S.D.solY(pos[0], pos[1]);
     return { pos, cap, pose, gy };
   }
@@ -462,73 +473,89 @@
   FAITS.arrache = {
     nom: "Vol à l'arraché",
     decor: "metro",
+    // o : fuite ("escalier" | "gauche"), objet ("sac" | "telephone" | "chaine" | "poignet"), violence (défaut : oui),
+    //     victime { g, agee, tenue, telephone }, auteur { tenue }, secours (délai du témoin, s), auSol (s),
+    //     regardeFuite (la victime montre la direction de la fuite), couleurObjet
     monter(r, o) {
       const D = DECORS.metro, sortie = D.sortie;
+      const ov = o.victime || {}, oa = o.auteur || {};
       const fuite = o.fuite || (r() < 0.5 ? "escalier" : "gauche");
+      const objet = o.objet || "sac", violence = o.violence !== false;
       const zV = 7.6 + r() * 0.5;
       const xG = 2.4 + r() * 0.8; // lieu du geste
       const tG = 9.2;
-      const V_ = { id: "V", role: "victime", t0: 1.5, pos: [10.5, zV], cap: Math.PI, tenue: tenue(r, { hauts: ["manteau", "doudoune", "blouson"], sac: null, couvre: 0.15, chauss: pick(r, ["marron", "noires", "blanches"]) }), sacMain: pick(r, ["camel", "noir", "rouge", "beige"]) };
-      const vit = 1.25;
-      const xV = xG - 0.1;
-      V_.beats = [
-        { a: "marche", d: (10.5 - xV) / vit, to: [xV, zV] },
-      ];
-      const tArr = V_.t0 + V_.beats[0].d; // arrivée au lieu du geste
-      const dt = tG - tArr;
-      V_.t0 += dt; // cale l'arrivée sur l'instant du geste
-      V_.beats.push({ a: "tiree", d: 0.7, to: [xV - 0.35, zV + 0.15], fondu: 0.15 });
-      V_.beats.push({ a: "tombe", d: 0.75, to: [xV - 0.7, zV + 0.25], sens: -1, fondu: 0.1 });
-      V_.beats.push({ a: "au_sol", d: 3.4, sens: -1 });
-      V_.beats.push({ a: "releve", d: 2.6, sens: -1 });
-      V_.beats.push({ a: "montre", d: 2.2, face: fuite === "gauche" ? Math.PI : Math.PI * 0.85 });
-      V_.beats.push({ a: "sonne", d: 6 });
-      // l'auteur suit la victime, accélère, arrache, s'enfuit
-      const A_ = { id: "A", role: "auteur", t0: V_.t0 + 0.6, pos: [11.5, zV + 0.45], cap: Math.PI, tenue: tenue(r, { hauts: ["sweat", "sweat", "doudoune", "blouson", "survet"], capuche: 0.75, chauss: pick(r, ["blanches", "blanches", "noires"]), sac: r() < 0.3 ? "sacoche" : null }) };
-      const xA = xG + 0.55;
-      const tStart = A_.t0, tAcc = tG - 1.1;
-      const xAcc = 11.5 - (tAcc - tStart) * 1.2;
+      const agee = !!ov.agee, gV = ov.g || "f", eV = gV === "f" ? "e" : "";
+      const vtel = ov.telephone != null ? ov.telephone : objet === "telephone";
+      const tenueV = Object.assign(tenue(r, { hauts: ["manteau", "doudoune", "blouson"], sac: null, couvre: agee ? 0.05 : 0.15, chauss: pick(r, ["marron", "noires", "blanches"]) }), ov.tenue || {});
+      const couleurObjet = o.couleurObjet || pick(r, ["camel", "noir", "rouge", "beige"]);
+      const vit = agee ? 0.95 : 1.25, xV = xG - 0.1, dMarche = (10.5 - xV) / vit;
+      const V_ = { id: "V", role: "victime", g: gV, agee, t0: tG - dMarche, pos: [10.5, zV], cap: Math.PI, tenue: tenueV };
+      V_.beats = [{ a: "marche", d: dMarche, to: [xV, zV], tel: vtel }];
+      const auSol = o.auSol != null ? o.auSol : 3.4;
+      let tFin;
+      if (violence) {
+        V_.beats.push({ a: "tiree", d: 0.7, to: [xV - 0.35, zV + 0.15], fondu: 0.15 });
+        V_.beats.push({ a: "tombe", d: 0.75, to: [xV - 0.7, zV + 0.25], sens: -1, fondu: 0.1 });
+        V_.beats.push({ a: "au_sol", d: auSol, sens: -1 });
+        V_.beats.push({ a: "releve", d: 2.6, sens: -1 });
+        tFin = tG + 0.7 + 0.75 + auSol + 2.6;
+      } else {
+        V_.beats.push({ a: objet === "chaine" ? "cou" : "sursaut", d: 1.1, to: [xV - 0.25, zV - 0.1], fondu: 0.1 });
+        tFin = tG + 1.1;
+      }
+      const regarde = o.regardeFuite !== false;
+      V_.beats.push(regarde ? { a: "montre", d: 2.2, face: fuite === "gauche" ? Math.PI : Math.PI * 0.85 } : { a: objet === "chaine" ? "cou" : "attend", d: 2.2, face: -0.5 });
+      V_.beats.push({ a: objet === "telephone" ? "attend" : "sonne", d: 12, face: regarde ? null : -0.5 });
+      // l'auteur suit la victime à son pas, accélère, arrache, s'enfuit
+      const tenueA = oa.tenue ? Object.assign({}, oa.tenue) : tenue(r, { hauts: ["sweat", "sweat", "doudoune", "blouson", "survet"], capuche: 0.75, chauss: pick(r, ["blanches", "blanches", "noires"]), sac: r() < 0.3 ? "sacoche" : null });
+      const A_ = { id: "A", role: "auteur", g: oa.g || "m", t0: V_.t0 + 0.6, pos: [11.5, zV + 0.45], cap: Math.PI, tenue: tenueA };
+      const xA = xG + 0.55, tAcc = tG - 1.1, xAcc = 11.5 - (tAcc - A_.t0) * vit;
       A_.beats = [
-        { a: "marche", d: tAcc - tStart, to: [xAcc, zV + 0.45] },
+        { a: "marche", d: tAcc - A_.t0, to: [xAcc, zV + 0.45] },
         { a: "court", d: 1.1, to: [xA, zV + 0.35] },
         { a: "arrache", d: 0.45, face: Math.PI + 0.25, fondu: 0.12 },
-        { a: "tire", d: 0.7, to: [xA + 0.1, zV + 0.45], face: Math.PI + 0.35, fondu: 0.12 },
       ];
+      if (violence) A_.beats.push({ a: "tire", d: 0.7, to: [xA + 0.1, zV + 0.45], face: Math.PI + 0.35, fondu: 0.12 });
       if (fuite === "escalier") {
-        const xs = sortie[0] - 0.2;
         A_.beats.push({ a: "court", d: 0.75, to: [xG - 0.4, D.trou.z1 + 0.6], fondu: 0.2 });
-        A_.beats.push({ a: "court", d: 0.55, to: [xs, sortie[1] + 0.2] });
+        A_.beats.push({ a: "court", d: 0.55, to: [sortie[0] - 0.2, sortie[1] + 0.2] });
         A_.beats.push({ a: "court", d: 1.4, to: [D.trou.x1 - 0.3, sortie[1]] });
-        A_.sort = true;
-      } else {
-        A_.beats.push({ a: "court", d: 3.2, to: [-12.5, zV + 0.9], fondu: 0.2 });
-        A_.sort = true;
-      }
+      } else A_.beats.push({ a: "court", d: 3.2, to: [-12.5, zV + 0.9], fondu: 0.2 });
+      A_.sort = true;
+      const tAuteurPart = tG + 0.45 + (violence ? 0.7 : 0);
       // témoin : attend au totem, se retourne, vient aider
-      const T_ = { id: "T", role: "temoin", t0: 0, pos: [-1.1, 5.5], cap: 0.3, tenue: tenue(r, { sac: r() < 0.5 ? "sac_dos" : null }) };
+      const secours = o.secours != null ? o.secours : 0.6;
+      const T_ = { id: "T", role: "temoin", g: r() < 0.5 ? "f" : "m", t0: 0, pos: [-1.1, 5.5], cap: 0.3, tenue: tenue(r, { sac: r() < 0.5 ? "sac_dos" : null }) };
+      const tArrive = tG + secours + 0.8 + 1.5 + 1.6;
       T_.beats = [
-        { a: "attend", d: tG + 0.6, tel: true },
+        { a: "attend", d: tG + secours, tel: true },
         { a: "tourne", d: 0.8, face: 0.1 },
         { a: "marche", d: 1.5, to: [-0.4, 7.1] },
         { a: "marche", d: 1.6, to: [xV - 1.0, zV - 0.3] },
-        { a: "penche", d: 3.2, face: 0.6 },
-        { a: "attend", d: 10, face: 0.4 },
       ];
+      if (violence) T_.beats.push({ a: "penche", d: Math.max(1.5, tFin - tArrive), face: 0.6 });
+      T_.beats.push({ a: "attend", d: 14, face: 0.4 });
+      const duree = Math.max(24, Math.ceil(tFin + 6));
       // passants : trottoir d'en face, et un sur ce trottoir avant les faits
-      const P1 = { id: "P1", role: "passant", t0: 0, pos: [-16, 18.2], cap: 0, tenue: tenue(r), beats: [{ a: "marche", d: 26, to: [16, 18.3] }], sort: true };
+      const P1 = { id: "P1", role: "passant", t0: 0, pos: [-16, 18.2], cap: 0, tenue: tenue(r), beats: [{ a: "marche", d: duree + 2, to: [16, 18.3] }], sort: true };
       const P2 = { id: "P2", role: "passant", t0: 0.5, pos: [-9, 8.8], cap: 0, tenue: tenue(r), beats: [{ a: "marche", d: 14, to: [11, 8.9] }], sort: true };
-      const P3 = { id: "P3", role: "passant", t0: 6, pos: [17, 17.6], cap: Math.PI, tenue: tenue(r), beats: [{ a: "marche", d: 26, to: [-17, 17.7] }], sort: true };
-      for (const a of [V_, A_, T_, P1, P2, P3]) { a.peau = pick(r, PEAU); a.chev = pick(r, CHEV); a.sc = (1.62 + r() * 0.24) / 1.75; }
-      V_.sc = Math.min(V_.sc, 0.97);
+      const P3 = { id: "P3", role: "passant", t0: 6, pos: [17, 17.6], cap: Math.PI, tenue: tenue(r), beats: [{ a: "marche", d: duree + 2, to: [-17, 17.7] }], sort: true };
+      for (const a of [V_, A_, T_, P1, P2, P3]) { a.peau = pick(r, PEAU); a.chev = pick(r, CHEV); a.sc = (1.62 + r() * 0.24) / 1.75; if (!a.g) a.g = r() < 0.5 ? "f" : "m"; }
+      V_.sc = Math.min(V_.sc, gV === "f" ? 0.95 : 1);
+      if (agee) { V_.chev = CHEV[4]; V_.sc *= 0.96; }
       const acteurs = [V_, A_, T_, P1, P2, P3];
-      const sac = { couleur: V_.sacMain, tPrise: tG + 0.42, tLache: tG + 0.42 + 0.55 };
+      const objetSc = { type: objet, couleur: couleurObjet, tPrise: tG + 0.42, tLache: tG + 0.42 + (violence ? 0.55 : 0.12) };
+      const laV = gV === "f" ? (agee ? "la femme âgée" : "la femme") : (agee ? "l'homme âgé" : "l'homme"), LaV = laV[0].toUpperCase() + laV.slice(1), luiV = gV === "f" ? "elle" : "lui";
+      const geste = { sac: "L'individu saisit le sac porté à l'épaule.", telephone: `L'individu arrache le téléphone que ${laV} tient à l'oreille.`, chaine: `L'individu saisit la chaîne portée au cou par ${laV}.`, poignet: `L'individu saisit le poignet de ${laV}.` }[objet];
       const moments = [
-        { t: tG - 1.2, cle: "approche", txt: "Un individu marche derrière la femme, puis court vers elle." },
-        { t: tG + 0.3, cle: "geste", txt: "L'individu saisit le sac porté à l'épaule." },
-        { t: tG + 1.6, cle: "chute", txt: "La femme chute sur le trottoir ; l'individu s'éloigne en courant, le sac à la main." },
-        { t: fuite === "escalier" ? tG + 3.3 : tG + 3.4, cle: "fuite", txt: fuite === "escalier" ? "L'individu descend en courant l'escalier de la station." : "L'individu sort du champ par la gauche, en direction du passage piéton." },
+        { t: tG - 1.2, cle: "approche", txt: `Un individu marche derrière ${laV}, puis court vers ${luiV}.` },
+        { t: tG + 0.3, cle: "geste", txt: geste },
+        violence ? { t: tG + 1.6, cle: "chute", txt: `${LaV} est entraîné${eV} puis chute sur le trottoir ; l'individu s'éloigne en courant${objet === "sac" ? ", le sac à la main" : ""}.` }
+          : { t: tAuteurPart + 0.4, cle: "depart", txt: `L'individu s'éloigne en courant. ${LaV} reste debout ; aucun contact n'est visible entre eux en dehors de l'objet saisi.` },
+        { t: fuite === "escalier" ? tAuteurPart + 2.1 : tAuteurPart + 2.2, cle: "fuite", txt: fuite === "escalier" ? "L'individu descend en courant l'escalier de la station." : "L'individu sort du champ par la gauche, en direction du passage piéton." },
       ];
-      return { acteurs, sac, moments, duree: 24, tG, fuite };
+      if (violence && o.secours != null) moments.push({ t: tFin - 2.6, cle: "secours", txt: `${LaV} est relevé${eV} par un passant.` });
+      return { acteurs, objet: objetSc, moments, duree, tG, fuite, violence };
     },
   };
 
@@ -593,7 +620,10 @@
       const c = COUL[T.teteC], top = add(hd, mul(j.tdir, 0.03 * sc));
       seg(top, top, 0.107, c.c, c.ir);
       seg(add(top, add(mul(j.tfw, 0.07 * sc), mul(j.tdir, 0.02))), add(top, add(mul(j.tfw, 0.16 * sc), mul(j.tdir, 0.015))), 0.025, c.c, c.ir);
-    } else { const hp = sub(add(hd, mul(j.tdir, 0.028 * sc)), mul(j.tfw, 0.025 * sc)); seg(hp, hp, 0.1, hair, 0.35); }
+    } else {
+      const hp = sub(add(hd, mul(j.tdir, 0.028 * sc)), mul(j.tfw, 0.025 * sc)); seg(hp, hp, 0.1, hair, 0.35);
+      if (A.g === "f" && !A.agee) seg(sub(hd, mul(j.tfw, 0.05 * sc)), sub(sub(hd, mul(j.tfw, 0.06 * sc)), mul(j.tdir, 0.2 * sc)), 0.075, hair, 0.35);
+    }
     if (T.sac === "sacoche") {
       const c = COUL[T.sacC], p = add(add(j.hipR, mul(j.fw, 0.12 * sc)), mul(j.tdir, 0.08));
       seg(j.shL, p, 0.015, c.c, c.ir);
@@ -618,12 +648,13 @@
     }
   }
 
-  function dessinerSac(S, F, sacPos, attache, couleurNom) {
-    const c = COUL[couleurNom], isIR = S.mode === "ir", cam = S.cam;
-    const L = S.lum(sacPos.pos, null), col = couleur(c.c, c.ir, L, isIR);
-    const a = sub(sacPos.pos, mul(sacPos.fw, 0.13)), b = add(sacPos.pos, mul(sacPos.fw, 0.13));
-    capsule(F, cam, a, b, 0.085, col);
-    if (attache) capsule(F, cam, attache, add(sacPos.pos, [0, 0.07, 0]), 0.012, col);
+  function dessinerObjet(S, F, o, ob) {
+    const isIR = S.mode === "ir", cam = S.cam, L = S.lum(o.pos, null);
+    const c = ob.type === "sac" ? COUL[ob.couleur] : ob.type === "telephone" ? { c: [0.02, 0.02, 0.025], ir: 0.3 } : { c: [0.6, 0.45, 0.12], ir: 0.8 };
+    const col = couleur(c.c, c.ir, L, isIR);
+    const l = ob.type === "sac" ? 0.13 : ob.type === "telephone" ? 0.04 : 0.05, r = ob.type === "sac" ? 0.085 : ob.type === "telephone" ? 0.03 : 0.012;
+    capsule(F, cam, sub(o.pos, mul(o.fw, l)), add(o.pos, mul(o.fw, l)), r, col);
+    if (o.att) capsule(F, cam, o.att, add(o.pos, [0, 0.07, 0]), 0.012, col);
   }
 
   // ---------------------------------------------------------------- police d'incrustation (3 × 5, sans accents)
@@ -661,7 +692,7 @@
     const cam = Camera(D.camera);
     const scn = F_.monter(rng("faits:" + (o.grainefaits || graine)), o);
     // les tenues peuvent varier seules, à faits identiques
-    if (o.grainetenues) { const alt = F_.monter(rng("tenues:" + o.grainetenues), o); scn.acteurs.forEach((a, i) => { const b = alt.acteurs[i]; a.tenue = b.tenue; a.peau = b.peau; a.chev = b.chev; a.sc = b.sc; }); scn.sac.couleur = alt.sac.couleur; }
+    if (o.grainetenues) { const alt = F_.monter(rng("tenues:" + o.grainetenues), o); scn.acteurs.forEach((a, i) => { const b = alt.acteurs[i]; a.tenue = b.tenue; a.peau = b.peau; a.chev = b.chev; a.sc = b.sc; }); scn.objet.couleur = alt.objet.couleur; }
     for (const A of scn.acteurs) preparer(A, D);
     const S = { D, cam, mode, graine, scn, duree: scn.duree, fps: o.fps || pick(r, [8, 10, 12]), lumieres: null };
     S.lum = Eclairage(D, mode, cam);
@@ -669,26 +700,8 @@
     S.date = o.date || "12-11-2026";
     S.heure = o.heure || (mode === "jour" ? "15:12:40" : mode === "soir" ? "18:47:05" : "22:41:07");
     S.camNom = o.cam || "CAM 04";
-    // fond : lancé une fois
-    const nuit = mode !== "jour";
-    const bg = new Float32Array(N * 3), bz = new Float32Array(N), gx = new Float32Array(N), gz = new Float32Array(N);
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const i = y * W + x, d = cam.ray(x + 0.5, y + 0.5), h = trace(D, S.prims, cam.C, d, nuit);
-      gx[i] = NaN; gz[i] = NaN;
-      if (!h) { bz[i] = 1e9; const s = mode === "jour" ? [0.5, 0.55, 0.62] : [0.01, 0.012, 0.02]; bg[i * 3] = s[0]; bg[i * 3 + 1] = s[1]; bg[i * 3 + 2] = s[2]; continue; }
-      bz[i] = h.t * dot(d, cam.f);
-      if (h.sol) { gx[i] = h.p[0]; gz[i] = h.p[2]; }
-      const m = h.m || { c: [0.3, 0.3, 0.3] };
-      let L = S.lum(h.p, h.n);
-      // ombre portée sous les voitures garées
-      if (h.sol && h.p[2] > 9.8 && h.p[2] < 11.65) for (const P of S.prims) if (P.voiture && h.p[0] > P.a[0] - 0.1 && h.p[0] < P.b[0] + 0.1) { L = mul(L, 0.3); break; }
-      const refl = mode === "ir" ? (m.ir != null ? m.ir : lumi(m.c) * 1.25) : null;
-      let c = mode === "ir" ? [refl * L[0], refl * L[0], refl * L[0]] : [m.c[0] * L[0], m.c[1] * L[1], m.c[2] * L[2]];
-      const e = m.e && (!m.eNuit || nuit) ? m.e : null;
-      if (e) { const k = mode === "ir" ? 0.6 : 1; c = add(c, mode === "ir" ? [lumi(e) * k, lumi(e) * k, lumi(e) * k] : e); }
-      bg[i * 3] = c[0]; bg[i * 3 + 1] = c[1]; bg[i * 3 + 2] = c[2];
-    }
-    Object.assign(S, { bg, bz, gx, gz });
+    S.nuit = mode !== "jour";
+
     // images enregistrées : cadence, puis images sautées (l'horodatage saute avec elles)
     const sauts = [];
     const nS = o.sauts != null ? o.sauts : 1 + Math.floor(r() * 2);
@@ -699,7 +712,7 @@
       if (sauts.some(([a, b]) => t0 < b + 2 && t0 + len_ > a - 2)) continue;
       sauts.push([t0, t0 + len_]);
     }
-    S.sauts = sauts;
+    S.sauts = sauts.sort((a, b) => a[0] - b[0]);
     S.frames = [];
     for (let t = 0; t < S.duree; t += 1 / S.fps) if (!sauts.some(([a, b]) => t >= a && t < b)) S.frames.push(+t.toFixed(4));
     S.k = (o.distorsion != null ? o.distorsion : 0.22);
@@ -721,6 +734,29 @@
     return S;
   };
 
+  // fond : lancé une fois, à la première image (construire l'extrait reste léger : texte du procès-verbal, tests)
+  function fond(S) {
+    const { cam, D, mode } = S, nuit = S.nuit;
+    const bg = new Float32Array(N * 3), bz = new Float32Array(N), gx = new Float32Array(N), gz = new Float32Array(N);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x, d = cam.ray(x + 0.5, y + 0.5), h = trace(D, S.prims, cam.C, d, nuit);
+      gx[i] = NaN; gz[i] = NaN;
+      if (!h) { bz[i] = 1e9; const s = mode === "jour" ? [0.5, 0.55, 0.62] : [0.01, 0.012, 0.02]; bg[i * 3] = s[0]; bg[i * 3 + 1] = s[1]; bg[i * 3 + 2] = s[2]; continue; }
+      bz[i] = h.t * dot(d, cam.f);
+      if (h.sol) { gx[i] = h.p[0]; gz[i] = h.p[2]; }
+      const m = h.m || { c: [0.3, 0.3, 0.3] };
+      let L = S.lum(h.p, h.n);
+      // ombre portée sous les voitures garées
+      if (h.sol && h.p[2] > 9.8 && h.p[2] < 11.65) for (const P of S.prims) if (P.voiture && h.p[0] > P.a[0] - 0.1 && h.p[0] < P.b[0] + 0.1) { L = mul(L, 0.3); break; }
+      const refl = mode === "ir" ? (m.ir != null ? m.ir : lumi(m.c) * 1.25) : null;
+      let c = mode === "ir" ? [refl * L[0], refl * L[0], refl * L[0]] : [m.c[0] * L[0], m.c[1] * L[1], m.c[2] * L[2]];
+      const e = m.e && (!m.eNuit || nuit) ? m.e : null;
+      if (e) { const k = mode === "ir" ? 0.6 : 1; c = add(c, mode === "ir" ? [lumi(e) * k, lumi(e) * k, lumi(e) * k] : e); }
+      bg[i * 3] = c[0]; bg[i * 3 + 1] = c[1]; bg[i * 3 + 2] = c[2];
+    }
+    Object.assign(S, { bg, bz, gx, gz });
+  }
+
   function horo(S, t) {
     const [hh, mm, ss] = S.heure.split(":").map(Number);
     let s = hh * 3600 + mm * 60 + ss + Math.floor(t);
@@ -731,48 +767,49 @@
 
   function etats(S, t) {
     const res = {};
-    S._sac = null;
-    const ordre = S.scn.acteurs;
-    const V_ = ordre.find((a) => a.id === "V"), A_ = ordre.find((a) => a.id === "A");
-    // la victime d'abord : son sac sert de cible au geste
+    S._cible = null;
+    const ordre = S.scn.acteurs, ob = S.scn.objet;
+    const V_ = ordre.find((a) => a.id === "V");
+    // la victime d'abord : l'objet qu'elle porte sert de cible au geste
     for (const A of [V_].concat(ordre.filter((a) => a !== V_))) {
       const e = etat(A, t, S);
       if (!e) { res[A.id] = null; continue; }
       e.j = squelette(e.pos, e.gy, e.cap, e.pose, A.sc); e.j.gy = e.gy;
-      A._j = e.j;
       res[A.id] = e;
-      if (A === V_) S._sac = { pos: sacSurEpaule(e.j, A.sc).pos };
+      if (A === V_) S._cible = porte(e.j, A.sc, ob.type).pos;
     }
-    // le sac : à l'épaule, tiré, puis dans la main de l'auteur
-    const sc = S.scn.sac;
-    let sac = null;
+    // l'objet : porté, tiré, puis dans la main de l'auteur
+    let o = null;
     const eV = res.V, eA = res.A;
     if (eV) {
-      const ep = sacSurEpaule(eV.j, V_.sc);
-      if (t < sc.tPrise || !eA) sac = { pos: ep.pos, fw: ep.fw, att: eV.j.shR };
+      const ep = porte(eV.j, V_.sc, ob.type);
+      if (t < ob.tPrise || !eA) o = { pos: ep.pos, fw: ep.fw, att: ob.type === "sac" ? eV.j.shR : null };
       else {
-        const main = add(eA.j.haR, [0, -0.12, 0]);
-        if (t < sc.tLache) { const u = smooth((t - sc.tPrise) / (sc.tLache - sc.tPrise)); sac = { pos: lerp3(ep.pos, main, 0.35 + 0.65 * u), fw: eA.j.fw, att: eV.j.shR }; }
-        else sac = { pos: main, fw: eA.j.fw, att: eA.j.haR };
+        const main = ob.type === "sac" ? add(eA.j.haR, [0, -0.12, 0]) : eA.j.haR;
+        if (t < ob.tLache) { const u = smooth((t - ob.tPrise) / (ob.tLache - ob.tPrise)); o = { pos: lerp3(ep.pos, main, 0.35 + 0.65 * u), fw: eA.j.fw, att: ob.type === "sac" ? eV.j.shR : null }; }
+        else o = { pos: main, fw: eA.j.fw, att: ob.type === "sac" ? eA.j.haR : null };
       }
     }
-    if (!eA && t >= sc.tLache) sac = null;
-    res._sac = sac;
+    if (!eA && t >= ob.tLache) o = null;
+    res._objet = o;
     return res;
   }
-  function sacSurEpaule(j, sc) {
-    // porté à l'épaule droite (côté chaussée), contre la hanche
+  function porte(j, sc, type) {
+    if (type === "chaine") return { pos: add(j.chest, add(mul(j.tdir, 0.1 * sc), mul(j.tfw, 0.08 * sc))), fw: j.lat };
+    if (type === "telephone" || type === "poignet") return { pos: j.haR, fw: j.fw };
+    // sac porté à l'épaule droite (côté chaussée), contre la hanche
     return { pos: add(add(j.hipR, mul(j.lat, -0.13 * sc)), [0, 0.06, 0]), fw: j.fw };
   }
 
   function rendre(S, t, out) {
     out = out || new Uint8ClampedArray(N * 4);
+    if (!S.bg) fond(S);
     const F = { c: S.bg.slice(), z: S.bz.slice() };
     const E = etats(S, t);
     const js = S.scn.acteurs.map((A) => E[A.id] && E[A.id].j);
     ombres(S, F, js);
     for (const A of S.scn.acteurs) { const e = E[A.id]; if (e) dessinerActeur(S, F, A, e.j, e); }
-    if (E._sac) dessinerSac(S, F, E._sac, E._sac.att, S.scn.sac.couleur);
+    if (E._objet) dessinerObjet(S, F, E._objet, S.scn.objet);
     post(S, F.c, t, out);
     return out;
   }
