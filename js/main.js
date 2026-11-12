@@ -249,11 +249,12 @@
     const fullScene = scene && !isModalScene && sceneEl;
     const tutoFin = s.mode === "tutoriel" && s.flags.tutoFini && !s.flags.tutoFiniVu && !scene && !pendingDeb;
     const affFin = CR.GEN2.VIE && CR.GEN2.VIE.affaireFinie(s) && !s.flags.affaireFinieVu && !scene && !pendingDeb;
-    // refonte : au cabinet, l'écran du bureau est le plan plein cadre ; ses objets mènent aux rubriques
-    const hub = !fullScene && ui.panel === "bureau" && UI.planOk && UI.planOk("cabinet") && CR.dec.sceneFor(s) === "cabinet";
+    // refonte : hors scène, le lieu où l'on est remplit l'écran ; au cabinet, les objets du bureau mènent aux rubriques,
+    // et les autres rubriques s'ouvrent en feuille par-dessus (.hub-sheet)
+    const hub = !fullScene && UI.planOk && UI.planOk("cabinet");
     const hubHot = (id) => { if (id === "telephone" && s.ring) { answer(true); return; } go.nav(id); };
-    return html`<div className=${cx("game", fullScene && "in-scene", s.night && "is-night", hub && "hub-plan")}>
-      ${hub && html`<${UI.PlanHub} name="cabinet" opts=${CR.dec.stageOpts(s)} onHot=${hubHot} />`}
+    return html`<div className=${cx("game", fullScene && "in-scene", s.night && "is-night", hub && "hub-plan", hub && ui.panel !== "bureau" && "hub-sheet")}>
+      ${hub && html`<${UI.Backdrop} s=${s} onHot=${ui.panel === "bureau" ? hubHot : null} />`}
       <${UI.HUD} s=${s} onMenu=${() => setModal({ type: "menu" })} onNav=${go.nav} />
       ${!fullScene && !hub && html`<${UI.Stage} s=${s} onNav=${go.nav} onAnswer=${answer} />`}
       ${!fullScene && html`<${UI.RingBar} s=${s} onAnswer=${answer} />`}

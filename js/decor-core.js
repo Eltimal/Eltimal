@@ -654,7 +654,7 @@
     P.r(ax - 2, ay - 2, 5, 1, k); P.r(ax - 2, ay - 3, 5, 1, c); P.r(ax - 1, ay - 2, 3, 1, c); P.p(ax, ay - 1, c); P.p(ax, ay, k);
   };
 
-  UI.Panorama = ({ name, opts, label, className, onHot }) => {
+  UI.Panorama = ({ name, opts, label, className, onHot, fill }) => {
     const ref = useRef(null), optsRef = useRef(opts), api = useRef({}), hotRef = useRef(onHot), hovRef = useRef(null);
     const [hot, setHot] = useState([]);
     optsRef.current = opts; hotRef.current = onHot;
@@ -670,10 +670,11 @@
       if (lit) {
         let inst = null, hkL = ""; const mouse = { v: null };
         const fitL = () => {
-          const o = optsRef.current || {}, dpr = window.devicePixelRatio || 1;
+          // fill : le décor sert de fond plein cadre, à l'échelle des plans de la refonte (225 rangées pour la hauteur de l'écran)
+          const o = optsRef.current || {}, dpr = fill ? 1 : window.devicePixelRatio || 1;
           const host = c.parentElement && c.parentElement.classList.contains("pano-wrap") ? c.parentElement.parentElement : c.parentElement;
           const cw = (host && host.clientWidth) || (window.innerWidth || 960), vh = window.innerHeight || 800;
-          const k = Math.max(1, Math.round((cw < 640 ? 170 : vh >= 1150 ? 450 : 300) * dpr / lit.H)), w = Math.ceil(cw * dpr / k);
+          const k = fill ? Math.max(2, Math.round(vh / 225)) : Math.max(1, Math.round((cw < 640 ? 170 : vh >= 1150 ? 450 : 300) * dpr / lit.H)), w = Math.ceil(cw * dpr / k);
           const ph = CR.mapPhase(o.min == null ? 600 : o.min), kk = [ph, o.rain ? "p" : "s", o.season || "", o.nom || "", o.plaque || "", name === "cite" ? Math.floor((o.min || 0) / 5) : ""].join("|");
           if (k !== K || w !== W || !inst) { K = k; W = w; inst = lit.make(w); c.width = inst.W * K; c.height = lit.H * K; c.style.width = (inst.W * K / dpr) + "px"; c.style.height = (lit.H * K / dpr) + "px"; key = ""; }
           if (kk !== key) { key = kk; inst.set(ph, !!o.rain, o); }

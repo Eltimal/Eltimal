@@ -27,6 +27,13 @@
     </div>`;
   };
 
+  // Fond plein cadre du lieu où l'on est : le plan de la refonte s'il existe, sinon le décor éclairé agrandi à la même échelle
+  UI.Backdrop = ({ s, onHot }) => {
+    const name = CR.dec.sceneFor(s), o = CR.dec.stageOpts(s);
+    if (CR.plans[name]) return html`<${UI.PlanHub} key=${name} name=${name} opts=${o} onHot=${onHot} />`;
+    return html`<div className="plan-hub plan-legacy" key=${name}><${UI.Panorama} name=${name} opts=${o} fill=${true} /><div className="plan-veil"></div></div>`;
+  };
+
   UI.Plan = ({ name, opts, className }) => {
     const ref = useRef(null), optsRef = useRef(opts);
     optsRef.current = opts;
