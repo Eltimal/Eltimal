@@ -127,7 +127,7 @@ for (const g of ["1", "2", "3"]) {
     for (const m of X.moments) ok(lignes.some((l) => l.endsWith(m.txt)), `${t.sig} : moment absent du procès-verbal`);
     ok(X.scn.violence === (t.quoi !== "violence" && (t.f.itt > 0 || t.f.agg.includes("violence0"))), `${t.sig} : violence de la vidéo différente des faits`);
     const ri = def.docs.pv_interpellation && CR.renderDoc(s, cs, { key: "pv_interpellation", vars: {} });
-    const vetu = ri && txt(ri).find((l) => /vêtu/.test(l));
+    const vetu = ri && txt(ri).find((l) => /décline son identité|est vêtue? d/.test(l) && /\bvêtue? d/.test(l));
     if (ri) {
       ok(vetu, `${t.sig} : tenue absente de l'interpellation`);
       const tA = X.scn.acteurs.find((a) => a.id === "A").tenue, ch = CR.video.VESTIAIRE.CHAUSS[tA.chauss].nom;

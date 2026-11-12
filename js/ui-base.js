@@ -113,16 +113,27 @@
       const tt = t.trim();
       return html`<span key=${j} className=${UI.cx("seg", noted.has(tt) && "seg-noted", surl.has(tt) && "seg-surl", flagged.has(tt) && "seg-flagged")} onClick=${(e) => onSeg && onSeg(seg, e)} tabIndex="0" onKeyDown=${(e) => { if (e.key === "Enter") onSeg && onSeg(seg, e); }}>${inner || t}</span>`;
     };
-    return html`<article className=${UI.cx("paper", k && "paper-" + k, compact && "paper-compact")}>
-      ${doc.entete && html`<div className="paper-entete">${doc.entete.map((l, i) => html`<div key=${i}>${l}</div>`)}</div>`}
+    // pièce composée par le moteur de documents (docs.js) : bandeau du service, styles de paragraphe, feuillets signés
+    const B = doc.bandeau, PS = doc.pstyle;
+    const signes = (doc.sigs || []).map((g) => g.qui);
+    const pied = (txt, key) => html`<div key=${key} className="pv-feuillet"><span className="pv-f-n">${txt}</span>${signes.map((q, i) => html`<span key=${i} className="pv-f-sig">${q}</span>`)}</div>`;
+    return html`<article className=${UI.cx("paper", k && "paper-" + k, compact && "paper-compact", doc.trame && "paper-trame")}>
+      ${B && html`<div className="pv-bandeau">
+        <div className="pv-b-service">${B.service}${B.unite && html`<br />${B.unite}`}</div>
+        <div className="pv-b-cadre">${B.cadre}</div>
+        <div className="pv-b-titre">${B.titre}${B.qualite && html`<div className="pv-b-qualite">${B.qualite}</div>`}</div>
+        <div className="pv-b-grille">${B.grille.map(([l, v], i) => html`<span key=${i}><em>${l}</em>${v}</span>`)}</div>
+      </div>`}
+      ${doc.entete && !B && html`<div className="paper-entete">${doc.entete.map((l, i) => html`<div key=${i}>${l}</div>`)}</div>`}
       ${caption && (caption.court || caption.left || caption.right) && html`<div className="caption">
         ${caption.court && html`<div className="cap-court">${caption.court}</div>`}
         ${(caption.left || caption.right) && html`<div className="cap-box"><div className="cap-left">${caption.left}</div><div className="cap-right">${caption.right}</div></div>`}
       </div>`}
-      ${doc.title && html`<h3 className="paper-title">${doc.title}</h3>`}
+      ${doc.title && !B && html`<h3 className="paper-title">${doc.title}</h3>`}
       ${doc.video && !compact && UI.VideoExtrait && html`<${UI.VideoExtrait} spec=${doc.video} />`}
       ${doc.to && html`<p className="paper-to">À : ${doc.to}</p>`}
-      ${(doc.paras || []).map((p, i) => html`<p key=${i}>${p.map((seg, j) => segEl(seg, j))}</p>`)}
+      ${(doc.paras || []).map((p, i) => (PS && PS[i] === "saut" ? pied(p.map((x) => (typeof x === "string" ? x : x.t)).join(""), i) : html`<p key=${i} className=${PS && PS[i] ? "pp-" + PS[i] : null}>${p.map((seg, j) => segEl(seg, j))}</p>`))}
+      ${B && doc.feuillets > 1 && pied(`Feuillet ${doc.feuillets} / ${doc.feuillets}`, "fin")}
       ${doc.sigs && doc.sigs.length > 0 && html`<div className="paper-sigs">${doc.sigs.map((g, i) => {
         const shown = g.t === "signé" ? "(signature)" : g.t || "—";
         const seg = { t: `Signature — ${g.qui} : ${g.t === "signé" ? "signée" : g.t || "aucune"}`, flag: g.flag, f: g.f };

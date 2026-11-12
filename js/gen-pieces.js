@@ -80,6 +80,7 @@
       C.jg = t.genre === "al" ? d.audition : d.mesure != null ? d.mesure : d.acte != null ? d.acte : d.faits + int(r, 5, 30);
       C.aud = 14 * 60 + int(r, 0, 20); C.audFin = C.aud + int(r, 40, 90);
     }
+    if (CR.SIM && CR.SIM.supporte(t)) CR.SIM.caler(t, C);
     const jf = d.faits;
     const lieu = N.lieu;
     // aucun acte d'enquête après le dernier acte retenu pour la prescription (classement) ou après la convocation
@@ -111,7 +112,7 @@
       // lever et coucher du soleil à Paris, heure légale, au milieu de chaque mois
       const SOL = [[520, 1035], [485, 1080], [440, 1130], [435, 1235], [385, 1275], [350, 1315], [365, 1310], [405, 1270], [450, 1210], [490, 1145], [475, 1030], [515, 1015]][CR.ymd(jf).m - 1];
       const mode = h >= SOL[0] + 20 && h < SOL[1] - 20 ? "jour" : h >= SOL[0] - 30 && h < SOL[1] + 30 ? "soir" : rv() < 0.6 ? "ir" : "soir";
-      const tenueClient = CR.video.tenue(t.sig + ":tenue", { hauts: ["sweat", "sweat", "doudoune", "blouson", "survet"], capuche: 0.7, chauss: pk(rv, ["blanches", "blanches", "noires"]) });
+      const tenueClient = CR.SIM ? CR.SIM.tenueAuteur(t) : CR.video.tenue(t.sig + ":tenue", { hauts: ["sweat", "sweat", "doudoune", "blouson", "survet"], capuche: 0.7 });
       const tenueImage = Object.assign({}, tenueClient);
       if (dou("doute_ident")) tenueImage.chauss = tenueClient.chauss === "blanches" ? "noires" : "blanches";
       const s0 = (((h - 2) * 60 - 9) % 86400 + 86400) % 86400, p2 = (x) => String(x).padStart(2, "0");
@@ -496,10 +497,29 @@
     if (t.inf === "blessures_routieres" && t.quoi) fact("G_circ_doute", { label: `La circonstance « ${CAT.aggLabel(t.quoi)} » n'est pas établie`, key: true });
     if (t.quoi === "leger") fact("G_devis", { label: "Le devis : un dommage léger", key: true, why: "Un dommage léger fait de la dégradation une contravention (art. R. 635-1)." });
 
+    // ---------------------------------------------------------------- Refonte, lot 1 : le dossier tiré de la simulation
+    // Pour les affaires que la simulation sait jouer (CR.SIM.supporte), les pièces de procédure sont composées par le
+    // moteur de documents dans leur trame réelle (trames-flagrance.js) ; elles gardent les mêmes clés, faits et irrégularités.
+    // Les autres pièces (casier, enquête sociale, constat de la défense…) restent celles d'avant, cotées à la suite.
+    let ordreSim = null;
+    if (CR.SIM && CR.SIM.supporte(t) && CR.SIM.pieces && CR.DOCS) {
+      const kS = { N, C, VID, SF, TJ, opjN, has, irr, dou, A, V, T, q };
+      const SS = CR.SIM.simuler(t, kS), PS = CR.SIM.pieces(t, kS, SS);
+      const HORS = ["enq_video", "esr", "casier", "convocation", "avis_classement", "pv_auteur", "proposition_cjip"];
+      const reste = Object.keys(docs).filter((k) => !PS.docs[k] && !HORS.includes(k) && !k.startsWith("justif_"));
+      ordreSim = PS.ordre.map((o) => o.key);
+      for (const k of Object.keys(cotes)) delete cotes[k];
+      Object.assign(cotes, PS.cotes);
+      const base = ordreSim.length;
+      reste.forEach((k, i) => { cotes[k] = "D" + (base + i + 1); titres[k] = `${(titres[k] || k).replace(/ \(D\d+\)$/, "")} (${cotes[k]})`; ordreSim.push(k); });
+      for (const k of Object.keys(PS.docs)) { docs[k] = PS.docs[k]; titres[k] = PS.titres[k]; }
+      if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+    }
+
     // ---------------------------------------------------------------- Listes : ce que l'avocat voit, et quand
-    const proc = Object.keys(docs).filter((k) => !["enq_video", "esr", "casier", "convocation", "avis_classement", "pv_auteur", "proposition_cjip"].includes(k) && !k.startsWith("justif_"));
+    const proc = ordreSim ? ordreSim.slice() : Object.keys(docs).filter((k) => !["enq_video", "esr", "casier", "convocation", "avis_classement", "pv_auteur", "proposition_cjip"].includes(k) && !k.startsWith("justif_"));
     const listes = {
-      gav: ["pv_notification", "pv_interpellation"].filter((k) => docs[k]),
+      gav: ["pv_notification", "pv_interpellation", "certificat_gav"].filter((k) => docs[k]),
       dossier: proc.concat(["casier"]).concat(docs.esr ? ["esr"] : []),
       copie: proc.concat(["casier"]),
       client: Object.keys(docs).filter((k) => k.startsWith("justif_")).concat(docs.convocation ? ["convocation"] : []).concat(docs.avis_classement ? ["avis_classement"] : []),

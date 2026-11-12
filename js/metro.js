@@ -70,6 +70,12 @@
     if (pres.length) return pres.map(([d, st]) => ({ st, min: Math.max(2, Math.round(d * 13 + 1)), bus: false }));
     return out.slice(0, 2).map(([d, st]) => (d <= 1.6 ? { st, min: Math.round(d * 13 + 1), bus: false } : { st, min: Math.round(8 + d * 4), bus: true }));
   };
+  // stations de métro les plus proches d'un point (lieu des faits) : [{ nom, lignes, km }]
+  M.proches = function (g, n) {
+    const out = [];
+    for (const k in ST) { const st = ST[k]; if (st.lon == null) continue; const met = st.lines.filter((id) => (LINES.find((l) => l.id === id) || {}).kind === "M"); if (!met.length) continue; out.push({ nom: st.name, lignes: met, km: km(g[0], g[1], st.lon, st.lat) }); }
+    return out.sort((a, b) => a.km - b.km).slice(0, n || 3);
+  };
   const cache = new Map();
   M.route = function (g0, g1) {
     const key = g0.join(",") + ">" + g1.join(",");
