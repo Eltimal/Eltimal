@@ -18,6 +18,7 @@
       <label htmlFor="rg-vol" className="small">Volume</label>
       <input type="range" id="rg-vol" min="0" max="1" step="0.05" value=${P.volume} disabled=${!P.son} onChange=${(e) => set("volume", +e.target.value)} />
       <label className="check"><input type="checkbox" id="rg-amb" checked=${!!P.ambiance} disabled=${!P.son} onChange=${(e) => set("ambiance", e.target.checked)} /> Ambiance des lieux (cabinet, palais, commissariat, salle d'audience)</label>
+      <label className="check"><input type="checkbox" id="rg-mus" checked=${P.musique !== false} disabled=${!P.son} onChange=${(e) => set("musique", e.target.checked)} /> Musique</label>
       ${CR.SON && !CR.SON.ok && html`<p className="small muted">Ce navigateur ne sait pas produire de son.</p>`}
       <p className="small muted">Tous les sons sont fabriqués par le jeu : rien n'est téléchargé. Ces réglages valent pour cet appareil.</p>
     </div>`;

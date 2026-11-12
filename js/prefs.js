@@ -4,7 +4,7 @@
   const CR = (window.CR = window.CR || {});
   CR.JEU = { version: "1.0", date: "novembre 2026" };
   const KEY = "la-permanence-reglages-v1";
-  const DEF = { taille: 1, son: true, volume: 0.6, ambiance: true };
+  const DEF = { taille: 1, son: true, volume: 0.6, ambiance: true, musique: true };
   CR.TAILLES = [[0.9, "Petit"], [1, "Normal"], [1.12, "Grand"], [1.25, "Très grand"]];
   const P = Object.assign({}, DEF);
   try { const raw = window.localStorage.getItem(KEY); if (raw) Object.assign(P, JSON.parse(raw)); } catch (e) { /* stockage refusé : réglages par défaut */ }
