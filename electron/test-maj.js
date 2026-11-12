@@ -24,12 +24,13 @@ function fabriquer(numero, o) {
 
 // Faux GitHub : /repos/<depot>/releases, pièces servies par redirection vers un autre hôte (localhost ↔ 127.0.0.1)
 function fauxGithub() {
-  const etat = { publications: [], vus: [], cle: "cle-test" };
+  const etat = { publications: [], vus: [], cle: "cle-test", public: false };
   const srv = http.createServer((req, rep) => {
     const u = new URL(req.url, "http://x");
     etat.vus.push({ hote: req.headers.host, chemin: u.pathname, auth: req.headers.authorization || null });
     if (u.pathname.startsWith("/repos/")) {
-      if (req.headers.authorization !== "Bearer " + etat.cle) { rep.writeHead(401); return rep.end("{}"); }
+      if (!req.headers.authorization && !etat.public) { rep.writeHead(404); return rep.end("{}"); }
+      if (req.headers.authorization && req.headers.authorization !== "Bearer " + etat.cle) { rep.writeHead(401); return rep.end("{}"); }
       const port = srv.address().port;
       const liste = etat.publications.map((p, i) => ({ tag_name: p.tag, draft: false, assets: [
         { name: "manifest.json", url: `http://localhost:${port}/piece/${i}/manifest` },
@@ -57,7 +58,7 @@ function fauxGithub() {
   const appDir = fs.mkdtempSync(path.join(os.tmpdir(), "lp-app-"));
   fs.mkdirSync(path.join(appDir, "electron")); fs.writeFileSync(path.join(appDir, "electron", "jeu-version.json"), JSON.stringify({ numero: 10 }));
   const v = (o) => MAJ.verifier(Object.assign({ cle: etat.cle, userData: ud, numeroActuel: 10, api, depot: "a/b" }, o));
-  note("sans clé, aucune requête", (await v({ cle: "" })).etat === "sans-cle" && etat.vus.length === 0);
+  note("sans clé, dépôt privé : signalé, rien d'installé", (await v({ cle: "" })).etat === "prive" && !MAJ.versionTelechargee(ud));
   note("aucune publication", (await v()).etat === "a-jour");
   pub(9); note("publication plus ancienne ignorée", (await v()).etat === "a-jour");
   pub(11, { sha: "0".repeat(64) }); let r = await v();
@@ -75,6 +76,9 @@ function fauxGithub() {
   note("la plus récente est choisie", MAJ.jeuACharger(appDir, ud).numero === 14 && MAJ.jeuACharger(appDir, ud).source === "telechargee");
   fs.writeFileSync(path.join(appDir, "electron", "jeu-version.json"), JSON.stringify({ numero: 20 }));
   note("une app réinstallée plus récente l'emporte", MAJ.jeuACharger(appDir, ud).source === "livree");
+  etat.public = true; pub(145); etat.vus = []; r = await v({ cle: "", numeroActuel: 14 });
+  note("sans clé, dépôt public : installée", r.etat === "pret" && r.numero === 145 && etat.vus.every((x) => !x.auth), JSON.stringify(r));
+  etat.public = false; etat.publications.shift();
   pub(15); await v({ numeroActuel: 14 }); pub(16); await v({ numeroActuel: 15 });
   const restants = fs.readdirSync(path.join(ud, "jeu")).filter((n) => /^\d+$/.test(n)).sort();
   note("seules la version actuelle et la précédente restent", restants.join(",") === "15,16", restants.join(","));
@@ -87,13 +91,13 @@ function fauxGithub() {
   else {
     const donnees = fs.mkdtempSync(path.join(os.tmpdir(), "lp-maj-app-"));
     const lancer = async () => {
-      const opts = { executablePath: require("electron"), args: [racine], env: Object.assign({}, process.env, { LP_USER_DATA: donnees, LP_MAJ_CLE: etat.cle, LP_MAJ_API: api, LP_MAJ_DEPOT: "a/b" }) };
+      const opts = { executablePath: require("electron"), args: [racine], env: Object.assign({}, process.env, { LP_USER_DATA: donnees, LP_MAJ_API: api, LP_MAJ_DEPOT: "a/b" }) };
       if (process.platform === "linux") opts.args.push("--no-sandbox");
       const app = await electron.launch(opts); const page = await app.firstWindow();
       await page.waitForFunction(() => window.CR && window.CR.Saves && document.querySelector("#app") && document.querySelector("#app").children.length > 0, null, { timeout: 30000 });
       return { app, page };
     };
-    etat.publications = []; pub(900000, { marque: "n900000" });
+    etat.publications = []; etat.public = true; pub(900000, { marque: "n900000" });
     let { app, page } = await lancer();
     const avant = await page.evaluate(() => ({ marque: !!document.querySelector('meta[name="lp-marque"]'), url: location.href }));
     note("premier lancement sur la version livrée", !avant.marque, avant.url.replace(/.*\/(?=[^/]+\/index)/, "…/"));

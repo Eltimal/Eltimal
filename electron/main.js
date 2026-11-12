@@ -75,7 +75,7 @@ async function rechercher(demande) {
   } else if (r.etat === "enveloppe") {
     dialog.showMessageBox(win, { type: "info", buttons: ["OK"], message: "Une nouvelle version demande de réinstaller l'app.", detail: "Téléchargez la dernière app depuis la page des publications du dépôt, puis remplacez celle-ci." });
   } else if (demande) {
-    const msg = r.etat === "a-jour" ? "Le jeu est à jour (n° " + JEU.numero + ")." : r.etat === "sans-cle" ? "Cette app n'a pas de clé de mise à jour." : "La recherche a échoué : " + (r.detail || "erreur inconnue") + ".";
+    const msg = r.etat === "a-jour" ? "Le jeu est à jour (n° " + JEU.numero + ")." : r.etat === "prive" ? "Les mises à jour ne sont pas accessibles : le dépôt du jeu est privé." : "La recherche a échoué : " + (r.detail || "erreur inconnue") + ".";
     dialog.showMessageBox(win, { type: r.etat === "erreur" ? "warning" : "info", buttons: ["OK"], message: msg });
   }
   return r;
@@ -93,8 +93,8 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb(false));
   menu();
   fenetre();
-  // Recherche silencieuse quelques secondes après le lancement (jamais pendant les tests sans clé)
-  setTimeout(() => { rechercher(false).catch(() => {}); }, 4000);
+  // Recherche silencieuse quelques secondes après le lancement (désactivée par LP_MAJ_OFF, utilisé par test-app.js)
+  if (!process.env.LP_MAJ_OFF) setTimeout(() => { rechercher(false).catch(() => {}); }, 4000);
   app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) fenetre(); });
 });
 

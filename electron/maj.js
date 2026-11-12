@@ -109,14 +109,16 @@ function nettoyer(userData, garder) {
 }
 
 // Cherche une publication plus récente et l'installe. Renvoie { etat, numero?, detail? } ; ne lève jamais.
-// etat : sans-cle, a-jour, enveloppe (il faut réinstaller l'app), pret (installée, chargée au prochain lancement), erreur
+// etat : a-jour, enveloppe (il faut réinstaller l'app), pret (installée, chargée au prochain lancement), prive, erreur
+// Sans clé, la requête est anonyme : elle ne réussit que si le dépôt est public (sinon GitHub répond 404 : état « prive »).
 async function verifier(o) {
   const cle = o.cle && String(o.cle).trim();
-  if (!cle) return { etat: "sans-cle" };
   const api = o.api || API, depot = o.depot || DEPOT;
-  const auth = { Authorization: "Bearer " + cle, "X-GitHub-Api-Version": "2022-11-28" };
+  const auth = Object.assign({ "X-GitHub-Api-Version": "2022-11-28" }, cle ? { Authorization: "Bearer " + cle } : {});
   try {
     const r = await obtenir(`${api}/repos/${depot}/releases?per_page=20`, Object.assign({ Accept: "application/vnd.github+json" }, auth), 15000);
+    if (!cle && r.status === 404) return { etat: "prive", detail: "dépôt privé : publications illisibles sans clé" };
+    if (r.status === 403 && !cle) return { etat: "erreur", detail: "trop de requêtes, réessai au prochain lancement" };
     if (r.status === 401 || r.status === 403 || r.status === 404) return { etat: "erreur", detail: "clé refusée ou expirée (" + r.status + ")" };
     if (r.status !== 200) return { etat: "erreur", detail: "réponse " + r.status };
     const pubs = JSON.parse(r.corps.toString("utf8"))
@@ -146,7 +148,7 @@ async function verifier(o) {
   }
 }
 
-// Clé d'accès : fichier posé au moment du build (jamais commité), sinon variable d'environnement
+// Clé d'accès facultative : fichier posé au moment du build (jamais commité), sinon variable d'environnement
 function lireCle(dir) {
   try { return fs.readFileSync(path.join(dir, "maj-cle.txt"), "utf8").trim(); } catch (e) { return process.env.LP_MAJ_CLE || ""; }
 }

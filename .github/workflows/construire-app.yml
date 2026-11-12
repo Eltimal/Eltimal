@@ -1,5 +1,5 @@
-# Construit l'app Mac (Apple Silicon) avec la clé de mise à jour, à la demande seulement (Actions > Construire l'app > Run workflow).
-# La clé vient du secret MAJ_CLE du dépôt : jeton GitHub en lecture seule sur ce dépôt (Contents: Read-only).
+# Construit l'app Mac (Apple Silicon), signée localement par le runner macOS, à la demande (Actions > Construire l'app > Run workflow).
+# Sans clé, l'app lit les publications anonymement (dépôt public). Le secret MAJ_CLE, facultatif, permet un dépôt privé.
 # Sortie : publication « app », pièce « La-Permanence-mac-arm64.zip ».
 name: Construire l'app
 on:
@@ -21,13 +21,17 @@ jobs:
         env:
           MAJ_CLE: ${{ secrets.MAJ_CLE }}
         run: |
-          if [ -z "$MAJ_CLE" ]; then echo "Secret MAJ_CLE absent : l'app ne pourrait pas se mettre à jour."; exit 1; fi
-          printf '%s' "$MAJ_CLE" > electron/maj-cle.txt
+          if [ -n "$MAJ_CLE" ]; then printf '%s' "$MAJ_CLE" > electron/maj-cle.txt; else echo "Pas de clé : mise à jour anonyme (dépôt public)."; fi
       - name: Construire
         run: |
           node electron/paquet-jeu.js --version-livree
           npx electron-builder --mac zip --arm64 --publish never
           cp dist/*-arm64-mac.zip La-Permanence-mac-arm64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: La-Permanence-mac-arm64
+          path: La-Permanence-mac-arm64.zip
+          retention-days: 7
       - name: Publier
         env:
           GH_TOKEN: ${{ github.token }}
