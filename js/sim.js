@@ -279,6 +279,7 @@
     if (SIM.magasin(t, S)) S.magasin = magasin(S, t, k, r, E);
     if (SIM.transport(t, S)) S.transport = transport(S, t, k, r, E);
     if (SIM.tire(t, S)) S.tire = tire(S, t, k, r, E);
+    if (SIM.deuxRoues(t, S)) S.deuxRoues = deuxRoues(S, t, k, r, E);
     S.E = E;
     S.auteurs = { apj: { nom: t.gpx[0], style: CR.DOCS.style(CR.seeded(t.sig + ":apj")) }, opj: { nom: k.opjN, style: CR.DOCS.style(CR.seeded(t.sig + ":opj")) } };
     S.indicatif = `TV ${pk(r, ["17", "18", "19", "20", "21", "22"])}${pk(r, ["1", "2", "3", "4"])}`;
@@ -293,6 +294,7 @@
       return CR.DOCS.hm(cur);
     }));
     // vol à la tire : l'objet retrouvé au sol n'était pas « en possession » de l'intéressé
+    if (S.deuxRoues && !S.deuxRoues.outilMain) S.constat = S.constat.map((x) => x.replace(/, un tournevis à la main\./, " ; un tournevis est au sol, à un mètre."));
     if (S.tire && S.tire.sol) S.constat = S.constat.map((x) => x.replace(/ est interpellée? en possession de (.+)\.$/, (m0, o) => ` est interpellé${A.g === "f" ? "e" : ""} ; ${o} est retrouvé au sol, près de ${A.g === "f" ? "elle" : "lui"}.`));
     return S;
   }
@@ -362,6 +364,20 @@
     const sol = ch(r, 0.3);
     E.abord = S.T0 - int(r, 3, 6); E.decouvre = Math.max(S.T0, Math.min(S.T0 + int(r, 2, 6), E.requis - 1));
     return { nV, nP, ecart: nV !== nP, sol, distance: pk(r, ["une trentaine de mètres", "une cinquantaine de mètres", "le bas de la rue"]), langue: pk(r, ["anglais", "espagnol", "italien", "allemand"]), role: pk(r, ["tenait la planchette de la pétition", "parlait à la victime", "se tenait derrière elle"]) };
+  }
+
+  // ---------------------------------------------------------------- lot 1 ter : le vol de deux-roues
+  // L'alerte vient d'un riverain (à sa fenêtre, souvent la nuit) ou du propriétaire (son traceur signale un mouvement).
+  // À l'arrivée de la patrouille, l'intéressé est près de l'engin : l'outil à la main ou au sol, l'engin déplacé ou non.
+  SIM.deuxRoues = (t, S) => !!(t && t.inf === "vol" && t.f && t.f.sc === "vehicule" && t.flagrance && !(S && S.prelim) && t.V);
+  function deuxRoues(S, t, k, r, E) {
+    const h = ((S.T0 % 1440) + 1440) % 1440, nuit = h < 6 * 60 + 30 || h > 21 * 60;
+    const appel = ch(r, 0.7) ? "riverain" : "traceur";
+    return {
+      appel, nuit, etage: pk(r, ["deuxième", "troisième", "quatrième", "cinquième"]), outilMain: ch(r, 0.7), deplace: ch(r, 0.4),
+      metres: int(r, 3, 15), eclairage: nuit ? pk(r, ["sous un réverbère", "dans la pénombre, entre deux réverbères", "éclairé par la vitrine d'une pharmacie"]) : "en plein jour",
+      degats: pk(r, ["neiman forcé, carénage avant fendu", "neiman forcé, câbles du contacteur arrachés", "neiman arraché, antivol en U intact au sol"]),
+    };
   }
 
   // la victime se trompe sur un ou deux éléments (doute sur l'identification)

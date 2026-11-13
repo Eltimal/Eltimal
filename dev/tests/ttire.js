@@ -15,6 +15,7 @@ const { boot } = require("./harness");
     const genre = ["ci", "gav", "copj"][i % 3];
     let t; try { t = G.tirer("tti" + i, genre, { day: 12 + (i % 9), inf: "vol" }); } catch (e) { continue; }
     if (!t || !SIM.supporte(t) || !t.f || t.f.sc !== "tire" || !t.flagrance) continue;
+    const tCopie = JSON.stringify(t);
     const PZ = G.pieces(t, G.recit(t));
     const tag = `${genre} ${t.sig.slice(0, 40)}`;
     ok(PZ.docs.pv_requisition, `${tag} : pas de procès-verbal de réquisition`);
@@ -30,7 +31,7 @@ const { boot } = require("./harness");
     const hs0 = [...corps.matchAll(H)].map((m) => +m[1] * 60 + +m[2]).slice(0, 4); // réquisition, abord, découverte, interpellation
     const hs = hs0.map((h) => (h - hs0[0] > 720 ? h - 1440 : hs0[0] - h > 720 ? h + 1440 : h));
     ok(hs.length === 4 && hs[1] < hs[2] && hs[2] <= hs[0] + 1 && hs[0] <= hs[3], `${tag} : heures dans le désordre`, JSON.stringify(hs));
-    ok(txt(G.pieces(JSON.parse(JSON.stringify(t)), G.recit(JSON.parse(JSON.stringify(t)))), "pv_requisition", t) === R, `${tag} : pièce non déterministe`);
+    ok(txt(((t2) => G.pieces(t2, G.recit(t2)))(JSON.parse(tCopie)), "pv_requisition", t) === R, `${tag} : pièce non déterministe`);
   }
   ok(n >= 15, "trop peu de vols à la tire tirés", n);
   ok(sol > 0 && sol < n, "l'objet au sol n'apparaît jamais, ou toujours", `${sol}/${n}`);

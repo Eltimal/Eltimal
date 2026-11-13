@@ -538,6 +538,24 @@
             mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
           ], sigs: ["Le directeur du magasin"] }));
       }
+      // lot 1 ter : le vol de deux-roues — constatations sur l'engin et sur les lieux
+      if (S.deuxRoues) {
+        const M = S.deuxRoues;
+        add("pv_constatations", E.surPlace + 20, "Constatations", () => {
+          const rr = CR.seeded(t.sig + ":g:2r");
+          const blocs = [
+            p(M.appel === "riverain" ? `À ${hm(E.requis)}, requis par l'opérateur du centre d'information et de commandement : un riverain signale, depuis la fenêtre de son appartement au ${M.etage} étage, ${A.g === "f" ? "une personne" : "un individu"} « penché${e(A)} sur un deux-roues, avec des bruits métalliques », ${lieu}.`
+              : `À ${hm(E.requis)}, requis par l'opérateur du centre d'information et de commandement : le propriétaire de ${lobjet}, ${nf(V)}, signale que le traceur de son engin indique un mouvement, ${lieu}.`),
+            p({ t: `Sur place à ${hm(E.surPlace)}, ${M.eclairage}, constatons la présence de ${n(A)}, ${M.outilMain ? "un tournevis plat à la main" : "accroupi" + e(A) + " près de l'engin ; un tournevis plat est au sol, à un mètre"}.`, f: M.outilMain ? undefined : "G_outil_sol" }),
+            p({ t: M.deplace ? `${Maj(objet)} n'est plus à sa place de stationnement : il est à ${M.metres} mètres, béquille relevée, le long du trottoir.` : `${Maj(objet)} est à sa place de stationnement, béquille latérale dépliée.`, f: M.deplace ? "G_deplace" : "G_non_deplace" }),
+            p(`État de l'engin : ${M.degats}. Photographies jointes (planche de quatre clichés).`),
+            M.appel === "riverain" ? p({ t: `Le riverain, ${pk(rr, ["qui ne souhaite pas être entendu ce soir", "qui ne descend pas", "joint par téléphone"])}, précise ne pas avoir vu le visage ; il décrit « ${pk(rr, ["une silhouette en sombre", "quelqu'un avec une capuche", "une personne de taille moyenne"])} ».`, f: "G_riverain_visage" }) : p(`${nf(V)}, arrivé${e(V)} sur les lieux à ${hm(E.surPlace + int(rr, 8, 20))}, reconnaît son engin et présente la carte grise.`),
+          ];
+          return DOCS.pv({ cote: cote("pv_constatations"), proc: t.proc, service, unite, cadre: "FLAGRANT DÉLIT", titre: "Procès-verbal de constatations", numPV: "00" + int(rr, 101, 899),
+            jour: j(E.surPlace + 20), heure: E.surPlace + 20, redacteur: apj(0), visa: "Vu les articles 53 et 54 du code de procédure pénale,", lieu: "Agissant en flagrant délit", objet: `OBJET : ${q0.label} — constatations`,
+            blocs, cloture: mention(`Dont procès-verbal, fait et clos ${at(E.surPlace + 20)}.`), signataires: [`${apj(0).signe}, agent de police judiciaire`, `${apj(1).signe}, agent de police judiciaire`], st: stA });
+        });
+      }
       // lot 1 ter : le vol à la tire — la réquisition de la victime et l'interpellation dans le groupe
       if (S.tire) {
         const M = S.tire;

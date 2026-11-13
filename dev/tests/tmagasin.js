@@ -14,6 +14,7 @@ const { boot } = require("./harness");
     const genre = ["ci", "gav", "copj"][i % 3];
     let t; try { t = G.tirer("tmag" + i, genre, { day: 12 + (i % 9), inf: "vol" }); } catch (e) { continue; }
     if (!t || !SIM.supporte(t) || !t.f || t.f.sc !== "magasin" || !t.flagrance) continue;
+    const tCopie = JSON.stringify(t);
     const PZ = G.pieces(t, G.recit(t));
     const tag = `${genre} ${t.sig.slice(0, 40)}`;
     ok(PZ.docs.pv_agent && PZ.docs.etat_marchandise, `${tag} : pièces du magasin absentes`, Object.keys(PZ.docs).join(","));
@@ -37,7 +38,7 @@ const { boot } = require("./harness");
     ok(aVideo === !!(t.preuves || []).includes("video") || aVideo === /video/.test(JSON.stringify(t.preuves || t.p || "")), `${tag} : la réponse sur les images ne suit pas le dossier`);
     ok(PZ.facts.G_etat_vente && PZ.facts.G_agent_vu, `${tag} : faits du magasin absents`);
     // déterminisme
-    const PZ2 = G.pieces(JSON.parse(JSON.stringify(t)), G.recit(JSON.parse(JSON.stringify(t))));
+    const PZ2 = ((t2) => G.pieces(t2, G.recit(t2)))(JSON.parse(tCopie));
     ok(txt(PZ2, "pv_agent", t) === A, `${tag} : pièce non déterministe`);
   }
   ok(n >= 20, "trop peu de vols en magasin tirés", n);

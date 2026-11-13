@@ -15,6 +15,7 @@ const { boot } = require("./harness");
     const genre = ["ci", "gav", "copj"][i % 3];
     let t; try { t = G.tirer("ttr" + i, genre, { day: 12 + (i % 9), inf: "vol" }); } catch (e) { continue; }
     if (!t || !SIM.supporte(t) || !t.f || t.f.sc !== "transport" || !t.flagrance) continue;
+    const tCopie = JSON.stringify(t);
     const PZ = G.pieces(t, G.recit(t));
     const tag = `${genre} ${t.sig.slice(0, 40)}`;
     ok(PZ.docs.pv_surveillance, `${tag} : pas de procès-verbal de surveillance`);
@@ -33,7 +34,7 @@ const { boot } = require("./harness");
     const agg = t.f.agg || [];
     ok(!agg.includes("reunion") || /second individu/.test(S), `${tag} : le complice du vol en réunion n'apparaît pas`);
     ok(!agg.includes("violence0") || /bourrade/.test(S), `${tag} : la violence retenue n'est pas racontée`);
-    ok(txt(G.pieces(JSON.parse(JSON.stringify(t)), G.recit(JSON.parse(JSON.stringify(t)))), "pv_surveillance", t) === S, `${tag} : pièce non déterministe`);
+    ok(txt(((t2) => G.pieces(t2, G.recit(t2)))(JSON.parse(tCopie)), "pv_surveillance", t) === S, `${tag} : pièce non déterministe`);
   }
   ok(n >= 15, "trop peu de vols dans le métro tirés", n);
   ok(ecarts > 0 && ecarts < n, "l'écart sur la poche n'apparaît jamais, ou toujours", `${ecarts}/${n}`);

@@ -523,6 +523,12 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      if (SS.deuxRoues) {
+        const M = SS.deuxRoues;
+        if (!M.outilMain) fact("G_outil_sol", { label: "Le tournevis était au sol, pas dans sa main", key: true, why: "Être près d'un engin forcé n'est pas le forcer : rien ne rattache l'outil à la personne, sauf une expertise." });
+        fact(M.deplace ? "G_deplace" : "G_non_deplace", M.deplace ? { label: "L'engin avait été déplacé de sa place de stationnement", key: false } : { label: "L'engin n'avait pas quitté sa place de stationnement", key: true, why: "Le vol suppose une soustraction ; un engin resté à sa place pose la question de la tentative (art. 311-13 : mêmes peines) et de ce qui a été commis." });
+        if (M.appel === "riverain") fact("G_riverain_visage", { label: "Le riverain n'a pas vu le visage", key: true, why: "L'appel n'identifie personne : l'imputation repose sur la présence sur les lieux à l'arrivée de la patrouille." });
+      }
       if (SS.tire) {
         const M = SS.tire;
         fact("G_tire_pas_vu", { label: "La victime n'a pas vu qui a pris l'objet", key: true, why: "Personne n'a vu la main : l'imputation repose sur la seule possession, et sur le groupe." });
