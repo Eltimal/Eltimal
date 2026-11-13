@@ -523,6 +523,12 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      if (SS.transport) {
+        const M = SS.transport;
+        fact("G_brf_vu", { label: "Les policiers en civil ont vu le geste dans la rame", key: false });
+        if (M.bondee) fact("G_rame_bondee", { label: "La rame était bondée au moment des faits", key: true, why: "Dans la foule, à quelques mètres, ce que l'on voit d'une main se discute : la défense peut interroger les conditions de l'observation." });
+        if (M.ecart) fact("G_poche_contra", { label: `Le policier situe le téléphone dans la poche ${M.poche} ; la victime, dans la poche ${M.pocheV}`, key: true, why: "Deux pièces qui ne disent pas la même chose sur le geste : l'une des deux se trompe, et le doute profite au prévenu s'il porte sur l'essentiel." });
+      }
       // lot 1 ter : le vol en magasin
       if (SS.magasin) {
         const M = SS.magasin;

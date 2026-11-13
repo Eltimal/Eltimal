@@ -465,7 +465,7 @@
       // victime
       if (S.victime) add("pv_victime", E.victime, PL ? "Plainte" : V.agent ? "Audition du fonctionnaire" : "Audition de la victime", () => {
         const rr = CR.seeded(t.sig + ":g:vict");
-        const pl = (N.plainte || []).map((x) => sansITT(guill(x))).filter(Boolean);
+        const pl = (N.plainte || []).map((x) => sansITT(guill(x))).filter(Boolean).map((x) => (S.transport ? x.replace("dans la poche du manteau", `dans la poche ${S.transport.pocheV} de mon manteau`) : x));
         const conj = /^violences_conj/.test(t.inf);
         const blocs = [
           p(PL ? `Se présente au service la personne dénommée ci-dessus, qui déclare vouloir déposer plainte contre ${n(A)} et nous déclare :` : "Entendons la personne dénommée ci-dessus, qui nous déclare :"),
@@ -537,6 +537,27 @@
             p({ t: M.vente ? "La marchandise a été récupérée intacte et remise en rayon : elle est en état de vente." : "Emballages ouverts et antivols arrachés : la marchandise n'est plus en état de vente.", f: "G_etat_vente" }),
             mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
           ], sigs: ["Le directeur du magasin"] }));
+      }
+      // lot 1 ter : le vol dans le métro — le procès-verbal de surveillance de la brigade des réseaux franciliens
+      if (S.transport) {
+        const M = S.transport;
+        add("pv_surveillance", E.interpT + 30, "Surveillance et interpellation", () => {
+          const rr = CR.seeded(t.sig + ":g:brf");
+          const blocs = [
+            p(`En surveillance en tenue civile sur la ligne ${M.ligne} du métropolitain, dans le cadre de la lutte contre les vols à la tire, en compagnie de ${apjTxt(1)}.`),
+            p(`À ${hm(E.filature)}, sur le quai de la station ${M.filStation}, remarquons ${A.g === "f" ? "une femme" : "un individu"} qui ne monte dans aucune rame et observe les voyageurs, ${pk(rr, ["en particulier ceux qui consultent leur téléphone", "se rapprochant des portes à chaque arrivée", "sans jamais regarder les panneaux"])}. Décidons de ${le(A)} suivre.`),
+            p({ t: `À ${hm(E.geste)}, dans la rame ${M.bondee ? "bondée" : "peu chargée"}, entre les stations ${M.de} et ${M.vers}, à ${S.savoirs.brf.distance} de nous, ${il(A)} se place derrière ${nf(V)} au moment de la fermeture des portes et glisse la main dans la poche ${M.poche} de son manteau, dont ${il(A)} retire un objet qu'${il(A)} met aussitôt dans sa veste.`, f: "G_brf_vu" }),
+            M.reunion ? p(`Un second individu, resté collé à ${nf(V)} pendant le geste, fait écran entre la victime et la porte ; il descend à la station suivante et se perd dans la foule avant que nous puissions l'interpeller.`) : null,
+            M.violence ? p(`${nf(V)}, qui s'est retourné${e(V)}, est repoussé${e(V)} d'une bourrade contre la barre de maintien ; ${il(V)} ne se plaint d'aucune douleur.`) : null,
+            p(`À l'arrêt suivant, à ${hm(E.interpT)}, procédons à l'interpellation de l'intéressé${e(A)} sur le quai, en nous faisant connaître par la présentation de nos cartes professionnelles et le port du brassard.`),
+            p(`Palpation de sécurité, puis découverte, dans la poche de sa veste, de ${t.f.objet}. ${nf(V)}, que nous avons fait descendre de la rame, le reconnaît comme sien.`),
+            M.bondee ? p({ t: "La rame étant bondée, la scène s'est déroulée au milieu des voyageurs ; aucun d'eux ne s'est fait connaître.", f: "G_rame_bondee" }) : null,
+            p(`Conduite au ${commLong} ; présentation à l'officier de police judiciaire, ${OPJ.signe.charAt(0).toLowerCase() + OPJ.signe.slice(1)}.`),
+          ];
+          return DOCS.pv({ cote: cote("pv_surveillance"), proc: t.proc, service: SF.paris ? "PRÉFECTURE DE POLICE · BRIGADE DES RÉSEAUX FRANCILIENS" : service, unite, cadre: "FLAGRANT DÉLIT", titre: "Procès-verbal de surveillance et d'interpellation", numPV: "00" + int(rr, 101, 899),
+            jour: j(E.interpT + 30), heure: E.interpT + 30, redacteur: apj(0), visa: "Vu les articles 53 et 73 du code de procédure pénale,", lieu: "Agissant en flagrant délit", objet: `OBJET : ${q0.label} — surveillance et interpellation`,
+            blocs, cloture: mention(`Dont procès-verbal, fait et clos au ${commLong} ${at(E.interpT + 30)}.`), signataires: [`${apj(0).signe}, agent de police judiciaire`, `${apj(1).signe}, agent de police judiciaire`], st: stA });
+        });
       }
       // médecin légiste de la victime
       if (E.umj && t.f.itt != null && V) {

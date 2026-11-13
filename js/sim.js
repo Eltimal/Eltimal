@@ -277,6 +277,7 @@
     }
     // lot 1 ter : le vol en magasin, au niveau de l'arrachage
     if (SIM.magasin(t, S)) S.magasin = magasin(S, t, k, r, E);
+    if (SIM.transport(t, S)) S.transport = transport(S, t, k, r, E);
     S.E = E;
     S.auteurs = { apj: { nom: t.gpx[0], style: CR.DOCS.style(CR.seeded(t.sig + ":apj")) }, opj: { nom: k.opjN, style: CR.DOCS.style(CR.seeded(t.sig + ":opj")) } };
     S.indicatif = `TV ${pk(r, ["17", "18", "19", "20", "21", "22"])}${pk(r, ["1", "2", "3", "4"])}`;
@@ -324,6 +325,27 @@
     };
     S.savoirs = Object.assign({}, S.savoirs, { agent: { vu: ecrans ? "aux écrans de contrôle" : "en salle, à quelques mètres", compte: qteDit, erreur: qteDit !== qte } });
     return M;
+  }
+
+  // ---------------------------------------------------------------- lot 1 ter : le vol dans le métro
+  // Une patrouille en civil de la brigade des réseaux franciliens suit l'auteur depuis le quai, le voit se placer derrière
+  // la victime à la fermeture des portes et glisser la main dans sa poche ; interpellation à la station suivante. La
+  // victime n'a rien senti. L'observation se fait dans une rame plus ou moins bondée, à quelques mètres ; le policier et
+  // la victime peuvent ne pas situer l'objet dans la même poche (erreur de bonne foi, de l'un ou de l'autre).
+  SIM.transport = (t, S) => !!(t && t.inf === "vol" && t.f && t.f.sc === "transport" && t.flagrance && !(S && S.prelim) && t.V);
+  function transport(S, t, k, r, E) {
+    const N = k.N;
+    const m = /entre les stations (.+?) et (.+)$/.exec(N.lieu || "") || [];
+    const de = m[1] || "Barbès-Rochechouart", vers = m[2] || "Gare du Nord";
+    const bondee = ch(r, 0.5);
+    const poche = pk(r, ["droite", "gauche"]);
+    const pocheV = ch(r, 0.2) ? (poche === "droite" ? "gauche" : "droite") : poche;
+    E.filature = S.T0 - int(r, 4, 14);
+    E.geste = S.T0;
+    E.interpT = S.T0 + int(r, 2, 4); // la station suivante
+    S.savoirs = Object.assign({}, S.savoirs, { brf: { distance: bondee ? pk(r, ["deux mètres", "trois mètres"]) : pk(r, ["un mètre cinquante", "deux mètres"]), poche, bondee }, Vpoche: pocheV });
+    return { de, vers, ligne: (/ligne (\d+)/.exec(N.lieu || "") || [])[1] || "4", bondee, poche, pocheV, ecart: poche !== pocheV, quai: de, filStation: ((L4) => { const i = L4.indexOf(de); return i > 0 ? pk(r, L4.slice(0, i + 1)) : de; })(["Porte de Clignancourt", "Simplon", "Marcadet-Poissonniers", "Château-Rouge", "Barbès-Rochechouart", "Gare du Nord"]),
+      reunion: (t.f.agg || []).includes("reunion"), violence: (t.f.agg || []).includes("violence0") };
   }
 
   // la victime se trompe sur un ou deux éléments (doute sur l'identification)
