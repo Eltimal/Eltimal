@@ -30,6 +30,24 @@
     return L;
   };
 
+  // ce que sait le témoin principal (seconde audition, confrontation) : un seul tirage pour toutes les pièces et scènes.
+  // null s'il n'y a pas de témoin, s'il a moins de seize ans, ou si l'affaire suit le récit procédural (victime mineure)
+  K.temoin = function (t, N) {
+    const T = t && t.T;
+    if (!T || N.procedural || (T.age || 30) < 16) return null;
+    const rt = CR.seeded(t.sig + ":reaud");
+    const h0 = ((t.d.h % 1440) + 1440) % 1440;
+    const jR = t.d.faits + int(rt, 3, 12), mR = 10 * 60 + int(rt, 0, 300);
+    const premiere = ([].concat(N.temoins || []).find((x) => x.qui === "T") || { lines: [] }).lines[0] || "";
+    const corrige = rt() < 0.35;
+    const hDit = h0 + (corrige ? pk(rt, [-1, 1]) * int(rt, 30, 70) : int(rt, -8, 8));
+    const dist = pk(rt, ["cinq mètres", "une dizaine de mètres", "une vingtaine de mètres", "l'autre côté de la rue"]);
+    const lum = pk(rt, ["l'éclairage public", "la lumière de la cage d'escalier", "la vitrine d'en face", "presque rien, il faisait nuit"]);
+    const reconnait = pk(rt, ["Oui, sans hésiter.", "Je crois, oui. Je ne pourrais pas le jurer.", "C'est lui, je le reconnais à sa silhouette."]);
+    // le premier jour, il a donné l'heure des faits ; corrigée, elle s'écarte de 30 à 70 minutes
+    return { T, rt, h0, jR, mR, premiere, corrige, hDit, hAvant: h0, dist, lum, reconnait, nuit: /presque rien/.test(lum), hesite: /jurer/.test(reconnait), silhouette: /silhouette/.test(reconnait), loin: /vingtaine|autre côté/.test(dist) };
+  };
+
   K.ajouter = function (t, N, PZ) {
     const DOCS = CR.DOCS; if (!DOCS || !DOCS.pv) return PZ;
     const I = CR.CAT.INF[t.inf] || {};
@@ -109,16 +127,9 @@
 
     // 5. la seconde audition du témoin : il confirme, précise, et parfois corrige de bonne foi un point de sa première
     // déclaration (l'heure, la distance, l'éclairage) — jamais pour un témoin mineur ni une victime mineure
-    const T = t.T;
-    if (T && !proc && (T.age || 30) >= 16) {
-      const rt = CR.seeded(t.sig + ":reaud");
-      const jR = jf + int(rt, 3, 12), mR = 10 * 60 + int(rt, 0, 300);
-      const premiere = ([].concat(N.temoins || []).find((x) => x.qui === "T") || { lines: [] }).lines[0] || "";
-      const corrige = rt() < 0.35;
-      const hDit = h0 + (corrige ? pk(rt, [-1, 1]) * int(rt, 30, 70) : int(rt, -8, 8));
-      const dist = pk(rt, ["cinq mètres", "une dizaine de mètres", "une vingtaine de mètres", "l'autre côté de la rue"]);
-      const lum = pk(rt, ["l'éclairage public", "la lumière de la cage d'escalier", "la vitrine d'en face", "presque rien, il faisait nuit"]);
-      const reconnait = pk(rt, ["Oui, sans hésiter.", "Je crois, oui. Je ne pourrais pas le jurer.", "C'est lui, je le reconnais à sa silhouette."]);
+    const T = t.T, W = K.temoin(t, N);
+    if (W) {
+      const rt = W.rt, { jR, mR, premiere, corrige, hDit, dist, lum, reconnait } = W;
       add("pv_reaudition", "Seconde audition du témoin", ENQ, () => DOCS.pv({ cote: cotes.pv_reaudition, proc: t.proc, service, unite: svc, cadre: t.flagrance ? "FLAGRANT DÉLIT" : "ENQUÊTE", titre: "Procès-verbal d'audition de témoin", qualite: "Témoin", numPV: "00" + int(CR.seeded(t.sig + ":reaud2"), 101, 899),
         jour: jR, heure: mR, redacteur: opj, lieu: "Nous trouvant au service", objet: `OBJET : ${t.q.label} — seconde audition`,
         identite: { nom: T.nom, prenom: T.prenom, g: T.g, metier: T.metier, adresse: T.adresse },

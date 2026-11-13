@@ -126,6 +126,8 @@
     </div>`;
   }
 
+  UI.Composer = Composer; // la confrontation devant le juge d'instruction s'en sert (confrontation.js)
+
   // ------------------------------------------------------------------ L'entretien confidentiel (art. 63-4)
   UI.EntretienParole = function EntretienParole({ s, cs, G, ctx, next }) {
     const M = useMemo(() => (ctx.M = ctx.M || P.client(s, cs, G)), []);

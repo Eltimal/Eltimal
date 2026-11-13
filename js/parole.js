@@ -111,6 +111,8 @@
     const S0 = P.sujet(M, q.sujet);
     if (!S0) return "";
     if (q.forme === "confrontation") return q.extrait ? `Pourtant, dans la procédure (${q.extrait.cote || "une pièce"}), on lit : « ${q.extrait.t.length > 160 ? q.extrait.t.slice(0, 157) + "…" : q.extrait.t} » Qu'en dites-vous ?` : "";
+    // un sujet peut porter ses propres formulations (témoin d'une confrontation) : « forme|angle », ou l'angle seul pour l'ouverte
+    if (S0.q) { const x = S0.q[q.forme + "|" + q.angle] || (q.forme === "ouverte" && S0.q[q.angle]); if (x) return x; }
     const k = `${q.sujet}|${q.forme}|${q.angle}`;
     if (SPEC[k]) return SPEC[k].replace("condamné", "condamné" + M.G.e);
     const tp = S0.topic && M.topics[S0.topic];

@@ -120,3 +120,13 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
 - **D-66. Le fil de l'entretien suit le niveau.**
   - Au niveau « assisté » de la compétence Entretien (ou en mode assisté), l'onglet des notes garde le fil des questions et des réponses.
   - Au niveau « libre » et au-delà, il disparaît : on retient le dernier échange, et on note le reste.
+
+## Lot 7 : la confrontation jouée (13 novembre 2026)
+
+- **D-67. À la confrontation, l'avocat interroge le témoin au compositeur, et le témoin est de bonne foi.**
+  - Après les questions du juge, la défense pose au plus quatre questions (art. 120 : le juge dirige et met un terme quand il s'estime suffisamment informé). Une question répétée est refusée, avec mention au procès-verbal.
+  - Le témoin répond d'après ses auditions : l'heure (la même que dans la seconde audition, corrigée ou non), l'éclairage, la distance, la reconnaissance (franche, hésitante ou à la silhouette). Un seul tirage (`CR.CRIMD.temoin`) sert aux pièces et à la scène.
+  - Il ne concède que ce qui est fragile, et seulement si on le lui demande bien : une question ouverte de récit ne suffit jamais. Il faut une question fermée, une relance, le pourquoi d'une heure corrigée, ou lui opposer le passage annoté de sa seconde audition.
+  - Leçon du métier : demander « Vous êtes certain ? » à un témoin sûr de lui raffermit l'accusation (charge supplémentaire au délibéré).
+  - Ce qu'il concède entre dans les notes et au procès-verbal de confrontation, versé au dossier et tiré des questions jouées. Ces concessions appuient le moyen d'identification ; à partir de deux, le moyen est renforcé, comme par un acte d'enquête obtenu.
+  - Hors mode libre, ou sans témoin principal (victime mineure, témoin de moins de seize ans), la confrontation reste la scène d'avant.

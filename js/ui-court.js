@@ -146,6 +146,7 @@
       if (cur.card) { if (!CR.libre(s)) addLog({ who: "sys", t: T(cur.card.prompt) }); setPhase("card"); setTimer((cur.card.window || 12000) / fatigue); return; }
       if (cur.limine) { setPhase("limine"); return; }
       if (cur.questions) { setPhase("questions"); return; }
+      if (cur.parole) { setPhase("parole"); return; }
       if (cur.constitution) { setPhase("constitution"); return; }
       if (cur.plaidoirie) { setPhase("plaidoirie"); return; }
       if (cur.dernierMot) { setPhase("dernier"); return; }
@@ -345,6 +346,7 @@
           </div>`}
           ${phase === "limine" && html`<${Limine} s=${s} cs=${cs} api=${api} st=${st} addLog=${addLog} next=${next} push=${push} cur=${cur} />`}
           ${phase === "questions" && html`<${Questions} s=${s} cs=${cs} api=${api} st=${st} addLog=${addLog} next=${next} cur=${cur} />`}
+          ${phase === "parole" && UI.ConfrontParole && html`<${UI.ConfrontParole} s=${s} cs=${cs} api=${api} st=${st} addLog=${addLog} next=${next} cur=${cur} />`}
           ${phase === "constitution" && html`<${Constitution} s=${s} cs=${cs} api=${api} st=${st} addLog=${addLog} next=${next} cur=${cur} />`}
           ${phase === "plaidoirie" && html`<${Plaidoirie} s=${s} cs=${cs} api=${api} st=${st} addLog=${addLog} next=${next} cur=${cur} hand=${hand} />`}
           ${phase === "dernier" && html`<${DernierMot} s=${s} cs=${cs} api=${api} st=${st} addLog=${addLog} next=${next} cur=${cur} />`}

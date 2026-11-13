@@ -416,6 +416,7 @@
       ordo_dp_live: (xx) => ({ title: xx.cs.vars.jldDecision === "dp" ? "Ordonnance de placement en détention provisoire" : "Ordonnance de placement sous contrôle judiciaire", kind: "greffe", entete: [`${jld.nom}, juge des libertés et de la détention`, `Information n° ${t.ninfo}`], paras: [[xx.cs.vars.jldDecision === "dp" ? `Ordonnons le placement en détention provisoire de ${nomA} (art. 144 et 145) ; la détention ne pourra excéder ${t.mineur ? "six mois" : crime ? "un an" : "quatre mois"}, sauf prolongation.` : `Disons n'y avoir lieu à détention provisoire ; plaçons ${nomA} sous ${xx.cs.vars.jldDecision === "arse" ? "assignation à résidence avec surveillance électronique" : "contrôle judiciaire"} : obligation de résider ${A.adresse}, interdiction d'entrer en contact avec ${V ? "la victime et les témoins" : "les autres mis en examen"}, pointage hebdomadaire au commissariat.`]] }),
       pv_ipc_live: (xx) => ({ title: "Procès-verbal d'interrogatoire de première comparution", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Le ${D(t.d.mex)}, comparaît ${nomA}, assisté${e(A)} de Me ${xx.s.player.prenom} ${xx.s.player.nom}.`], [`Faits notifiés : ${q.label}. Droit de se taire rappelé.`], [{ t: xx.cs.vars.ipcChoix === "silence" ? "La personne déclare : « Je ne souhaite pas m'exprimer aujourd'hui. »" : `La personne déclare : « ${N.version[t.stance]} »`, f: "X_ipc" }], [xx.cs.vars.statut === "ta" ? `Disons que ${nomA} sera entendu${e(A)} en qualité de témoin assisté (art. 113-1).` : `Mettons ${nomA} en examen du chef de ${q.label} (art. 80-1).`]] }),
       pv_interro: (xx) => ({ title: "Procès-verbal d'interrogatoire", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Interrogatoire de ${nomA}${D0 ? `, assisté${e(A)} de Me ${xx.s.player.nom}` : ""}.`], ...(N.interro.length ? N.interro : [{ q: "Maintenez-vous vos déclarations ?", a: { nie: "Oui. Je n'ai rien fait.", minimise: "Oui, pour l'essentiel.", reconnait: "Oui. Je reconnais les faits." } }]).map((qq) => [`Question : ${qq.q} — Réponse : ${qq.a[t.stance]}`])] }),
+      pv_confront: (xx) => CR.CONF.pv(xx.cs, { jiNom, ninfo: t.ninfo, nomA, eA: e(A), avocat: `${xx.s.player.prenom} ${xx.s.player.nom}`, nomT: nom(t.T), premiere: (CR.CRIMD && CR.CRIMD.temoin(t, N) || {}).premiere, version: N.version[t.stance] }),
       contre_expertise: (xx) => ({ title: "Rapport de contre-expertise", kind: "courrier", entete: ["Collège d'experts désigné par le juge d'instruction", `Information n° ${t.ninfo}`], paras: [[`Mission : ${xx.cs.vars.contreObjet || "examen des conclusions de la première expertise"}.`], [{ t: xx.cs.vars.contreResultat || "Les contre-experts confirment les conclusions initiales.", f: "K_contre" }]] }),
       reconstitution: () => ({ title: "Procès-verbal de reconstitution", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Transport sur les lieux ${N.lieu}, en présence des parties et de leurs avocats.`], [{ t: enjeux[0] && enjeux[0].fort ? `La reconstitution rend plausible la version de la défense sur un point essentiel : ${enjeux[0].label.toLowerCase()}.` : "La reconstitution ne remet pas en cause les constatations initiales.", f: "K_reconst" }]] }),
       avis175: () => ({ title: "Avis de fin d'information (art. 175)", kind: "greffe", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [["L'information paraissant terminée, avis en est donné aux parties et à leurs avocats."], [{ t: `Délai pour présenter des observations, des demandes d'actes ou des requêtes en nullité : ${t.detenu || t.dpRequise ? "un mois" : "trois mois"} (art. 175).`, f: "K_avis175" }]] }),
@@ -436,10 +437,11 @@
       ordo_prolong: (xx) => ({ title: "Ordonnance sur la prolongation de la détention provisoire", kind: "greffe", entete: [`${jld.nom}, juge des libertés et de la détention`, `Information n° ${t.ninfo}`], paras: [[xx.cs.vars.prolongDecision === "dp" ? `Prolongeons la détention provisoire de ${nomA} pour une durée de ${CAT.dpMax(q, t.ageFaits, t.bo).pas >= 180 ? "six mois" : "quatre mois"} (art. 145-2${t.mineur ? " et dispositions du CJPM" : ""}).` : `Disons n'y avoir lieu à prolongation ; ordonnons la mise en liberté de ${nomA} sous ${xx.cs.vars.prolongDecision === "arse" ? "assignation à résidence avec surveillance électronique" : "contrôle judiciaire"}.`]] }),
       verdict: (xx) => ({ title: xx.cs.vars.verdictTitre || "Décision", kind: "greffe", entete: [titreJur(xx.cs.vars.jurProces || t.jur), "Décision rendue en premier ressort"], paras: [[{ t: xx.cs.vars.verdictTexte || "Décision rendue.", f: "K_verdict" }], ["Appel possible dans les dix jours du prononcé."]] }),
     };
-    const flowTitles = { ordo_dp_live: "Ordonnance du juge des libertés", pv_ipc_live: "Interrogatoire de première comparution", pv_interro: "Interrogatoire au fond", contre_expertise: "Contre-expertise", reconstitution: "Reconstitution", avis175: "Avis de fin d'information", ordo_reglement: "Ordonnance de règlement", arret_chins: "Arrêt de la chambre de l'instruction", ordo_prolong: "Ordonnance sur la prolongation", verdict: "La décision" };
+    const flowTitles = { ordo_dp_live: "Ordonnance du juge des libertés", pv_ipc_live: "Interrogatoire de première comparution", pv_interro: "Interrogatoire au fond", pv_confront: "Confrontation", contre_expertise: "Contre-expertise", reconstitution: "Reconstitution", avis175: "Avis de fin d'information", ordo_reglement: "Ordonnance de règlement", arret_chins: "Arrêt de la chambre de l'instruction", ordo_prolong: "Ordonnance sur la prolongation", verdict: "La décision" };
     const docs = Object.assign({}, PZ.docs, flowDocs);
     const docTitles = Object.assign({}, PZ.titres, flowTitles);
     facts.K_contre = { label: "Les conclusions de la contre-expertise", key: true };
+    if (CR.CONF) { Object.assign(facts, CR.CONF.CONCESSIONS); facts.G_conf_certain = CR.CONF.CERTAIN; }
     facts.K_reconst = { label: "La reconstitution" };
     // ------------------------------------------------------------ Arguments : enjeux, personnalité, peine
     const argEnjeu = (en, role) => ({ id: en.id, label: en.label, say: role === "pc" ? `La défense invoquera : « ${en.label.toLowerCase()} ». Le dossier y répond.` : en.arg, cards: ["E_" + en.id].concat((en.textes || []).filter((k) => CR.TEXTES[k]).slice(0, 2)), pertinent: () => en.fort || en.effet === "peine" });
@@ -473,9 +475,11 @@
         if (en.effet !== "acquit") continue;
         const renfort = cs.vars.renfort && cs.vars.renfort[en.id] ? 0.12 : 0;
         // lot 7 : les pièces ajoutées au dossier (crim-dossier.js) appuient aussi les moyens qu'elles concernent
-        const appuis = en.id === "identification" ? ["G_temoin_hesite", "G_temoin_nuit", "G_heures_voisins", "G_temoin_varie", "G_aucune_trace"] : en.id === "ld" ? ["G_heures_voisins"] : [];
+        const appuis = en.id === "identification" ? ["G_temoin_hesite", "G_temoin_nuit", "G_heures_voisins", "G_temoin_varie", "G_aucune_trace", "G_conf_heure", "G_conf_nuit", "G_conf_loin", "G_conf_reco"] : en.id === "ld" ? ["G_heures_voisins"] : [];
         pieces["d_" + en.id] = { label: en.label, sens: "decharge", force: (en.fort ? 0.34 : 0.07) + renfort, need: ["arg:" + en.id, "E_" + en.id].concat(appuis), noteSuffit: !!o.instruction };
       }
+      // lot 7 : le témoin qui s'est dit certain à la confrontation raffermit l'accusation
+      if (cs.vars.confront && cs.vars.confront.certain) pieces.confront = { label: "La confrontation", sens: "charge", force: 0.1 };
       return { seuil: o.seuil || 0.48, pieces };
     }
     function requalifObtenue(api, played) {
@@ -829,7 +833,16 @@
       api.hearing({ day: jour, min: 10 * 60, title: `Confrontation — ${jiNom}`, where: "Cabinet du juge d'instruction", lieu: TJ.lieu, script: "confront", done: "apresConfront", duree: 90 });
       api.mail({ from: `Cabinet de ${jiNom}`, subject: "Confrontation", kind: "greffe", body: [[`Confrontation entre ${nomA} et ${V && !decede ? nomV : nom(t.T)} le ${CR.fmtDate(jour, "dow")} à 10 heures.`]] });
     };
-    O.apresConfront = function (api) { CR.updatedClient(api.s, api.cs, 1); };
+    O.apresConfront = function (api) {
+      const { s, cs } = api;
+      CR.updatedClient(s, cs, 1);
+      // lot 7 : la confrontation jouée a son procès-verbal ; deux concessions du témoin renforcent le moyen d'identification
+      const V = cs.vars.confront;
+      if (V && V.joue) {
+        api.doc("pv_confront", flowTitles.pv_confront);
+        if ((V.concessions || []).length >= 2 && enjeux.some((en) => en.id === "identification")) (cs.vars.renfort = cs.vars.renfort || {}).identification = true;
+      }
+    };
     // Détention : débats de prolongation
     O._convocProlong = function (api, { jour }) {
       const { cs } = api;
@@ -1258,6 +1271,26 @@
       return { title: D0 ? "Interrogatoire" : "Audition de la partie civile", sub: `Cabinet de ${jiNom}`, decor: { scene: "cabinet_ji", judge: CR.px.acteurLook(ji) }, steps };
     };
     AU.confront = function (api) {
+      // lot 7 : en mode libre, la défense interroge le témoin principal au compositeur (confrontation.js)
+      const Wt = D0 && CR.CONF && CR.CRIMD && CR.libre(api.s) ? CR.CRIMD.temoin(t, N) : null;
+      if (Wt) {
+        const M = CR.CONF.modele(api.s, api.cs, t, N, Wt);
+        api.cs.vars.confront.joue = true;
+        const nT = nom(t.T);
+        return {
+          title: "Confrontation", sub: `Cabinet de ${jiNom}`, decor: { scene: "cabinet_ji", judge: CR.px.acteurLook(ji) },
+          steps: [
+            { who: "sys", t: `(${nomA} et ${nT} sont assis à deux mètres l'un de l'autre. Ils ne se regardent pas. Le greffier tape.)` },
+            { who: "ji", t: `${Mme(t.T)} ${t.T.nom}, vous avez été entendu${e(t.T)} deux fois par les enquêteurs. Maintenez-vous vos déclarations ?` },
+            { who: "temoin", name: nT, t: Wt.premiere ? `Oui. ${Wt.premiere}` : "Oui, je maintiens." },
+            { who: "ji", t: `${Mme(A)} ${A.nom}, qu'avez-vous à répondre ?` },
+            { who: "client", t: N.version[t.stance] },
+            { who: "ji", t: "Maître, vous avez des questions ?" },
+            { parole: { M, max: CR.CONF.MAX, nom: nT, who: "temoin", juge: "ji", prompt: `Vos questions à ${nT} (art. 120)` } },
+            { who: "ji", t: "La confrontation est terminée. Le procès-verbal vous sera relu." },
+          ],
+        };
+      }
       const W = V && !decede && !proc ? { nom: nomV, role: "victime" } : { nom: nom(t.T), role: "témoin" };
       return {
         title: "Confrontation", sub: `Cabinet de ${jiNom}`, decor: { scene: "cabinet_ji", judge: CR.px.acteurLook(ji) },
