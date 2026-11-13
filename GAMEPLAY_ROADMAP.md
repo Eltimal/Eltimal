@@ -30,7 +30,7 @@ Principe d'ordonnancement : on termine d'abord la boucle la plus jouée (permane
 |---|---|---|
 | C1 | Étalons : aide juridictionnelle, honoraires, cotisations, peines prononcées | Chiffres sourcés (« vérifié » / « estimation ») — **fait en partie (13 nov.)** : peines (`peines.js`), aide juridictionnelle (UV 36 €, moyennes Unca) ; charges du cabinet en estimations déclarées |
 | C2 | Lot 6 bis : économie du cabinet recalée | Carrière simulée d'un an cohérente (trésorerie, dossiers, réputation) — **mesuré (13 nov.)**, `tecono` : sans activité, faillite au jour 119 ; point mort à 11 gardes à vue par mois ; 4,8 dossiers proposés par mois. Reste : la réputation sur un an, les honoraires réels |
-| C3 | Grille de compétences et mode assisté | Classeur à jour, autonomie par compétence |
+| C3 | Grille de compétences et mode assisté | Classeur à jour, autonomie par compétence — **fait (13 nov.)** : 14 compétences, niveaux assisté / libre / examen gagnés sans aide, bilan au débrief, onglet du classeur (`competences.js`, `tcomp`). Reste : que le niveau d'une compétence règle l'aide affichée dans ses scènes |
 
 ## Phase D — élargir
 
