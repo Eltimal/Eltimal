@@ -523,6 +523,12 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      if (PS.docs.rapport_adn && has("adn") && PS.ordre.some((o) => o.key === "rapport_adn" && !o.ancien)) {
+        const ra = CR.seeded(t.sig + ":g:adn"); ra();
+        const q = ra() < 0.7 ? "complet" : ra() < 0.5 ? "partiel" : "melange";
+        if (q === "partiel") fact("G_adn_partiel", { label: "Le profil génétique n'est que partiel", key: true, why: "Un profil partiel peut correspondre à d'autres personnes : la concordance ne vaut pas identification." });
+        if (q === "melange") fact("G_adn_melange", { label: "Le prélèvement est un mélange de plusieurs ADN", key: true, why: "« Ne peut être exclu » n'est pas « est l'auteur » : plusieurs personnes ont touché l'objet." });
+      }
       if (PS.docs.releve && has("releve") && PS.ordre.some((o) => o.key === "releve" && !o.ancien)) {
         const rb = CR.seeded(t.sig + ":g:bq"); rb(); // banque
         if (!N.montant) rb();

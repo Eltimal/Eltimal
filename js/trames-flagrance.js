@@ -771,6 +771,26 @@
             pret >= 0 ? p({ t: `L'un de ces mouvements (${DOCS.date(jours[pret])}) est un virement libellé « prêt », émis par un proche du titulaire.`, f: "G_pret" }) : null,
           ], sigs: [] }));
       }
+      // lot 1 ter, pièces techniques : le rapport d'analyse génétique. Le prélèvement donne un profil complet, ou un profil
+      // partiel, ou un mélange de plusieurs ADN : la concordance n'a pas la même force. La présence de l'ADN ne date rien.
+      if (has("adn")) {
+        const ra = CR.seeded(t.sig + ":g:adn");
+        const support = pk(ra, ["écouvillon de frottis effectué sur la poignée intérieure de la porte", "mégot de cigarette prélevé sur les lieux", "trace de sang sur le chambranle", "gant abandonné sur les lieux"]);
+        const qual = ch(ra, 0.7) ? "complet" : ch(ra, 0.5) ? "partiel" : "melange";
+        const loci = qual === "complet" ? 24 : int(ra, 9, 15);
+        const scel = int(ra, 1, 6);
+        const mAdn = PL && E.enquete ? E.enquete(4) : (E.fin != null ? E.fin - 60 : E.debut + 600);
+        add("rapport_adn", mAdn, "Rapport ADN", () => DOCS.forme({ title: "Rapport d'analyse génétique", kind: "courrier", cote: cote("rapport_adn"),
+          entete: ["Laboratoire de police scientifique de Paris", `Procédure n° ${t.proc} — cote ${cote("rapport_adn")}`],
+          blocs: [
+            p(`Scellé n° ${scel} : ${support}.`),
+            p({ t: qual === "complet" ? `Profil génétique ${A.g === "f" ? "féminin" : "masculin"} complet (${loci} marqueurs), comparé au fichier national automatisé des empreintes génétiques : concordance avec le profil enregistré de ${n(A)}.`
+              : qual === "partiel" ? `Profil génétique partiel (${loci} marqueurs exploitables sur 24), comparé au fichier national automatisé des empreintes génétiques : il est compatible avec le profil enregistré de ${n(A)}.`
+              : `Mélange d'au moins deux ADN, comparé au fichier national automatisé des empreintes génétiques : le profil de ${n(A)} ne peut être exclu de ce mélange.`, f: "G_adn" }),
+            qual === "partiel" ? p({ t: "La probabilité de concordance fortuite d'un profil partiel n'est pas négligeable.", f: "G_adn_partiel" }) : qual === "melange" ? p({ t: "Le contributeur majoritaire du mélange n'est pas identifié.", f: "G_adn_melange" }) : null,
+            p("La présence d'un ADN sur un objet ne renseigne pas, à elle seule, sur la date ni sur les circonstances du dépôt."),
+          ], sigs: ["L'expert en génétique"] }));
+      }
       // lot 1 ter, pièces techniques : le rapport du laboratoire sur les produits saisis, accordé à la pesée du service
       // (poids brut, emballages compris, à la pesée ; poids net au laboratoire) ; taux tirés dans les fourchettes d'usage
       if (S.stups && has("labo") && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].fam !== "route" && t.f.quantite) {
