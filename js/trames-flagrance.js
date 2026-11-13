@@ -679,6 +679,26 @@
         add("pv_restitution", E.restitution, "Restitution", () => DOCS.forme({ title: "Procès-verbal de restitution", cote: cote("pv_restitution"), entete: [unite, `Procédure n° ${t.proc} — cote ${cote("pv_restitution")}`],
           blocs: [p(`Sur instruction du procureur de la République, restituons à ${nf(V)}, qui en justifie la propriété, ${saisieTxt} placé${acc} sous scellé n° UN.`), mention(`Fait ${at(E.restitution)}.`)], sigs: ["La victime", `${OPJ.signe}, officier de police judiciaire`] }));
       }
+      // lot 1 ter, pièces techniques : le rapport du laboratoire sur les produits saisis, accordé à la pesée du service
+      // (poids brut, emballages compris, à la pesée ; poids net au laboratoire) ; taux tirés dans les fourchettes d'usage
+      if (S.stups && has("labo") && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].fam !== "route" && t.f.quantite) {
+        const rl = CR.seeded(t.sig + ":g:labo");
+        const brutDe = () => { const rp = CR.seeded(t.sig + ":g:pes"); return Math.round(t.f.quantite * (1.03 + rp() * 0.05) * 10) / 10; };
+        const net = t.f.quantite, prod = t.f.produit;
+        const taux = prod === "cannabis" ? (/herbe/.test(N.saisie || "") ? int(rl, 8, 22) : int(rl, 15, 34)) : prod === "cocaine" ? int(rl, 32, 84) : prod === "crack" ? int(rl, 60, 90) : prod === "mdma" ? int(rl, 70, 160) : prod === "ketamine" ? int(rl, 55, 95) : null;
+        const nature = prod === "cannabis" ? (/herbe/.test(N.saisie || "") ? "herbe de cannabis" : "résine de cannabis") : prod === "cocaine" ? "chlorhydrate de cocaïne" : prod === "crack" ? "cocaïne base (crack)" : prod === "mdma" ? "comprimés contenant de la MDMA" : prod === "ketamine" ? "kétamine" : "produit stupéfiant";
+        const tauxTxt = taux == null ? "" : prod === "cannabis" ? `, taux de THC de ${taux} %` : prod === "mdma" ? `, ${taux} mg de MDMA par comprimé en moyenne` : `, pureté de ${taux} %`;
+        const jl = Math.floor((E.fin != null ? E.fin : E.debut + 600) / 1440);
+        add("rapport_labo", E.fin != null ? E.fin - 90 : E.debut + 500, "Rapport du laboratoire", () => DOCS.forme({ title: "Rapport d'analyse des produits saisis", kind: "courrier", cote: cote("rapport_labo"),
+          entete: ["Laboratoire de toxicologie de la préfecture de police", `Procédure n° ${t.proc} — cote ${cote("rapport_labo")}`],
+          blocs: [
+            p(`Scellé reçu le ${DOCS.date(j(Math.max(E.debut, (E.pesee || E.debut) + 60)))} : ${N.saisie || "produits saisis"}.${E.pesee != null ? ` Poids brut déclaré par le service à la pesée : ${String(brutDe()).replace(".", ",")} g, emballages compris.` : ""}`),
+            p(`Pesée nette, hors emballages : ${String(net).replace(".", ",")} g.`),
+            p({ t: `Analyse : ${nature}${tauxTxt}.`, f: "G_labo" }),
+            t.quoi === "usage" ? p({ t: "Dépistage urinaire de la personne : positif. Elle déclare une consommation quotidienne depuis plusieurs années.", f: "G_conso" }) : null,
+            mention(`Rapport établi le ${DOCS.date(jl)}.`),
+          ], sigs: ["L'ingénieur du laboratoire"] }));
+      }
       // stupéfiants : pesée et test
       if (E.pesee != null) add("pv_pesee", E.pesee, "Pesée et test", () => {
         const rr = CR.seeded(t.sig + ":g:pes");
