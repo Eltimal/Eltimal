@@ -16,20 +16,25 @@
   CR.EVENING = EVENING;
   CR.HARD_STOP = HARD_STOP;
 
-  // Rétributions de l'aide juridictionnelle : montants indicatifs du jeu, à calibrer
+  // Rétributions de l'aide juridictionnelle (lot C1). Source : Références statistiques Justice 2026, fiche 2.3 (données Unca) :
+  // l'UV valait 36 € en 2025 ; dépense moyenne par mission en 2025 : garde à vue 359 €, audition libre 175 €, déferrement 53 €,
+  // affaire pénale (AJ) 474 €. Vérifié le 13 novembre 2026. Les montants marqués « estimation » sont exprimés en UV à 36 € et
+  // calés pour que la moyenne pénale du jeu reste proche de 474 € ; le barème par mission (décret 2020-1717) n'a pas été lu.
+  CR.AJ_UV = 36;
   CR.AJ = {
-    gav: { label: "Assistance en garde à vue", montant: 150 },
-    audition: { label: "Assistance en audition libre", montant: 150 },
-    ci: { label: "Comparution immédiate", montant: 300 },
-    tc: { label: "Tribunal correctionnel", montant: 260 },
-    tp: { label: "Tribunal de police", montant: 120 },
-    crpc: { label: "Comparution sur reconnaissance préalable de culpabilité", montant: 180 },
-    jld: { label: "Débat devant le juge des libertés et de la détention", montant: 150 },
-    instruction: { label: "Instruction correctionnelle", montant: 600 },
-    instruction_crim: { label: "Instruction criminelle", montant: 1100 },
-    criminel: { label: "Cour d'assises ou cour criminelle départementale", montant: 1600 },
-    pc: { label: "Assistance de la partie civile", montant: 260 },
+    gav: { label: "Assistance en garde à vue", montant: 359, source: "vérifié" },
+    audition: { label: "Assistance en audition libre", montant: 175, source: "vérifié" },
+    ci: { label: "Comparution immédiate", montant: 8 * 36 + 53, source: "estimation (8 UV + déferrement)" },
+    tc: { label: "Tribunal correctionnel", montant: 8 * 36, source: "estimation" },
+    tp: { label: "Tribunal de police", montant: 3 * 36, source: "estimation" },
+    crpc: { label: "Comparution sur reconnaissance préalable de culpabilité", montant: 6 * 36, source: "estimation" },
+    jld: { label: "Débat devant le juge des libertés et de la détention", montant: 4 * 36, source: "estimation" },
+    instruction: { label: "Instruction correctionnelle", montant: 20 * 36, source: "estimation" },
+    instruction_crim: { label: "Instruction criminelle", montant: 40 * 36, source: "estimation" },
+    criminel: { label: "Cour d'assises ou cour criminelle départementale", montant: 50 * 36, source: "estimation" },
+    pc: { label: "Assistance de la partie civile", montant: 8 * 36, source: "estimation" },
   };
+
 
   // ------------------------------------------------------------------ Nouvelle partie
   CR.newGame = function (opts) {
@@ -57,6 +62,7 @@
       earnedBy: {},
       decouvert: { used: 0, limit: 5000, rate: 0.09 },
       pret: { balance: 15000, rate: 0.035, payment: 273 },
+      // charges fixes mensuelles d'un collaborateur installé seul à Paris : estimations du jeu (aucune source lue ; les honoraires sont libres, art. 10 de la loi du 31 décembre 1971)
       fixed: { loyer: 850, urssaf: 750, ordre: 95, logiciels: 140, telephone: 55, prelevement: 1700 },
       ledger: [],
       reps: { clients: 15, confreres: 15, siege: 25, parquet: 25 },

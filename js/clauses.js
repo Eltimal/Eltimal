@@ -32,6 +32,33 @@
     }
     return fonds;
   };
+  // la clause voisine : la bonne formule, faussée sur ce qui fait sa justesse (un numéro d'article, un délai, une
+  // juridiction). Même longueur, même ton : seule la connaissance de la règle la distingue.
+  const DELAIS = [["vingt-quatre heures", "quarante-huit heures"], ["quarante-huit heures", "vingt-quatre heures"], ["dix jours", "quinze jours"],
+    ["cinq jours", "trois jours"], ["trois jours", "cinq jours"], ["quinze jours", "dix jours"], ["huit jours", "quinze jours"], ["vingt jours", "dix jours"],
+    ["un mois", "deux mois"], ["deux mois", "un mois"], ["trois mois", "six mois"], ["six mois", "trois mois"], ["un an", "trois ans"], ["trois ans", "un an"], ["six ans", "trois ans"]];
+  const JURI = [["chambre des appels correctionnels", "chambre de l'instruction"], ["chambre de l'instruction", "chambre des appels correctionnels"],
+    ["tribunal de police", "tribunal correctionnel"], ["tribunal correctionnel", "tribunal de police"], ["juge des libertés et de la détention", "juge d'instruction"],
+    ["juge d'instruction", "juge des libertés et de la détention"], ["procureur de la République", "procureur général"], ["procureur général", "procureur de la République"]];
+  K.voisine = function (t, r) {
+    const muts = [];
+    const art = /\b(articles?|art\.)\s+((?:[LRD]\.?\s?)?\d+(?:-\d+)*)/g;
+    let m;
+    while ((m = art.exec(t))) {
+      const num = m[2], parts = num.split("-"), last = +parts[parts.length - 1];
+      const d = 1 + Math.floor(r() * 3), nv = last > d + 1 && r() < 0.5 ? last - d : last + d;
+      parts[parts.length - 1] = String(nv);
+      const i = m.index + m[0].length - num.length;
+      muts.push(t.slice(0, i) + parts.join("-") + t.slice(i + num.length));
+    }
+    for (const [a, b] of DELAIS.concat(JURI)) {
+      const mm = new RegExp("(^|[^a-zà-ÿ])" + a.replace(/[.']/g, "\\$&") + "(?![a-zà-ÿ])").exec(t);
+      if (mm) { const i = mm.index + mm[1].length; if (!t.slice(i).startsWith(b)) muts.push(t.slice(0, i) + b + t.slice(i + a.length)); }
+    }
+    const ch = /(\d+) (jours|heures|mois)/.exec(t);
+    if (ch) { const n = +ch[1], nv = n >= 2 ? (r() < 0.5 ? Math.round(n / 2) : n * 2) : 3; if (nv !== n) muts.push(t.slice(0, ch.index) + nv + " " + ch[2] + t.slice(ch.index + ch[0].length)); }
+    return muts.length ? muts[Math.floor(r() * muts.length)] : null;
+  };
   K.enrichir = function (s, cs, key, tpl) {
     if (!tpl || !tpl.slots || !(CR.libre && CR.libre(s))) return tpl;
     const F = K.fonds();
@@ -41,13 +68,17 @@
       slots[id] = sl;
       if (!sl || sl.type !== "choice" || !(sl.options || []).every(libre)) continue;
       const deja = new Set(sl.options.map((o) => norm(o.t)));
-      const cand = (F[norm(sl.label)] || []).filter((t) => !deja.has(norm(t)));
-      if (!cand.length) continue;
       const r = CR.seeded(cs.id + ":clause:" + key + ":" + id);
+      const bonO = sl.options.find((o) => o.ok);
+      const vois = bonO ? K.voisine(bonO.t, r) : null;
+      const ajout = vois && !deja.has(norm(vois)) ? [{ v: "fv", t: vois, ok: false, fonds: true, voisine: true }] : [];
+      if (ajout.length) deja.add(norm(vois));
+      const cand = (F[norm(sl.label)] || []).filter((t) => !deja.has(norm(t)));
+      if (!cand.length && !ajout.length) continue;
       // d'abord des clauses plus longues que la bonne : la longueur ne doit plus désigner la réponse
       const bon = (sl.options.find((o) => o.ok) || { t: "" }).t.length;
-      const pris = cand.map((t) => ({ t, k: r() + (t.length > bon ? 0 : 1) })).sort((a, b) => a.k - b.k).slice(0, K.MAX);
-      slots[id] = Object.assign({}, sl, { options: sl.options.concat(pris.map((x, i) => ({ v: "fc" + i, t: x.t, ok: false, fonds: true }))) });
+      const pris = cand.map((t) => ({ t, k: r() + (t.length > bon ? 0 : 1) })).sort((a, b) => a.k - b.k).slice(0, K.MAX - ajout.length);
+      slots[id] = Object.assign({}, sl, { options: sl.options.concat(ajout, pris.map((x, i) => ({ v: "fc" + i, t: x.t, ok: false, fonds: true }))) });
       change = true;
     }
     return change ? Object.assign({}, tpl, { slots }) : tpl;

@@ -22,13 +22,13 @@ Principe d'ordonnancement : on termine d'abord la boucle la plus jouée (permane
 |---|---|---|
 | B1 | Lot 5 : canaux de transmission | Chaque acte part par un canal ; mauvais canal = irrecevabilité motivée — **fait (13 nov.)**, `tcanaux` |
 | B1 bis | Lot 5 suite : écrans e-Barreau (annuaire des CEP, accusé de réception, pièces jointes, PLEX), adresse hors liste = irrecevable | Envoi depuis le poste de travail du cabinet |
-| B2 | Actes par clauses (fin des blancs à deux options) | `tplcheck` refait : aucune option devinable par l'ordre ou la longueur — **en cours** : ordre mélangé, fonds commun (`clauses.js`, `tclauses`) ; reste la réécriture des formules (longueur 78 %) |
+| B2 | Actes par clauses (fin des blancs à deux options) | `tplcheck` refait : aucune option devinable par l'ordre ou la longueur — **en cours** : ordre mélangé, fonds commun (`clauses.js`, `tclauses`) ; clauses voisines (`K.voisine`) : la bonne option n'est plus la plus longue que dans 51 % des blancs (78 % avant) ; reste les blancs à valeur propre |
 
 ## Phase C — l'économie et la progression
 
 | # | Livrable | Critère de fin |
 |---|---|---|
-| C1 | Étalons : aide juridictionnelle, honoraires, cotisations, peines prononcées | Chiffres sourcés (« vérifié » / « estimation ») |
+| C1 | Étalons : aide juridictionnelle, honoraires, cotisations, peines prononcées | Chiffres sourcés (« vérifié » / « estimation ») — **fait en partie (13 nov.)** : peines (`peines.js`), aide juridictionnelle (UV 36 €, moyennes Unca) ; charges du cabinet en estimations déclarées |
 | C2 | Lot 6 bis : économie du cabinet recalée | Carrière simulée d'un an cohérente (trésorerie, dossiers, réputation) |
 | C3 | Grille de compétences et mode assisté | Classeur à jour, autonomie par compétence |
 

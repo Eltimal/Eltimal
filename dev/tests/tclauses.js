@@ -22,7 +22,7 @@ const { boot } = require("./harness");
         const add = sl.options.filter((o) => o.fonds);
         if (add.length) { enrichis++; ok(add.every((o) => o.ok === false), "une clause du fonds est juste"); }
         if (add.length && !sl0.options.every((o) => /^o\d+$/.test(o.v))) ok(false, "un blanc à valeur propre a été enrichi : " + k + "/" + sid);
-        const bon = sl.options.find((o) => o.ok); if (bon) { n++; if (sl.options.every((o) => o === bon || o.t.length <= bon.t.length)) premierLong++; }
+        const bon = sl.options.find((o) => o.ok); if (bon) { n++; if (sl.options.every((o) => o === bon || o.t.length < bon.t.length)) premierLong++; }
       }
     }
   }
