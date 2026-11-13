@@ -214,3 +214,12 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
   - Un appel interrompt la procédure (art. 474), et le dossier se clôt comme avant.
   - L'absence de l'avocat est une erreur datée. Compétence « Application des peines » : travaillée par ce débat, manquée si une mesure était possible sans que les justificatifs soient réunis.
   - Le dossier se clôt avec l'issue du jugement, complétée de l'exécution. Écran : scène commune (`CR.AUDIENCES`), panneau « Observations sur l'exécution de la peine ».
+- **D-81. La victime indemnisée par le jugement n'est pas encore payée.**
+  - Une condamnation à des dommages et intérêts ouvre le recouvrement. Le greffe informe la partie civile de ses recours (art. 706-15). La décision devient définitive au terme du délai d'appel du procureur général, vingt jours (art. 505).
+  - **Atteinte grave** (mort, incapacité de travail d'un mois ou plus, infractions sexuelles, violences sur mineur ou par le conjoint) : la CIVI se saisit par requête.
+    - Le fonds de garantie offre sous deux mois (706-5-1), entre 82 % et 100 % du préjudice fixé par le tribunal (estimation).
+    - Acceptée, l'offre est homologuée et payée. Refusée, la commission instruit plusieurs mois et alloue le préjudice fixé par le tribunal.
+  - **Sinon** : le condamné paie, selon ses ressources simulées, ou ne paie pas dans les deux mois. Dans ce cas, l'aide au recouvrement du SARVI se demande dans l'année (706-15-2). Le fonds verse une avance, sans montant inventé.
+  - **Rien fait dans l'année de la décision définitive** : forclusion, erreur datée avec son remède (relevé de forclusion pour motif légitime).
+  - Chaque geste de l'avocat tient le client informé. Un client laissé sans nouvelles finit par se plaindre (règle existante).
+  - Le cas des préjudices moindres sous condition de ressources (706-14) n'est pas codé : son plafond suit l'aide juridictionnelle partielle, non relue.

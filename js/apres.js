@@ -70,11 +70,120 @@
     ancienClose.call(this, s, cs, o);
   };
 
+  // ================================================================ les victimes : le recouvrement des dommages et intérêts
+  // La décision sur l'action civile devient définitive au terme du délai d'appel du procureur général, vingt jours (art. 505
+  // CPP ; dix pour les parties, art. 498). La juridiction informe la partie civile de ses recours (art. 706-15).
+  // CIVI (art. 706-3 et 706-5) : atteintes graves — mort, incapacité de travail d'un mois ou plus, infractions sexuelles des
+  // articles 222-22 à 222-30, violences sur mineur ou par le conjoint — ; requête dans l'année de la décision définitive (le
+  // délai de trois ans depuis les faits est prorogé jusque-là) ; le fonds de garantie fait une offre sous deux mois
+  // (706-5-1) : l'accepter (homologation par le président de la commission) ou la refuser (l'instruction se poursuit).
+  // SARVI (art. 706-15-1 et 706-15-2) : sinon, si le condamné n'a pas payé dans les deux mois de la décision définitive,
+  // demande d'aide au recouvrement dans l'année. Montants du fonds non relus : aucune somme n'est inventée.
+  K.civiEligible = function (s, cs) {
+    const t = genT(s, cs); if (!t) return false;
+    const I = (CR.CAT && CR.CAT.INF[t.inf]) || {};
+    const itt = t.quoi === "itt" && t.f2 ? t.f2.itt : t.f && t.f.itt;
+    const sexuel = /sexuel/.test(I.fam || "") || /^(viol|agression_sexuelle)/.test(t.inf || "");
+    const conj = /conj/.test(t.inf || "") || /conj|couple/.test(String(t.f && t.f.sc));
+    const mineur = t.V && t.V.age != null && t.V.age < 18;
+    return !!(I.deces || (itt != null && itt >= 30) || sexuel || ((conj || mineur) && itt != null && itt > 0));
+  };
+  K.eligibleVictime = (s, cs, outcome) => !!(cs && cs.camp === "pc" && outcome && outcome.type === "indemnise" && genT(s, cs) && !cs.vars.recouv && !(cs.proc && cs.proc.appel));
+  K.ouvrirRecouvrement = function (s, cs, outcome) {
+    const api = CR.api(s, cs), jug = cs.vars.jugementDay != null ? cs.vars.jugementDay : s.day;
+    const civi = K.civiEligible(s, cs);
+    const R0 = (cs.vars.recouv = { outcome, montant: outcome.indemnisation || 0, jugement: jug, definitive: jug + 20, civi, etat: "attente" });
+    api.mail({ from: "Greffe du tribunal correctionnel", subject: "Information de la partie civile", kind: "greffe", body: [[`La juridiction a alloué des dommages et intérêts à ${CR.clientName(cs)}. Elle l'informe de la possibilité de saisir la commission d'indemnisation des victimes d'infractions ou le fonds de garantie d'une demande d'aide au recouvrement (art. 706-15 du code de procédure pénale).`]] });
+    api.at(R0.definitive + 60, "_recouvEcheance", {}, 10 * 60);
+    api.at(R0.definitive + 366, "_recouvForclusion", {}, 9 * 60);
+  };
+  const ancienClose2 = CR.closeCase;
+  CR.closeCase = function (s, cs, outcome) {
+    try { if (!K.off && cs && cs.status !== "closed" && K.eligibleVictime(s, cs, outcome)) { K.ouvrirRecouvrement(s, cs, outcome); return; } } catch (err) { console.error(err); }
+    return ancienClose2.apply(this, arguments);
+  };
+  K.cloreVictime = function (s, cs, detail) {
+    const R0 = cs.vars.recouv; if (!R0 || R0.etat === "fini") return;
+    R0.etat = "fini"; R0.issue = detail;
+    ancienClose.call(this, s, cs, Object.assign({}, R0.outcome, { detail: [R0.outcome.detail, detail].filter(Boolean).join(" — ") }));
+  };
+  // deux mois après la décision définitive : le condamné a-t-il payé ? (selon ses ressources simulées)
+  H._recouvEcheance = (api) => {
+    const { s, cs } = api, R0 = cs.vars.recouv, t = genT(s, cs);
+    if (!R0 || R0.etat !== "attente") return;
+    const A = (t && t.A) || {};
+    const p = 0.15 + (A.emploi ? 0.35 : 0) + ((A.revenu || 0) > 2500 ? 0.2 : 0);
+    const paye = CR.seeded(cs.id + ":recouv")() < p;
+    if (paye) { api.mail({ from: CR.clientName(cs), subject: "Le virement est arrivé", kind: "email", body: [["Maître, l'argent est arrivé sur mon compte. Merci pour tout."]] }); K.cloreVictime(s, cs, "dommages et intérêts payés par le condamné"); return; }
+    R0.impaye = s.day;
+    api.mail({ from: CR.clientName(cs), subject: "Toujours rien", kind: "email", body: [["Maître, je n'ai toujours rien reçu. Il ne paiera jamais, n'est-ce pas ? Que peut-on faire ?"]] });
+  };
+  H._recouvForclusion = (api) => {
+    const { s, cs } = api, R0 = cs.vars.recouv;
+    if (!R0 || R0.etat !== "attente") return;
+    CR.erreur && CR.erreur(s, cs, { id: R0.civi ? "civi_forclos" : "sarvi_forclos", texte: R0.civi ? "La commission d'indemnisation n'a pas été saisie dans l'année de la décision définitive." : "Le fonds de garantie n'a pas été saisi dans l'année de la décision définitive.", sanction: "La demande est forclose : la victime n'a reçu que ce que le condamné a bien voulu payer.", regul: R0.civi ? "La commission peut relever de la forclusion pour un motif légitime (art. 706-5)." : "Le fonds peut relever de la forclusion pour un motif légitime (art. 706-15-2)." });
+    K.cloreVictime(s, cs, "aucun recours exercé dans le délai");
+  };
+  K.saisirCivi = function (api) {
+    const { s, cs } = api, R0 = cs.vars.recouv;
+    R0.etat = "civi"; R0.civiDepot = s.day;
+    if (CR.updatedClient) CR.updatedClient(s, cs, 1); // l'avocat tient son client informé
+    api.mail({ from: "Commission d'indemnisation des victimes d'infractions", subject: "Requête enregistrée", kind: "greffe", body: [["Votre requête est enregistrée et transmise au fonds de garantie, qui présentera une offre dans un délai de deux mois (art. 706-5-1 du code de procédure pénale)."]] });
+    api.at(s.day + int(CR.seeded(cs.id + ":civi"), 40, 58), "_civiOffre", {}, 11 * 60);
+  };
+  H._civiOffre = (api) => {
+    const { cs } = api, R0 = cs.vars.recouv;
+    if (!R0 || R0.etat !== "civi") return;
+    const k = 0.82 + CR.seeded(cs.id + ":civi:offre")() * 0.18;
+    R0.offre = Math.round((R0.montant * k) / 50) * 50; R0.etat = "offre";
+    api.mail({ from: "Fonds de garantie des victimes", subject: "Offre d'indemnisation", kind: "courrier", important: true, body: [[`Le fonds présente à ${CR.clientName(cs)} une offre d'indemnisation de ${CR.money(R0.offre)}, pour un préjudice fixé par le tribunal à ${CR.money(R0.montant)}.`], ["En cas d'acceptation, le constat d'accord est transmis au président de la commission pour homologation. En cas de refus, l'instruction de la demande se poursuit devant la commission."]] });
+  };
+  K.repondreOffre = function (api, accepte) {
+    const { s, cs } = api, R0 = cs.vars.recouv;
+    if (CR.updatedClient) CR.updatedClient(s, cs, 1);
+    if (accepte) {
+      R0.etat = "homologation";
+      api.at(s.day + int(CR.seeded(cs.id + ":civi:homol"), 15, 35), "_civiFin", { montant: R0.offre, voie: "offre homologuée" }, 10 * 60);
+    } else {
+      R0.etat = "instruction";
+      // la commission alloue la réparation intégrale, au plus ce que le préjudice justifie (le jugement le chiffre)
+      api.at(s.day + int(CR.seeded(cs.id + ":civi:instr"), 90, 150), "_civiFin", { montant: R0.montant, voie: "décision de la commission" }, 10 * 60);
+    }
+  };
+  H._civiFin = (api, { montant, voie }) => {
+    const { s, cs } = api, R0 = cs.vars.recouv;
+    if (!R0 || !["homologation", "instruction"].includes(R0.etat)) return;
+    R0.verse = montant;
+    api.mail({ from: "Fonds de garantie des victimes", subject: "Paiement de l'indemnité", kind: "courrier", body: [[`Le fonds verse à ${CR.clientName(cs)} la somme de ${CR.money(montant)} (${voie}). Il se retourne contre le condamné pour le remboursement.`]] });
+    K.cloreVictime(s, cs, `indemnisée par la CIVI (${voie}, ${CR.money(montant)})`);
+  };
+  K.saisirSarvi = function (api) {
+    const { s, cs } = api, R0 = cs.vars.recouv;
+    R0.etat = "sarvi"; R0.sarviDepot = s.day;
+    if (CR.updatedClient) CR.updatedClient(s, cs, 1); // l'avocat tient son client informé
+    api.at(s.day + int(CR.seeded(cs.id + ":sarvi"), 30, 60), "_sarviReponse", {}, 11 * 60);
+  };
+  H._sarviReponse = (api) => {
+    const { s, cs } = api, R0 = cs.vars.recouv;
+    if (!R0 || R0.etat !== "sarvi") return;
+    api.mail({ from: "Service d'aide au recouvrement des victimes d'infractions", subject: "Aide au recouvrement", kind: "courrier", body: [[`Le fonds a accepté la demande d'aide au recouvrement de ${CR.clientName(cs)}. Il lui verse une avance et se charge de recouvrer le solde auprès du condamné ; les frais de gestion et de recouvrement restent à la charge de ce dernier.`]] });
+    K.cloreVictime(s, cs, "aide au recouvrement du SARVI");
+  };
+
   // ---------------------------------------------------------------- les tâches : réunir les justificatifs
   const ancienTasks = PEN.tasks;
   PEN.tasks = function (api, T) {
     const r = ancienTasks.apply(this, arguments);
-    const { s, cs } = api, ap = cs.vars.ap;
+    const { s, cs } = api, ap = cs.vars.ap, R0 = cs.vars.recouv;
+    if (R0 && R0.etat !== "fini") {
+      const avant = s.day <= R0.definitive + 365;
+      if (R0.civi && R0.etat === "attente" && avant) T({ id: "civi", label: "Saisir la commission d'indemnisation des victimes", sub: "Requête au greffe de la CIVI, pièces à l'appui : le fonds de garantie fera une offre sous deux mois (art. 706-3 et 706-5-1).", kind: "admin", time: 60, run: () => { CR.spend(s, 60, "admin"); K.saisirCivi(api); return null; } });
+      if (!R0.civi && R0.etat === "attente" && R0.impaye != null && avant) T({ id: "sarvi", label: "Demander l'aide au recouvrement (SARVI)", sub: "Le condamné n'a pas payé dans les deux mois : demande au fonds de garantie, dans l'année de la décision définitive (art. 706-15-2).", kind: "admin", time: 30, run: () => { CR.spend(s, 30, "admin"); K.saisirSarvi(api); return null; } });
+      if (R0.etat === "offre") {
+        T({ id: "civi_accepter", label: `Accepter l'offre du fonds de garantie (${CR.money(R0.offre)})`, sub: "Le constat d'accord part en homologation : paiement rapide.", kind: "admin", time: 15, run: () => { CR.spend(s, 15, "admin"); K.repondreOffre(api, true); return null; } });
+        T({ id: "civi_refuser", label: "Refuser l'offre et poursuivre devant la commission", sub: `Le tribunal a fixé le préjudice à ${CR.money(R0.montant)} ; l'instruction prendra plusieurs mois.`, kind: "admin", time: 20, run: () => { CR.spend(s, 20, "admin"); K.repondreOffre(api, false); return null; } });
+      }
+    }
     if (!ap || ap.etat === "fini") return r;
     const t = genT(s, cs); if (!t) return r;
     if (!ap.justifsDemandes) T({ id: "ap_justifs", label: `Réunir les justificatifs de ${t.A.prenom} pour le juge de l'application des peines`, sub: "Travail, domicile ou hébergement, soins, formation : ce qui permet une mesure, pièces à l'appui.", kind: "meet", time: 30, urgent: true, run: () => { CR.spend(s, 30, "meet"); K.demanderJustifs(api); return null; } });
@@ -83,6 +192,7 @@
   K.demanderJustifs = function (api) {
     const { s, cs } = api, t = genT(s, cs), A = t.A, ap = cs.vars.ap;
     ap.justifsDemandes = s.day; ap.justifsFaits = (ap.justifsFaits || 0) + 1;
+    if (CR.updatedClient) CR.updatedClient(s, cs, 1); // l'avocat tient son client informé
     const r = CR.seeded(cs.id + ":ap:justifs");
     const recus = [];
     if (A.emploi) recus.push("AP_travail");

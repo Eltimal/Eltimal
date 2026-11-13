@@ -157,7 +157,9 @@ const P = require("./play"); const U = require("./util"); const { runAudience } 
     const log = await audience(cs, T, { questions: [/témoin|reconnu/], args: [/témoignage|certificat|qualification|préjudice|475-1/] });
     for (let i = 0; i < 3 && cs.status !== "closed"; i++) CR.endDay(s);
     console.log(log.filter((l) => /DÉCISION/.test(l)).join("\n").slice(0, 600));
-    res.push(["pc-citation", cs.status, JSON.stringify(cs.outcome)]);
+    // lot 8 : après le jugement, le recouvrement des dommages et intérêts (CIVI, SARVI) garde le dossier ouvert
+    if (cs.status !== "closed" && cs.vars.recouv && cs.vars.recouv.etat !== "fini") { res.push(["pc-citation", "closed", `jugé, recouvrement en cours (${cs.vars.recouv.civi ? "CIVI" : "SARVI"})`]); CR.AP.cloreVictime(s, cs, "fin du scénario de test"); } // le recouvrement a son test (tvictimes) : ne pas laisser le dossier en souffrance pour la suite
+    else res.push(["pc-citation", cs.status, JSON.stringify(cs.outcome)]);
   }
 
   // ---------------------------------------------------------------- 5. Phase 2 : une affaire criminelle, de la convocation chez le juge d'instruction au procès
