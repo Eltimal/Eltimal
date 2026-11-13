@@ -6,7 +6,7 @@
 
 1. `git fetch --all` ; partir de la branche la plus avancée entre `claude/keen-heisenberg-nk0cv3` et `claude/permanence-mac-app-graphics-wege0b` (fusionner l'autre dedans s'il le faut ; les deux publient le jeu sur le Mac, numéro = nombre de commits).
 2. `cd dev && npm install` si `node_modules` manque. Navigateur : `CHROME=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` (vérifier `ls /opt/pw-browsers`). Après une modification de `index.html`, `node tools/shot.js` régénère `tools/preview` avant toute capture par `tools/shotui.js`.
-3. Batterie : `for t in t1 t2 t3 t4 t15 t20 tsim ttravail tdossier tson tgenjeu tparole ttribunal tplaidoirie tappel tcanaux tlibre tcite tclauses tpeines tecono tcomp tebarreau tplex tmagasin ttransport ttire t2roues tdeal tdetention toutrage trebellion tconjugal tappels tcambriolage tobtemperer tfuite trecel tlabo timages ttelephonie tcaptures treleve tadn tpermis texpertise trepetition tgen; do node tests/$t.js; done` (chaque test affiche `errors: none` ou `échecs: 0`).
+3. Batterie : `cd dev && node tools/batterie.js` (rapide, en parallèle : environ 70 s) après chaque changement ; `node tools/batterie.js complete` (environ 3 min, avec `tgen`, `tsim`, `trepetition` et les boucles) avant chaque commit qui touche la génération des affaires ou l'audience ; `node tools/batterie.js t1 tsim tboucle:9` pour des tests choisis. Ne pas relancer la batterie entière pour une retouche de texte : le test du lot suffit.
 
 ## Où on en est
 
@@ -18,7 +18,7 @@ Première famille, **faite le 13 novembre** (`tmagasin`) : le vol en magasin (`c
 
 ## Contrôle d'ensemble
 
-`node tests/tboucle.js 7` puis `3`, `5`, `9` : la boucle principale en mode libre, de bout en bout (5 et 9 vont jusqu'à la comparution immédiate).
+Compris dans `node tools/batterie.js complete` (boucles 7, 9, 5 : la boucle principale en mode libre, de bout en bout).
 
 ## Prochaine action
 

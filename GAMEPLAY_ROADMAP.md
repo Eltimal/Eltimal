@@ -40,4 +40,4 @@ Lot 1 ter (toutes les familles d'infractions au niveau de l'arrachage — **comm
 
 - **Deux sessions sur les mêmes fichiers** (`ui-*.js`) : partir toujours de la branche la plus avancée, fusionner avant de commencer.
 - **Équilibrage** : tout nouveau calcul de verdict ou de peine se compare à l'ancien sur 1 000 affaires avant d'entrer en jeu.
-- **Régressions** : les parties automatiques jouent en mode liste ; chaque lot ajoute son test et fait tourner la batterie de `NEXT_SESSION.md`.
+- **Régressions** : les parties automatiques jouent en mode liste ; chaque lot ajoute son test. `dev/tools/batterie.js` les fait tourner en parallèle (rapide : 43 tests en 70 s ; complète : environ 3 min, contre 20 à 25 min en série).
