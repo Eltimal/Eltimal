@@ -20,7 +20,8 @@ Principe d'ordonnancement : on termine d'abord la boucle la plus jouée (permane
 
 | # | Livrable | Critère de fin |
 |---|---|---|
-| B1 | Lot 5 : poste de travail, e-Barreau et canaux pour l'appel, la demande de mise en liberté, les conclusions, la constitution de partie civile | Chaque acte part par un canal ; mauvais canal = irrecevabilité motivée |
+| B1 | Lot 5 : canaux de transmission | Chaque acte part par un canal ; mauvais canal = irrecevabilité motivée — **fait (13 nov.)**, `tcanaux` |
+| B1 bis | Lot 5 suite : écrans e-Barreau (annuaire des CEP, accusé de réception, pièces jointes, PLEX), adresse hors liste = irrecevable | Envoi depuis le poste de travail du cabinet |
 | B2 | Actes par clauses (fin des blancs à deux options) | `tplcheck` refait : aucune option devinable par l'ordre ou la longueur |
 
 ## Phase C — l'économie et la progression

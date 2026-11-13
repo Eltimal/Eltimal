@@ -331,7 +331,8 @@
     const file = () => {
       const used = saisie ? Object.fromEntries(wanted.map((k) => [k, cites[k] || null]).filter(([, v]) => v)) : null;
       const res = CR.fileDraft(s, cs, tplKey, filled, checks, { cites: used });
-      CR.toast(s, tpl.depot ? `Rédigé : ${tpl.title}. Il reste à le déposer (${tpl.depotLabel || "au greffe"}).` : `${tpl.dirLabel || "Envoyé"} : ${tpl.title}`, tpl.depot ? "warn" : "info");
+      const attend = tpl.depot || (CR.CANAUX && CR.CANAUX.gere(s, tplKey));
+      CR.toast(s, attend ? (CR.CANAUX && CR.CANAUX.gere(s, tplKey) ? `Rédigé : ${tpl.title}. Il reste à le transmettre.` : `Rédigé : ${tpl.title}. Il reste à le déposer (${tpl.depotLabel || "au greffe"}).`) : `${tpl.dirLabel || "Envoyé"} : ${tpl.title}`, attend ? "warn" : "info");
       // la correction des articles ratés, montrée après
       for (const c of Object.values(res.cites || {})) if (c.g !== "ok" && c.attendu) CR.toast(s, `Article : ${c.tape ? CR.citeLabel(c.tape) + " — " : ""}l'${CR.citeLabel(c.attendu)} était attendu (${CR.CITE_LABEL[c.g].toLowerCase()}).`, c.g === "voisin" || c.g === "code" || c.g === "aide" ? "warn" : "bad");
       bump();
@@ -389,7 +390,7 @@
           ${act.type === "fact" ? html`<p className="small muted">Choisissez la ligne de votre carnet qui va ici.</p>
             <${Carnet} s=${s} cs=${cs} pickable=${true} selected=${filled[active]} onPick=${pickNote} hide=${true} />
             ${filled[active] && html`<button className="link small" onClick=${() => setFilled(Object.assign({}, filled, { [active]: null }))}>Effacer ce blanc</button>`}`
-          : html`<div className="choices">${act.options.map((o) => { const sp = specs[`sl:${active}:${o.v}`]; return html`<button key=${o.v} className=${cx("choice", filled[active] === o.v && "on")} onClick=${() => { const f = Object.assign({}, filled, { [active]: o.v }); setFilled(f); const k = `sl:${active}:${o.v}`; if (specs[k] && !cites[k]) { setActive(null); setActiveCite(k); } else setActive(nextBlank(active, f)); }}>${sp ? CR.citeMasked(sp) : o.t}</button>`; })}</div>`}
+          : html`<div className="choices">${(CR.libre(s) ? (() => { const r = CR.seeded(cs.id + ":blanc:" + active + ":" + act.label); return act.options.map((o) => ({ o, k: r() })).sort((a, b) => a.k - b.k).map((x) => x.o); })() : act.options).map((o) => { const sp = specs[`sl:${active}:${o.v}`]; return html`<button key=${o.v} className=${cx("choice", filled[active] === o.v && "on")} onClick=${() => { const f = Object.assign({}, filled, { [active]: o.v }); setFilled(f); const k = `sl:${active}:${o.v}`; if (specs[k] && !cites[k]) { setActive(null); setActiveCite(k); } else setActive(nextBlank(active, f)); }}>${sp ? CR.citeMasked(sp) : o.t}</button>`; })}</div>`}
         </div>` : html`<div className="slot-panel"><p className="muted">Cliquez un blanc dans le document pour le remplir.${saisie && Object.keys(specs).length ? " Les articles se tapent : cliquez « art. … »." : ""}</p><${UI.DossierSide} s=${s} cs=${cs} ctx="redaction" /></div>`}
         ${wanted.some((k) => cites[k]) && html`<div className="cite-recap small"><span className="pix">Articles cités</span>${wanted.filter((k) => cites[k]).map((k) => html`<div key=${k}><${UI.CiteDone} s=${s} r=${cites[k]} /></div>`)}</div>`}
         <div className="draft-actions">

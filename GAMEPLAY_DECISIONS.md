@@ -29,3 +29,14 @@ Chaque décision : ce qui est tranché, pourquoi, ce qui a été écarté. Les d
 - **D-17. Le réquisitoire raisonne comme le tribunal, du côté de l'accusation.** Il expose les faits, cote les pièces qui portent chaque élément (le même calcul que le délibéré, sans les moyens de la défense), répond aux exceptions, traite la personnalité. Le joueur entend avant de plaider ce sur quoi l'accusation s'appuie : c'est là qu'il voit l'élément le plus faible.
 - **D-18. Le président interroge avec les questions de l'enquête.** Un client vu au dépôt est cohérent ; un client qu'on n'a pas préparé se contredit une fois, et le président le relève. Un client qui a menti maintient son mensonge face à la pièce cotée qui le contredit. Ce que l'avocat a fait avant l'audience s'entend à l'audience.
 - **D-19. La plaidoirie voit tous les arguments que l'affaire permet.** Un moyen permis mais sans pièce en main reçoit « qu'est-ce qui l'établit ? » ; un moyen que le dossier ne permet pas, « je ne vois pas ce qui permet de soutenir cela ». Les deux comptent contre la défense, différemment expliqués.
+
+## Lot 5, premier jet — les canaux (13 novembre 2026)
+
+- **D-20. Tous les canaux pour tout acte ; la loi juge.** Le choix offert est le même partout (greffe, e-Barreau, recommandé, télécopie, chef d'établissement, commissaire de justice) : rien ne dit lequel est admis. La table vient de l'étalon vérifié (`dev/ref/actes-canaux.md`) ; une ligne « à vérifier » n'y entre pas.
+- **D-21. L'irrecevabilité arrive comme en vrai : plus tard, par le greffe, avec son motif.** Pas de refus à l'écran au moment de l'envoi. Le joueur peut refaire l'acte si le délai court encore ; sinon, la forclusion produit ses effets ordinaires.
+- **D-22. Le temps du canal compte.** e-Barreau prend date à l'accusé de réception, au premier jour ouvrable suivant après 17 heures (D. 591) ; le recommandé à son arrivée ; le greffe et l'étude quand on s'y présente. C'est ce qui rend un envoi de dernière minute risqué.
+
+## Lot 6, premiers gestes — sans guidage (13 novembre 2026)
+
+- **D-23. Plus de jauges en mode libre.** L'énergie se dit en mots (« Vous êtes : fatigué »), sans barre ; les réputations disparaissent de l'en-tête et se lisent au cabinet comme ce qu'on dit de vous au palais ; la confiance du client et sa patience ne s'affichent plus, elles se lisent dans ses réponses. Les chiffres restent en mode assisté.
+- **D-24. Les choix fermés qui restent sont mélangés.** À l'audience comme dans la rédaction, l'ordre des options est tiré une fois pour toutes par dossier : la position ne dit plus rien. Une option d'audience que rien n'appuie dans le dossier s'affiche quand même et reçoit une question du président. Limite connue : la longueur des options d'acte trahit encore souvent la bonne (85 % dans l'audit) ; il faut les réécrire par clauses (B2).

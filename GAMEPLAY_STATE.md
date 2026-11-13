@@ -25,7 +25,7 @@ Cabinet (plan plein écran, objets cliquables) → appel ou client (vivier, perm
 | Délibéré | **Lot 4a** : raisonnement élément par élément pour les délits générés ; débrief en corrigé (ce qui a établi chaque élément, moyens permis non plaidés, pièces écartées) ; ancien calcul pour le reste | `ttribunal`, `tgen` | Affaires écrites et crimes sur l'ancien calcul |
 | Jugement écrit | **Lot 4a** : trame complète (cartouche, parties, débats, motifs par élément, dispositif, voies de recours), notifié par le greffe | `ttribunal` | Arrêts et ordonnances sur l'ancien format |
 | Peine (`P.calculerPeine`) | Ancien : réquisitions × facteur | `tgen` | À refaire (mécaniques, étalon des peines prononcées) |
-| Actes et canaux (`law-fr.js`, `flow-common.js`) | Ancien : 17 actes, blancs à options, « déposer » en un clic | `tplcheck` | Lot 5 (poste de travail, e-Barreau) |
+| Actes et canaux (`canaux.js`, `flow-common.js`) | **Lot 5, premier jet** en mode libre : tout acte de la table (appel, demande de mise en liberté, demande d'actes, conclusions et requête en nullité, plainte, plainte avec constitution de partie civile, constitution de partie civile, citation) se transmet par un canal choisi parmi six ; canal non admis = irrecevabilité motivée par le greffe ; e-Barreau après 17 heures = premier jour ouvrable suivant ; recommandé à son arrivée | `tcanaux`, `tplcheck` | Pas encore d'écrans e-Barreau (annuaire des CEP, accusé de réception, PLEX) ; rédaction toujours par blancs à options (B2) |
 | Économie, cabinet, carrière, équipe | Ancien | `tbill`, `tcarriere`, `tequipe` | Lot 6 bis (étalons à faire) |
 | Jauges et guidage | Ancien : énergie, réputations, confiance, signaux | — | Lot 6 |
 | Instruction, assises | Ancien | `tgen`, `tassises` | Lot 7 |

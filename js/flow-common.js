@@ -86,21 +86,25 @@
     const typed = opts.cites ? Object.fromEntries(Object.entries(opts.cites).map(([k, c]) => [k, c.ref || null])) : null;
     const doc = CR.fileDoc(s, cs, { key: "_drafted", title: tpl.title, dir: "out", vars: { tplKey: key, filled: res.filled, picks: res.picks, ecrits: res.ecrits, cites: typed } });
     cs.drafted[key] = cs.drafted[key] || [];
-    cs.drafted[key].push({ day: s.day, min: s.min, defects: res.defects, score: res.score, picks: res.picks, filled: res.filled, docId: doc.id, depose: !tpl.depot });
+    // refonte (lot 5) : en mode libre, tout acte de la table des canaux attend sa transmission, même celui qui n'a pas de lieu de dépôt
+    const attend = !!tpl.depot || !!(CR.CANAUX && CR.CANAUX.gere(s, key));
+    cs.drafted[key].push({ day: s.day, min: s.min, defects: res.defects, score: res.score, picks: res.picks, filled: res.filled, docId: doc.id, depose: !attend });
     CR.timeline(s, cs, `${tpl.dirLabel || "Rédigé"} : ${tpl.title}`);
     cs.lastWork = s.day;
     // un acte qui doit être déposé au greffe attend son dépôt ; les autres produisent leurs effets tout de suite
-    if (!tpl.depot) CR.runHook(s, cs, tpl.onFile || ("filed_" + key), { res, tpl, key });
+    if (!attend) CR.runHook(s, cs, tpl.onFile || ("filed_" + key), { res, tpl, key });
     return res;
   };
   CR.drafted = (cs, key) => (cs.drafted[key] && cs.drafted[key].length ? cs.drafted[key][cs.drafted[key].length - 1] : null);
   CR.hasDefect = (cs, key, code) => { const d = CR.drafted(cs, key); return !!(d && d.defects.some((x) => x === code || x.startsWith(code))); };
   // Dépôt d'un acte rédigé (au greffe, à l'étude, au cabinet du juge) : l'acte prend date ici
-  CR.deposer = function (s, cs, key) {
+  // o.sansTemps : l'acte prend effet sans qu'on se déplace (canal électronique, courrier arrivé) ; o.deja : transmis, effet différé
+  CR.deposer = function (s, cs, key, o = {}) {
     const d = CR.drafted(cs, key);
-    if (!d || d.depose) return null;
+    if (!d || (d.depose && !o.deja) || d.effet) return null;
     const tpl = CR.getTpl(s, cs, key);
-    CR.spend(s, tpl.depotTime || 15, "admin");
+    if (!o.sansTemps) CR.spend(s, tpl.depotTime || 15, "admin");
+    d.effet = true;
     d.depose = true;
     d.deposeDay = s.day;
     d.deposeMin = s.min;
@@ -169,6 +173,13 @@
     if (CR.chevauchementTasks) CR.chevauchementTasks(s, cs, T);
     for (const x of CR.aDeposer(cs)) {
       const tpl = CR.getTpl(s, cs, x.k);
+      // refonte (lot 5) : en mode libre, l'acte se transmet par un canal choisi ; le greffe demande de s'y rendre
+      if (tpl && CR.CANAUX && CR.CANAUX.gere(s, x.k)) {
+        const ch = cs.vars.canalChoisi && cs.vars.canalChoisi[x.k];
+        if (!ch) T({ id: "canal_" + x.k, label: `Transmettre : ${tpl.title}`, sub: "Choisir la voie : greffe, e-Barreau, recommandé, télécopie…", kind: "admin", time: 0, urgent: true, run: () => ({ scene: "canal", tpl: x.k }) });
+        else T({ id: "depot_" + x.k, label: `${ch === "cj" ? "Faire délivrer" : "Déposer au greffe"} : ${tpl.title}`, sub: `${tpl.depotLabel || "Au greffe"} — l'acte prend date au dépôt.`, kind: "admin", time: tpl.depotTime || 15, urgent: true, where: tpl.depot, run: () => { CR.CANAUX.deposerSurPlace(s, cs, x.k); return null; } });
+        continue;
+      }
       if (tpl && tpl.depot) T({ id: "depot_" + x.k, label: `Déposer : ${tpl.title}`, sub: `${tpl.depotLabel || "Au greffe"} — l'acte prend date au dépôt.`, kind: "admin", time: tpl.depotTime || 15, urgent: true, where: tpl.depot, run: () => { CR.deposer(s, cs, x.k); return null; } });
     }
     if (def.flow && def.flow.tasks) def.flow.tasks(api, T);

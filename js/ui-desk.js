@@ -27,6 +27,17 @@
     honoraires: "La convention d'honoraires est obligatoire, sauf urgence et aide juridictionnelle. Forfait ou temps passé ; un honoraire de résultat n'est permis qu'en complément (art. 10 de la loi de 1971).",
   };
 
+  // ce qu'on dit de vous (mode libre : pas de chiffre, une appréciation)
+  CR.repDit = (k, v) => {
+    const n = v >= 80 ? 4 : v >= 65 ? 3 : v >= 45 ? 2 : v >= 30 ? 1 : 0;
+    return ({
+      clients: ["Votre nom fait fuir les clients.", "On hésite à vous recommander.", "Quelques clients vous recommandent.", "On vous recommande volontiers.", "On vient vous voir de la part d'anciens clients."],
+      confreres: ["Les confrères vous évitent.", "Au vestiaire, on parle de vos faux pas.", "On vous connaît peu au barreau.", "Les confrères vous estiment.", "On vous passe des dossiers."],
+      siege: ["Les juges se méfient de vos écritures.", "Le siège vous trouve approximatif.", "Le siège ne vous connaît pas encore.", "Le siège vous écoute.", "Le siège vous tient pour sérieux."],
+      parquet: ["Le parquet ne vous fait aucun crédit.", "Le parquet vous trouve peu fiable.", "Le parquet ne vous connaît pas encore.", "Le parquet vous trouve fiable.", "Le parquet vous fait confiance."],
+    }[k] || ["", "", "", "", ""])[n];
+  };
+
   // =================================================================== En-tête
   UI.HUD = ({ s, onMenu, onNav }) => {
     const hol = CR.holidayName(s.day);
@@ -42,15 +53,15 @@
         <span className="pix lbl"><${Icon} n="pin" /> Lieu</span><span className="hud-place">${CR.whereLabel(s)}</span>
       </button>
       <div className="hud-stat" title=${"Énergie : " + CR.energyLabel(s.energy)}>
-        <span className="pix lbl"><${Icon} n="bolt" /> Énergie</span>
-        <${Meter} value=${s.energy} tone=${s.energy < 25 ? "bad" : s.energy < 50 ? "warn" : "ok"} />
+        <span className="pix lbl"><${Icon} n="bolt" /> ${CR.libre(s) ? "Vous êtes" : "Énergie"}</span>
+        ${!CR.libre(s) && html`<${Meter} value=${s.energy} tone=${s.energy < 25 ? "bad" : s.energy < 50 ? "warn" : "ok"} />`}
         <span className="hud-sub">${CR.energyLabel(s.energy)}</span>
       </div>
       <button className="hud-stat hud-money" onClick=${() => onNav("cabinet")} title="Compte professionnel, CARPA, découvert">
         <span className="pix lbl">Compte</span><${Money} v=${s.cash} />
         <span className="hud-sub">CARPA ${CR.money(s.carpa)}${s.decouvert.used ? ` · découvert ${CR.money(s.decouvert.used)}` : ""}</span>
       </button>
-      <button className="hud-reps" onClick=${() => onNav("cabinet", "rep")} title="Réputation">
+      <button className="hud-reps" hidden=${CR.libre(s)} onClick=${() => onNav("cabinet", "rep")} title="Réputation">
         ${Object.entries(s.reps).map(([k, v]) => html`<div key=${k} className="rep-mini"><span className="pix">${CR.REP_LABEL[k]}</span><${Meter} value=${v} small /></div>`)}
       </button>
       <button className="icon-btn hud-menu" onClick=${onMenu} aria-label="Menu"><${Icon} n="menu" size=${20} /></button>
@@ -399,7 +410,7 @@
             ${CR.caseDef(cs) && CR.caseDef(cs).code && html`<${UI.CodeAffaire} code=${CR.caseDef(cs).code} />`}
           </div>
         </div>
-        ${cs.status === "active" && html`<div className="cf-trust"><span className="pix">Confiance du client</span><${Meter} value=${cs.trust} tone=${cs.trust > 65 ? "ok" : cs.trust > 35 ? "warn" : "bad"} /></div>`}
+        ${cs.status === "active" && !CR.libre(s) && html`<div className="cf-trust"><span className="pix">Confiance du client</span><${Meter} value=${cs.trust} tone=${cs.trust > 65 ? "ok" : cs.trust > 35 ? "warn" : "bad"} /></div>`}
       </div>
       <div className="tabs" role="tablist">${tabs.map(([k, l]) => html`<button key=${k} role="tab" aria-selected=${tab === k} className=${cx("tab", tab === k && "on")} onClick=${() => { setTab(k); setDocSel(null); }}>${l}</button>`)}</div>
       ${tab === "actions" && html`<div className="tasks">
@@ -640,7 +651,7 @@
       ${tab === "permanences" && html`<${UI.PermanencesBody} s=${s} />`}
       ${tab === "equipe" && html`<${UI.EquipePanel} s=${s} go=${go} />`}
       ${tab === "rep" && html`<div className="rep-grid">
-        ${[["clients", "Clients", "Le bouche-à-oreille. Fait sonner le téléphone et accepter vos tarifs."], ["confreres", "Confrères", "L'avis du barreau sur vous. Apporte des dossiers et des informations."], ["siege", "Siège", "Ponctualité, écritures sérieuses, délais tenus. Votre crédit devant les juges."], ["parquet", "Parquet", "Votre fiabilité aux yeux du ministère public. Ouvre la porte aux alternatives."]].map(([k, l, d]) => html`<div key=${k} className="rep-card"><span className="pix">${l}</span><div className="rep-val">${Math.round(s.reps[k])}</div><${Meter} value=${s.reps[k]} /><p className="small muted">${d}</p></div>`)}
+        ${[["clients", "Clients", "Le bouche-à-oreille. Fait sonner le téléphone et accepter vos tarifs."], ["confreres", "Confrères", "L'avis du barreau sur vous. Apporte des dossiers et des informations."], ["siege", "Siège", "Ponctualité, écritures sérieuses, délais tenus. Votre crédit devant les juges."], ["parquet", "Parquet", "Votre fiabilité aux yeux du ministère public. Ouvre la porte aux alternatives."]].map(([k, l, d]) => html`<div key=${k} className="rep-card"><span className="pix">${l}</span>${CR.libre(s) ? html`<p className="rep-dit">${CR.repDit(k, s.reps[k])}</p>` : html`<div className="rep-val">${Math.round(s.reps[k])}</div><${Meter} value=${s.reps[k]} />`}<p className="small muted">${d}</p></div>`)}
       </div>`}
       ${tab === "rep" && UI.MemoList && html`<${UI.MemoList} s=${s} />`}
       ${tab === "disc" && html`<div>

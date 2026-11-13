@@ -1847,6 +1847,22 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .gestes { display: grid; grid-template-columns: 5.4em 1fr; gap: 0.6em; align-items: start; }
 .gestes > div { display: flex; flex-wrap: wrap; gap: 0.3em; }
 .gestes .geste { font-style: italic; }
+
+/* lot 5 : le canal de chaque acte */
+.canaux { display: grid; gap: 6px; }
+.canaux .canal { all: unset; cursor: pointer; display: grid; gap: 2px; padding: 8px 12px; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; }
+.canaux .canal:hover, .canaux .canal:focus-visible { border-color: rgba(201,164,92,.7); background: rgba(201,164,92,.06); }
+
+/* lot 3 : l'entretien libre dans la scène d'appel en plein cadre — la parole à gauche, le compositeur à droite */
+.call-scene.staged .call-main:has(> .call-libre) { height: 48vh; }
+.call-scene.staged .call-libre { grid-column: 1 / -1; grid-row: 1 / -1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(380px, 1.25fr); grid-template-rows: auto auto auto minmax(0, 1fr); grid-template-areas: "oral qc" "oral compo" "oral gestes" "oral fin"; gap: 6px 14px; padding: 10px 12px; background: rgba(6, 9, 15, 0.86); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); border-radius: 4px; overflow: hidden; }
+.call-scene.staged .call-libre > .oral { grid-area: oral; max-height: none; min-height: 0; }
+.call-scene.staged .call-libre > .ent-qclient { grid-area: qc; }
+.call-scene.staged .call-libre > .compo { grid-area: compo; overflow-y: auto; min-height: 0; padding-top: 0; }
+.call-scene.staged .call-libre > .gestes { grid-area: gestes; }
+.call-scene.staged .call-libre > .ent-fin { grid-area: fin; align-self: end; }
+.call-scene.staged .call-libre .compo-l { grid-template-columns: 4.4em 1fr; }
+.call-scene.staged .call-libre .compo-sujets .compo-b, .call-scene.staged .call-libre .compo-b { padding: 0.2em 0.5em; font-size: calc(12px * var(--tz)); }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
@@ -1952,6 +1968,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/ui-gav.js"></script>
 <script src="js/ui-travail.js"></script>
 <script src="js/ui-entretien.js"></script>
+<script src="js/canaux.js"></script>
 <script src="js/ui-court.js"></script>
 <script src="js/ui-moments.js"></script>
 <script src="js/carriere.js"></script>

@@ -111,7 +111,7 @@
   CR.autosave = () => { const s = CR.store.s; if (s && !s.gameOver) Saves.save(s.mode === "affaire" ? "affaire" : "auto", s); };
 
   // =================================================================== Application
-  const MODAL_SCENES = ["decide", "conflict", "withdraw", "mentor", "grievance", "library", "permanences"];
+  const MODAL_SCENES = ["decide", "conflict", "withdraw", "mentor", "grievance", "library", "permanences", "canal"];
   function App() {
     const s = UI.useGame();
     const [ui, setUi] = useState({ panel: "bureau", caseId: null, mail: null, firmSub: null });
@@ -241,6 +241,7 @@
         case "court": sceneEl = html`<${UI.HearingScene} key=${scene.hid} ...${P} hid=${scene.hid} />`; break;
         case "cassation": sceneEl = UI.CassationScene ? html`<${UI.CassationScene} key=${cs.id + "cass"} ...${P} />` : null; break;
         case "gav": sceneEl = html`<${UI.GavScene} key=${cs.id + "gav"} ...${P} />`; break;
+        case "canal": sceneEl = UI.CanalScene ? html`<${UI.CanalScene} key=${cs.id + scene.tpl} ...${P} tplKey=${scene.tpl} />` : null; break;
         case "library": sceneEl = html`<${UI.Modal} title="Bibliothèque" onClose=${endScene} wide><${UI.LibraryPanel} s=${s} go=${go} area=${scene.area} caseId=${scene.caseId} focus=${scene.focus} /></${UI.Modal}>`; break;
         case "permanences": sceneEl = html`<${UI.Modal} title="Permanences pénales — Ordre des avocats de Paris" onClose=${endScene} wide><${UI.PermanencesBody} s=${s} /></${UI.Modal}>`; break;
         default: sceneEl = null;
