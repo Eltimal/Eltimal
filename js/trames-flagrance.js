@@ -807,6 +807,10 @@
         const datee = !(N.ecritsPiece && N.ecritsPiece.dater === false);
         const ecarts = N.ecrits.map(() => int(rc, 1, 4)), heures = N.ecrits.map(() => int(rc, 7 * 60, 23 * 60 + 50));
         const jours = []; let jd = jf; for (let i = N.ecrits.length - 1; i >= 0; i--) { jd -= i === N.ecrits.length - 1 ? 0 : ecarts[i]; jours[i] = jd; }
+        // harcèlement : une fois sur quatre, une seule salve, le soir des faits (heures croissantes)
+        if (/^harcelement|cyberharcelement/.test(t.inf) && rc() < 0.25) { let h = 20 * 60; for (let i = 0; i < jours.length; i++) { jours[i] = jf; heures[i] = i ? (h += int(rc, 4, 25)) : h; } }
+        // harcèlement : la répétition se lit dans les dates ; des messages tous ramassés sur deux jours se discutent
+        if (/^harcelement|cyberharcelement/.test(t.inf) && datee && N.ecrits.length > 1 && jours[jours.length - 1] - jours[0] <= 2) fait("G_periode_courte", { label: `Les messages produits tiennent en ${jours[jours.length - 1] - jours[0] + 1} jour${jours[jours.length - 1] - jours[0] ? "s" : ""}`, key: true, why: "Le harcèlement suppose des agissements répétés dans le temps : sur une période aussi courte, la répétition se discute (il peut s'agir d'une dispute)." });
         const mCap = PL && E.plainte != null ? E.plainte + 25 : (E.victime != null ? E.victime + 15 : E.debut + 120);
         add("captures", mCap, N.ecritsPiece ? N.ecritsPiece.court : "Captures des messages", () => DOCS.forme({ title: N.ecritsPiece ? N.ecritsPiece.titre : "Procès-verbal de constatations — messages", kind: "releve", cote: cote("captures"),
           entete: [unite, `Procédure n° ${t.proc} — cote ${cote("captures")}`],
