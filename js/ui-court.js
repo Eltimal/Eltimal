@@ -439,7 +439,9 @@
     const max = P.max || 4;
     // refonte (lot 4b) : le catalogue universel des moyens, le même dans toutes les affaires ; le mode assisté garde la liste préparée
     const cat = CR.libre(s) && CR.PLAID && CR.PLAID.catalogue && ["defense", "pc"].includes(P.role || "defense") ? CR.PLAID.catalogue(P.role || "defense") : null;
-    const argOf = (id) => (cat ? CR.PLAID.convertir(s, cs, P, id, st) : P.args.find((a) => a.id === id));
+    // la conversion voit tous les arguments que l'affaire permet, même ceux que la préparation a écartés faute de pièce en main
+    const Ptous = cat ? Object.assign({}, P, { args: P.args.concat((P1.args || []).filter((a) => !P.args.some((b) => b.id === a.id))) }) : P;
+    const argOf = (id) => (cat ? CR.PLAID.convertir(s, cs, Ptous, id, st) : P.args.find((a) => a.id === id));
     // version 1.0 : le ton et l'ordre comptent pour la défense et la partie civile à l'audience au fond ; le parquet peut répliquer
     const tonOn = !!(CR.PLAID && CR.PLAID.evaluer) && (!P.role || P.role === "defense" || P.role === "pc");
     const [ton, setTon] = useState("sobre");
@@ -506,7 +508,7 @@
       st.cred += bons * 1.5 - hors * 2;
       if (plan) {
         const E = CR.PLAID.evaluer({ api, st, role: P.role, ton, res, plan });
-        E.lines.forEach((l) => addLog(l));
+        E.lines.filter((l) => !(CR.libre(s) && l.who === "sys")).forEach((l) => addLog(l)); // mode libre : pas de réaction-signal
         st.cred += E.delta;
         st.plaidoirie.ton = ton; st.plaidoirie.ordre = plan.inversion ? "inverse" : "ok";
         cs.vars.plaidNotes = (cs.vars.plaidNotes || []).concat(E.notes).slice(-8);

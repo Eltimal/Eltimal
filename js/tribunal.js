@@ -34,6 +34,7 @@
   const liste = (a) => (a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " et " + a[a.length - 1]);
   // la cote d'une preuve, si la pièce est au dossier (moteur de documents)
   T.COTE_KEYS = { constat: ["pv_interpellation", "constat"], plainte: ["pv_victime", "plainte"], certificat: ["certificat_umj", "certificat", "umj"], temoin: ["pv_temoin", "temoin"], video: ["pv_video", "video"], telephonie: ["pv_telephonie"], adn: ["rapport_adn"], saisie: ["pv_saisie", "saisie", "pv_perquisition"], labo: ["rapport_labo"], ecrits: ["captures"], releve: ["releve"], ethylo: ["pv_alcoolemie"], fichier: ["fichier_permis"], aveux: ["pv_audition"], expertise: ["expertise"], autopsie: ["autopsie"] };
+  T.LIB = LIB;
   T.cote = function (s, cs, k) {
     for (const key of T.COTE_KEYS[k] || []) {
       const d = cs.docs.find((x) => x.key === key);

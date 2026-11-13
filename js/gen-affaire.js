@@ -663,9 +663,12 @@
       const base = B.requis(x);
       const fond = [
         { limine: { joindre: true } },
-        { who: "president", t: `Je résume. ${N.resume}` },
-        { who: "president", t: `${A.g === "f" ? "Madame" : "Monsieur"} ${A.nom}, vous reconnaissez les faits ?` },
-        { if: () => !!cs.flags.depotVu, then: [{ who: "client", t: N.version[t.stance], signal: t.stance === "nie" ? undefined : "bon" }], else: [{ who: "client", t: "Je sais pas… C'est pas comme ils disent.", fx: { cred: -2 }, signal: "mauvais" }] },
+        // refonte (lot 4b) : en mode libre, l'interrogatoire entier du président (CR.DEB) ; sinon les débats courts d'avant
+        ...(CR.DEB && CR.DEB.actif(api) ? CR.DEB.interrogatoire(api, x) : [
+          { who: "president", t: `Je résume. ${N.resume}` },
+          { who: "president", t: `${A.g === "f" ? "Madame" : "Monsieur"} ${A.nom}, vous reconnaissez les faits ?` },
+          { if: () => !!cs.flags.depotVu, then: [{ who: "client", t: N.version[t.stance], signal: t.stance === "nie" ? undefined : "bon" }], else: [{ who: "client", t: "Je sais pas… C'est pas comme ils disent.", fx: { cred: -2 }, signal: "mauvais" }] },
+        ]),
         { who: "president", t: B.casierLigne(x) },
         ...B.stepsRecidive(x),
         { card: { prompt: "Le président : « Maître, des garanties de représentation ? »", accept: ["G_attest", "G_attest_emploi", "G_esr", "G_heberg"], window: 12000, ok: { then: [{ who: "president", t: "Je les verse au dossier." }] }, miss: { then: [{ who: "president", t: "Rien, donc." }] } } },
