@@ -523,6 +523,12 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      if (SS.tire) {
+        const M = SS.tire;
+        fact("G_tire_pas_vu", { label: "La victime n'a pas vu qui a pris l'objet", key: true, why: "Personne n'a vu la main : l'imputation repose sur la seule possession, et sur le groupe." });
+        if (M.sol) fact("G_objet_sol", { label: "L'objet a été retrouvé au sol, près du prévenu, pas sur lui", key: true, why: "Sans l'objet sur lui ni personne qui l'ait vu le jeter, la possession elle-même se discute." });
+        if (M.ecart) fact("G_tire_nombre", { label: `La victime voit ${M.nV} personnes dans le groupe ; les policiers en rattrapent ${M.nP}`, key: false });
+      }
       if (SS.transport) {
         const M = SS.transport;
         fact("G_brf_vu", { label: "Les policiers en civil ont vu le geste dans la rame", key: false });

@@ -538,6 +538,26 @@
             mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
           ], sigs: ["Le directeur du magasin"] }));
       }
+      // lot 1 ter : le vol à la tire — la réquisition de la victime et l'interpellation dans le groupe
+      if (S.tire) {
+        const M = S.tire;
+        const nb = (x) => ["zéro", "un", "deux", "trois", "quatre", "cinq"][x];
+        add("pv_requisition", E.interp + 25, "Réquisition et interpellation", () => {
+          const rr = CR.seeded(t.sig + ":g:tire");
+          const blocs = [
+            p(`À ${hm(E.requis)}, en patrouille portée ${lieu}, sommes requis par ${nf(V)}, touriste, qui s'exprime en ${M.langue} et en quelques mots de français ; ${il(V)} nous montre son sac, ouvert, et désigne un groupe de ${nb(M.nV)} personnes qui s'éloigne vers le boulevard, à ${M.distance}.`),
+            p({ t: `${nf(V)} nous fait comprendre qu'on lui a demandé de signer une pétition quelques minutes plus tôt, vers ${hm(E.abord)}, et qu'${il(V)} s'est aperçu${e(V)} de la disparition de ${lobjet} en reprenant sa marche, vers ${hm(E.decouvre)}. ${Maj(il(V))} n'a pas vu qui l'a pris.`, f: "G_tire_pas_vu" }),
+            p({ t: `Rattrapons le groupe à ${hm(E.interp)} : ${nb(M.nP)} individus. ${M.nP < M.nV ? "Les autres ne sont pas en vue." : ""} ${n(A)}, qui selon ${nf(V)} ${M.role}, est interpellé${e(A)} ; les autres prennent la fuite.`.replace("  ", " "), f: M.ecart ? "G_tire_nombre" : undefined }),
+            M.sol ? p({ t: `${Maj(objet)} est découvert${/^une /.test(objet) ? "e" : ""} au sol, à un mètre de ${n(A)}, au moment de l'interpellation. Aucun de nous n'a vu qui l'y a laissé${/^une /.test(objet) ? "e" : ""}.`, f: "G_objet_sol" })
+              : p(`Palpation de sécurité : découverte de ${objet} dans la poche de ${n(A)}.`),
+            p(`${nf(V)} reconnaît ${lobjet} comme sien. ${Maj(il(V))} indique devoir reprendre l'avion dans ${pk(rr, ["deux jours", "trois jours", "la semaine"])}.`),
+            p(`Conduite au ${commLong} ; présentation à l'officier de police judiciaire, ${OPJ.signe.charAt(0).toLowerCase() + OPJ.signe.slice(1)}.`),
+          ];
+          return DOCS.pv({ cote: cote("pv_requisition"), proc: t.proc, service, unite, cadre: "FLAGRANT DÉLIT", titre: "Procès-verbal de réquisition et d'interpellation", numPV: "00" + int(rr, 101, 899),
+            jour: j(E.interp + 25), heure: E.interp + 25, redacteur: apj(0), visa: "Vu les articles 53 et 73 du code de procédure pénale,", lieu: "Agissant en flagrant délit", objet: `OBJET : ${q0.label} — réquisition et interpellation`,
+            blocs, cloture: mention(`Dont procès-verbal, fait et clos au ${commLong} ${at(E.interp + 25)}.`), signataires: [`${apj(0).signe}, agent de police judiciaire`, `${apj(1).signe}, agent de police judiciaire`], st: stA });
+        });
+      }
       // lot 1 ter : le vol dans le métro — le procès-verbal de surveillance de la brigade des réseaux franciliens
       if (S.transport) {
         const M = S.transport;

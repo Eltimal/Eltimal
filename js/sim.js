@@ -278,6 +278,7 @@
     // lot 1 ter : le vol en magasin, au niveau de l'arrachage
     if (SIM.magasin(t, S)) S.magasin = magasin(S, t, k, r, E);
     if (SIM.transport(t, S)) S.transport = transport(S, t, k, r, E);
+    if (SIM.tire(t, S)) S.tire = tire(S, t, k, r, E);
     S.E = E;
     S.auteurs = { apj: { nom: t.gpx[0], style: CR.DOCS.style(CR.seeded(t.sig + ":apj")) }, opj: { nom: k.opjN, style: CR.DOCS.style(CR.seeded(t.sig + ":opj")) } };
     S.indicatif = `TV ${pk(r, ["17", "18", "19", "20", "21", "22"])}${pk(r, ["1", "2", "3", "4"])}`;
@@ -291,6 +292,8 @@
       else cur += int(r, 1, 4);
       return CR.DOCS.hm(cur);
     }));
+    // vol à la tire : l'objet retrouvé au sol n'était pas « en possession » de l'intéressé
+    if (S.tire && S.tire.sol) S.constat = S.constat.map((x) => x.replace(/ est interpellée? en possession de (.+)\.$/, (m0, o) => ` est interpellé${A.g === "f" ? "e" : ""} ; ${o} est retrouvé au sol, près de ${A.g === "f" ? "elle" : "lui"}.`));
     return S;
   }
 
@@ -346,6 +349,19 @@
     S.savoirs = Object.assign({}, S.savoirs, { brf: { distance: bondee ? pk(r, ["deux mètres", "trois mètres"]) : pk(r, ["un mètre cinquante", "deux mètres"]), poche, bondee }, Vpoche: pocheV });
     return { de, vers, ligne: (/ligne (\d+)/.exec(N.lieu || "") || [])[1] || "4", bondee, poche, pocheV, ecart: poche !== pocheV, quai: de, filStation: ((L4) => { const i = L4.indexOf(de); return i > 0 ? pk(r, L4.slice(0, i + 1)) : de; })(["Porte de Clignancourt", "Simplon", "Marcadet-Poissonniers", "Château-Rouge", "Barbès-Rochechouart", "Gare du Nord"]),
       reunion: (t.f.agg || []).includes("reunion"), violence: (t.f.agg || []).includes("violence0") };
+  }
+
+  // ---------------------------------------------------------------- lot 1 ter : le vol à la tire (la « pétition »)
+  // Un groupe aborde la victime avec une pétition ; pendant qu'elle signe, son sac est ouvert. Personne n'a vu la main :
+  // la victime s'en aperçoit quelques minutes plus tard, désigne le groupe qui s'éloigne, la patrouille l'arrête. L'objet est
+  // retrouvé sur l'auteur, ou au sol à ses pieds (il s'en est débarrassé, ou un autre l'y a jeté). La victime et les
+  // policiers ne comptent pas toujours le même nombre de personnes.
+  SIM.tire = (t, S) => !!(t && t.inf === "vol" && t.f && t.f.sc === "tire" && t.flagrance && !(S && S.prelim) && t.V);
+  function tire(S, t, k, r, E) {
+    const nV = int(r, 2, 4), nP = ch(r, 0.3) ? Math.max(2, nV - 1) : nV;
+    const sol = ch(r, 0.3);
+    E.abord = S.T0 - int(r, 3, 6); E.decouvre = Math.max(S.T0, Math.min(S.T0 + int(r, 2, 6), E.requis - 1));
+    return { nV, nP, ecart: nV !== nP, sol, distance: pk(r, ["une trentaine de mètres", "une cinquantaine de mètres", "le bas de la rue"]), langue: pk(r, ["anglais", "espagnol", "italien", "allemand"]), role: pk(r, ["tenait la planchette de la pétition", "parlait à la victime", "se tenait derrière elle"]) };
   }
 
   // la victime se trompe sur un ou deux éléments (doute sur l'identification)
