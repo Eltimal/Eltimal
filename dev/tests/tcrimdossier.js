@@ -11,7 +11,7 @@ const { boot } = require("./harness");
   const rend = (PZ, k, t) => PZ.docs[k]({ s, cs: { vars: {}, proc: { faitsDay: t.d.faits }, enq: {}, docs: [] }, def: {}, c: t.A, api: {} });
   const txt = (r) => [].concat(...(r.paras || [])).map((x) => (typeof x === "string" ? x : x && x.t)).join(" | ");
   const H = (x) => { const m = /(\d+)[\s  ]h[\s  ](\d+)/.exec(x); return m ? +m[1] * 60 + +m[2] : null; };
-  let n = 0, auto = 0, vois = 0, ecarts = 0, mineurs = 0, cvs = 0;
+  let n = 0, auto = 0, vois = 0, ecarts = 0, mineurs = 0, cvs = 0, appels = 0;
   for (let i = 0; i < 400 && n < 60; i++) {
     let t; try { t = G.tirer("tcd" + i, "info", { day: 30 }); } catch (e) { continue; } if (!t) continue;
     const tc = JSON.stringify(t);
@@ -26,6 +26,18 @@ const { boot } = require("./harness");
       ok(!PZ.titres[k] || PZ.titres[k].endsWith(`(${c})`), `${tag} : titre de ${k} sans sa cote`, PZ.titres[k]);
     }
     for (const L of ["B", "C", "D"]) { const ns = cs.filter((c) => c[0] === L).map((c) => +c.slice(1)).sort((a, b) => a - b); ok(ns.every((x, i) => x === i + 1), `${tag} : numérotation de la cote ${L} discontinue`, ns.join(",")); }
+    // les secours : l'appel suit les faits de quelques minutes ; la personne qui a appelé est entendue après ; l'heure corrigée
+    // du témoin est notée comme démentie par le journal des appels
+    if (PZ.docs.requisition_appels) {
+      appels++;
+      const A1 = txt(rend(PZ, "requisition_appels", t)), A2 = txt(rend(PZ, "pv_appelant", t));
+      ok(!/undefined|NaN|\$\{|\[object/.test(A1 + A2), `${tag} : pièces des secours incomplètes`, (A1 + A2).slice(0, 300));
+      ok(A1 === txt(rend(PZ, "requisition_appels", t)) && A2 === txt(rend(PZ, "pv_appelant", t)), `${tag} : pièces des secours non déterministes`);
+      const hA = H((/Appel reçu le [^|]* à ([^|(]+)/.exec(A1) || [])[1] || ""), h0 = ((t.d.h % 1440) + 1440) % 1440;
+      ok(hA != null && ((hA - h0 + 1440) % 1440) >= 3 && ((hA - h0 + 1440) % 1440) <= 14, `${tag} : l'appel aux secours ne suit pas les faits`, `${hA} / ${h0}`);
+      const W = CR.CRIMD.temoin(t, N);
+      ok(!!PZ.facts.G_appel_heure === !!(W && W.corrige), `${tag} : heure corrigée du témoin et journal des appels`);
+    }
     if (PZ.docs.interro_cv) { cvs++; const x = txt(rend(PZ, "interro_cv", t)); ok(!/undefined|NaN|\$\{|\[object/.test(x) && /curriculum|art\. 81/.test(x) && (x.match(/Question :/g) || []).length >= 6, `${tag} : interrogatoire de curriculum vitae incomplet`, x.slice(0, 300)); }
     for (const k of ["pv_transport", "inventaire_scelles", "pv_voisinage", "pv_autopsie", "commission_rogatoire", "pv_retour_cr", "pv_reaudition"]) if (PZ.docs[k]) { const x = txt(rend(PZ, k, t)); ok(!/undefined|NaN|\$\{|\[object/.test(x), `${tag}/${k} : texte incomplet`, (x.match(/.{40}(undefined|NaN).{20}/) || [""])[0]); }
     if (PZ.docs.inventaire_scelles) {
@@ -85,7 +97,7 @@ const { boot } = require("./harness");
     CR.store.s = s;
   }
   ok(cvs >= n * 0.5, "trop peu d'interrogatoires de curriculum vitae", `${cvs}/${n}`);
-  console.log(`dossiers criminels : ${n} · curriculum vitae ${cvs} · autopsies ${auto} · voisinages ${vois} (écarts notés ${ecarts}) · victimes mineures ${mineurs}`);
+  console.log(`dossiers criminels : ${n} · appels aux secours ${appels} · curriculum vitae ${cvs} · autopsies ${auto} · voisinages ${vois} (écarts notés ${ecarts}) · victimes mineures ${mineurs}`);
   if (errors.length) { echecs++; console.log("  ✗ erreurs : " + errors.slice(0, 2).join(" | ")); }
   console.log("échecs:", echecs);
   process.exit(echecs ? 1 : 0);

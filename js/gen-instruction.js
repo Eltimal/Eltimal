@@ -496,7 +496,7 @@
         if (en.effet !== "acquit") continue;
         const renfort = cs.vars.renfort && cs.vars.renfort[en.id] ? 0.12 : 0;
         // lot 7 : les pièces ajoutées au dossier (crim-dossier.js) appuient aussi les moyens qu'elles concernent
-        const appuis = en.id === "identification" ? ["G_temoin_hesite", "G_temoin_nuit", "G_heures_voisins", "G_temoin_varie", "G_aucune_trace", "G_conf_heure", "G_conf_nuit", "G_conf_loin", "G_conf_reco"] : en.id === "ld" ? ["G_heures_voisins"] : [];
+        const appuis = en.id === "identification" ? ["G_temoin_hesite", "G_temoin_nuit", "G_heures_voisins", "G_temoin_varie", "G_aucune_trace", "G_appel_heure", "G_appelant_dos", "G_conf_heure", "G_conf_nuit", "G_conf_loin", "G_conf_reco"] : en.id === "ld" ? ["G_heures_voisins"] : [];
         appuis.push("C_" + en.id); // lot 7 : l'explication du client devant le juge, confirmée par le dossier
         pieces["d_" + en.id] = { label: en.label, sens: "decharge", force: (en.fort ? 0.34 : 0.07) + renfort, need: ["arg:" + en.id, "E_" + en.id].concat(appuis), noteSuffit: !!o.instruction };
       }

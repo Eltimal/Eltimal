@@ -272,6 +272,51 @@
         cloture: DOCS.mention(`Dont procès-verbal, fait et clos le ${DOCS.date(jRet)}.`), signataires: [`${opj.signe}, officier de police judiciaire`], st }));
     }
 
+    // 13. les secours : le journal de la plateforme des appels d'urgence (réquisition) et l'audition de la personne qui a
+    // appelé — un voisin ou un passant, arrivé après les faits. L'appel date objectivement les faits : il recoupe (ou non)
+    // l'heure que donne le témoin principal. Jamais pour une victime mineure, ni sans victime.
+    if (!proc && V && I.fam !== "crim_stups") {
+      const ra = CR.seeded(t.sig + ":appel");
+      const W = K.temoin(t, N);
+      const mAppel = h0 + int(ra, 3, 14), dur = int(ra, 70, 260);
+      const [civ, nomApp, ageApp] = pk(ra, [["Mme", "Nadia Ferhat", 52], ["M.", "Olivier Brunet", 38], ["Mme", "Élodie Martin", 31], ["M.", "Mamadou Keïta", 45], ["Mme", "Sylvie Robin", 60]]);
+      const eApp = civ === "Mme" ? "e" : "";
+      const vu = pk(ra, ["personne : quand je suis descendu" + eApp + ", il n'y avait plus que la victime", "un homme partir en courant, de dos, une veste sombre", "deux silhouettes au bout de la rue, sans pouvoir dire qui"]);
+      const motif = I.deces ? "une personne au sol, qui ne bouge plus" : /sexuel/.test(I.fam || "") ? "une personne en pleurs, qui demande de l'aide" : "une agression en cours, des cris";
+      const jReq = jf + int(ra, 1, 4);
+      // tous les tirages hors des fonctions de rendu : la pièce se relit à l'identique
+      let mAud = 9 * 60 + int(ra, 30, 400), jAud = jf + int(ra, 0, 2);
+      // entendue le jour même, la personne l'est après son appel (sinon le lendemain)
+      if (jAud === jf && mAud < mAppel + 90) { if (mAppel + 150 < 23 * 60) mAud = mAppel + 90 + int(ra, 0, 50); else jAud = jf + 1; }
+      const finAud = mAud + int(ra, 20, 40);
+      const metierApp = civ === "Mme" ? pk(ra, ["aide-soignante", "comptable", "retraitée", "enseignante"]) : pk(ra, ["comptable", "chauffeur-livreur", "retraité", "enseignant"]);
+      const entendu = pk(ra, ["J'ai entendu des cris", "J'ai entendu quelqu'un appeler au secours", "J'ai entendu du bruit, puis un cri"]);
+      const ajout = pk(ra, ["Non.", "Je n'arrive plus à dormir.", "J'aurais voulu arriver plus tôt."]);
+      add("requisition_appels", "Journal des appels d'urgence", ENQ, () => DOCS.forme({ title: "Réquisition à la plateforme des appels d'urgence et réponse", kind: "releve", cote: cotes.requisition_appels, entete: [service, `Procédure n° ${t.proc} — cote ${cotes.requisition_appels}`],
+        blocs: [
+          DOCS.p(`Réquisition du ${DOCS.date(jReq)} (art. ${t.flagrance ? "60-1" : "77-1-1"} du code de procédure pénale) : communiquer les appels reçus le ${DOCS.date(jf)} pour les faits survenus ${lieu}.`),
+          DOCS.p("Réponse de la plateforme :"),
+          DOCS.p({ t: `Appel reçu le ${DOCS.date(jf)} à ${hm(mAppel)} (horodatage du serveur).`, f: W && W.corrige ? "G_appel_heure" : undefined }),
+          DOCS.ligne("Durée", `${Math.floor(dur / 60)} min ${String(dur % 60).padStart(2, "0")} s`),
+          DOCS.ligne("Appelant", `${civ} ${nomApp}, ligne mobile`),
+          DOCS.ligne("Motif déclaré", motif),
+          DOCS.ligne("Suite", "engagement d'un équipage de police et des sapeurs-pompiers"),
+        ], sigs: ["Le chef de salle de la plateforme"] }));
+      add("pv_appelant", "Audition de la personne qui a appelé les secours", ENQ, () => DOCS.pv({ cote: cotes.pv_appelant, proc: t.proc, service, unite: svc, cadre: t.flagrance ? "FLAGRANT DÉLIT" : "ENQUÊTE", titre: "Procès-verbal d'audition de témoin", qualite: "Témoin", numPV: "00" + int(CR.seeded(t.sig + ":appel2"), 101, 899),
+        jour: jAud, heure: mAud, redacteur: opj, lieu: "Nous trouvant au service", objet: `OBJET : ${t.q.label} — audition de l'appelant des secours`,
+        identite: { nom: nomApp.split(" ").slice(1).join(" "), prenom: nomApp.split(" ")[0], g: civ === "Mme" ? "f" : "m", metier: metierApp, adresse: (lieu.match(/\d+[^,]*,.*$/) || [])[0] || "Paris" },
+        blocs: [
+          DOCS.titre("QUESTIONS ET RÉPONSES"),
+          DOCS.q("Qu'avez-vous entendu ou vu ?"), DOCS.r(`${entendu}. J'ai appelé tout de suite, le temps de trouver mon téléphone.`),
+          DOCS.q("À quelle heure ?"), DOCS.r({ t: `Je ne sais pas exactement. Mon téléphone dit que j'ai appelé à ${hm(mAppel)}. Les cris, c'était juste avant, une ou deux minutes.`, f: W && W.corrige ? "G_appel_heure" : undefined }),
+          DOCS.q("Qu'avez-vous vu en arrivant ?"), DOCS.r({ t: `J'ai vu ${vu}.`, f: /de dos/.test(vu) ? "G_appelant_dos" : undefined }),
+          DOCS.q(`Connaissez-vous ${n(A)} ?`), DOCS.r("Non. Je ne connais pas ce nom."),
+          DOCS.q("Avez-vous quelque chose à ajouter ?"), DOCS.r(ajout),
+        ], cloture: DOCS.clotureAudition("Paris", jAud, finAud, civ === "Mme" ? "elle" : "lui"), signataires: ["La personne entendue", `${opj.signe}, officier de police judiciaire`], st }));
+      if (W && W.corrige) fact("G_appel_heure", { label: `L'appel aux secours (${hm(mAppel)}) ne s'accorde pas avec l'heure corrigée du témoin (${hm(W.hDit)})`, key: true, why: "Le journal des appels date objectivement les faits : la seconde version du témoin, sur l'heure, est démentie ; sa fiabilité se discute." });
+      if (/de dos/.test(vu)) fact("G_appelant_dos", { label: "La personne qui a appelé les secours n'a vu qu'un homme de dos", key: false, why: "Un second témoin, sans identification : il ne confirme pas la reconnaissance." });
+    }
+
     // 11. l'interrogatoire de curriculum vitae (sous-dossier de personnalité) : le juge interroge la personne mise en examen
     // sur son parcours — tiré de sa fiche (famille, scolarité, travail, logement, santé, antécédents)
     if (t.d.mex != null && A) {
