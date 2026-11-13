@@ -231,3 +231,21 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
     - plus souvent avec des antécédents (estimation : 75 % d'exclusions pour un premier passage, 45 % avec une condamnation, 15 % au-delà).
   - Accordée, l'exclusion est inscrite au dispositif.
   - Reste à faire : la requête après jugement.
+
+## Lot 9 : la bibliothèque (13 novembre 2026, à la demande de Kevin)
+
+- **D-83. Les codes du jeu sont annotés comme les codes des éditions privées : la jurisprudence sous l'article.**
+  - **Sous chaque article**, son texte intégral (codes.droit.org, version consolidée), puis les notes :
+    - numérotées ;
+    - rangées sous des rubriques thématiques (« I. Conditions », « II. Effets », puis A, B, 1°…), avec un plan des notes en tête quand elles sont nombreuses ;
+    - chronologiques dans chaque rubrique ;
+    - avec des renvois vers les articles voisins.
+  - **Chaque note** : la solution en une ou deux phrases, puis la référence complète (formation, date, numéro de pourvoi, mention de publication).
+  - **Seulement des décisions réelles et relues.**
+    - Source : les données ouvertes de la Cour de cassation publiées par la DILA (base CASS, Licence Ouverte), dont les titrages et sommaires officiels sont réutilisables.
+    - Les annotations des éditeurs privés sont protégées : rien n'en est repris. Le plan des notes et la rédaction des solutions sont ceux du jeu, à partir des sommaires officiels.
+    - Une décision qui n'a pu être relue n'entre pas.
+  - **Les 19 arrêts déjà au jeu** (`code-annote.js`) sont relus sur la même source : 2 seulement l'ont été en texte intégral, 12 ne le sont que par commentaire, 5 restent à vérifier.
+  - **Ordre de travail.** D'abord les articles que le jeu cite (garde à vue, nullités, détention, peines, comparution immédiate, recours), puis le reste des codes du jeu : code pénal, code de procédure pénale, code de la route, CJPM.
+  - **Usage en jeu.** La note citée à l'audience ou dans un acte reste la carte « jurisprudence » actuelle, avec le même contrôle de la référence.
+  - **Blocage externe.** La lecture des données ouvertes (echanges.dila.gouv.fr) a été refusée par le contrôle de sécurité de la session, bien que l'hôte ait été ajouté au réseau de l'environnement. Il faut l'accord de Kevin pour la lecture automatique de ces données, ou des sources fournies.
