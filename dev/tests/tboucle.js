@@ -81,12 +81,21 @@ const P = require("./play"); const U = require("./util"); const { runAudience } 
       ok(!!cs.vars.raisonnement, "pas de jugement raisonné");
       for (let k = 0; k < 6 && !CR.hasDoc(cs, "_jugement"); k++) CR.endDay(s);
       ok(CR.hasDoc(cs, "_jugement"), "la décision écrite n'arrive pas");
+      if (cs.vars.raisonnement && cs.vars.raisonnement.coupable) ok(cs.vars.decision.motifsPeine && cs.vars.decision.motifsPeine.regles.some((r) => /132-1/.test(r)), "la peine n'est pas motivée au débrief", JSON.stringify(cs.vars.decision));
       console.log(`audience — ${cs.vars.raisonnement && cs.vars.raisonnement.coupable ? "condamnation" : "relaxe"} · ${cs.vars.decision && cs.vars.decision.peine}`);
     }
     for (let k = 0; k < 4 && cs.status !== "closed"; k++) CR.endDay(s);
     ok(cs.status === "closed", "l'affaire ne se clôt pas", cs.status);
     ok(cs.debrief && cs.debrief.items.length > 0, "pas de débrief");
     ok(cs.vars.corrige && cs.vars.corrige["Garde à vue"], "pas de corrigé de l'entretien");
+    if (cs.vars.decision && cs.vars.decision.motifsPeine) {
+      // le débrief affiche la peine et ses motifs (A5)
+      CR.store.s = s; CR.store.bump(); await sleep(40);
+      const host = doc.createElement("div"); doc.body.appendChild(host);
+      const root = w.ReactDOM.createRoot(host); root.render(w.React.createElement(CR.UI.DebriefBody, { s, cs })); await sleep(80);
+      ok(/La peine et ses motifs/.test(texts(host)) && /132-1/.test(texts(host)), "le débrief n'affiche pas la peine motivée", texts(host).slice(0, 300));
+      root.unmount(); host.remove();
+    }
     console.log(`clôture — ${CR.outcomeLabel ? CR.outcomeLabel(cs.outcome) : cs.outcome && cs.outcome.type} · débrief ${cs.debrief ? cs.debrief.items.length : 0} éléments`);
   }
   if (errors.length) { echecs++; console.log("  ✗ erreurs : " + errors.slice(0, 2).join(" | ")); }

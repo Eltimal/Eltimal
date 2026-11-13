@@ -14,7 +14,7 @@ Principe d'ordonnancement : on termine d'abord la boucle la plus jouée (permane
 | A4 | Lot 4b : plaidoirie par le catalogue universel, plan de défense à la barre | `tplaidoirie` vert | Fait (13 nov.) |
 | A4 bis | Lot 4b suite : débats intégraux (interrogatoire du président, réquisitoire entier) | Interrogatoire tiré de l'audition, réquisitoire cotant les pièces par élément (`debats.js`, `tplaidoirie`) | Fait (13 nov.) pour la comparution immédiate générée |
 | A4 ter | Incidents d'audience et cartes en gestes toujours disponibles ; même débats pour les audiences sur convocation | Plus de boîte de choix qui annonce le moment | Fait (13 nov.) : débats intégraux sur convocation ; parole et pièces en gestes toujours disponibles, sans invite (`tplaidoirie`) |
-| A5 | Lot 6 partiel : fin des signaux « bon / mauvais » pendant les scènes refaites ; débrief en corrigé d'examen | Aucun signal dans les scènes A1 à A4 (`tplaidoirie` le vérifie sur le texte affiché) | Fait pour l'audience et le délibéré (13 nov.) ; reste le débrief général de l'affaire |
+| A5 | Lot 6 partiel : fin des signaux « bon / mauvais » pendant les scènes refaites ; débrief en corrigé d'examen | Aucun signal dans les scènes A1 à A4 (`tplaidoirie` le vérifie sur le texte affiché) | Fait (13 nov.) : audience, délibéré, débrief (ce qu'il fallait demander, raisonnement du tribunal, peine et ses motifs avec ce que la défense n'a pas produit) |
 
 ## Phase B — le métier écrit
 

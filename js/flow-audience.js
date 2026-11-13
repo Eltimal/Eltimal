@@ -153,7 +153,7 @@
 
     // inscription au dossier
     cs.vars.jugementDay = s.day;
-    cs.vars.decision = { coupable: d.coupable, qualif: qualif && qualif.id, peine: peine && peine.texte, civil: civil && civil.total, score: d.score };
+    cs.vars.decision = { coupable: d.coupable, qualif: qualif && qualif.id, peine: peine && peine.texte, civil: civil && civil.total, score: d.score, motifsPeine: peine && peine.choisie ? { regles: peine.regles, facteurs: peine.facteurs, manques: peine.manques } : null };
     cs.proc.decisions.push({ day: s.day, type: "jugement", coupable: d.coupable });
     CR.PROC.event(api, `Jugement : ${d.coupable ? "culpabilité" + (qualif ? ` (${qualif.court || qualif.label})` : "") + (peine ? `, ${peine.texte.toLowerCase()}` : "") : "relaxe"}.`);
     cs.vars.debriefJugement = debrief;

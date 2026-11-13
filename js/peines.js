@@ -111,6 +111,11 @@
     }
     peine.regles = motifs.concat(peine.regles);
     peine.choisie = true;
+    // pour le débrief (A5) : ce qui a pesé, et ce que la défense aurait pu mettre en balance
+    peine.facteurs = S.f.filter((x) => x.why).map((x) => ({ why: x.why, sens: x.v > 0 ? "aggr" : "att" }));
+    peine.manques = [];
+    if (!perso) peine.manques.push("Aucune garantie d'insertion n'a été produite (domicile, emploi, attaches) : le tribunal n'avait rien à mettre en balance. Les justificatifs se réunissent avant l'audience, auprès du client et de ses proches.");
+    if (t.stance !== "reconnait" && !(t.doutes || []).length) peine.manques.push("Les faits étaient établis et contestés jusqu'au bout : la reconnaissance compte dans le choix de la peine, quand la défense au fond n'a pas de prise.");
     peine.texte = K.texte(peine);
     return peine;
   };
