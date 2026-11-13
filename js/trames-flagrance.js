@@ -726,6 +726,26 @@
               : p({ t: `Le jour des faits, à ${hm(S.T0)}, la ligne déclenche le relais couvrant ${lieu || "les lieux"} ; ce relais dessert une zone ${zone} de rayon.`, f: "G_bornage" }),
           ], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));
       }
+      // lot 1 ter, pièces techniques : les captures de messages. Elles sont faites sur le téléphone présenté par la victime,
+      // datées dans l'ordre jusqu'aux faits ; l'expéditeur est le numéro connu de l'intéressé, ou un autre numéro ; la
+      // conversation est parfois partielle (la victime a supprimé ses propres réponses).
+      if (has("ecrits") && N.ecrits && N.ecrits.length) {
+        const rc = CR.seeded(t.sig + ":g:cap");
+        const autreNum = ch(rc, 0.25), partielle = ch(rc, 0.3);
+        const num = autreNum ? `07 ${int(rc, 10, 99)} ${int(rc, 10, 99)} ${int(rc, 10, 99)} ${int(rc, 10, 99)}` : A.tel;
+        const datee = !(N.ecritsPiece && N.ecritsPiece.dater === false);
+        const ecarts = N.ecrits.map(() => int(rc, 1, 4)), heures = N.ecrits.map(() => int(rc, 7 * 60, 23 * 60 + 50));
+        const jours = []; let jd = jf; for (let i = N.ecrits.length - 1; i >= 0; i--) { jd -= i === N.ecrits.length - 1 ? 0 : ecarts[i]; jours[i] = jd; }
+        const mCap = PL && E.plainte != null ? E.plainte + 25 : (E.victime != null ? E.victime + 15 : E.debut + 120);
+        add("captures", mCap, N.ecritsPiece ? N.ecritsPiece.court : "Captures des messages", () => DOCS.forme({ title: N.ecritsPiece ? N.ecritsPiece.titre : "Procès-verbal de constatations — messages", kind: "releve", cote: cote("captures"),
+          entete: [unite, `Procédure n° ${t.proc} — cote ${cote("captures")}`],
+          blocs: [
+            p(N.ecritsPiece ? N.ecritsPiece.intro : `Le ${DOCS.date(j(mCap))}, constatons, sur le téléphone présenté par ${V ? nf(V) : "le plaignant"}, les messages suivants, dont nous réalisons des captures d'écran :`),
+            p({ t: `Expéditeur : le numéro ${num}${autreNum ? `, enregistré dans le répertoire sous un simple prénom ; ce numéro n'est pas celui que ${n(A)} a déclaré (${A.tel})` : `, ligne déclarée par ${n(A)}`}.`, f: autreNum ? "G_numero_autre" : undefined }),
+            ...N.ecrits.map((m, i) => p({ t: datee ? `${DOCS.date(jours[i])}, ${hm(heures[i])} — ${m}` : m, f: i === 0 ? "G_ecrits" : undefined })),
+            partielle ? p({ t: `${V ? Maj(il(V)) : "Le plaignant"} précise avoir supprimé ses propres réponses ; seuls les messages reçus apparaissent.`, f: "G_captures_partielles" }) : null,
+          ], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));
+      }
       // lot 1 ter, pièces techniques : le rapport du laboratoire sur les produits saisis, accordé à la pesée du service
       // (poids brut, emballages compris, à la pesée ; poids net au laboratoire) ; taux tirés dans les fourchettes d'usage
       if (S.stups && has("labo") && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].fam !== "route" && t.f.quantite) {

@@ -523,6 +523,11 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      if (PS.docs.captures && has("ecrits") && N.ecrits && N.ecrits.length) {
+        const rc = CR.seeded(t.sig + ":g:cap");
+        if (rc() < 0.25) fact("G_numero_autre", { label: "Les messages viennent d'un numéro qui n'est pas celui de l'intéressé", key: true, why: "Qui écrivait ? Un numéro inconnu ne s'attribue pas sans réquisition à l'opérateur ou sans aveu." });
+        if (rc() < 0.3) fact("G_captures_partielles", { label: "Les réponses de la victime ont été supprimées : la conversation est partielle", key: true, why: "Des messages sortis de leur conversation se lisent mal : le contexte manque, la défense peut le demander." });
+      }
       if (PS.docs.pv_telephonie && has("telephonie")) {
         const rt = CR.seeded(t.sig + ":g:tel"); rt(); // j0
         if (rt() < 0.22) fact("G_ligne_tiers", { label: "La ligne est une carte prépayée au nom d'un tiers", key: true, why: "Rien, dans la réquisition, ne dit qui utilisait la ligne : il faut un autre élément pour la lui attribuer." });
