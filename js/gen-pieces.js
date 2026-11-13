@@ -523,6 +523,10 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      if (PS.docs.pv_telephonie && has("telephonie")) {
+        const rt = CR.seeded(t.sig + ":g:tel"); rt(); // j0
+        if (rt() < 0.22) fact("G_ligne_tiers", { label: "La ligne est une carte prépayée au nom d'un tiers", key: true, why: "Rien, dans la réquisition, ne dit qui utilisait la ligne : il faut un autre élément pour la lui attribuer." });
+      }
       if (PS.docs.pv_video && has("video") && !SS.arrachage && !VID) {
         const rv = CR.seeded(t.sig + ":g:vid"); const d = rv() < 0.45 ? (rv() < 0.5 ? 1 : -1) * (1 + Math.floor(rv() * 6)) : 0;
         if (Math.abs(d) >= 3) fact("G_horodatage", { label: `L'horloge de l'enregistreur ${d > 0 ? "avance" : "retarde"} de ${Math.abs(d)} minutes`, key: true, why: "Les heures des images ne sont pas l'heure réelle : à rapprocher de la chronologie des autres pièces avant d'en tirer quoi que ce soit." });
