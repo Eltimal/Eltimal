@@ -1,6 +1,7 @@
 // Saisie des articles (n° 11), textes enregistrés par dossier (n° 8), bloc-notes (n° 10)
 // Lecture tolérante, notation graduée, contrôle de la base de textes, et parcours dans l'interface (jsdom).
 const { boot, sleep, texts, findBtn, click } = require("./harness");
+const { waitFor } = require("./play");
 let fails = 0;
 const check = (label, ok, info) => { if (!ok) fails++; console.log((ok ? "ok   " : "FAIL ") + label + (info != null ? " — " + info : "")); };
 
@@ -156,19 +157,21 @@ const check = (label, ok, info) => { if (!ok) fails++; console.log((ok ? "ok   "
   ];
   const root = w.ReactDOM.createRoot(host);
   root.render(w.React.createElement(CR.UI.AudienceScene, { s, cs, steps, title: "Essai", onEnd: (r) => { fin = r; } }));
-  await sleep(120);
+  await waitFor(() => [...host.querySelectorAll(".arg")].find((b) => /frais/.test(texts(b))), 10000);
   check("dossier à côté de l'audience", !!host.querySelector(".court-dossier .dside"));
   const arg = [...host.querySelectorAll(".arg")].find((b) => /frais/.test(texts(b)));
   check("argument affiché sans son article", arg && /art\. …/.test(texts(arg)), arg && texts(arg));
-  await click(w, arg);
-  inp = host.querySelector(".cite-num"); setVal(inp, "475-1 cpp"); await sleep(30); await click(w, findBtn(host, /^Citer$/));
-  await click(w, findBtn(host, /^Plaider$/)); await sleep(200);
+  if (arg) await click(w, arg);
+  inp = await waitFor(() => host.querySelector(".cite-num"), 10000); if (inp) { setVal(inp, "475-1 cpp"); await sleep(30); }
+  const citer = await waitFor(() => findBtn(host, /^Citer$/), 10000); if (citer) await click(w, citer);
+  const plaider = await waitFor(() => findBtn(host, /^Plaider$/), 10000); if (plaider) await click(w, plaider);
   // mode libre (A4 ter) : la main s'ouvre par le geste « Produire une pièce ou citer un texte »
-  if (!host.querySelector(".hcard") && host.querySelector(".gestes-audience .produire")) { await click(w, host.querySelector(".gestes-audience .produire")); await sleep(30); }
+  await waitFor(() => host.querySelector(".hcard") || host.querySelector(".gestes-audience .produire"), 10000);
+  if (!host.querySelector(".hcard") && host.querySelector(".gestes-audience .produire")) { await click(w, host.querySelector(".gestes-audience .produire")); await waitFor(() => host.querySelector(".hcard"), 5000); }
   const t475 = CR.lib("CPP_475-1").titre;
   const hc = [...host.querySelectorAll(".hcard")].find((b) => texts(b).includes(t475) && !/475/.test(texts(b)));
   check("carte de texte sans numéro", !!hc, [...host.querySelectorAll(".hcard")].map((b) => texts(b)).join(" | ").slice(0, 200));
-  if (hc) { await click(w, hc); inp = host.querySelector(".cite-num"); setVal(inp, "475-1"); await sleep(30); await click(w, findBtn(host, /^Citer$/)); }
+  if (hc) { await click(w, hc); inp = await waitFor(() => host.querySelector(".cite-num"), 10000); if (inp) { setVal(inp, "475-1"); await sleep(30); } const c2 = await waitFor(() => findBtn(host, /^Citer$/), 10000); if (c2) await click(w, c2); }
   await sleep(400);
   if (!host.querySelector(".court-done")) console.log("audience :", texts(host).slice(-400));
   const out = host.querySelector(".court-done") ? findBtn(host, "Sortir de la salle") : null; if (out) await click(w, out);

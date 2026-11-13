@@ -53,6 +53,9 @@
     const ville = SF.paris ? "Paris" : SF.ville;
     const parquet = TJ.parquet;
     const docs = {}, titres = {}, ordre = [];
+    // les faits du dossier que les trames tirent elles-mêmes (le générateur les reprend : pas de tirage rejoué ailleurs)
+    const faits = {};
+    const fait = (id, o) => { if (!faits[id]) faits[id] = o; };
     // chaque pièce : sa minute (pour les cotes), son titre court, sa fonction de composition
     // pièces propres à la garde à vue : absentes d'une audition libre
     const GAVK = ["pv_notification", "declaration_droits", "avis_parquet", "avis_famille", "avis_avocat", "requisition_medecin", "certificat_gav", "pv_prolongation", "pv_fin_gav"];
@@ -549,6 +552,7 @@
         const nl = Math.min(LIG.length, 2 + Math.floor(rd() * (LIG.length - 1)));
         const parts = Array.from({ length: nl }, () => 0.5 + rd()); const sm = parts.reduce((a, x) => a + x, 0);
         const mts = parts.map((x) => Math.round((t.f.montant * x) / sm / 10) * 10); mts[nl - 1] += t.f.montant - mts.reduce((a, x) => a + x, 0);
+        if (ante) fait("G_devis_ante", { label: "Le devis comprend la reprise d'un dommage antérieur", key: true, why: "Le dommage imputable est moindre que le total du devis : cela pèse sur la qualification (dommage léger) et sur les intérêts civils." });
         const anteM = ante ? Math.round((t.f.montant * (0.15 + rd() * 0.2)) / 10) * 10 : 0;
         const mDev = PL && E.enquete ? E.enquete(2) : E.debut + 200;
         add("devis", mDev, "Devis de réparation", () => DOCS.forme({ title: "Devis de réparation", kind: "courrier", cote: cote("devis"), entete: [`${ent} ${pk(CR.seeded(t.sig + ":g:ent"), ["Moreau", "du Nord", "Lambert & fils", "Ordener"])}`, `Procédure n° ${t.proc} — cote ${cote("devis")}`],
@@ -731,6 +735,7 @@
         const sec = int(rv, 3, 57);
         const hms = (m) => { const x = ((m + derive) % 1440 + 1440) % 1440; return `${Math.floor(x / 60)} h ${String(x % 60).padStart(2, "0")} min ${String(sec).padStart(2, "0")} s`; };
         const mExpl = PL && E.enquete ? E.enquete(1) : E.debut + 240;
+        if (Math.abs(derive) >= 3) fait("G_horodatage", { label: `L'horloge de l'enregistreur ${derive > 0 ? "avance" : "retarde"} de ${Math.abs(derive)} minutes`, key: true, why: "Les heures des images ne sont pas l'heure réelle : à rapprocher de la chronologie des autres pièces avant d'en tirer quoi que ce soit." });
         const source = N.video ? N.video.source : `des images ${t.inf === "vol" && t.f.sc === "magasin" ? "du système de vidéosurveillance du magasin, remises par l'agent de sécurité" : t.inf === "violences" && t.f.sc === "transport" ? "des caméras de la RATP" : (SF.paris ? "de la caméra de vidéoprotection de la Ville de Paris la plus proche" : `de la caméra de vidéoprotection de la ville de ${SF.ville} la plus proche`)}`;
         add("pv_video", mExpl, "Exploitation vidéo", () => DOCS.forme({ title: N.video ? N.video.titre || "Procès-verbal d'exploitation des images" : "Procès-verbal d'exploitation des images de vidéoprotection", kind: "video", cote: cote("pv_video"),
           entete: [unite, `Procédure n° ${t.proc} — cote ${cote("pv_video")}`],
@@ -751,6 +756,7 @@
         const rt = CR.seeded(t.sig + ":g:tel");
         const j0 = jf - int(rt, 20, 40);
         const tiers = ch(rt, 0.22);
+        if (tiers) fait("G_ligne_tiers", { label: "La ligne est une carte prépayée au nom d'un tiers", key: true, why: "Rien, dans la réquisition, ne dit qui utilisait la ligne : il faut un autre élément pour la lui attribuer." });
         const titulaire = tiers ? pk(rt, ["une certaine « Fatima B. », née en 1961, sans autre précision", "une société de téléphonie en liquidation", "un « Kevin Martin » dont l'adresse déclarée n'existe pas"]) : n(A);
         const mReq = PL && E.enquete ? E.enquete(2) : E.debut + 300;
         const zone = pk(rt, ["d'environ 400 mètres", "d'environ 800 mètres", "de plus d'un kilomètre"]);
@@ -778,6 +784,8 @@
       if (has("ecrits") && N.ecrits && N.ecrits.length) {
         const rc = CR.seeded(t.sig + ":g:cap");
         const autreNum = ch(rc, 0.25), partielle = ch(rc, 0.3);
+        if (autreNum) fait("G_numero_autre", { label: "Les messages viennent d'un numéro qui n'est pas celui de l'intéressé", key: true, why: "Qui écrivait ? Un numéro inconnu ne s'attribue pas sans réquisition à l'opérateur ou sans aveu." });
+        if (partielle) fait("G_captures_partielles", { label: "Les réponses de la victime ont été supprimées : la conversation est partielle", key: true, why: "Des messages sortis de leur conversation se lisent mal : le contexte manque, la défense peut le demander." });
         const num = autreNum ? `07 ${int(rc, 10, 99)} ${int(rc, 10, 99)} ${int(rc, 10, 99)} ${int(rc, 10, 99)}` : A.tel;
         const datee = !(N.ecritsPiece && N.ecritsPiece.dater === false);
         const ecarts = N.ecrits.map(() => int(rc, 1, 4)), heures = N.ecrits.map(() => int(rc, 7 * 60, 23 * 60 + 50));
@@ -807,6 +815,11 @@
         const lib = (i) => (i === pret ? `virement reçu de ${proche.replace(/^sa |^son /, "")} ${A.nom}, libellé « prêt »` : stups ? pk(rb, ["dépôt d'espèces au guichet automatique", "dépôt d'espèces en agence", "versement d'espèces"]) : V ? `virement reçu de ${nf(V)}` : pk(rb, ["virement reçu d'un compte en ligne", "dépôt d'espèces", "virement instantané reçu"]));
         const mRel = PL && E.enquete ? E.enquete(3) : E.debut + 360;
         const libs = mts.map((_, i) => lib(i));
+        // abus de confiance : un remboursement partiel, après la découverte (il n'efface pas le délit, il pèse sur la peine)
+        const rembourse = /^abus_confiance/.test(t.inf) && rb() < 0.35 ? Math.round((total * (0.1 + rb() * 0.3)) / 10) * 10 : 0;
+        const rembJ = rembourse ? 5 + Math.floor(rb() * 20) : 0;
+        if (pret >= 0) fait("G_pret", { label: "Un des mouvements est un virement d'un proche libellé « prêt »", key: true, why: "Une partie de la somme s'explique peut-être : un justificatif du proche la retire du compte de l'accusation." });
+        if (rembourse) fait("G_remboursement", { label: "Un remboursement partiel a été versé à la victime après la découverte", key: true, why: "Le remboursement n'efface pas le détournement, mais il compte pour la peine et réduit les intérêts civils : il faut en apporter la preuve." });
         // escroquerie : les virements partent pendant l'appel, le jour des faits, à quelques minutes d'intervalle ; les fonds
         // sont retirés en espèces dans l'heure qui suit (dates et heures sur le relevé)
         const escro = /^escroquerie/.test(t.inf) && V;
@@ -820,7 +833,9 @@
             p(`Titulaire : ${n(A)}. Compte courant n° ${int(rb, 10000, 99999)} ${int(rb, 100000, 999999)}.`),
             ...mts.map((m, i) => ligne(`${DOCS.date(escro ? jf : jours[i])}${escro ? ", " + hm(hVir[i]) : ""} — ${libs[i]}`, `+ ${CR.money ? CR.money(m) : m + " €"}`)),
             ...(retraits || []).map((x) => ligne(`${DOCS.date(jf)}, ${hm(x.h)} — retrait d'espèces, distributeur ${x.dab}`, `− ${CR.money ? CR.money(x.m) : x.m + " €"}`)),
-            escro ? p({ t: "Les retraits ont été effectués avec la carte attachée au compte ; la banque ne dispose pas des images des distributeurs.", f: "G_retraits" }) : null,
+            rembourse ? ligne(`${DOCS.date(jf + rembJ)} — virement émis vers ${V ? nf(V) : "la plaignante"}, libellé « remboursement »`, `− ${CR.money ? CR.money(rembourse) : rembourse + " €"}`) : null,
+            rembourse ? p({ t: `Un virement de ${CR.money ? CR.money(rembourse) : rembourse + " €"} a été émis vers la victime après la découverte des faits, avec le libellé « remboursement ».`, f: "G_remboursement" }) : null,
+                        escro ? p({ t: "Les retraits ont été effectués avec la carte attachée au compte ; la banque ne dispose pas des images des distributeurs.", f: "G_retraits" }) : null,
             p({ t: `Mouvements sans rapport avec les revenus déclarés : ${CR.money ? CR.money(total) : total + " €"} au total sur la période.`, f: "G_releve" }),
             pret >= 0 ? p({ t: `L'un de ces mouvements (${DOCS.date(jours[pret])}) est un virement libellé « prêt », émis par un proche du titulaire.`, f: "G_pret" }) : null,
           ], sigs: [] }));
@@ -833,6 +848,8 @@
         const qual = ch(ra, 0.7) ? "complet" : ch(ra, 0.5) ? "partiel" : "melange";
         const loci = qual === "complet" ? 24 : int(ra, 9, 15);
         const scel = int(ra, 1, 6);
+        if (qual === "partiel") fait("G_adn_partiel", { label: "Le profil génétique n'est que partiel", key: true, why: "Un profil partiel peut correspondre à d'autres personnes : la concordance ne vaut pas identification." });
+        if (qual === "melange") fait("G_adn_melange", { label: "Le prélèvement est un mélange de plusieurs ADN", key: true, why: "« Ne peut être exclu » n'est pas « est l'auteur » : plusieurs personnes ont touché l'objet." });
         const mAdn = PL && E.enquete ? E.enquete(4) : (E.fin != null ? E.fin - 60 : E.debut + 600);
         add("rapport_adn", mAdn, "Rapport ADN", () => DOCS.forme({ title: "Rapport d'analyse génétique", kind: "courrier", cote: cote("rapport_adn"),
           entete: ["Laboratoire de police scientifique de Paris", `Procédure n° ${t.proc} — cote ${cote("rapport_adn")}`],
@@ -974,6 +991,6 @@
     for (const x of k.reste || []) if (!docs[x.key]) ordre.push(x);
     ordre.sort((a, b) => a.m - b.m);
     ordre.forEach((o, i) => { cotes[o.key] = "D" + (i + 1); titres[o.key] = `${o.court} (D${i + 1})`; });
-    return { docs, titres, ordre, cotes };
+    return { docs, titres, ordre, cotes, faits };
   };
 })();

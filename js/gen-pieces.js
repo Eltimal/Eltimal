@@ -522,41 +522,15 @@
       Object.assign(cotes, PS.cotes);
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
+      for (const [id, o] of Object.entries(PS.faits || {})) fact(id, o);
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
-      if (PS.docs.rapport_adn && has("adn") && PS.ordre.some((o) => o.key === "rapport_adn" && !o.ancien)) {
-        const ra = CR.seeded(t.sig + ":g:adn"); ra();
-        const q = ra() < 0.7 ? "complet" : ra() < 0.5 ? "partiel" : "melange";
-        if (q === "partiel") fact("G_adn_partiel", { label: "Le profil génétique n'est que partiel", key: true, why: "Un profil partiel peut correspondre à d'autres personnes : la concordance ne vaut pas identification." });
-        if (q === "melange") fact("G_adn_melange", { label: "Le prélèvement est un mélange de plusieurs ADN", key: true, why: "« Ne peut être exclu » n'est pas « est l'auteur » : plusieurs personnes ont touché l'objet." });
-      }
       if (PS.docs.releve && has("releve") && /^escroquerie/.test(t.inf) && V) fact("G_retraits", { label: "Les fonds ont été retirés au distributeur dans l'heure, sans images", key: true, why: "La carte du compte peut avoir été remise à un tiers (compte « mule ») : le titulaire du compte n'est pas forcément celui qui a retiré." });
-      if (PS.docs.releve && has("releve") && PS.ordre.some((o) => o.key === "releve" && !o.ancien)) {
-        const rb = CR.seeded(t.sig + ":g:bq"); rb(); // banque
-        if (!N.montant) rb();
-        const nm = 4 + Math.floor(rb() * 4); for (let i = 0; i < nm; i++) rb(); for (let i = 0; i < nm; i++) rb();
-        if (rb() < 0.25) fact("G_pret", { label: "Un des mouvements est un virement d'un proche libellé « prêt »", key: true, why: "Une partie de la somme s'explique peut-être : un justificatif du proche la retire du compte de l'accusation." });
-      }
-      if (PS.docs.captures && has("ecrits") && N.ecrits && N.ecrits.length) {
-        const rc = CR.seeded(t.sig + ":g:cap");
-        if (rc() < 0.25) fact("G_numero_autre", { label: "Les messages viennent d'un numéro qui n'est pas celui de l'intéressé", key: true, why: "Qui écrivait ? Un numéro inconnu ne s'attribue pas sans réquisition à l'opérateur ou sans aveu." });
-        if (rc() < 0.3) fact("G_captures_partielles", { label: "Les réponses de la victime ont été supprimées : la conversation est partielle", key: true, why: "Des messages sortis de leur conversation se lisent mal : le contexte manque, la défense peut le demander." });
-      }
       if (PS.docs.pv_telephonie && has("telephonie") && t.inf === "appels_malveillants" && t.f.nb) fact("G_appels_compte", { label: `L'opérateur relève ${t.f.nb} appels de la ligne vers celle de la plaignante`, key: false });
-      if (PS.docs.pv_telephonie && has("telephonie")) {
-        const rt = CR.seeded(t.sig + ":g:tel"); rt(); // j0
-        if (rt() < 0.22) fact("G_ligne_tiers", { label: "La ligne est une carte prépayée au nom d'un tiers", key: true, why: "Rien, dans la réquisition, ne dit qui utilisait la ligne : il faut un autre élément pour la lui attribuer." });
-      }
-      if (PS.docs.pv_video && has("video") && !SS.arrachage && !VID) {
-        const rv = CR.seeded(t.sig + ":g:vid"); const d = rv() < 0.45 ? (rv() < 0.5 ? 1 : -1) * (1 + Math.floor(rv() * 6)) : 0;
-        if (Math.abs(d) >= 3) fact("G_horodatage", { label: `L'horloge de l'enregistreur ${d > 0 ? "avance" : "retarde"} de ${Math.abs(d)} minutes`, key: true, why: "Les heures des images ne sont pas l'heure réelle : à rapprocher de la chronologie des autres pièces avant d'en tirer quoi que ce soit." });
-      }
       if (t.inf === "cambriolage" && SS.perq && V && N.saisie && /Ils ont pris (.+?)\. Préjudice/.test((N.plainte || []).join(" "))) {
         const butin = /Ils ont pris (.+?)\. Préjudice/.exec((N.plainte || []).join(" "))[1];
         if (butin !== N.saisie) fact("G_partiel", { label: `Seule une partie du butin est retrouvée chez lui (${N.saisie})`, key: true, why: "Détenir un objet volé n'est pas avoir commis le cambriolage : la défense peut plaider le recel, ou l'absence de preuve de l'effraction." });
       }
       if (t.inf === "degradations" && t.f && t.f.montant && V && PS.docs.devis) {
-        const rd = CR.seeded(t.sig + ":g:devis");
-        if (rd() < 0.25 && !t.f.leger) fact("G_devis_ante", { label: "Le devis comprend la reprise d'un dommage antérieur", key: true, why: "Le dommage imputable est moindre que le total du devis : cela pèse sur la qualification (dommage léger) et sur les intérêts civils." });
         if (!t.f.leger && t.f.montant <= 900) fact("G_devis_faible", { label: `Dommage chiffré à ${t.f.montant} € seulement`, key: true, why: "Un dommage léger relève de la contravention (art. R. 635-1) : le montant est un argument de qualification." });
       }
       if (SS.violation && SS.violation.cotitulaire) fact("G_cotitulaire", { label: "Le bail est toujours aux deux noms", key: true, why: "La violation de domicile suppose le domicile d'autrui : un cotitulaire du bail entre chez lui. Restent les violences ou les dégradations, s'il y en a." });
