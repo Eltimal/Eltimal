@@ -807,6 +807,26 @@
             t.f.sc !== "jamais" ? p({ t: nonRec ? `Pli avisé et non réclamé, retourné à l'expéditeur le ${DOCS.date(jPres + 15)}.` : `Avis de réception signé le ${DOCS.date(jPres)}.`, f: nonRec ? "G_notif_permis" : "G_notif_ar" }) : null,
           ], sigs: [] }));
       }
+      // lot 1 ter, pièces techniques : l'expertise. Sur la route, la vitesse se déduit des traces de freinage et de l'état
+      // de la chaussée (v = √(2·μ·g·d), μ ≈ 0,7 sur sol sec, 0,5 sur sol mouillé) ; ailleurs, le constat technique de la
+      // famille, daté sur la chronologie
+      if (has("expertise") && CR.CAT.INF[t.inf]) {
+        const rx = CR.seeded(t.sig + ":g:exp");
+        const fam = CR.CAT.INF[t.inf].fam, caDe = (TJ.ca || "cour d'appel de Paris").replace(/^Cour/, "cour");
+        const mouille = ch(rx, 0.3), dist = int(rx, 14, 42), mu = mouille ? 0.5 : 0.7;
+        const v = Math.sqrt(2 * mu * 9.81 * dist) * 3.6, vMin = Math.round(v - 5), vMax = Math.round(v + 5);
+        const route = fam === "route" && t.inf !== "accident_travail";
+        const X = route ? { titre: "Rapport d'accidentologie", ent: "Expert en accidentologie près la cour d'appel", txt: `Traces de freinage relevées sur ${dist} mètres, chaussée ${mouille ? "mouillée" : "sèche"} (coefficient d'adhérence retenu : ${String(mu).replace(".", ",")}). Vitesse du véhicule au début du freinage estimée entre ${vMin} et ${vMax} km/h, pour une vitesse autorisée de 50 km/h.`, f: t.quoi === "r_vitesse" ? "G_circ_doute" : "G_expertise" }
+          : t.inf === "accident_travail" ? { titre: "Rapport de l'inspection du travail", ent: "Direction régionale de l'économie, de l'emploi, du travail et des solidarités · Inspection du travail", txt: t.f.violation ? "Le manquement aux règles de protection a été signalé à l'employeur à deux reprises, par écrit, dans les semaines précédant l'accident, sans suite : violation manifeste d'une obligation de sécurité." : "Le dispositif de protection était en place ; la cause de l'accident reste indéterminée.", f: "G_expertise" }
+          : fam === "affaires" ? { titre: "Rapport d'expertise comptable", ent: `Expert-comptable près la ${caDe}`, txt: `Les dépenses examinées, ${CR.money ? CR.money(N.montant || 0) : N.montant}, ne trouvent aucune contrepartie dans l'activité de la société.`, f: "G_expertise" }
+          : fam === "numerique" || t.inf === "cyberharcelement" ? { titre: "Rapport d'expertise informatique", ent: "Expert en informatique près la cour d'appel", txt: "L'analyse du téléphone et de l'ordinateur saisis retrouve les identifiants du compte en cause et l'historique des connexions.", f: "G_expertise" }
+          : t.inf === "incendie" ? { titre: "Rapport du laboratoire central", ent: "Laboratoire central de la préfecture de police", txt: t.f.volontaire ? "Présence d'hydrocarbures légers dans les prélèvements : origine volontaire de l'incendie." : "Départ de feu sur le balcon supérieur ; mégots dans un pot de fleurs au contact de stores en toile.", f: "G_expertise" }
+          : { titre: "Rapport d'expertise", ent: `Expert près la ${caDe}`, txt: "Les constatations techniques confirment les déclarations de la victime sur l'étendue du dommage.", f: "G_expertise" };
+        const mExp = PL && E.enquete ? E.enquete(4) : (E.fin != null ? E.fin - 120 : E.debut + 420);
+        add("expertise", mExp, X.titre, () => DOCS.forme({ title: X.titre, kind: "courrier", cote: cote("expertise"), entete: [X.ent, `Procédure n° ${t.proc} — cote ${cote("expertise")}`],
+          blocs: [p(`Mission confiée par ${t.flagrance ? "l'officier de police judiciaire" : "le procureur de la République"} le ${DOCS.date(Math.max(jf, j(mExp) - 1))}.`), p({ t: X.txt, f: X.f }), route && mouille ? p("La pluie était tombée dans l'heure précédente ; l'adhérence retenue en tient compte.") : null],
+          sigs: ["L'expert"] }));
+      }
       // lot 1 ter, pièces techniques : le rapport du laboratoire sur les produits saisis, accordé à la pesée du service
       // (poids brut, emballages compris, à la pesée ; poids net au laboratoire) ; taux tirés dans les fourchettes d'usage
       if (S.stups && has("labo") && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].fam !== "route" && t.f.quantite) {
