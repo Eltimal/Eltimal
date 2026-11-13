@@ -282,6 +282,7 @@
     if (SIM.deuxRoues(t, S)) S.deuxRoues = deuxRoues(S, t, k, r, E);
     if (SIM.deal(t, S)) S.deal = deal(S, t, k, r, E);
     if (SIM.detention(t, S)) S.detention = detention(S, t, k, r);
+    if (SIM.outrage(t, S)) S.outrage = { ecart: ch(r, 0.3), cantonade: ch(r, 0.25), passant: k.has("video"), autre: pk(r, ["chiens", "bâtards", "guignols", "racistes", "bons à rien"]) };
     S.E = E;
     S.auteurs = { apj: { nom: t.gpx[0], style: CR.DOCS.style(CR.seeded(t.sig + ":apj")) }, opj: { nom: k.opjN, style: CR.DOCS.style(CR.seeded(t.sig + ":opj")) } };
     S.indicatif = `TV ${pk(r, ["17", "18", "19", "20", "21", "22"])}${pk(r, ["1", "2", "3", "4"])}`;
@@ -296,6 +297,16 @@
       return CR.DOCS.hm(cur);
     }));
     // vol à la tire : l'objet retrouvé au sol n'était pas « en possession » de l'intéressé
+    // outrage : les propos, tels que les rapporte le premier policier (constatations) ; à la cantonade, ils sont dits « à la cantonade »
+    if (S.outrage) {
+      const O = S.outrage;
+      const m = /« (.+?) »/.exec(S.constat.join(" "));
+      O.mots = m ? m[1] : "";
+      const autre = O.mots.replace(/Vous êtes des ([^.!]+)/, (m0, x) => `Vous êtes des ${x === O.autre ? "pourris" : O.autre}`);
+      O.mots2 = O.ecart && autre !== O.mots ? autre : O.mots;
+      O.ecart = O.mots2 !== O.mots;
+      if (O.cantonade) S.constat = S.constat.map((x) => x.replace(/nous déclare à voix haute :/, "lance à voix haute, en direction de la rue et sans se tourner vers nous :"));
+    }
     if (S.detention) {
       const D = S.detention, ajout = [];
       if (D.dom) ajout.push(D.coloc ? `L'appartement, ${D.pieces === "un studio" ? "un studio" : "de " + D.pieces}, est partagé avec un colocataire, ${D.colocN}, absent lors de la perquisition ; la cuisine est commune.` : `${A.g === "f" ? "L'intéressée" : "L'intéressé"} occupe seul${A.g === "f" ? "e" : ""} l'appartement, ${D.pieces === "un studio" ? "un studio" : "de " + D.pieces}.`);
@@ -416,6 +427,10 @@
     };
   }
 
+  // ---------------------------------------------------------------- lot 1 ter : l'outrage
+  // Deux policiers ont entendu les propos ; le second ne rapporte pas toujours les mêmes mots (de bonne foi). Les propos
+  // sont parfois lancés « à la cantonade », vers la rue, plutôt qu'adressés aux policiers ; un passant a parfois filmé.
+  SIM.outrage = (t, S) => !!(t && t.inf === "outrage" && t.flagrance && !(S && S.prelim));
   // ---------------------------------------------------------------- lot 1 ter : la détention de stupéfiants
   // Ce qui fait l'affaire : à qui sont les produits. Au domicile, un colocataire partage parfois la cuisine où est le
   // placard ; en voiture, le véhicule est parfois celui d'un tiers et des passagers sont à bord. La balance et les sachets

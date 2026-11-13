@@ -538,6 +538,22 @@
             mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
           ], sigs: ["Le directeur du magasin"] }));
       }
+      // lot 1 ter : l'outrage — la déclaration du second fonctionnaire
+      if (S.outrage && S.outrage.mots) {
+        const O = S.outrage;
+        add("pv_collegue", E.debut + 50, "Déclaration du second fonctionnaire", () => {
+          const rr = CR.seeded(t.sig + ":g:outr");
+          const blocs = [
+            decl(`« J'accompagnais ${apjTxt(0)} lors du contrôle. ${Maj(il(A))} s'est mis${e(A)} à crier ${O.cantonade ? "en regardant la rue" : "en nous regardant"}. »`),
+            decl({ t: `« ${Maj(il(A))} a dit : “${O.mots2}” ${pk(rr, ["Il l'a répété deux fois.", "Plusieurs passants se sont arrêtés.", "Ça a duré une minute à peu près."])} »`, f: O.ecart ? "G_mots_ecart" : undefined }),
+            O.cantonade ? decl({ t: `« Je ne saurais pas dire s'${il(A)} s'adressait à nous ou à tout le monde. »`, f: "G_cantonade" }) : decl("« C'est à nous qu'il s'adressait, il nous fixait. »"),
+            O.passant ? decl({ t: "« Un passant a filmé la scène avec son téléphone ; il nous a laissé ses coordonnées. »", f: "G_video_passant" }) : null,
+          ];
+          return DOCS.pv({ cote: cote("pv_collegue"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition", qualite: "Fonctionnaire de police, témoin", numPV: "00" + int(rr, 101, 899), jour: j(E.debut + 50), heure: E.debut + 50, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
+            objet: `OBJET : ${q0.label} — audition du second fonctionnaire`, identite: { nom: t.gpx[1].split(" ").slice(-1)[0], prenom: t.gpx[1].split(" ")[0], g: gp(t.gpx[1]).startsWith("Gardienne") ? "f" : "m", metier: gp(t.gpx[1]).toLowerCase() }, blocs,
+            cloture: DOCS.clotureAudition(ville, j(E.debut + 70), E.debut + 70, gp(t.gpx[1]).startsWith("Gardienne") ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
+        });
+      }
       // lot 1 ter : le point de deal — le procès-verbal de surveillance
       if (S.deal) {
         const M = S.deal;

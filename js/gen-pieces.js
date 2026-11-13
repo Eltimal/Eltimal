@@ -523,6 +523,12 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      if (SS.outrage && SS.outrage.mots) {
+        const O = SS.outrage;
+        if (O.ecart) fact("G_mots_ecart", { label: `Les deux policiers ne rapportent pas les mêmes mots : « ${O.mots} » / « ${O.mots2} »`, key: true, why: "L'outrage tient aux propos eux-mêmes : deux versions des mots, c'est une preuve qui se discute." });
+        if (O.cantonade) fact("G_cantonade", { label: "Les propos ont été lancés vers la rue, pas adressés aux policiers", key: true, why: "L'article 433-5 vise des paroles « adressées » à la personne : des propos lancés à la cantonade se discutent." });
+        if (O.passant) fact("G_video_passant", { label: "Un passant a filmé la scène et laissé ses coordonnées", key: false });
+      }
       if (SS.detention) {
         const D = SS.detention;
         if (D.coloc) fact("G_coloc", { label: `Le colocataire, ${D.colocN}, partage la cuisine où étaient les produits`, key: true, why: "Un produit trouvé dans une pièce commune n'est pas, par là même, à celui qui est là : la détention suppose la maîtrise." });
