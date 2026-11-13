@@ -29,7 +29,7 @@ Principe d'ordonnancement : on termine d'abord la boucle la plus jouée (permane
 | # | Livrable | Critère de fin |
 |---|---|---|
 | C1 | Étalons : aide juridictionnelle, honoraires, cotisations, peines prononcées | Chiffres sourcés (« vérifié » / « estimation ») — **fait en partie (13 nov.)** : peines (`peines.js`), aide juridictionnelle (UV 36 €, moyennes Unca) ; charges du cabinet en estimations déclarées |
-| C2 | Lot 6 bis : économie du cabinet recalée | Carrière simulée d'un an cohérente (trésorerie, dossiers, réputation) |
+| C2 | Lot 6 bis : économie du cabinet recalée | Carrière simulée d'un an cohérente (trésorerie, dossiers, réputation) — **mesuré (13 nov.)**, `tecono` : sans activité, faillite au jour 119 ; point mort à 11 gardes à vue par mois ; 4,8 dossiers proposés par mois. Reste : la réputation sur un an, les honoraires réels |
 | C3 | Grille de compétences et mode assisté | Classeur à jour, autonomie par compétence |
 
 ## Phase D — élargir
@@ -40,4 +40,4 @@ Lot 1 ter (toutes les familles d'infractions au niveau de l'arrachage), lot 7 (i
 
 - **Deux sessions sur les mêmes fichiers** (`ui-*.js`) : partir toujours de la branche la plus avancée, fusionner avant de commencer.
 - **Équilibrage** : tout nouveau calcul de verdict ou de peine se compare à l'ancien sur 1 000 affaires avant d'entrer en jeu.
-- **Régressions** : les parties automatiques jouent en mode liste ; chaque lot ajoute son test et fait tourner la batterie (`t1 t2 t3 t4 t15 t20 tsim ttravail tdossier tson tgenjeu` + le test du lot).
+- **Régressions** : les parties automatiques jouent en mode liste ; chaque lot ajoute son test et fait tourner la batterie de `NEXT_SESSION.md`.
