@@ -679,6 +679,27 @@
         add("pv_restitution", E.restitution, "Restitution", () => DOCS.forme({ title: "Procès-verbal de restitution", cote: cote("pv_restitution"), entete: [unite, `Procédure n° ${t.proc} — cote ${cote("pv_restitution")}`],
           blocs: [p(`Sur instruction du procureur de la République, restituons à ${nf(V)}, qui en justifie la propriété, ${saisieTxt} placé${acc} sous scellé n° UN.`), mention(`Fait ${at(E.restitution)}.`)], sigs: ["La victime", `${OPJ.signe}, officier de police judiciaire`] }));
       }
+      // lot 1 ter, pièces techniques : l'exploitation des images, horodatée sur l'enregistreur (dont l'horloge peut dériver,
+      // de quelques minutes : décalage constaté et écrit, comme en vrai) ; la scène et l'identification du catalogue
+      if (has("video") && !S.arrachage && !k.VID) {
+        const rv = CR.seeded(t.sig + ":g:vid");
+        const derive = ch(rv, 0.45) ? (ch(rv, 0.5) ? 1 : -1) * int(rv, 1, 6) : 0;
+        const sec = int(rv, 3, 57);
+        const hms = (m) => { const x = ((m + derive) % 1440 + 1440) % 1440; return `${Math.floor(x / 60)} h ${String(x % 60).padStart(2, "0")} min ${String(sec).padStart(2, "0")} s`; };
+        const mExpl = PL && E.enquete ? E.enquete(1) : E.debut + 240;
+        const source = N.video ? N.video.source : `des images ${t.inf === "vol" && t.f.sc === "magasin" ? "du système de vidéosurveillance du magasin, remises par l'agent de sécurité" : t.inf === "violences" && t.f.sc === "transport" ? "des caméras de la RATP" : (SF.paris ? "de la caméra de vidéoprotection de la Ville de Paris la plus proche" : `de la caméra de vidéoprotection de la ville de ${SF.ville} la plus proche`)}`;
+        add("pv_video", mExpl, "Exploitation vidéo", () => DOCS.forme({ title: N.video ? N.video.titre || "Procès-verbal d'exploitation des images" : "Procès-verbal d'exploitation des images de vidéoprotection", kind: "video", cote: cote("pv_video"),
+          entete: [unite, `Procédure n° ${t.proc} — cote ${cote("pv_video")}`],
+          blocs: [
+            p(`Le ${DOCS.date(j(mExpl))}, à ${hm(mExpl)}, nous, ${OPJ.nom}, ${OPJ.qualite}, procédons à l'exploitation ${source.replace(/^des images /, "des images ")}, horodatage du ${DOCS.date(jf)}.`),
+            p({ t: derive ? `Par comparaison avec l'horloge parlante, l'horloge de l'enregistreur ${derive > 0 ? "avance" : "retarde"} de ${Math.abs(derive)} minute${Math.abs(derive) > 1 ? "s" : ""} : les heures ci-dessous sont celles de l'enregistreur.` : "L'horloge de l'enregistreur est à l'heure.", f: Math.abs(derive) >= 3 ? "G_horodatage" : undefined }),
+            p(`${hms(S.T0)} — ${N.video ? N.video.scene : N.resume}`),
+            N.video ? p({ t: N.video.ident, f: "G_video" })
+              : dou("doute_ident") ? p({ t: "La qualité des images ne permet pas de distinguer les traits du visage de l'auteur ; sa silhouette et ses vêtements sont visibles.", f: "G_doute_ident" }) : p({ t: `La silhouette, les vêtements et la démarche correspondent à ceux de ${n(A)} lors de son interpellation.`, f: "G_video" }),
+            t.quoi === "violence" ? p({ t: "Aucun geste de violence n'est visible : l'objet est saisi d'un geste rapide, la victime n'est pas touchée.", f: "G_sans_violence" }) : null,
+            p("Une planche de captures est jointe ; la séquence utile est gravée sur un disque placé sous scellé."),
+          ], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));
+      }
       // lot 1 ter, pièces techniques : le rapport du laboratoire sur les produits saisis, accordé à la pesée du service
       // (poids brut, emballages compris, à la pesée ; poids net au laboratoire) ; taux tirés dans les fourchettes d'usage
       if (S.stups && has("labo") && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].fam !== "route" && t.f.quantite) {
