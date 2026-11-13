@@ -148,7 +148,7 @@
     const aud = useMemo(() => {
       const a = P.derouler(M, prof.aveux, prof === CR.PROFILS.opj_pressant);
       ctx.aud = a; ctx.conseil = a.conseilGav; cs.vars.conseilGav = a.conseilGav; ctx.relecture = P.relecture(M, a);
-      cs.vars.auditionGav = a.lignes.map((l) => ({ sujet: l.sujet, q: l.q, a: l.a, silence: !!l.silence }));
+      cs.vars.auditionGav = a.lignes.map((l) => ({ sujet: l.sujet, q: l.q, a: l.a, silence: !!l.silence, erreur: !!l.erreur, fausse: l.fausse || null }));
       return a;
     }, []);
     const [rapide, setRapide] = useState(false);
@@ -191,8 +191,9 @@
       ctx.questions.push(q.sujet + ":" + q.angle);
       CR.spend(s, 4, "gav");
       oral.dire("you", texte);
-      if (refus) { ctx.refus.push({ id: "p" + ctx.questions.length, q: texte }); oral.dire("opj", "Je refuse cette question, maître : elle nuit au bon déroulement de l'enquête. Je le mentionne au procès-verbal."); }
-      else { const res = P.repondre(M, q); for (const l of res.lignes) oral.dire("client", l.t, l.f); }
+      const QA = (cs.vars.questionsAvocat = cs.vars.questionsAvocat || []);
+      if (refus) { QA.push({ q: texte, refus: true }); ctx.refus.push({ id: "p" + ctx.questions.length, q: texte }); oral.dire("opj", "Je refuse cette question, maître : elle nuit au bon déroulement de l'enquête. Je le mentionne au procès-verbal."); }
+      else { const res = P.repondre(M, q); for (const l of res.lignes) oral.dire("client", l.t, l.f); QA.push({ q: texte, a: res.lignes.map((l) => l.t).join(" ") }); }
       bump(); rerender && rerender();
     };
     return html`<div className="gav-card ent-parole">

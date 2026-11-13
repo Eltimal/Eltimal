@@ -106,6 +106,7 @@
       conciliant: ["(La présidente acquiesce poliment.)"], severe: ["(Le président ne réagit pas.)"],
     },
   };
+  A.SIGNAUX = SIGNAUX;
   A.signal = function (api, kind, who) {
     const a = CR.acteur(api.cs.actors[who || "president"]);
     const prof = a ? a.profil : "formaliste";

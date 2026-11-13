@@ -166,7 +166,7 @@
       if (canInterject()) { setPhase("window"); setTimer((cur.interject.window || 4500) / fatigue); return; }
       const pause = Math.min(2400, 500 + lineText.length * 13) / CR.textSpeedMult(s);
       setPhase("pause");
-      setTimeout(() => { addLog({ who: cur.who, t: lineText, name: cur.name }); if (cur.fx) applyFx(s, cs, st, cur.fx); if (cur.signal) addLog({ who: "sys", t: CR.ACT.signal(api, cur.signal) }); next(); }, cur.who === "you" || cur.who === "sys" ? 250 : pause);
+      setTimeout(() => { addLog({ who: cur.who, t: lineText, name: cur.name }); if (cur.fx) applyFx(s, cs, st, cur.fx); if (cur.signal) (CR.libre(s) || addLog({ who: "sys", t: CR.ACT.signal(api, cur.signal) })); next(); }, cur.who === "you" || cur.who === "sys" ? 250 : pause);
     }
     useEffect(() => {
       if (!["window", "card", "choose"].includes(phase) || timer <= 0 || citeCard || jpCard) return;
@@ -199,7 +199,7 @@
         st.interjects.ok++;
         const o = cur.interject.ok || {};
         applyFx(s, cs, st, Object.assign({ cred: 2 }, o.fx));
-        addLog({ who: "sys", t: CR.ACT.signal(api, "bon") });
+        (CR.libre(s) || addLog({ who: "sys", t: CR.ACT.signal(api, "bon") }));
         bump();
         if (o.then) { push(o.then); return; }
         next();
@@ -218,7 +218,7 @@
       addLog({ who: "you", t: T(opt.say || opt.t) });
       applyFx(s, cs, st, opt.fx);
       if (opt.reply) addLog({ who: opt.replyWho || "president", t: T(opt.reply) });
-      if (opt.signal) addLog({ who: "sys", t: CR.ACT.signal(api, opt.signal) });
+      if (opt.signal) (CR.libre(s) || addLog({ who: "sys", t: CR.ACT.signal(api, opt.signal) }));
       bump();
       if (opt.then && opt.then.length) { push(opt.then); return; }
       next();
@@ -269,7 +269,7 @@
       const c = cur.card;
       const ok = card && c.accept.includes(card.id);
       if (card) { addLog({ who: "you", t: card.kind === "texte" ? `(Vous citez : ${card.label})` : `(Vous produisez : ${card.label})` }); st.played.add(card.id); }
-      if (ok) { applyFx(s, cs, st, Object.assign({ cred: 2 }, c.ok && c.ok.fx)); addLog({ who: "sys", t: CR.ACT.signal(api, "bon") }); if (c.ok && c.ok.then) { push(c.ok.then); bump(); return; } }
+      if (ok) { applyFx(s, cs, st, Object.assign({ cred: 2 }, c.ok && c.ok.fx)); (CR.libre(s) || addLog({ who: "sys", t: CR.ACT.signal(api, "bon") })); if (c.ok && c.ok.then) { push(c.ok.then); bump(); return; } }
       else {
         if (card) { addLog({ who: "president", t: "Je ne vois pas le rapport, maître." }); applyFx(s, cs, st, { cred: -2 }); }
         applyFx(s, cs, st, c.miss && c.miss.fx);
@@ -398,7 +398,7 @@
       addLog({ who: Q.who || "client", t: o.a, name: Q.name });
       if (o.f) CR.addNote(s, cs, { text: o.a, fact: o.f, src: "court" });
       applyFx(s, cs, st, o.fx);
-      if (o.signal) addLog({ who: "sys", t: CR.ACT.signal(api, o.signal) });
+      if (o.signal) (CR.libre(s) || addLog({ who: "sys", t: CR.ACT.signal(api, o.signal) }));
       st.questions.push(o.id);
       setAsked(asked.concat(o.id));
       CR.spend(s, 3, "court", { busy: true });
@@ -437,6 +437,9 @@
     const [angle, setAngle] = useState(null);
     const [picked, setPicked] = useState([]);
     const max = P.max || 4;
+    // refonte (lot 4b) : le catalogue universel des moyens, le même dans toutes les affaires ; le mode assisté garde la liste préparée
+    const cat = CR.libre(s) && CR.PLAID && CR.PLAID.catalogue && ["defense", "pc"].includes(P.role || "defense") ? CR.PLAID.catalogue(P.role || "defense") : null;
+    const argOf = (id) => (cat ? CR.PLAID.convertir(s, cs, P, id, st) : P.args.find((a) => a.id === id));
     // version 1.0 : le ton et l'ordre comptent pour la défense et la partie civile à l'audience au fond ; le parquet peut répliquer
     const tonOn = !!(CR.PLAID && CR.PLAID.evaluer) && (!P.role || P.role === "defense" || P.role === "pc");
     const [ton, setTon] = useState("sobre");
@@ -452,14 +455,14 @@
     const toggle = (id) => {
       const on = picked.includes(id);
       setPicked(on ? picked.filter((x) => x !== id) : picked.length < max ? picked.concat(id) : picked);
-      const a = P.args.find((x) => x.id === id);
-      if (!on && picked.length < max && specOf(a) && !acites[id]) setCiting(id);
+      const a = argOf(id);
+      if (!on && picked.length < max && a && specOf(a) && !acites[id]) setCiting(id);
       if (on && citing === id) setCiting(null);
     };
     const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const plaider = () => {
       st.angle = angle;
-      const args = picked.map((id) => P.args.find((a) => a.id === id));
+      const args = picked.map((id) => argOf(id)).filter(Boolean);
       if (P.intro) addLog({ who: "you", t: T(P.intro) });
       let bons = 0, hors = 0;
       const retenus = [];
@@ -469,6 +472,8 @@
         if (plan && plan.subsidiaire === args.indexOf(a)) addLog({ who: "you", t: P.role === "pc" ? "Sur les intérêts civils, maintenant." : "À titre subsidiaire, si le tribunal entrait néanmoins en voie de condamnation :" });
         const sp = specOf(a);
         const libs = libsOf(a);
+        // un moyen du catalogue que le dossier ne permet pas, ou qu'aucune pièce n'appuie : le président recadre
+        if (a.horsSujet || a.sansPiece) { addLog({ who: "you", t: a.say }); addLog({ who: "president", t: a.sansPiece ? "Qu'est-ce qui, dans le dossier, l'établit, maître ?" : "Je ne vois pas ce qui, dans ce dossier, permet de soutenir cela, maître." }); hors++; res.push({ a, pert: false }); continue; }
         let textOk = true;
         let say = a.say || a.label;
         if (sp) {
@@ -484,7 +489,7 @@
         } else addLog({ who: "you", t: say });
         const facts = (a.cards || []).filter((c) => !libs.includes(c));
         // un argument qui ne tient que par son texte tombe avec une citation fausse
-        if (!textOk && facts.length === 0) { hors++; res.push({ a, pert: false }); addLog({ who: "sys", t: CR.ACT.signal(api, "mauvais") }); continue; }
+        if (!textOk && facts.length === 0) { hors++; res.push({ a, pert: false }); (CR.libre(s) || addLog({ who: "sys", t: CR.ACT.signal(api, "mauvais") })); continue; }
         (a.cards || []).filter((c) => CR.inHand(s, cs, c) && (textOk || !libs.includes(c))).forEach((c) => st.played.add(c));
         if (a.play) [].concat(a.play).forEach((c) => st.played.add(c));
         st.played.add("arg:" + a.id);
@@ -492,7 +497,7 @@
         const pert = a.pertinent ? a.pertinent(api, st, angle) : a.ok !== false;
         if (pert) bons++; else hors++;
         res.push({ a, pert: !!pert && !a.piege });
-        addLog({ who: "sys", t: CR.ACT.signal(api, pert ? "bon" : "mauvais") });
+        (CR.libre(s) || addLog({ who: "sys", t: CR.ACT.signal(api, pert ? "bon" : "mauvais") }));
         if (a.piege) { addLog({ who: a.qui || "president", t: a.rebut }); st.cred -= 1; CR.PLAID.joue(cs, a); }
       }
       if (CR.PLAID) CR.PLAID.vus(cs, P);
@@ -527,7 +532,8 @@
       <span className="pix">Réplique du ministère public — vous avez la parole en dernier (art. 460 CPP)</span>
       <div className="choices">${rep.options.map((o) => html`<button key=${o.id} className="choice" onClick=${() => repondre(o.id)}><strong>${o.t}</strong><span className="small muted"> — ${o.sub}</span></button>`)}</div>
     </div>`;
-    const ordre = picked.map((id) => P.args.find((a) => a.id === id)).filter(Boolean);
+    const libU = (id) => (cat ? (cat.flatMap((x) => x[2]).find((u) => u.id === id) || {}).label : null);
+    const ordre = picked.map((id) => { const a = argOf(id); return a && Object.assign({}, a, { _uid: id, label: libU(id) || a.label }); }).filter(Boolean);
     return html`<div className="plaidoirie">
       <${UI.Coach} k="plaidoirie" s=${s} />
       <span className="pix">${P.role === "pc" ? "Plaidoirie de la partie civile" : P.role === "jld" ? "Observations sur la détention" : P.role === "crpc" ? "Discussion avec le procureur" : P.role === "parquet" ? "Observations au parquet" : "Plaidoirie de la défense"}</span>
@@ -535,14 +541,15 @@
       ${P.angles && angle && html`<p className="small muted">${(P.angles.find((a) => a.id === angle) || {}).sub || ""}</p>`}
       ${tonOn && html`<div className="ton-pick"><span className="small">Le ton :</span>${CR.PLAID.TONS.map((t) => html`<button key=${t.id} type="button" className=${cx("tonb", ton === t.id && "on")} aria-pressed=${ton === t.id} onClick=${() => setTon(t.id)} title=${t.sub}>${t.t}</button>`)}<span className="small muted">${(CR.PLAID.TONS.find((t) => t.id === ton) || {}).sub}</span></div>`}
       <p className="small">Vos arguments (${picked.length}/${max})${tonOn ? " — l'ordre compte : le principal d'abord, le subsidiaire ensuite" : ", dans l'ordre"} :</p>
-      <div className="args">
-        ${P.args.map((a) => { const ok = dispo(a); const k = picked.indexOf(a.id); const sp = specOf(a); return html`<div key=${a.id} className="arg-wrap"><button className=${cx("arg", k >= 0 && "on", !ok && "off")} disabled=${!ok} onClick=${() => toggle(a.id)}>
+      ${cat && html`<div className="args args-cat">${cat.map(([k, titre, l]) => html`<div key=${k} className="cat-rub"><span className="cat-h">${titre}</span>${l.map((u) => { const kk = picked.indexOf(u.id); return html`<button key=${u.id} type="button" className=${cx("arg", kk >= 0 && "on")} onClick=${() => toggle(u.id)}>${kk >= 0 && html`<span className="arg-n">${kk + 1}</span>`}<span>${u.label}</span></button>`; })}</div>`)}</div>`}
+      <div className="args" hidden=${!!cat}>
+        ${(cat ? [] : P.args).map((a) => { const ok = dispo(a); const k = picked.indexOf(a.id); const sp = specOf(a); return html`<div key=${a.id} className="arg-wrap"><button className=${cx("arg", k >= 0 && "on", !ok && "off")} disabled=${!ok} onClick=${() => toggle(a.id)}>
           ${k >= 0 && html`<span className="arg-n">${k + 1}</span>`}<span>${sp && sp.raw ? CR.citeMasked(sp) : a.label}</span>${!ok && html`<span className="small muted"> — rien dans votre main pour l'appuyer</span>`}
         </button>
         ${sp && k >= 0 && (acites[a.id] ? html`<p className="small cite-line">${sp.raw ? "Article" : "Fondement"} : <${UI.CiteDone} s=${s} r=${acites[a.id]} /></p>` : citing === a.id ? html`<${UI.CiteInput} s=${s} expect=${sp.expect} label=${sp.raw ? "Citez l'article" : "Fondement : citez l'article"} onDone=${(r) => { setAcites(Object.assign({}, acites, { [a.id]: r })); setCiting(null); }} onSkip=${() => setCiting(null)} />` : html`<button type="button" className="link small" onClick=${() => setCiting(a.id)}>Citer l'article : art. …</button>`)}
         </div>`; })}
       </div>
-      ${tonOn && ordre.length > 1 && html`<ol className="plan-ord" aria-label="Votre plan">${ordre.map((a, i) => html`<li key=${a.id}><span className="plan-t">${a.label.length > 90 ? a.label.slice(0, 88) + "…" : a.label}</span><span className="plan-b"><button type="button" className="plan-mv" disabled=${i === 0} aria-label="Monter" onClick=${() => move(a.id, -1)}>▲</button><button type="button" className="plan-mv" disabled=${i === ordre.length - 1} aria-label="Descendre" onClick=${() => move(a.id, 1)}>▼</button></span></li>`)}</ol>`}
+      ${tonOn && ordre.length > 1 && html`<ol className="plan-ord" aria-label="Votre plan">${ordre.map((a, i) => html`<li key=${a._uid || a.id}><span className="plan-t">${a.label.length > 90 ? a.label.slice(0, 88) + "…" : a.label}</span><span className="plan-b"><button type="button" className="plan-mv" disabled=${i === 0} aria-label="Monter" onClick=${() => move(a._uid || a.id, -1)}>▲</button><button type="button" className="plan-mv" disabled=${i === ordre.length - 1} aria-label="Descendre" onClick=${() => move(a._uid || a.id, 1)}>▼</button></span></li>`)}</ol>`}
       <${Btn} kind="primary" disabled=${(P.angles && !angle) || picked.length === 0} onClick=${plaider}>Plaider</${Btn}>
     </div>`;
   }
@@ -557,7 +564,7 @@
       addLog({ who: "client", t: o.t });
       st.dernierMot = o.id;
       applyFx(s, cs, st, o.fx);
-      if (o.signal) addLog({ who: "sys", t: CR.ACT.signal(api, o.signal) });
+      if (o.signal) (CR.libre(s) || addLog({ who: "sys", t: CR.ACT.signal(api, o.signal) }));
       bump();
       next();
     };

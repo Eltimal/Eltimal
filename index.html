@@ -1828,6 +1828,12 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .staged .gav-card.ent-parole:not(.ent-card) { display: flex; flex-direction: column; gap: 0.4em; max-height: 48vh; overflow-y: auto; }
 .staged .gav-card.ent-parole:not(.ent-card) > .oral { background: rgba(4, 6, 11, 0.55); border-radius: 4px; padding: 0.6em 0.8em; }
 @media (max-width: 900px) { .staged .ent-card.ent-parole { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "oral" "qc" "cote" "fin"; grid-template-rows: auto minmax(8em, 1fr) auto auto auto; height: 62vh; } }
+
+/* lot 4b : le catalogue universel des moyens */
+.args-cat { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 16px; max-height: 42vh; overflow-y: auto; }
+.cat-rub { display: grid; gap: 4px; align-content: start; }
+.cat-h { font: 600 calc(11px * var(--tz)) var(--f-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted, #9a958a); padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,.1); }
+.args-cat .arg { text-align: left; font-size: calc(13px * var(--tz)); }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
@@ -1847,6 +1853,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/flow-common.js"></script>
 <script src="js/flow-penal.js"></script>
 <script src="js/flow-audience.js"></script>
+<script src="js/tribunal.js"></script>
 <script src="js/pixel.js"></script>
 <script src="js/video.js"></script>
 <script src="js/docs.js"></script>

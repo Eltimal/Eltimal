@@ -161,6 +161,17 @@ const P = require("./play"); const U = require("./util");
       await step(/Signer et continuer|fidèle/);
       ok(!!findBtn(doc, /^Quitter/), "pas d'issue de la garde à vue", texts(card()).slice(0, 200));
       ok(!!cs.vars.voie, "le parquet n'a pas orienté l'affaire");
+      // la pièce du dossier reprend l'audition jouée (A3)
+      if (CR.caseDef(cs).docs.pv_audition) {
+        const pvd = CR.renderDoc(s, cs, { key: "pv_audition" });
+        const tx = pvd.paras.map((p) => p.map((g) => (typeof g === "string" ? g : g.t)).join(" ")).join("\n");
+        const rep = cs.vars.auditionGav.filter((x) => x.sujet !== "identite" && x.a && !x.erreur);
+        ok(rep.every((x) => tx.includes(x.a)), "le procès-verbal du dossier n'est pas l'audition jouée", rep.find((x) => !tx.includes(x.a)));
+        ok(pvd.pstyle && pvd.pstyle.length === pvd.paras.length, "styles de paragraphe désalignés");
+        const err = cs.vars.auditionGav.find((x) => x.erreur);
+        if (err) ok(cs.flags.pvRectifie ? tx.includes(err.a) && !tx.includes(err.fausse) : tx.includes(err.fausse), "l'erreur de retranscription ne suit pas la relecture");
+        if ((cs.vars.questionsAvocat || []).length) ok(/Question de l'avocat|L'avocat pose la question/.test(tx), "les questions de l'avocat manquent au procès-verbal");
+      }
       console.log(`interface — ${CR.caseTitle(s, cs)} · conseil : ${JSON.stringify(cs.vars.conseilParole)} · résumé : ${cs.vars.conseilGav} · voie : ${cs.vars.voie} · notes : ${cs.notes.length}`);
     }
     if (errors.length) ko("erreurs de l'interface", errors.slice(0, 2).join(" | "));

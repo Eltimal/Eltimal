@@ -425,4 +425,59 @@
     const out = deb0 ? deb0(s, cs) : [];
     return out.concat((cs.vars && cs.vars.plaidNotes) || []);
   };
+
+  // =================================================================== Lot 4b : le catalogue universel des moyens (refonte)
+  // Le même index dans toutes les affaires, rangé comme un code : sa présence ne dit rien de sa pertinence. Chaque moyen
+  // renvoie, en coulisse, aux arguments réels que le dossier de l'affaire permet (ids) ; s'il n'y en a pas, ou si rien
+  // dans le dossier du joueur ne l'appuie, il est hors sujet et le tribunal le lui fait sentir. Aucun signal immédiat.
+  PL.CATALOGUE = [
+    ["procedure", "Procédure", [
+      { id: "u_nullite", label: "La nullité d'un acte de la procédure", ids: ["nullite"] },
+      { id: "u_prescription", label: "La prescription de l'action publique (art. 8 CPP)", ids: ["prescription"] },
+    ]],
+    ["fond", "Le fond", [
+      { id: "u_ident", label: "L'imputation : l'identification du prévenu n'est pas établie", ids: ["doute"] },
+      { id: "u_alibi", label: "L'imputation : le prévenu se trouvait ailleurs", ids: ["alibi"] },
+      { id: "u_temoin", label: "La matérialité : le témoignage ne confirme pas l'accusation", ids: ["temoin"] },
+      { id: "u_images", label: "La matérialité : les images ne montrent pas le geste reproché", ids: ["video"] },
+      { id: "u_nouveau", label: "La matérialité : l'élément nouveau versé au dossier", ids: ["retournement"] },
+      { id: "u_intention", label: "L'élément moral : le prévenu ignorait ce qu'on lui reproche", ids: ["notif"] },
+      { id: "u_ld", label: "La légitime défense (art. 122-5 CP)", ids: ["ld"] },
+      { id: "u_contrainte", label: "La contrainte ou l'état de nécessité (art. 122-2 et 122-7 CP)", ids: [] },
+      { id: "u_delegation", label: "La délégation de pouvoirs du dirigeant", ids: ["delegation"] },
+      { id: "u_requalif", label: "La requalification des faits", ids: ["requalif"] },
+      { id: "u_cumul", label: "Un même fait sous deux qualifications", ids: ["cumul"] },
+      { id: "u_recidive", label: "La récidive légale n'est pas constituée", ids: ["recidive", "rec"] },
+    ]],
+    ["peine", "La peine", [
+      { id: "u_garanties", label: "Les garanties de représentation (domicile, attaches)", ids: ["garanties"] },
+      { id: "u_emploi", label: "L'insertion professionnelle", ids: ["emploi"] },
+      { id: "u_amenag", label: "L'aménagement de la peine (art. 132-19 et 132-25 CP)", ids: ["amenagement"] },
+      { id: "u_casier", label: "Un casier vierge, un premier passage", ids: ["casier", "casier_pm"] },
+      { id: "u_enjeu", label: "Ce que la condamnation coûterait au prévenu (métier, enfants, inscription)", ids: ["enjeu"] },
+      { id: "u_mesures", label: "Les efforts accomplis depuis les faits", ids: ["mesures", "indemn"] },
+      { id: "u_confusion", label: "La confusion avec une peine déjà prononcée (art. 132-4 CP)", ids: ["confusion"] },
+      { id: "u_revocation", label: "Pas de révocation du sursis antérieur", ids: ["revocation"] },
+      { id: "u_amende", label: "Une amende proportionnée aux ressources", ids: ["amende"] },
+      { id: "u_attenuantes", label: "Les circonstances de l'espèce et la personnalité", ids: ["attenuantes", "personnalite", "perso"] },
+    ]],
+    ["civil", "Les intérêts civils", [
+      { id: "u_prejudice", label: "Le préjudice et ses justificatifs", ids: ["prejudice", "certificat"] },
+      { id: "u_475", label: "Les frais d'avocat (art. 475-1 CPP)", ids: ["art475"] },
+      { id: "u_partage", label: "La faute de la victime, qui réduit son droit à réparation", ids: [] },
+    ]],
+  ];
+  PL.catalogue = (role) => (role === "pc" ? PL.CATALOGUE.filter(([k]) => k !== "procedure") : PL.CATALOGUE);
+  // un moyen universel → l'argument réel de l'affaire, ou un moyen hors sujet ; « appuyé » : une pièce ou un fait en main
+  PL.convertir = function (s, cs, P, uid, st) {
+    const u = PL.CATALOGUE.flatMap(([, , l]) => l).find((x) => x.id === uid);
+    if (!u) return null;
+    const real = (P.args || []).find((a) => !a.piege && (u.ids.includes(a.id) || u.ids.some((i) => a.id.startsWith(i + "_") || a.id.startsWith(i + ":"))));
+    if (real) {
+      const appui = !real.cards || !real.cards.length || real.cards.some((c) => CR.inHand(s, cs, c) || (st && st.played && st.played.has(c)));
+      if (appui) return real;
+      return { id: uid, label: u.label, say: real.say || u.label, ok: false, sansPiece: true };
+    }
+    return { id: uid, label: u.label, say: `${u.label.replace(/^[^:]+ : /, "").replace(/^./, (c) => c.toUpperCase())} : c'est le moyen que la défense soutient.`, ok: false, horsSujet: true };
+  };
 })();

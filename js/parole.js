@@ -288,13 +288,58 @@
     for (const l of aud.lignes) {
       if (l.sujet === "identite" || !l.a) continue;
       const x = { t: `Question : ${l.q} Réponse : ${l.a}` };
-      if (fautif && l.sujet === "faits" && !l.silence) { fautif = false; segs.push({ t: `Question : ${l.q} Réponse : ${l.a.replace(/\.$/, "")}, je savais ce que je faisais.`, erreur: true, correct: `Réponse : ${l.a}` }); continue; }
+      if (fautif && l.sujet === "faits" && !l.silence) { fautif = false; l.erreur = true; l.fausse = `${l.a.replace(/\.$/, "")}, je savais ce que je faisais.`; segs.push({ t: `Question : ${l.q} Réponse : ${l.a.replace(/\.$/, "")}, je savais ce que je faisais.`, erreur: true, correct: `Réponse : ${l.a}` }); continue; }
       segs.push(x);
     }
     return { segs };
   };
 
+  // ------------------------------------------------------------------ Le procès-verbal d'audition du dossier (lot 3, A3)
+  // La pièce versée au dossier reprend l'audition jouée, mot pour mot ; une erreur de retranscription non rectifiée
+  // à la relecture y reste. L'en-tête, l'identité, la présence de l'avocat et la clôture de la pièce d'origine sont gardés.
+  P.pvAudition = function (s, cs, doc) {
+    const L = cs.vars.auditionGav;
+    if (!L || !L.length || !doc || !doc.paras) return doc;
+    const st = doc.pstyle || [];
+    const i0 = st.indexOf("titre");
+    let i1 = -1; for (let i = st.length - 1; i >= 0; i--) if (st[i] === "r") { i1 = i; break; }
+    const tete = i0 > 0 ? doc.paras.slice(0, i0) : [], tSt = i0 > 0 ? st.slice(0, i0) : [];
+    const pied = i1 >= 0 ? doc.paras.slice(i1 + 1) : doc.paras.slice(-1), pSt = i1 >= 0 ? st.slice(i1 + 1) : ["mention"];
+    // les faits que portait la pièce d'origine (aveu…) passent sur la première réponse aux faits qui n'est pas un silence
+    const faits = []; for (let i = i0; i >= 0 && i <= i1; i++) for (const g of doc.paras[i] || []) if (g && typeof g === "object" && g.f) faits.push(g.f);
+    const corps = [], cSt = [];
+    let titreFaits = false, posee = false;
+    corps.push(["SUR LA PERSONNALITÉ"]); cSt.push("titre");
+    for (const l of L) {
+      if (l.sujet === "identite") continue;
+      if (!titreFaits && !["personnalite", "antecedents"].includes(l.sujet)) { corps.push(["SUR LES FAITS"]); cSt.push("titre"); titreFaits = true; }
+      corps.push([`Question : ${l.q}`]); cSt.push("q");
+      if (!l.a) { corps.push(["Réponse : (La personne ne répond pas.)"]); cSt.push("r"); continue; }
+      const txt = `Réponse : ${l.erreur && !cs.flags.pvRectifie ? l.fausse || l.a : l.a}`;
+      const f = !posee && titreFaits && !l.silence && faits.length && l.sujet === "faits" && !/^(Non|Je n'ai rien)/.test(l.a) ? faits.shift() : null;
+      if (f) posee = true;
+      corps.push([f ? { t: txt, f } : txt]); cSt.push("r");
+    }
+    // les questions de l'avocat à l'issue de l'audition (art. 63-4-3) et leurs refus
+    const QA = cs.vars.questionsAvocat || [];
+    if (QA.length) for (const x of QA) { corps.push([x.refus ? `L'avocat pose la question suivante : « ${x.q} » L'officier de police judiciaire s'y oppose, la question étant de nature à nuire au bon déroulement de l'enquête.` : `Question de l'avocat : ${x.q} Réponse : ${x.a}`]); cSt.push("p"); }
+    const paras = tete.concat(corps, QA.length ? pied.filter((p, k) => !(pSt[k] === "p" && /question à poser|demande que soit précis/.test(JSON.stringify(p)))) : pied);
+    const pstyle = tSt.concat(cSt, QA.length ? pSt.filter((x, k) => !(x === "p" && /question à poser|demande que soit précis/.test(JSON.stringify(pied[k])))) : pSt);
+    const mots = paras.reduce((n, p) => n + p.map((g) => (typeof g === "string" ? g : g.t || "")).join(" ").split(/\s+/).length, 0);
+    return Object.assign({}, doc, { paras, pstyle, mots, feuillets: Math.max(1, Math.ceil(mots / 350)) });
+  };
+  if (CR.renderDoc && !CR.renderDoc.parole) {
+    const r0 = CR.renderDoc;
+    CR.renderDoc = function (s, cs, doc) {
+      const d = r0(s, cs, doc);
+      return doc && doc.key === "pv_audition" && cs && cs.vars && cs.vars.auditionGav ? P.pvAudition(s, cs, d) : d;
+    };
+    CR.renderDoc.parole = true;
+  }
+
   // ------------------------------------------------------------------ Quand la refonte joue la scène
   // Une affaire générée qui porte son tirage (g.parole) et que la simulation prend en charge ; le mode assisté garde les listes.
-  P.actif = (s, g) => !!(g && g.parole && g.parole.t && CR.SIM && CR.SIM.supporte(g.parole.t) && s && s.settings && s.settings.parole !== "assiste" && (CR.saisieMode ? CR.saisieMode(s) !== "liste" : true));
+  // le jeu sans guidage (refonte) ; le mode assisté (et le mode liste des parties automatiques) garde listes et signaux
+  CR.libre = (s) => !!(s && s.settings && s.settings.parole !== "assiste" && (CR.saisieMode ? CR.saisieMode(s) !== "liste" : true));
+  P.actif = (s, g) => !!(g && g.parole && g.parole.t && CR.SIM && CR.SIM.supporte(g.parole.t) && CR.libre(s));
 })();
