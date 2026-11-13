@@ -554,6 +554,7 @@
         const butin = /Ils ont pris (.+?)\. Préjudice/.exec((N.plainte || []).join(" "))[1];
         if (butin !== N.saisie) fact("G_partiel", { label: `Seule une partie du butin est retrouvée chez lui (${N.saisie})`, key: true, why: "Détenir un objet volé n'est pas avoir commis le cambriolage : la défense peut plaider le recel, ou l'absence de preuve de l'effraction." });
       }
+      if (SS.fuite && SS.fuite.partielle) fact("G_plaque_partielle", { label: `Le témoin n'a retenu qu'une partie de la plaque (${SS.fuite.masque}) ; ${SS.fuite.nb} véhicules correspondent`, key: true, why: "L'identification repose sur une plaque incomplète et une trace de choc : d'autres véhicules du même modèle restaient possibles." });
       if (SS.obtemperer) {
         const M = SS.obtemperer;
         if (!M.vu) fact("G_conducteur_non_vu", { label: "Le conducteur n'a pas été vu : seule la plaque est relevée", key: true, why: "Le titulaire de la carte grise n'est pas forcément celui qui conduisait : sans autre élément, l'imputation se discute." });

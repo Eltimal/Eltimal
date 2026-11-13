@@ -282,6 +282,18 @@
     if (SIM.deuxRoues(t, S)) S.deuxRoues = deuxRoues(S, t, k, r, E);
     if (SIM.deal(t, S)) S.deal = deal(S, t, k, r, E);
     if (SIM.detention(t, S)) S.detention = detention(S, t, k, r);
+    // délit de fuite : le témoin n'a parfois retenu qu'une partie de la plaque ; le fichier donne alors plusieurs véhicules
+    // du même modèle, et l'enquête retient celui qui porte une trace de choc (le texte du témoin et des constatations suit)
+    if (t && t.inf === "delit_fuite" && t.f && t.f.plaque && N) {
+      const part = ch(r, 0.35);
+      if (part) {
+        const pl = t.f.plaque, masque = pl.replace(/^(\w)\w-(\d)\d\d-(\w)\w$/, "$1?-$2??-$3?"), nb = int(r, 4, 19);
+        S.fuite = { partielle: true, masque, nb };
+        if (N.temoin) N.temoin = N.temoin.map((x) => x.replace(`J'ai noté la plaque : ${pl}.`, `J'ai noté une partie de la plaque : ${masque}, je crois. C'est allé très vite.`));
+        if (N.resume) N.resume = N.resume.split(pl).join(`${masque} (immatriculation partielle)`);
+        if (N.constat) N.constat = N.constat.map((x) => x.replace(`Un témoin a relevé l'immatriculation ${pl}. Le fichier des immatriculations désigne`, `Un témoin a relevé une immatriculation partielle (${masque}). Le fichier des immatriculations donne ${nb} véhicules de ce modèle ; parmi eux, celui de`).replace("; véhicule retrouvé avec une trace de choc", ", retrouvé avec une trace de choc"));
+      } else S.fuite = { partielle: false };
+    }
     if (SIM.obtemperer(t, S)) { const sc = t.f.sc, banal = sc !== "barrage" && ch(r, 0.25); S.obtemperer = { sc, banal, brassard: banal ? ch(r, 0.5) : true, vu: sc === "barrage" ? (ch(r, 0.85) ? "de face, vitre baissée, à moins d'un mètre" : null) : sc === "deux_roues" ? null : ch(r, 0.45) ? "de profil, au moment où le véhicule nous dépasse" : null, plaque: `${pk(r, ["FG", "GH", "EK", "HB", "DL"])}-${int(r, 100, 999)}-${pk(r, ["TR", "LM", "AZ", "PC", "XN"])}`, duree: int(r, 1, 6), hS: E.interp - int(r, 30, 600) }; }
     if (SIM.conjugal(t, S)) S.conjugal = { refus: ch(r, 0.25), mc: ch(r, 0.7) ? int(r, 1, 3) : 0, desordre: pk(r, ["une chaise renversée et des éclats de verre au sol", "la porte de la chambre fendue à hauteur d'épaule", "le contenu d'un sac renversé dans l'entrée", "aucun désordre apparent"]), jRech: E.debut + int(r, 60, 140) };
     if (SIM.rebellion(t, S)) S.rebellion = { passif: ch(r, 0.25), ordre: ch(r, 0.2), passant: k.has("video") || k.has("temoin"), duree: int(r, 20, 90) };
