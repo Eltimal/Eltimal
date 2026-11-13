@@ -19,7 +19,7 @@ const { boot } = require("./harness");
     n++;
     const tag = `${t.inf} ${t.sig.slice(0, 30)}`;
     const cs = Object.values(PZ.cotes); ok(new Set(cs).size === cs.length, `${tag} : cotes en double`);
-    for (const k of ["pv_transport", "inventaire_scelles", "pv_voisinage", "pv_autopsie", "commission_rogatoire", "pv_retour_cr"]) if (PZ.docs[k]) { const x = txt(rend(PZ, k, t)); ok(!/undefined|NaN|\$\{|\[object/.test(x), `${tag}/${k} : texte incomplet`, (x.match(/.{40}(undefined|NaN).{20}/) || [""])[0]); }
+    for (const k of ["pv_transport", "inventaire_scelles", "pv_voisinage", "pv_autopsie", "commission_rogatoire", "pv_retour_cr", "pv_reaudition"]) if (PZ.docs[k]) { const x = txt(rend(PZ, k, t)); ok(!/undefined|NaN|\$\{|\[object/.test(x), `${tag}/${k} : texte incomplet`, (x.match(/.{40}(undefined|NaN).{20}/) || [""])[0]); }
     if (PZ.docs.inventaire_scelles) {
       const T1 = txt(rend(PZ, "pv_transport", t)), T2 = txt(rend(PZ, "inventaire_scelles", t));
       const s1 = [...T1.matchAll(/Scellé n° (\w+) : ([^|]+)/g)].map((m) => m[1] + ":" + m[2].trim()), s2 = [...T2.matchAll(/Scellé n° (\w+) — ([^:|]+)/g)].map((m) => m[1] + ":" + m[2].trim());
@@ -33,7 +33,8 @@ const { boot } = require("./harness");
       const dans = a != null && b != null && (a <= b ? h0 >= a && h0 <= b : h0 >= a || h0 <= b);
       ok(dans, `${tag} : la fourchette du décès ne contient pas l'heure des faits`, `${m && m[0]} / ${h0}`);
     }
-    if (N.procedural) { mineurs++; ok(!PZ.docs.pv_voisinage, `${tag} : voisinage pour une victime mineure`); }
+    if (N.procedural) { mineurs++; ok(!PZ.docs.pv_voisinage && !PZ.docs.pv_reaudition, `${tag} : voisinage ou seconde audition pour une victime mineure`); }
+    if (PZ.docs.pv_reaudition) { const R = txt(rend(PZ, "pv_reaudition", t)); ok(/Je me suis trompée? la première fois/.test(R) === !!PZ.facts.G_temoin_varie, `${tag} : correction du témoin dite et notée différemment`); }
     if (PZ.docs.pv_voisinage) {
       vois++;
       const V = txt(rend(PZ, "pv_voisinage", t));

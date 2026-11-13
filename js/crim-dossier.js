@@ -107,7 +107,36 @@
       if (avant + apres > 240) fact("G_fourchette", { label: `La fourchette de l'heure du décès couvre ${Math.round((avant + apres) / 60)} heures`, key: true, why: "Une fourchette large ne situe pas les faits à l'heure de l'accusation : à confronter aux heures que donnent les autres pièces." });
     }
 
-    // 5. la commission rogatoire et la synthèse de son exécution
+    // 5. la seconde audition du témoin : il confirme, précise, et parfois corrige de bonne foi un point de sa première
+    // déclaration (l'heure, la distance, l'éclairage) — jamais pour un témoin mineur ni une victime mineure
+    const T = t.T;
+    if (T && !proc && (T.age || 30) >= 16) {
+      const rt = CR.seeded(t.sig + ":reaud");
+      const jR = jf + int(rt, 3, 12), mR = 10 * 60 + int(rt, 0, 300);
+      const premiere = ([].concat(N.temoins || []).find((x) => x.qui === "T") || { lines: [] }).lines[0] || "";
+      const corrige = rt() < 0.35;
+      const hDit = h0 + (corrige ? pk(rt, [-1, 1]) * int(rt, 30, 70) : int(rt, -8, 8));
+      const dist = pk(rt, ["cinq mètres", "une dizaine de mètres", "une vingtaine de mètres", "l'autre côté de la rue"]);
+      const lum = pk(rt, ["l'éclairage public", "la lumière de la cage d'escalier", "la vitrine d'en face", "presque rien, il faisait nuit"]);
+      const reconnait = pk(rt, ["Oui, sans hésiter.", "Je crois, oui. Je ne pourrais pas le jurer.", "C'est lui, je le reconnais à sa silhouette."]);
+      add("pv_reaudition", "Seconde audition du témoin", ENQ, () => DOCS.pv({ cote: cotes.pv_reaudition, proc: t.proc, service, unite: svc, cadre: t.flagrance ? "FLAGRANT DÉLIT" : "ENQUÊTE", titre: "Procès-verbal d'audition de témoin", qualite: "Témoin", numPV: "00" + int(CR.seeded(t.sig + ":reaud2"), 101, 899),
+        jour: jR, heure: mR, redacteur: opj, lieu: "Nous trouvant au service", objet: `OBJET : ${t.q.label} — seconde audition`,
+        identite: { nom: T.nom, prenom: T.prenom, g: T.g, metier: T.metier, adresse: T.adresse },
+        blocs: [
+          DOCS.decl(`« Je confirme ce que j'ai déclaré le jour des faits.${premiere ? " " + premiere.replace(/\s+$/, "") : ""} »`),
+          DOCS.titre("QUESTIONS ET RÉPONSES"),
+          DOCS.q("Quelle heure était-il ?"), DOCS.r(corrige ? { t: `Je me suis trompé${T.g === "f" ? "e" : ""} la première fois. En y repensant, c'était plutôt vers ${hm(hDit)} : j'étais rentré${T.g === "f" ? "e" : ""} après le journal télévisé.`, f: "G_temoin_varie" } : `Vers ${hm(hDit)}, je crois.`),
+          DOCS.q("À quelle distance vous trouviez-vous ?"), DOCS.r(`À ${dist}.`),
+          DOCS.q("Comment étaient les lieux éclairés ?"), DOCS.r({ t: `Par ${lum}.`, f: /presque rien/.test(lum) ? "G_temoin_nuit" : undefined }),
+          DOCS.q(`Reconnaissez-vous ${n(A)} sur la photographie qui vous est présentée ?`), DOCS.r({ t: reconnait, f: /jurer/.test(reconnait) ? "G_temoin_hesite" : undefined }),
+          DOCS.q("Avez-vous quelque chose à ajouter ?"), DOCS.r(pk(rt, ["Non.", "Non, j'ai tout dit.", "J'ai du mal à dormir depuis."])),
+        ], cloture: DOCS.clotureAudition("Paris", jR, mR + int(rt, 25, 55), T.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${opj.signe}, officier de police judiciaire`], st }));
+      if (corrige) fact("G_temoin_varie", { label: "Le témoin corrige l'heure des faits lors de sa seconde audition", key: true, why: "Un témoin qui varie sur l'heure peut varier sur le reste : la défense confronte ses deux déclarations." });
+      if (/presque rien/.test(lum)) fact("G_temoin_nuit", { label: "Le témoin voyait les lieux presque sans éclairage", key: true, why: "Ce qu'on voit la nuit, sans lumière, se discute : l'identification par ce témoin est fragile." });
+      if (/jurer/.test(reconnait)) fact("G_temoin_hesite", { label: "Le témoin hésite à reconnaître l'accusé", key: true, why: "Une reconnaissance hésitante ne vaut pas identification." });
+    }
+
+    // 6. la commission rogatoire et la synthèse de son exécution
     if (t.d.ri != null) {
       const jCR = t.d.ri + int(r, 1, 4), jRet = jCR + int(r, 18, 40);
       const actes = [].concat(N.actes || []).map((x) => (typeof x === "string" ? x : x.t)).filter(Boolean).slice(0, 4);
