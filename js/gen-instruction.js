@@ -472,7 +472,9 @@
       for (const en of enjeux) {
         if (en.effet !== "acquit") continue;
         const renfort = cs.vars.renfort && cs.vars.renfort[en.id] ? 0.12 : 0;
-        pieces["d_" + en.id] = { label: en.label, sens: "decharge", force: (en.fort ? 0.34 : 0.07) + renfort, need: ["arg:" + en.id, "E_" + en.id], noteSuffit: !!o.instruction };
+        // lot 7 : les pièces ajoutées au dossier (crim-dossier.js) appuient aussi les moyens qu'elles concernent
+        const appuis = en.id === "identification" ? ["G_temoin_hesite", "G_temoin_nuit", "G_heures_voisins", "G_temoin_varie", "G_aucune_trace"] : en.id === "ld" ? ["G_heures_voisins"] : [];
+        pieces["d_" + en.id] = { label: en.label, sens: "decharge", force: (en.fort ? 0.34 : 0.07) + renfort, need: ["arg:" + en.id, "E_" + en.id].concat(appuis), noteSuffit: !!o.instruction };
       }
       return { seuil: o.seuil || 0.48, pieces };
     }
