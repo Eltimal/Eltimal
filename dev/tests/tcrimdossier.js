@@ -37,6 +37,12 @@ const { boot } = require("./harness");
     { const P = txt(rend(PZ, "expertise_psy", t)); const et = t.f.psy || "intact";
       ok(/RÉPONSES AUX QUESTIONS/.test(P) && (et === "aboli" ? /aboli son discernement/.test(P) : et === "altere" ? /altéré son discernement/.test(P) : /ni aboli ni altéré|ayant aboli ou altéré/.test(P)), `${tag} : expertise psychiatrique incohérente avec l'état tiré (${et})`, P.slice(-300));
       ok(JSON.stringify(rend(PZ, "expertise_psy", t).paras).includes('"f":"X_psy"'), `${tag} : marqueur de l'expertise perdu`); }
+    for (const [k, c] of [["rapport_adn", "adn"], ["balistique", "balistique"], ["toxico", "toxico"]]) if (PZ.docs[k]) {
+      const R = txt(rend(PZ, k, t)), I = PZ.docs.inventaire_scelles ? txt(rend(PZ, "inventaire_scelles", t)) : "";
+      const nR = (/Scellé n° (\w+) reçu/.exec(R) || [])[1];
+      ok(/MÉTHODE/.test(R) && /RÉSERVES/.test(R), `${tag}/${k} : rapport sans méthode ni réserves`);
+      if (nR) ok(new RegExp("Scellé n° " + nR + " — ").test(I), `${tag}/${k} : le scellé du rapport n'est pas à l'inventaire`, nR);
+    }
     if (PZ.docs.pv_reaudition) { const R = txt(rend(PZ, "pv_reaudition", t)); ok(/Je me suis trompée? la première fois/.test(R) === !!PZ.facts.G_temoin_varie, `${tag} : correction du témoin dite et notée différemment`); }
     if (PZ.docs.pv_voisinage) {
       vois++;

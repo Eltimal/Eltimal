@@ -158,7 +158,55 @@
       };
     }
 
-    // 7. la commission rogatoire et la synthèse de son exécution
+    // 7. les expertises techniques en forme de rapport : les scellés reçus portent les numéros de l'inventaire, la méthode,
+    // le texte d'origine (marqueurs et phrases de défense intacts), les réserves de l'expert
+    const numDe = (k) => { const i = scel.findIndex((x) => x.k === k); return i >= 0 ? NUM[i] || String(i + 1) : null; };
+    const TECH = {
+      rapport_adn: { k: "adn", meth: "Extraction de l'ADN, amplification de 24 marqueurs (trousse homologuée), électrophorèse capillaire ; comparaison au fichier national automatisé des empreintes génétiques et aux profils de référence.", res: "La présence d'un profil génétique sur un support ne renseigne ni sur la date ni sur les circonstances du dépôt ; un transfert secondaire (par un objet ou une personne) ne peut être exclu." },
+      balistique: { k: "balistique", meth: "Examen macroscopique et microscopique comparatif des étuis et du projectile ; consultation du fichier des traces balistiques.", res: /pistolet|fusil|revolver|carabine|arme/i.test(N.saisie || "") ? "La comparaison porte sur l'arme saisie ; elle ne dit pas qui la tenait au moment du tir." : "Faute d'arme saisie, aucune comparaison avec une arme déterminée n'a pu être réalisée." },
+      toxico: { k: "toxico", meth: "Dépistage immunochimique, puis confirmation par chromatographie couplée à la spectrométrie de masse.", res: "Les concentrations relevées doivent être rapprochées de l'heure du prélèvement : elles décroissent avec le temps." },
+      expertise_tech: { k: null, meth: "Examen des pièces et scellés transmis, constatations sur place le cas échéant.", res: "Les conclusions valent dans la limite des éléments transmis à l'expert." },
+    };
+    for (const [key, X] of Object.entries(TECH)) {
+      if (!docs[key]) continue;
+      const vieux = docs[key];
+      const num = X.k ? numDe(X.k) : null;
+      const jRec = DOCS.jourDe(jf, mTfin) + int(CR.seeded(t.sig + ":" + key + ":rec"), 1, 3);
+      docs[key] = (x) => {
+        const o = vieux(x);
+        const avant = [["SCELLÉS ET MISSION"], [num ? `Scellé n° ${num} reçu le ${DOCS.date(jRec)}, intact, sur réquisition de l'officier de police judiciaire.` : `Pièces reçues le ${DOCS.date(jRec)}, sur réquisition de l'officier de police judiciaire.`], ["MÉTHODE"], [X.meth], ["RÉSULTATS"]];
+        const apres = [["RÉSERVES"], [X.res]];
+        return Object.assign({}, o, { paras: avant.concat(o.paras || [], apres) });
+      };
+    }
+
+    // 8. l'audition en garde à vue : les questions de tout enquêteur (emploi du temps, téléphone, tenue, relation avec la
+    // victime, consommation), avant la lecture ; les réponses suivent la position tirée (nier, minimiser, reconnaître)
+    if (docs.pv_audition_gav && A) {
+      const vieux = docs.pv_audition_gav;
+      const ra = CR.seeded(t.sig + ":audg");
+      const pos = t.stance || "nie";
+      const tel2 = ra() < 0.2, conso = pk(ra, ["Non, rien.", "Deux ou trois bières dans la soirée.", "Un peu de cannabis, comme tous les soirs.", "Non."]);
+      const vu = V ? (proc ? "Oui." : pk(ra, ["Oui, on se connaissait.", "De vue, seulement.", "Oui, depuis des années."])) : "Non.";
+      const Q = [
+        [`Que faisiez-vous le ${DOCS.date(jf)}, vers ${hm(h0)} ?`, { nie: "J'étais chez moi. Seul. Personne ne peut le confirmer, je regardais un match.", minimise: "J'étais là-bas, oui. Mais ça ne s'est pas passé comme vous le dites.", reconnait: "J'étais sur place. Je vais tout vous expliquer." }[pos] || "Je ne souhaite pas répondre."],
+        ["Quel numéro de téléphone utilisez-vous ?", `Le ${A.tel || "même depuis des années"}.${tel2 ? " J'en ai un autre, pour le travail, je ne connais pas le numéro par cœur." : ""}`],
+        ["Comment étiez-vous habillé ce jour-là ?", pk(ra, ["Un jean, un sweat. Comme d'habitude.", "Je ne me souviens plus.", "Mon survêtement noir, je crois."])],
+        ["Connaissiez-vous la victime ?", vu],
+        ["Aviez-vous consommé de l'alcool ou des stupéfiants ?", conso],
+        ["Avez-vous quelque chose à ajouter ?", { nie: "Je n'ai rien fait. Vous vous trompez de personne.", minimise: "Je regrette ce qui est arrivé. Je n'ai jamais voulu ça.", reconnait: "Je regrette. Je veux m'excuser auprès de la famille." }[pos] || "Non."],
+      ];
+      if (tel2) fact("G_second_tel", { label: "L'accusé déclare utiliser une seconde ligne, pour le travail", key: false });
+      docs.pv_audition_gav = (x) => {
+        const o = vieux(x);
+        const P = (o.paras || []).slice();
+        const fin = P.length && /Lecture faite/.test(JSON.stringify(P[P.length - 1])) ? P.pop() : null;
+        const qr = [["QUESTIONS ET RÉPONSES"]].concat(...Q.map(([q0, a0]) => [[`Question : ${q0}`], [`Réponse : ${a0}`]]));
+        return Object.assign({}, o, { paras: P.concat(qr, fin ? [fin] : []) });
+      };
+    }
+
+    // 9. la commission rogatoire et la synthèse de son exécution
     if (t.d.ri != null) {
       const jCR = t.d.ri + int(r, 1, 4), jRet = jCR + int(r, 18, 40);
       const actes = [].concat(N.actes || []).map((x) => (typeof x === "string" ? x : x.t)).filter(Boolean).slice(0, 4);
