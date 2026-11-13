@@ -19,6 +19,7 @@
   const Maj = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const guill = (x) => String(x).replace(/«\s?/g, "“").replace(/\s?»/g, "”");
 
+  const butinDe = (N) => { const m = /Ils ont pris (.+?)\. Préjudice/.exec((N.plainte || []).join(" ")); return m ? m[1] : null; };
   SIM.pieces = function (t, k, S) {
     const { A, V, T, N, C } = k;
     const E = S.E, jf = S.jf, SF = k.SF, TJ = k.TJ, q0 = k.q;
@@ -893,6 +894,8 @@
             deja ? p(pk(rr, ["Dans la chambre, sur une étagère, découvrons une balance électronique de précision et un rouleau de sachets de conditionnement.", "Rien de nature à intéresser l'enquête n'est découvert dans les pièces visitées.", "Dans un tiroir de la cuisine, découvrons des sachets vides de type zip."]))
               : p({ t: `Découvrons ${saisieTxt || "des objets en lien avec les faits"}, que nous plaçons sous scellé n° ${int(rr, 2, 9)}.`, f: "G_saisie" }),
             ...(N.conc || []).filter((c) => c.inf === "arme_b").map((c) => p({ t: c.constat, f: c.fait })),
+            // cambriolage : ce qui est retrouvé, rapproché de ce que la victime a déclaré volé
+            t.inf === "cambriolage" && V && butinDe(N) && saisieTxt && butinDe(N) !== saisieTxt ? p({ t: `Rapprochement avec la plainte de ${nf(V)}, qui déclare le vol de ${butinDe(N)} : seul${/^une |^la /.test(saisieTxt) ? "e" : ""} ${saisieTxt.replace(/^un /, "un ").replace(/^une /, "une ")} ${/^des |^deux /.test(saisieTxt) ? "sont retrouvés" : "est retrouvé" + (/^une /.test(saisieTxt) ? "e" : "")}, ${pk(rr, ["son numéro de série correspondant à la facture remise par la victime", "reconnu par la victime sur photographie", "portant la gravure décrite par la victime"])} ; le reste n'est pas retrouvé.`, f: "G_partiel" }) : null,
             t.quoi === "usage" ? p({ t: "Aucune balance, aucun conditionnement, aucune somme d'argent n'est découvert.", f: "G_conso" }) : null,
             p(`Fin des opérations à ${hm(E.perqFin)}. Retour au service, réintégration en cellule.`),
           ], cloture: mention("Dont procès-verbal, que la personne chez qui la perquisition a eu lieu signe avec nous."), signataires: ["La personne chez qui la perquisition a eu lieu", `${OPJ.signe}, officier de police judiciaire`].concat(PL ? [{ qui: "Assentiment écrit de la personne (annexe)", t: irr("perq_assentiment") ? "" : "signé", flag: irr("perq_assentiment") ? "perq_assentiment" : undefined }] : []), st: stO });

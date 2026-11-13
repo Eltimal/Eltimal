@@ -550,6 +550,10 @@
         const rv = CR.seeded(t.sig + ":g:vid"); const d = rv() < 0.45 ? (rv() < 0.5 ? 1 : -1) * (1 + Math.floor(rv() * 6)) : 0;
         if (Math.abs(d) >= 3) fact("G_horodatage", { label: `L'horloge de l'enregistreur ${d > 0 ? "avance" : "retarde"} de ${Math.abs(d)} minutes`, key: true, why: "Les heures des images ne sont pas l'heure réelle : à rapprocher de la chronologie des autres pièces avant d'en tirer quoi que ce soit." });
       }
+      if (t.inf === "cambriolage" && SS.perq && V && N.saisie && /Ils ont pris (.+?)\. Préjudice/.test((N.plainte || []).join(" "))) {
+        const butin = /Ils ont pris (.+?)\. Préjudice/.exec((N.plainte || []).join(" "))[1];
+        if (butin !== N.saisie) fact("G_partiel", { label: `Seule une partie du butin est retrouvée chez lui (${N.saisie})`, key: true, why: "Détenir un objet volé n'est pas avoir commis le cambriolage : la défense peut plaider le recel, ou l'absence de preuve de l'effraction." });
+      }
       if (SS.conjugal) {
         const M = SS.conjugal;
         if (M.refus) fact("G_refus_plainte", { label: "La victime ne veut pas déposer plainte", key: true, why: "Le parquet peut poursuivre sans plainte : la preuve repose alors sur les constatations, le certificat et les témoins, que la défense examine sans la parole de la victime." });
