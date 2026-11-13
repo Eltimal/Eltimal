@@ -542,6 +542,26 @@
             mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
           ], sigs: ["Le directeur du magasin"] }));
       }
+      // lot 1 ter, pièces techniques : la vérification de l'alcoolémie, datée sur la chronologie (dépistage sur place,
+      // mesure au service) ; contenu identique à l'ancienne pièce (aucune règle nouvelle : second contrôle, délai et marge
+      // restent ceux du catalogue, en attendant la lecture des textes)
+      if ((has("ethylo") || t.inf === "alcool") && t.f) {
+        const ra = CR.seeded(t.sig + ":g:ethy");
+        const tx = String((t.f.taux || 0).toFixed(2)).replace(".", ",");
+        const mDep = (E.interp || S.T0) + int(ra, 2, 6), mMes = Math.max(mDep + 15, (E.presentation || mDep + 20) + int(ra, 8, 20)), mClos = mMes + int(ra, 10, 20);
+        const serie = `ARCA-0${int(ra, 100, 999)}`, verif = jf - int(ra, 30, 300);
+        add("pv_alcoolemie", mMes, t.f.refus ? "Refus de vérification" : "Vérification de l'alcoolémie", () => DOCS.pv({ cote: cote("pv_alcoolemie"), proc: t.proc, service, unite, titre: t.f.refus ? "Procès-verbal de refus de se soumettre aux vérifications" : "Procès-verbal de vérification de l'alcoolémie", numPV: "00" + int(CR.seeded(t.sig + ":g:ethy2"), 101, 899), jour: j(mMes), heure: mMes, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`, objet: `OBJET : ${q0.label} — alcoolémie`,
+          blocs: t.f.refus ? [
+            p(`À ${hm(mDep)}, sur les lieux, invitons ${n(A)} à se soumettre aux épreuves de dépistage, puis, au service à ${hm(mMes)}, à la vérification par éthylomètre.`),
+            p({ t: `${Maj(il(A))} refuse à deux reprises, en déclarant : « Je souffle pas. »`, f: "G_refus" }),
+          ] : [
+            p(`À ${hm(mDep)}, sur les lieux, dépistage de l'imprégnation alcoolique par éthylotest électronique : résultat positif (art. L. 234-4 du code de la route).`),
+            p(`À ${hm(mMes)}, au service, procédons à la vérification de l'état alcoolique de ${n(A)} par éthylomètre de marque Dräger, modèle 7110 FP.`),
+            p({ t: irr("ethylo") ? `Appareil homologué, numéro de série ${serie}.` : `Appareil homologué, numéro de série ${serie}, dernière vérification périodique le ${DOCS.date(verif)}.`, flag: irr("ethylo") ? "ethylo" : undefined, f: irr("ethylo") ? "G_ethylo" : undefined }),
+            p({ t: `Mesure : ${tx} mg par litre d'air expiré.`, f: t.quoi === "marge" ? "G_marge" : "G_taux" }),
+            p("Notifions le résultat et le droit à une seconde vérification ; la personne n'en fait pas usage."),
+          ], cloture: mention(`Dont procès-verbal, clos ${at(mClos)}, signé après lecture.`), signataires: [`${OPJ.signe}, officier de police judiciaire`, "La personne contrôlée"], st: stO }));
+      }
       // lot 1 ter : le vol chez l'employeur — le relevé des badges du soir des faits (qui avait accès)
       if (t.inf === "vol" && t.f && t.f.sc === "vestiaire") {
         const rv = CR.seeded(t.sig + ":g:badge");
@@ -918,6 +938,22 @@
         add("expertise", mExp, X.titre, () => DOCS.forme({ title: X.titre, kind: "courrier", cote: cote("expertise"), entete: [X.ent, `Procédure n° ${t.proc} — cote ${cote("expertise")}`],
           blocs: [p(`Mission confiée par ${t.flagrance ? "l'officier de police judiciaire" : "le procureur de la République"} le ${DOCS.date(Math.max(jf, j(mExp) - 1))}.`), p({ t: X.txt, f: X.f }), route && mouille ? p("La pluie était tombée dans l'heure précédente ; l'adhérence retenue en tient compte.") : null],
           sigs: ["L'expert"] }));
+      }
+      // lot 1 ter, pièces techniques : l'analyse toxicologique routière, datée sur la chronologie (prélèvement au service,
+      // résultat avant la clôture ou non parvenu) ; contenu de l'ancienne pièce, concentration tirée
+      if (has("labo") && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].fam === "route") {
+        const rl = CR.seeded(t.sig + ":g:tox");
+        const sang = t.inf === "homicide_routier" || t.inf === "blessures_routieres";
+        const mPrel = (E.presentation || S.T0 + 30) + int(rl, 15, 60);
+        const thc = (int(rl, 12, 150) / 10).toFixed(1).replace(".", ",");
+        const mTox = E.fin != null ? E.fin - 90 : mPrel + 600;
+        add("rapport_labo", mTox, "Rapport du laboratoire", () => DOCS.forme({ title: "Rapport d'analyse toxicologique", kind: "courrier", cote: cote("rapport_labo"),
+          entete: ["Laboratoire de toxicologie de la préfecture de police", `Procédure n° ${t.proc} — cote ${cote("rapport_labo")}`],
+          blocs: [
+            p(`Analyse du prélèvement ${sang ? "sanguin" : "salivaire de confirmation"} effectué sur ${n(A)} ${at(mPrel)}.`),
+            t.quoi === "r_stups" ? p({ t: "Le dépistage salivaire de terrain est positif au THC ; le prélèvement sanguin a été adressé au laboratoire, résultat non parvenu à la clôture de la procédure.", f: "G_sans_analyse" })
+              : p({ t: (t.f.produit === "cocaïne" || t.f.produit === "cocaine" ? "Présence de cocaïne et de benzoylecgonine." : `Présence de delta-9-tétrahydrocannabinol (THC) : ${thc} ng/ml.`) + " Usage récent établi.", f: "G_tox" }),
+          ], sigs: ["L'ingénieur du laboratoire"] }));
       }
       // lot 1 ter, pièces techniques : le rapport du laboratoire sur les produits saisis, accordé à la pesée du service
       // (poids brut, emballages compris, à la pesée ; poids net au laboratoire) ; taux tirés dans les fourchettes d'usage
