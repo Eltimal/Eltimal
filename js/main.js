@@ -271,6 +271,7 @@
         <section className="panel-host">
           ${ui.panel === "bureau" && html`<${UI.TodayPanel} s=${s} go=${go} />`}
           ${ui.panel === "messagerie" && html`<${UI.InboxPanel} s=${s} go=${go} sel=${ui.mail} setSel=${(id) => setUi(Object.assign({}, ui, { mail: id }))} />`}
+          ${ui.panel === "ebarreau" && UI.EBarreauPanel && html`<${UI.EBarreauPanel} s=${s} go=${go} />`}
           ${ui.panel === "telephone" && html`<${UI.PhonePanel} s=${s} go=${go} />`}
           ${ui.panel === "dossiers" && html`<${UI.CasesPanel} s=${s} go=${go} caseId=${ui.caseId} setCase=${(id) => setUi(Object.assign({}, ui, { caseId: id }))} />`}
           ${ui.panel === "agenda" && html`<${UI.CalendarPanel} s=${s} go=${go} />`}

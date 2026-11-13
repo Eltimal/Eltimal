@@ -1873,6 +1873,53 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .call-scene.staged .call-libre > .ent-fin { grid-area: fin; align-self: end; }
 .call-scene.staged .call-libre .compo-l { grid-template-columns: 4.4em 1fr; }
 .call-scene.staged .call-libre .compo-sujets .compo-b, .call-scene.staged .call-libre .compo-b { padding: 0.2em 0.5em; font-size: calc(12px * var(--tz)); }
+
+/* e-Barreau (B1 bis) : le poste de messagerie pénale */
+.ebarreau-poste { display: grid; grid-template-columns: 190px 1fr; min-height: 520px; background: #eef0f6; color: #1c2340; border-radius: 6px; overflow: hidden; font-size: calc(13px * var(--tz)); }
+.eb-menu { background: #1b2340; color: #dfe4f5; display: flex; flex-direction: column; padding: 10px 0; }
+.eb-moi { padding: 6px 14px 12px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,.12); margin-bottom: 6px; }
+.eb-m { all: unset; cursor: pointer; padding: 8px 14px; }
+.eb-m.on, .eb-m:hover { background: rgba(255,255,255,.08); box-shadow: inset 3px 0 0 #d8403c; }
+.eb-quit { margin-top: auto; opacity: .8; }
+.eb-main { padding: 18px 22px; overflow: auto; }
+.eb-main h3 { margin: 0 0 6px; color: #1b2340; } .eb-main h4 { margin: 14px 0 6px; color: #1b2340; }
+.eb-tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 14px 0; }
+.eb-tuile { all: unset; display: grid; gap: 4px; padding: 18px 14px; background: #2b3563; color: #f2f4fb; border-radius: 6px; text-align: center; cursor: default; }
+button.eb-tuile { cursor: pointer; } .eb-tuile b { font-size: 1.6em; }
+.eb-card { background: #fff; border-radius: 6px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.12); max-width: 780px; position: relative; }
+.eb-dests { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; border-bottom: 1px solid #c9cfe0; padding: 6px 0; margin-bottom: 6px; }
+.eb-dests > .small { grid-column: 1 / -1; color: #3d64c9; }
+.eb-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.eb-chip { background: #e4e8f3; border-radius: 12px; padding: 2px 4px 2px 10px; display: inline-flex; gap: 4px; align-items: center; }
+.eb-chip button { all: unset; cursor: pointer; padding: 0 4px; }
+.eb-adr { border: none; outline: none; min-width: 160px; background: transparent; color: inherit; }
+.eb-annu-b { all: unset; cursor: pointer; color: #3d64c9; font-size: .9em; }
+.eb-f { display: grid; gap: 2px; } .eb-f .small { color: #3d64c9; }
+.eb-f input, .eb-f select, .eb-annu select, .eb-q { border: none; border-bottom: 1px solid #c9cfe0; background: transparent; padding: 4px 0; color: #1c2340; font: inherit; }
+.eb-objet { margin: 6px 0; }
+.eb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px 14px; }
+.eb-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
+.eb-gen-h { display: flex; justify-content: space-between; margin: 10px 0 4px; gap: 8px; flex-wrap: wrap; }
+.eb-gen { background: #f6f7fb; border: 1px solid #dde1ee; padding: 10px; white-space: pre-wrap; font: inherit; margin: 0; }
+.eb-pj { display: grid; gap: 4px; margin: 10px 0; } .eb-pj > .small { color: #3d64c9; }
+.eb-conf { display: block; margin-top: 8px; }
+.eb-annu { position: absolute; inset: 10px; z-index: 5; background: #fff; border-radius: 6px; box-shadow: 0 4px 18px rgba(0,0,0,.25); padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.eb-annu-head { display: flex; justify-content: space-between; } .eb-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.eb-annu-t { margin: 4px 0 0; color: #b8322f; font-size: .9em; text-decoration: underline; }
+.eb-annu-list { flex: 1; overflow: auto; display: grid; gap: 4px; align-content: start; }
+.eb-annu-l { all: unset; cursor: pointer; display: grid; grid-template-columns: 1.2fr 1.4fr .6fr; gap: 8px; padding: 8px 10px; border: 1px solid #e1e4ee; border-radius: 4px; }
+.eb-annu-l.on { background: #dfe7fb; border-color: #3d64c9; }
+.eb-annu-foot { display: flex; justify-content: flex-end; gap: 8px; }
+.eb-liste-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.eb-tbl { background: #fff; color: #1c2340; } .eb-tbl tr { cursor: pointer; } .eb-tbl tr:hover td { background: #f1f3fa; } .eb-nonlu td { font-weight: 600; }
+.eb-lect-h { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.eb-modal .modal-body, .eb-modal { max-width: min(1100px, 96vw); }
+.ebarreau-poste .btn:not(.btn-primary) { color: #1b2340; border-color: #9aa3c4; background: #fff; }
+.ebarreau-poste .btn:not(.btn-primary):hover { background: #eef0f6; }
+.ebarreau-poste .link { color: #3d64c9; }
+.ebarreau-poste input:not([type=checkbox]):not([type=radio]), .ebarreau-poste select { background: #fff !important; color: #1c2340 !important; border: none !important; border-bottom: 1px solid #c9cfe0 !important; border-radius: 0 !important; box-shadow: none !important; padding: 5px 2px !important; min-height: 0; }
+.ebarreau-poste input:focus, .ebarreau-poste select:focus { outline: none; border-bottom-color: #3d64c9 !important; }
+@media (max-width: 720px) { .ebarreau-poste { grid-template-columns: 1fr; } .eb-menu { flex-direction: row; flex-wrap: wrap; } .eb-annu-l { grid-template-columns: 1fr; } }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
@@ -1982,6 +2029,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/ui-travail.js"></script>
 <script src="js/ui-entretien.js"></script>
 <script src="js/canaux.js"></script>
+<script src="js/ebarreau.js"></script>
 <script src="js/ui-court.js"></script>
 <script src="js/ui-moments.js"></script>
 <script src="js/carriere.js"></script>

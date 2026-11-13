@@ -65,8 +65,8 @@ const { boot } = require("./harness");
     ok(de.depose && !de.irrecevable && de.deposeDay === (CR.isOuvrable(s.day) ? s.day : CR.addOuvrables(s.day, 1)), "le bon envoi e-Barreau ne prend pas date", JSON.stringify(de));
     const n0 = s.mails ? s.mails.length : (s.inbox || []).length;
     for (let k = 0; k < 2; k++) CR.endDay(s);
-    const boite = JSON.stringify(s.mails || s.inbox || []);
-    ok(/ne relève pas de notre service/.test(boite) && /aucune pièce jointe/.test(boite), "le service destinataire ne répond pas au message mal adressé", n0);
+    const boite = JSON.stringify(s.mails || s.inbox || []) + JSON.stringify((s.eb && s.eb.recus) || []);
+    ok(/ne relève pas de notre service/.test(boite) && /pas l'acte annoncé/.test(boite), "le service destinataire ne répond pas au message mal adressé", n0);
     ok(C.transmettre(s, b, "plainte_simple", "cep", { dest: "bop", pj: true }).ok && CR.drafted(b, "plainte_simple").depose, "le message mal adressé ne peut pas être renvoyé");
   }
   // 5. le mode liste (parties automatiques) garde le dépôt en un clic

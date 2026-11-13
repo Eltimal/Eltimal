@@ -83,12 +83,12 @@
 
   // =================================================================== Navigation
   const NAV = [
-    ["bureau", "desk", "Bureau"], ["messagerie", "inbox", "Messagerie"], ["telephone", "phone", "Téléphone"], ["dossiers", "cases", "Dossiers"],
+    ["bureau", "desk", "Bureau"], ["messagerie", "inbox", "Messagerie"], ["ebarreau", "inbox", "e-Barreau"], ["telephone", "phone", "Téléphone"], ["dossiers", "cases", "Dossiers"],
     ["agenda", "calendar", "Agenda"], ["carte", "map", "Carte"], ["bibliotheque", "library", "Bibliothèque"], ["cabinet", "firm", "Cabinet"],
     ["classeur", "binder", "Classeur"], ["journal", "journal", "Journal"],
   ];
   UI.Rail = ({ s, panel, onNav }) => {
-    const badge = { messagerie: CR.unreadCount(s), telephone: s.voicemails.filter((v) => !v.heard).length + (s.ring ? 1 : 0), cabinet: s.disc.open.filter((g) => !g.response).length };
+    const badge = { messagerie: CR.unreadCount(s), ebarreau: CR.EB && CR.libre && CR.libre(s) ? CR.EB.nonLus(s) : 0, telephone: s.voicemails.filter((v) => !v.heard).length + (s.ring ? 1 : 0), cabinet: s.disc.open.filter((g) => !g.response).length };
     return html`<nav className="rail" aria-label="Navigation">${NAV.map(([id, ic, label]) => html`<button key=${id} className=${cx("rail-btn", panel === id && "on")} onClick=${() => onNav(id)} aria-current=${panel === id ? "page" : null}>
       <${Icon} n=${ic} size=${18} /><span>${label}</span>${badge[id] ? html`<b className="badge">${badge[id]}</b>` : null}
     </button>`)}</nav>`;

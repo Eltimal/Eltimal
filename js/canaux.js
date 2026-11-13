@@ -54,11 +54,11 @@
     const d = CR.drafted(cs, key);
     if (!d || d.depose) return { ok: false, msg: "Rien à transmettre." };
     const tpl = CR.getTpl(s, cs, key);
-    if (canal === "cep" && o && o.dest !== "hors" && ((C.DEST[key] && !C.DEST[key].includes(o.dest)) || !o.pj)) {
+    if (canal === "cep" && o && o.dest !== "hors" && (C.ADMIS[key] || []).includes("cep") && ((C.DEST[key] && !C.DEST[key].includes(o.dest)) || ["ailleurs", "numero", "autre"].includes(o.dest) || !o.pj)) {
       // le message part, mais ne saisit personne
       CR.spend(s, 10, "admin");
       const r = { ok: true, retour: true, msg: `Message parti. Accusé de réception à ${CR.fmtTime(s.min)}.` };
-      CR.schedule(s, { day: CR.addBusinessDays(s.day, 1), min: 10 * 60, type: "fn", key: "cepRetour", data: { caseId: cs.id, key, dest: o.dest, pj: !!o.pj } });
+      CR.schedule(s, { day: CR.addBusinessDays(s.day, 1), min: 10 * 60, type: "fn", key: "cepRetour", data: { caseId: cs.id, key, dest: o.dest, pj: !!o.pj, adresse: o.adresse || null } });
       cs.vars.cepRetours = (cs.vars.cepRetours || 0) + 1;
       return r;
     }
@@ -74,7 +74,7 @@
     if (canal === "cep" && (min >= 17 * 60 || !CR.isOuvrable(jour))) jour = CR.addOuvrables(jour, 1);
     if (canal === "lrar") jour = CR.addBusinessDays(jour, 2 + (CR.hash(cs.id + key) % 2));
     if (canal === "chef") jour = CR.addBusinessDays(jour, 1);
-    d.depose = true; d.deposeDay = jour; d.transmis = { canal, day: s.day, min };
+    d.depose = true; d.deposeDay = jour; d.transmis = { canal, day: s.day, min, adresse: (o && o.adresse) || null };
     CR.timeline(s, cs, `${tpl.title} : transmis par ${C.lib(canal).toLowerCase()}${canal === "cep" ? ` (accusé de réception à ${CR.fmtTime(min)})` : ""}.`);
     if (!admis) {
       d.irrecevable = d.canal;
@@ -105,13 +105,21 @@
   CR.GLOBAL_FN.cepRetour = (s, x) => {
     const cs = s.cases[x.caseId]; if (!cs) return;
     const tpl = CR.getTpl(s, cs, x.key);
-    CR.mail(s, { from: C.service(x.dest), subject: `Votre envoi : ${tpl.title}`, kind: "greffe", caseId: cs.id, important: true,
-      body: [[x.pj ? `Maître, votre message ne relève pas de notre service. Il n'a pas été enregistré ; il vous appartient de l'adresser au service compétent.` : `Maître, votre message ne comportait aucune pièce jointe. Rien n'a été enregistré.`]] });
+    const texte = !x.pj ? "Maître, votre message ne comportait pas l'acte annoncé en pièce jointe. Rien n'a été enregistré."
+      : x.dest === "ailleurs" ? "Maître, votre message ne concerne pas une procédure de notre juridiction. Il n'a pas été enregistré ; il vous appartient de l'adresser à la juridiction compétente."
+      : x.dest === "numero" ? "Maître, le numéro de procédure indiqué ne correspond à aucune procédure enregistrée dans notre service. Rien n'a été enregistré ; merci de renvoyer votre message avec la bonne référence."
+      : "Maître, votre message ne relève pas de notre service. Il n'a pas été enregistré ; il vous appartient de l'adresser au service compétent.";
+    const de = x.adresse || C.service(x.dest);
+    if (CR.EB && CR.libre && CR.libre(s)) CR.EB.recu(s, { de, objet: `Votre envoi : ${tpl.title}`, caseId: cs.id, corps: [texte] });
+    else CR.mail(s, { from: C.service(x.dest), subject: `Votre envoi : ${tpl.title}`, kind: "greffe", caseId: cs.id, important: true, body: [[texte]] });
   };
   CR.GLOBAL_FN.canalIrrecevable = (s, x) => {
     const cs = s.cases[x.caseId]; if (!cs) return;
     const tpl = CR.getTpl(s, cs, x.key), d = CR.drafted(cs, x.key);
-    CR.mail(s, { from: "Greffe", subject: `${tpl.title} — irrecevable`, kind: "greffe", caseId: cs.id, important: true, body: [[`Maître, ${C.MOTIF(x.key, d ? d.irrecevable : "", tpl.title)}`]] });
+    const texte = `Maître, ${C.MOTIF(x.key, d ? d.irrecevable : "", tpl.title)}`;
+    CR.mail(s, { from: "Greffe", subject: `${tpl.title} — irrecevable`, kind: "greffe", caseId: cs.id, important: true, body: [[texte]] });
+    // un envoi électronique reçu par une structure de la liste : la réponse arrive aussi dans e-Barreau
+    if (CR.EB && d && d.irrecevable === "cep" && CR.libre && CR.libre(s)) CR.EB.recu(s, { de: (d.transmis && d.transmis.adresse) || "Greffe", objet: `${tpl.title} — irrecevable`, caseId: cs.id, corps: [texte] });
   };
 
   // ------------------------------------------------------------------ Le choix du canal (fenêtre)
@@ -122,8 +130,9 @@
       const tpl = CR.getTpl(s, cs, tplKey);
       const [res, setRes] = React.useState(null);
       const [cep, setCep] = React.useState(null); // écran e-Barreau : { dest, pj }
-      const choisir = (k) => { if (k === "cep") { setCep({ dest: null, pj: false }); return; } const r = C.transmettre(s, cs, tplKey, k); setRes(r); CR.store.bump(); };
+      const choisir = (k) => { if (k === "cep" && UI.EBarreau) { setCep({ poste: true }); return; } if (k === "cep") { setCep({ dest: null, pj: false }); return; } const r = C.transmettre(s, cs, tplKey, k); setRes(r); CR.store.bump(); };
       const envoyer = () => { const r = C.transmettre(s, cs, tplKey, "cep", cep); setRes(Object.assign({ ar: { min: s.min, dest: cep.dest } }, r)); setCep(null); CR.store.bump(); };
+      if (cep && cep.poste) return html`<${UI.Modal} wide className="eb-modal" title="e-Barreau" onClose=${onDone}><${UI.EBarreau} s=${s} init=${{ caseId: cs.id, acteAttendu: { caseId: cs.id, key: tplKey } }} onClose=${onDone} /></${UI.Modal}>`;
       if (cep) return html`<${UI.Modal} title="e-Barreau — nouveau message" onClose=${() => setCep(null)} footer=${html`<${Btn} kind="ghost" onClick=${() => setCep(null)}>Retour</${Btn}><${Btn} kind="primary" disabled=${!cep.dest} onClick=${envoyer}>Envoyer</${Btn}>`}>
         <div className="ebarreau">
           <p className="small muted">Communication électronique pénale. Destinataire : une structure de l'annuaire de la juridiction.</p>
