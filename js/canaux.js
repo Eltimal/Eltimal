@@ -21,9 +21,9 @@
   // canaux admis, acte par acte (table du lot 0)
   C.ADMIS = {
     conclusions_nullite: ["greffe"], requete_nullite: ["greffe"], plainte_simple: ["greffe", "lrar", "cep"], pcpc: ["greffe", "cep"],
-    citation: ["cj"], constitution_pc: ["lrar", "fax", "cep"], demande_actes: ["greffe", "lrar", "chef", "cep"], dml: ["greffe", "chef"], appel: ["greffe", "chef"],
+    citation: ["cj"], constitution_pc: ["lrar", "fax", "cep"], demande_actes: ["greffe", "lrar", "chef", "cep"], dml: ["greffe", "chef"], appel: ["greffe", "chef"], memoire_chins: ["greffe", "fax", "lrar", "cep"],
   };
-  const TEXTE = { conclusions_nullite: "art. 385 et 459", requete_nullite: "art. 173", plainte_simple: "art. 85 et D. 591", pcpc: "art. 85 et D. 591", citation: "art. 550", constitution_pc: "art. 420-1", demande_actes: "art. 82-1 et D. 591", dml: "art. 148-6 et D. 593", appel: "art. 502 et 503" };
+  const TEXTE = { conclusions_nullite: "art. 385 et 459", requete_nullite: "art. 173", plainte_simple: "art. 85 et D. 591", pcpc: "art. 85 et D. 591", citation: "art. 550", constitution_pc: "art. 420-1", demande_actes: "art. 82-1 et D. 591", dml: "art. 148-6 et D. 593", appel: "art. 502 et 503", memoire_chins: "art. 198 et D. 592" };
   C.MOTIF = (key, canal, titre) => canal === "cephors" ? `${titre} a été adressé à une adresse électronique qui ne figure pas sur la liste du ministère de la Justice (art. D. 591) : l'envoi ne vaut pas transmission. L'acte est irrecevable.` : ({
     "dml|cep": "La demande de mise en liberté ne peut pas être adressée par la voie électronique (art. D. 593) ; elle se forme par déclaration au greffier (art. 148-6). Elle est irrecevable : votre client reste détenu.",
     "dml|lrar": "La demande de mise en liberté se forme par déclaration au greffier, ou au chef d'établissement pour un détenu (art. 148-6) ; une lettre ne la saisit pas. Irrecevable.",
@@ -46,7 +46,7 @@
     ["jld", "Service du juge des libertés et de la détention", "Débats contradictoires"],
     ["hors", "Adresse nominative d'un greffier (messagerie personnelle)", "Échangée à l'audience"],
   ];
-  C.DEST = { plainte_simple: ["bop"], pcpc: ["doyen"], demande_actes: ["ji"], constitution_pc: ["correc"] };
+  C.DEST = { plainte_simple: ["bop"], pcpc: ["doyen"], demande_actes: ["ji"], constitution_pc: ["correc"], memoire_chins: ["chins"] };
   C.service = (k) => (C.SERVICES.find((x) => x[0] === k) || [null, k])[1];
 
   // transmettre : rend { ok, effet (jour), msg } ; o = { dest, pj } pour l'écran e-Barreau

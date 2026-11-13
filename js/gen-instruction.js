@@ -613,6 +613,24 @@
       ]) },
       body: [["Monsieur le juge,"], [`J'assiste ${nom(C)}${t.client === "P" ? `, ${V.age < 18 ? "représentant légal" : P.lien} de ${nomV}` : ""}. `, { s: "voie" }]],
     });
+    // lot 7 : le mémoire devant la chambre de l'instruction (art. 198, D. 592 ; dev/ref/actes-canaux.md) : en matière de
+    // détention, jusqu'au jour de l'audience ; sinon, parvenu trois jours avant ; le dernier mémoire récapitule tous les moyens
+    def.tpls.memoire_chins = (api) => {
+      const ap = api.cs.vars.appelForme || {};
+      const dp = ap.type === "dp";
+      return {
+        title: "Mémoire devant la chambre de l'instruction", kind: "acte", time: 60, dirLabel: "Rédigé",
+        depot: TJ.caLieu, depotLabel: `Greffe de la chambre de l'instruction, ${TJ.ca} (dépôt visé, art. 198)`, depotTime: 20,
+        slots: { recap: CR.choiceSlot("Les moyens", [
+          { t: "Le présent mémoire récapitule l'ensemble des moyens soutenus au soutien de l'appel, y compris ceux de la déclaration d'appel.", ok: true },
+          { t: "Le présent mémoire complète la déclaration d'appel : les moyens qui y sont développés sont maintenus et ne sont pas repris ici.", ok: false, defect: "recap:absent" },
+        ]) },
+        checks: [{ id: "points", label: "Les moyens", heading: D0 ? "La défense soutient :" : "La partie civile soutient :", options: dp
+          ? [{ id: "garanties", t: "Les garanties de représentation produites (domicile, emploi, attaches) permettent un contrôle judiciaire." }, { id: "144", t: "Aucun des objectifs de l'article 144 n'impose la détention." }]
+          : enjeux.filter((en) => en.effet !== "peine").map((en) => ({ id: en.id, t: D0 ? en.label + "." : `Contre l'argument « ${en.label.toLowerCase()} », le dossier répond.` })) }],
+        body: [[`Pour ${D0 ? nomA : nom(C)}, appelant${D0 ? "" : "e"}, sur l'appel de l'ordonnance du juge d'instruction. `, { s: "recap" }]],
+      };
+    };
     def.tpls.appel_ordo = (api) => {
       const typ = api.cs.vars.appelOrdoType || "dp";
       const lib = { dp: "l'ordonnance de placement en détention provisoire", oma: "l'ordonnance de mise en accusation", ortc: "l'ordonnance de requalification et de renvoi", nonlieu: "l'ordonnance de non-lieu", irresp: "l'ordonnance d'irresponsabilité pénale", refus_actes: "l'ordonnance de refus d'actes" }[typ];
@@ -660,6 +678,9 @@
       const ap = V0.appelOuvert;
       if (ap && !CR.drafted(cs, "appel_ordo") && s.day <= ap.jusque + 3) T({ id: "appel_ordo", label: `Faire appel : ${ap.label}`, sub: "Déclaration au greffe, dans les dix jours. Comptez vous-même.", kind: "draft", time: 20, run: () => { V0.appelOrdoType = ap.type; return { scene: "draft", tpl: "appel_ordo" }; } });
       if (ap && ap.accepter && !V0.appelRenonce && !CR.drafted(cs, "appel_ordo")) T({ id: "accepter_ordo", label: `Ne pas faire appel (${ap.labelCourt})`, sub: ap.accepter, kind: "admin", time: 5, run: () => { V0.appelRenonce = s.day; api.tl(`Pas d'appel : ${ap.label}.`); api.run("_ordoDefinitive", { type: ap.type }); return null; } });
+      // le mémoire pour la chambre de l'instruction, tant que l'audience n'a pas eu lieu
+      const hChins = cs.hearings.find((h) => h.script === "chins" && !h.attended && !h.missed && !h.canceled && h.day >= s.day);
+      if (hChins && !CR.drafted(cs, "memoire_chins")) T({ id: "memoire_chins", label: "Rédiger un mémoire pour la chambre de l'instruction", sub: `Audience le ${CR.fmtDate(hChins.day, "long")}. Article 198 : comptez vous-même le délai de dépôt.`, kind: "draft", time: 60, run: () => ({ scene: "draft", tpl: "memoire_chins" }) });
       // préparer le client au procès
       const a = pr.audience;
       if (a && a.day >= s.day && !cs.flags.prepClient) T({ id: "prep_proces", label: `Préparer ${C.prenom} au procès`, sub: D0 ? "La cour l'interrogera sur les faits et sur sa vie ; le dernier mot." : "Ce que la cour demandera, la déposition, le face-à-face.", kind: "meet", time: 0, where: pr.detention.statut === "dp" && D0 ? pr.detention.etab : "cabinet", run: () => { CR.spend(s, 90, "meet"); cs.flags.prepClient = s.day; CR.updatedClient(s, cs, 1.5); api.tl("Client préparé au procès."); return null; } });
@@ -952,6 +973,25 @@
       CR.PROC.event(api, `Appel de ${ap.label} devant la chambre de l'instruction (art. 186).`);
       api.hearing({ day: CR.rollForward(s.day + (ap.type === "dp" ? 8 : R.int(s, 25, 40))), min: 14 * 60, title: "Chambre de l'instruction — audience", where: `${TJ.ca}, ${TJ.caSub}`, lieu: TJ.caLieu, script: "chins", done: "apresChins", onMiss: "_chinsSansVous", duree: 45 });
     };
+    O.filed_memoire_chins = function (api, { res, depot }) {
+      const { s, cs } = api;
+      if (depot === false) return;
+      const d = CR.drafted(cs, "memoire_chins");
+      const h = cs.hearings.find((x) => x.script === "chins" && !x.attended && !x.canceled);
+      const ap = cs.vars.appelForme || {};
+      const jour = (d && d.deposeDay) != null ? d.deposeDay : s.day;
+      const limite = h ? (ap.type === "dp" ? h.day : h.day - 3) : null;
+      const recap = !(res && (res.defects || []).includes("recap:absent")) && !CR.hasDefect(cs, "memoire_chins", "recap:");
+      const points = ((res && res.picks && res.picks.points) || (d && d.picks && d.picks.points) || []).slice();
+      if (limite != null && jour > limite) {
+        cs.vars.memoire = { recevable: false };
+        CR.erreur(s, cs, { id: "memoire_tardif", texte: `Mémoire déposé le ${CR.fmtDate(jour, "long")}, pour une audience le ${CR.fmtDate(h.day, "long")}.`, sanction: ap.type === "dp" ? "Hors délai : en matière de détention, le mémoire doit être déposé au plus tard le jour de l'audience (art. 198)." : "Hors délai : le mémoire doit parvenir au greffe trois jours au moins avant l'audience (art. 198) ; la chambre n'en tient pas compte.", regul: "Plaider à l'audience." });
+        return;
+      }
+      cs.vars.memoire = { recevable: true, recap, points, day: jour };
+      if (!recap && cs.vars.appelForme) { cs.vars.appelForme.motif = false; CR.erreur(s, cs, { id: "memoire_recap", texte: "Le mémoire ne récapitule pas les moyens de la déclaration d'appel.", sanction: "Les moyens non repris dans le dernier mémoire sont réputés abandonnés (art. 198).", regul: "Déposer, dans le délai, un mémoire récapitulatif." }); }
+      CR.PROC.event(api, "Mémoire déposé devant la chambre de l'instruction (art. 198).");
+    };
     O._chinsSansVous = function (api) { api.run("chinsDecider", { played: new Set() }); api.run("apresChins", {}); };
     O.chinsDecider = function (api, { played }) {
       const { s, cs } = api;
@@ -959,14 +999,16 @@
       const pl = played || new Set();
       let lignes = [];
       if (ap.type === "dp") {
-        const g = ["K_attest", "K_promesse", "G_heberg", "G_emploi"].filter((f0) => CR.hasFact(cs, f0) || pl.has(f0)).length * 0.6 + (pl.has("arg:garanties") ? 0.5 : 0);
-        const res = CR.ACT.jld(api, { garanties: g, criteres: crime ? 2 : 1, gravite: crime ? 0.85 : 0.6, argument144: pl.has("arg:144") });
+        const M = cs.vars.memoire && cs.vars.memoire.recevable ? cs.vars.memoire : null; // le mémoire plaide même sans l'avocat
+        const g = ["K_attest", "K_promesse", "G_heberg", "G_emploi"].filter((f0) => CR.hasFact(cs, f0) || pl.has(f0)).length * 0.6 + (pl.has("arg:garanties") || (M && M.points.includes("garanties")) ? 0.5 : 0);
+        const res = CR.ACT.jld(api, { garanties: g, criteres: crime ? 2 : 1, gravite: crime ? 0.85 : 0.6, argument144: pl.has("arg:144") || !!(M && M.points.includes("144")) });
         if (res.decision === "dp") lignes = ["La chambre de l'instruction confirme l'ordonnance de placement en détention provisoire."];
         else { CR.PROC.detention(api, res.decision, {}); lignes = [`La chambre de l'instruction infirme l'ordonnance et place ${nomA} sous ${res.decision === "arse" ? "assignation à résidence avec surveillance électronique" : "contrôle judiciaire"}.`]; }
       } else {
         const R0 = cs.vars.reglement;
         const en = enjeux.find((z) => z.id === requalifEnjeu);
-        const fortPlaide = enjeux.some((z) => (pl.has("arg:" + z.id) || pl.has("E_" + z.id)) && (z.fort || (cs.vars.renfort && cs.vars.renfort[z.id])));
+        const Mm = cs.vars.memoire && cs.vars.memoire.recevable ? cs.vars.memoire : null;
+        const fortPlaide = enjeux.some((z) => (pl.has("arg:" + z.id) || pl.has("E_" + z.id) || (Mm && Mm.points.includes(z.id))) && (z.fort || (cs.vars.renfort && cs.vars.renfort[z.id])));
         const infirme = R.chance(s, CR.clamp(0.18 + (fortPlaide ? 0.25 : 0) + (ap.motif ? 0 : -0.1), 0.05, 0.6));
         if (!infirme) lignes = ["La chambre de l'instruction confirme l'ordonnance entreprise."];
         else if (D0 && R0.type === "oma" && t.q2) { R0.qual = "q2"; R0.jur = CAT.juridictionCrime(t.q2, t.ageFaits); R0.type = t.q2.nature === "crime" ? "oma" : "ortc"; lignes = [`La chambre de l'instruction infirme : les faits sont requalifiés en ${t.q2.label} et ${nomA} est renvoyé${e(A)} devant ${CAT.JUR_LABEL[R0.jur]}.`]; }
