@@ -540,6 +540,7 @@
         if (rc() < 0.25) fact("G_numero_autre", { label: "Les messages viennent d'un numéro qui n'est pas celui de l'intéressé", key: true, why: "Qui écrivait ? Un numéro inconnu ne s'attribue pas sans réquisition à l'opérateur ou sans aveu." });
         if (rc() < 0.3) fact("G_captures_partielles", { label: "Les réponses de la victime ont été supprimées : la conversation est partielle", key: true, why: "Des messages sortis de leur conversation se lisent mal : le contexte manque, la défense peut le demander." });
       }
+      if (PS.docs.pv_telephonie && has("telephonie") && t.inf === "appels_malveillants" && t.f.nb) fact("G_appels_compte", { label: `L'opérateur relève ${t.f.nb} appels de la ligne vers celle de la plaignante`, key: false });
       if (PS.docs.pv_telephonie && has("telephonie")) {
         const rt = CR.seeded(t.sig + ":g:tel"); rt(); // j0
         if (rt() < 0.22) fact("G_ligne_tiers", { label: "La ligne est une carte prépayée au nom d'un tiers", key: true, why: "Rien, dans la réquisition, ne dit qui utilisait la ligne : il faut un autre élément pour la lui attribuer." });

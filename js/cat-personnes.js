@@ -433,7 +433,7 @@
         titre: "les appels malveillants", lieu: "par téléphone",
         resume: `${f.nb} appels et messages${f.nuit ? ", surtout la nuit," : ""} attribués à ${X.n(A)}, reçus par ${X.nf(V)}.`,
         constat: [`Plainte de ${X.nf(V)} ; réquisition à l'opérateur : relevé des appels entrants sur la ligne de la victime.`],
-        plainte: [`Je reçois des appels en masque, ${f.nuit ? "entre deux et quatre heures du matin" : "toute la journée"}. ${X.Il(A)} ne dit rien, ${X.il(A)} respire, ou ${X.il(A)} raccroche. Parfois des messages vocaux : « ${CR.cap(X.lex("juron"))}, décroche. »`, `Au total, j'en ai compté environ ${f.nb}.`],
+        plainte: [`Je reçois des appels en masque, ${f.nuit ? "entre deux et quatre heures du matin" : "toute la journée"}. ${X.Il(A)} ne dit rien, ${X.il(A)} respire, ou ${X.il(A)} raccroche. Parfois des messages vocaux : « ${CR.cap(X.lex("juron"))}, décroche. »`, `Au total, j'en ai compté environ ${Math.max(10, Math.round((f.nb * (1 + (((f.nb * 7) % 41) - 20) / 100)) / 10) * 10)}.`],
         version: { nie: "J'ai pas appelé. Mon téléphone, plein de gens s'en servent.", minimise: "J'ai appelé, oui, pour parler. Quelques fois.", reconnait: "C'est moi. Je n'arrivais pas à m'arrêter." },
         audition: [{ q: `L'opérateur relève ${f.nb} appels depuis votre ligne vers celle de ${X.nf(V)}. Que répondez-vous ?`, a: { silence: "Je ne souhaite pas répondre.", expliquer: null, partiel: "J'ai appelé, oui." } }],
         prevention: `émis des appels téléphoniques malveillants réitérés à destination de ${X.nf(V)}, en vue de troubler sa tranquillité`,

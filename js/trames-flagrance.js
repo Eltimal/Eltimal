@@ -720,7 +720,8 @@
         const mReq = PL && E.enquete ? E.enquete(2) : E.debut + 300;
         const zone = pk(rt, ["d'environ 400 mètres", "d'environ 800 mètres", "de plus d'un kilomètre"]);
         const alibi = dou("alibi_tel"), ville0 = pk(rt, ["Sarcelles", "Bobigny", "Créteil", "Argenteuil"]);
-        const nContacts = int(rt, 12, 140), finGeo = j0 + int(rt, 21, 34);
+        const nContacts = t.inf === "appels_malveillants" && t.f.nb ? t.f.nb : int(rt, 12, 140), finGeo = j0 + int(rt, 21, 34);
+        const nuitN = t.inf === "appels_malveillants" && t.f.nb ? Math.round(t.f.nb * (t.f.nuit ? 0.7 + rt() * 0.15 : 0.1 + rt() * 0.15)) : null;
         const lignes = [[S.T0 - int(rt, 40, 90), "appel sortant", `${int(rt, 1, 4)} min ${int(rt, 10, 59)} s`], [S.T0 + (alibi ? int(rt, 5, 25) : -int(rt, 1, 4)), "SMS reçu", "—"], [Math.max(S.T0 + 6, (E.interp || S.T0 + 30) - int(rt, 4, 20)), "appel entrant", `${int(rt, 0, 2)} min ${int(rt, 5, 59)} s`]];
         add("pv_telephonie", mReq + 60, "Téléphonie", () => DOCS.forme({ title: "Procès-verbal d'exploitation des réquisitions téléphoniques", kind: "releve", cote: cote("pv_telephonie"),
           entete: [unite, `Procédure n° ${t.proc} — cote ${cote("pv_telephonie")}`],
@@ -728,7 +729,8 @@
             irr("requisition") ? p({ t: `Adressons à l'opérateur une réquisition aux fins d'obtenir la liste des appels entrants et sortants et les cellules déclenchées par la ligne ${A.tel}, du ${DOCS.date(j0)} au ${DOCS.date(jf + 2)}.`, flag: "requisition" })
               : p(`Vu l'autorisation du procureur de la République en date du ${DOCS.date(j(mReq))} (art. ${PL ? "77-1-1" : "60-1"}), adressons à l'opérateur une réquisition portant sur la ligne ${A.tel}, du ${DOCS.date(j0)} au ${DOCS.date(jf + 2)}.`),
             irr("geoloc") ? p({ t: `Poursuivons la géolocalisation en temps réel du véhicule utilisé par ${n(A)}, autorisée par le procureur de la République le ${DOCS.date(j0)}, jusqu'au ${DOCS.date(finGeo)}, date de son interpellation.`, flag: "geoloc" }) : null,
-            p({ t: `Réponse de l'opérateur : la ligne est ${tiers ? `une carte prépayée enregistrée au nom de ${titulaire}` : `attribuée à ${n(A)}`} ; ${nContacts} contacts avec ${V ? "la ligne de " + nf(V) : "des numéros identifiés"} sur la période.`, f: tiers ? "G_ligne_tiers" : undefined }),
+            p({ t: `Réponse de l'opérateur : la ligne est ${tiers ? `une carte prépayée enregistrée au nom de ${titulaire}` : `attribuée à ${n(A)}`} ; ${nuitN != null ? "de nombreux" : nContacts} contacts avec ${V ? "la ligne de " + nf(V) : "des numéros identifiés"} sur la période.`, f: tiers ? "G_ligne_tiers" : undefined }),
+            nuitN != null ? p({ t: `Appels émis par la ligne vers celle de ${V ? nf(V) : "la plaignante"} sur la période : ${nContacts}, dont ${nuitN} entre 22 heures et 6 heures ; tous en numéro masqué.`, f: "G_appels_compte" }) : null,
             p(`Activations relevées le ${DOCS.date(jf)} :`),
             ...lignes.slice().sort((a, b) => a[0] - b[0]).map(([m, typ, du]) => ligne(`${hm(m)} — ${typ}`, `durée ${du}, relais ${alibi ? ville0 : "couvrant le secteur des faits"}`)),
             alibi ? p({ t: `Le jour des faits, entre ${hm(S.T0 - 120)} et ${hm(S.T0 + 150)}, la ligne déclenche exclusivement des relais situés à ${ville0}.`, f: "G_alibi" })
