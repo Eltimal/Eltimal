@@ -281,6 +281,7 @@
     if (SIM.tire(t, S)) S.tire = tire(S, t, k, r, E);
     if (SIM.deuxRoues(t, S)) S.deuxRoues = deuxRoues(S, t, k, r, E);
     if (SIM.deal(t, S)) S.deal = deal(S, t, k, r, E);
+    if (SIM.detention(t, S)) S.detention = detention(S, t, k, r);
     S.E = E;
     S.auteurs = { apj: { nom: t.gpx[0], style: CR.DOCS.style(CR.seeded(t.sig + ":apj")) }, opj: { nom: k.opjN, style: CR.DOCS.style(CR.seeded(t.sig + ":opj")) } };
     S.indicatif = `TV ${pk(r, ["17", "18", "19", "20", "21", "22"])}${pk(r, ["1", "2", "3", "4"])}`;
@@ -295,6 +296,12 @@
       return CR.DOCS.hm(cur);
     }));
     // vol à la tire : l'objet retrouvé au sol n'était pas « en possession » de l'intéressé
+    if (S.detention) {
+      const D = S.detention, ajout = [];
+      if (D.dom) ajout.push(D.coloc ? `L'appartement, ${D.pieces === "un studio" ? "un studio" : "de " + D.pieces}, est partagé avec un colocataire, ${D.colocN}, absent lors de la perquisition ; la cuisine est commune.` : `${A.g === "f" ? "L'intéressée" : "L'intéressé"} occupe seul${A.g === "f" ? "e" : ""} l'appartement, ${D.pieces === "un studio" ? "un studio" : "de " + D.pieces}.`);
+      else ajout.push(`Le véhicule, ${D.modele}, ${D.tiers ? `appartient à ${D.proprio}` : "est au nom de l'intéressé" + (A.g === "f" ? "e" : "")} ; ${D.passagers ? `${D.passagers === 1 ? "un passager est" : "deux passagers sont"} à bord` : "le conducteur est seul à bord"}.`);
+      S.constat = S.constat.concat(ajout);
+    }
     if (S.deal) {
       const D = S.deal, nb = ["zéro", "une", "deux", "trois", "quatre", "cinq"];
       S.constat = S.constat.map((x) => x.replace("à trois personnes successives", `à ${nb[D.nT] || D.nT} personnes successives`)
@@ -406,6 +413,21 @@
       guet, poste, distance, gene, nT, tr, cache, acheteur: !guet && ch(r, 0.55),
       cacheOu: pk(r, ["dans une boîte aux lettres éventrée du hall", "dans un trou du muret, à trois mètres", "sous la grille d'un arbre, à cinq mètres"]),
       cri: pk(r, ["Ara ! Ara !", "Ça bouge !", "Les condés !"]),
+    };
+  }
+
+  // ---------------------------------------------------------------- lot 1 ter : la détention de stupéfiants
+  // Ce qui fait l'affaire : à qui sont les produits. Au domicile, un colocataire partage parfois la cuisine où est le
+  // placard ; en voiture, le véhicule est parfois celui d'un tiers et des passagers sont à bord. La balance et les sachets
+  // vides, quand il y en a, tirent vers le trafic ; leur absence, vers l'usage.
+  SIM.detention = (t, S) => !!(t && t.inf === "stups_detention" && t.f && ["domicile", "voiture"].includes(t.f.sc) && t.flagrance && !(S && S.prelim));
+  function detention(S, t, k, r) {
+    const dom = t.f.sc === "domicile";
+    const prenom = pk(r, ["Yanis", "Mehdi", "Lucas", "Inès", "Sofiane", "Clara"]), nom = pk(r, ["Bensalem", "Garnier", "Diakité", "Morel", "Haddad"]);
+    return {
+      dom, coloc: dom && ch(r, 0.35), colocN: `${prenom} ${nom}`, pieces: pk(r, ["deux pièces", "trois pièces", "un studio"]),
+      tiers: !dom && ch(r, 0.4), proprio: pk(r, ["sa sœur", "un ami", "une société de location"]), passagers: dom ? 0 : pk(r, [0, 0, 1, 2]),
+      modele: pk(r, ["une Renault Clio grise", "une Peugeot 208 noire", "une Citroën C3 blanche"]),
     };
   }
 

@@ -523,6 +523,12 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      if (SS.detention) {
+        const D = SS.detention;
+        if (D.coloc) fact("G_coloc", { label: `Le colocataire, ${D.colocN}, partage la cuisine où étaient les produits`, key: true, why: "Un produit trouvé dans une pièce commune n'est pas, par là même, à celui qui est là : la détention suppose la maîtrise." });
+        if (D.tiers) fact("G_vehicule_tiers", { label: `Le véhicule appartient à ${D.proprio}`, key: true, why: "Le conducteur d'une voiture prêtée ne sait pas forcément ce qu'il y a sous un siège." });
+        if (D.passagers) fact("G_passagers", { label: `${D.passagers === 1 ? "Un passager" : "Deux passagers"} à bord`, key: true, why: "Plusieurs personnes avaient accès à l'endroit de la découverte : l'imputation se discute." });
+      }
       if (SS.deal) {
         const M = SS.deal;
         if (M.gene) fact("G_vue_genee", { label: `L'observation s'est faite ${M.gene}, à ${M.distance} mètres`, key: true, why: "Ce qu'un policier voit d'une remise de la main à la main, de loin et gêné, se discute : la défense interroge les conditions de l'observation." });
