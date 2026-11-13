@@ -206,7 +206,29 @@
       };
     }
 
-    // 9. la commission rogatoire et la synthèse de son exécution
+    // 9. les auditions de la victime survivante et du proche : questions d'usage ; le proche donne le dernier signe de vie
+    // (toujours antérieur aux faits), repère de chronologie que la défense rapproche de la fourchette de l'autopsie
+    if (docs.pv_victime && V && !proc && !I.deces) {
+      const vieux = docs.pv_victime;
+      const rv = CR.seeded(t.sig + ":audv");
+      const Q = [
+        ["Avez-vous été examiné par un médecin ?", pk(rv, ["Oui, aux urgences, puis à l'unité médico-judiciaire.", "Oui, à l'unité médico-judiciaire, sur votre réquisition.", "Pas encore. J'ai rendez-vous."])],
+        ["Comment allez-vous depuis les faits ?", pk(rv, ["Je ne dors plus. Je sursaute au moindre bruit.", "Je ne sors plus seul" + (V.g === "f" ? "e" : "") + ".", "J'ai repris le travail, mais c'est difficile."])],
+        ["Connaissiez-vous l'auteur ?", pk(rv, ["Oui.", "De vue.", "Non, jamais vu."])],
+        ["Souhaitez-vous être assisté" + (V.g === "f" ? "e" : "") + " d'un avocat et vous constituer partie civile ?", pk(rv, ["Oui.", "Je vais y réfléchir.", "Oui, et je demande réparation."])],
+      ];
+      docs.pv_victime = (x) => { const o = vieux(x); const P = (o.paras || []).slice(); const fin = P.length && /Lecture faite|clos/.test(JSON.stringify(P[P.length - 1])) ? P.pop() : null; return Object.assign({}, o, { paras: P.concat([["QUESTIONS ET RÉPONSES"]], ...Q.map(([q0, a0]) => [[`Question : ${q0}`], [`Réponse : ${a0}`]]), fin ? [fin] : []) }); };
+    }
+    if (docs.pv_proche && V && I.deces && !proc) {
+      const vieux = docs.pv_proche;
+      const rp = CR.seeded(t.sig + ":proche");
+      const hDer = h0 - int(rp, 20, 150);
+      const moyen = pk(rp, ["un message", "un appel de deux minutes", "un message vocal"]);
+      fact("G_dernier_signe", { label: `Dernier signe de vie de la victime : ${moyen} à ${hm(hDer)}`, key: false });
+      docs.pv_proche = (x) => { const o = vieux(x); const P = (o.paras || []).slice(); const fin = P.length && /Lecture faite|clos/.test(JSON.stringify(P[P.length - 1])) ? P.pop() : null; return Object.assign({}, o, { paras: P.concat([["QUESTIONS ET RÉPONSES"], [`Question : Quand avez-vous eu des nouvelles de ${V.prenom} pour la dernière fois ?`], [{ t: `Réponse : Le soir même. ${CR.cap(moyen)} à ${hm(hDer)}. ${pk(rp, ["Rien d'inquiétant.", `${V.g === "f" ? "Elle" : "Il"} disait qu'${V.g === "f" ? "elle" : "il"} rentrait.`, `${V.g === "f" ? "Elle" : "Il"} avait l'air tendu${V.g === "f" ? "e" : ""}.`])}`, f: "G_dernier_signe" }], ["Question : Lui connaissiez-vous des ennemis, des dettes, des menaces ?"], [`Réponse : ${pk(rp, ["Non. Personne.", "Des histoires d'argent, peut-être. Je ne sais pas avec qui.", "Je savais qu'il y avait des tensions avec lui."])}`]], fin ? [fin] : []) }); };
+    }
+
+    // 10. la commission rogatoire et la synthèse de son exécution
     if (t.d.ri != null) {
       const jCR = t.d.ri + int(r, 1, 4), jRet = jCR + int(r, 18, 40);
       const actes = [].concat(N.actes || []).map((x) => (typeof x === "string" ? x : x.t)).filter(Boolean).slice(0, 4);

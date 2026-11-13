@@ -43,6 +43,11 @@ const { boot } = require("./harness");
       ok(/MÉTHODE/.test(R) && /RÉSERVES/.test(R), `${tag}/${k} : rapport sans méthode ni réserves`);
       if (nR) ok(new RegExp("Scellé n° " + nR + " — ").test(I), `${tag}/${k} : le scellé du rapport n'est pas à l'inventaire`, nR);
     }
+    if (PZ.docs.pv_proche && PZ.facts.G_dernier_signe && PZ.docs.pv_autopsie) {
+      const P = txt(rend(PZ, "pv_proche", t)), A2 = txt(rend(PZ, "pv_autopsie", t));
+      const hD = H((/à (\d+[\s\u00a0\u202f]h[\s\u00a0\u202f]\d+)\./.exec(P) || [])[1] || ""), h0 = ((t.d.h % 1440) + 1440) % 1440;
+      ok(hD != null && ((h0 - hD + 1440) % 1440) >= 20 && ((h0 - hD + 1440) % 1440) <= 150, `${tag} : le dernier signe de vie n'est pas antérieur aux faits`, `${hD} / ${h0}`);
+    }
     if (PZ.docs.pv_reaudition) { const R = txt(rend(PZ, "pv_reaudition", t)); ok(/Je me suis trompée? la première fois/.test(R) === !!PZ.facts.G_temoin_varie, `${tag} : correction du témoin dite et notée différemment`); }
     if (PZ.docs.pv_voisinage) {
       vois++;
