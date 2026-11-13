@@ -90,7 +90,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
     ok(bo, "structure BO absente de l'annuaire affiché", texts(host).slice(0, 300));
     if (bo) { await click(w, bo); await click(w, findBtn(host, /^Ajouter$/)); await sleep(30); }
     const selects = host.querySelectorAll(".eb-compose select");
-    await setSel(selects[0], "Plainte"); await setSel(host.querySelectorAll(".eb-compose select")[1], "Plaignant");
+    await setSel(selects[0], cs.id); await setSel(host.querySelectorAll(".eb-compose select")[1], "Plainte"); await setSel(host.querySelectorAll(".eb-compose select")[2], "Plaignant");
     const inputs = [...host.querySelectorAll(".eb-compose .eb-f input")];
     const saisir = async (el, v) => { const set = Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, "value").set; set.call(el, v); el.dispatchEvent(new w.Event("input", { bubbles: true })); await sleep(20); };
     await saisir(inputs[0], "Dupont"); await saisir(host.querySelectorAll(".eb-compose .eb-f input")[1], "Marie");

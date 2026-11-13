@@ -410,6 +410,8 @@
     const { s, cs, def } = api;
     cs.proc.copieDelivree = s.day;
     const docs = (cfg(api).copie || []);
+    // mode libre : la copie arrive par e-Partage (PLEX), à télécharger avant l'expiration du lien
+    if (CR.EB && CR.libre && CR.libre(s)) { CR.EB.partager(s, cs, docs, def.docTitles || {}); if (CR.hookExists(cs, "copieDelivree")) api.run("copieDelivree", {}); return; }
     for (const k of docs) if (!CR.hasDoc(cs, k)) api.doc(k, (def.docTitles && def.docTitles[k]) || k);
     api.mail({ from: "Greffe du juge d'instruction", subject: "Copie du dossier de la procédure", kind: "greffe", pages: 10, body: [[`La copie du dossier est à votre disposition : ${CR.plural(docs.length, "pièce")} versée${docs.length > 1 ? "s" : ""} à votre dossier.`], ["Rappel : la reproduction des pièces est réservée à l'usage exclusif de la défense (art. 114)."]] });
     if (CR.hookExists(cs, "copieDelivree")) api.run("copieDelivree", {});
@@ -487,7 +489,7 @@
     if (cs.camp === "pc" && p.audience && p.audience.day >= s.day && !no.has("constitution") && !CR.drafted(cs, "constitution_pc")) T({ id: "constitution", label: "Rédiger la constitution de partie civile et le chiffrage", sub: "Postes de préjudice, pièces justificatives, article 475-1.", kind: "draft", time: 90, run: () => ({ scene: "draft", tpl: "constitution_pc" }) });
     // instruction
     if (["information", "reglement"].includes(p.stade)) {
-      if (!no.has("copie") && p.copieDemandee == null && (cs.camp === "pc" || p.mex != null)) T({ id: "copie", label: "Demander la copie du dossier", sub: "Article 114. Pour le mis en examen, la date compte pour le délai des nullités.", kind: "admin", time: 10, run: () => { PEN.demanderCopie(api); return null; } });
+      if (!no.has("copie") && p.copieDemandee == null && (cs.camp === "pc" || p.mex != null)) T({ id: "copie", label: "Demander la copie du dossier", sub: "Article 114. Pour le mis en examen, la date compte pour le délai des nullités.", kind: "admin", time: 10, run: () => { if (CR.EB && CR.libre && CR.libre(s)) return { scene: "ebarreau", objet: "Demande de copie du dossier" }; PEN.demanderCopie(api); return null; } });
       if (!no.has("actes") && C.actes) T({ id: "actes", label: "Rédiger une demande d'actes", sub: "Article 82-1 : expertise, audition, confrontation, transport sur les lieux.", kind: "draft", time: 60, run: () => ({ scene: "draft", tpl: "demande_actes" }) });
       if (!no.has("requete") && cs.camp === "defense" && cs.issues.length) T({ id: "requete", label: "Rédiger une requête en nullité", sub: "Devant la chambre de l'instruction, par déclaration au greffe.", kind: "draft", time: 120, run: () => ({ scene: "draft", tpl: "requete_nullite" }) });
     }

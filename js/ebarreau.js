@@ -38,10 +38,10 @@
     for (const T of EB.tribunaux()) for (const x of EB.annuaire(T.type, T.ville)) if (x.adresse === a) return x;
     return null;
   };
-  EB.OBJETS = ["ap-communication-de-piece", "Plainte", "Plainte avec constitution de partie civile", "Constitution de partie civile", "Demande d'actes", "Demande de renvoi", "Observations", "Autre demande"];
+  EB.OBJETS = ["ap-communication-de-piece", "Demande de copie du dossier", "Plainte", "Plainte avec constitution de partie civile", "Constitution de partie civile", "Demande d'actes", "Demande de renvoi", "Observations", "Autre demande"];
   EB.STATUTS = ["Prévenu", "Mis en examen", "Témoin assisté", "Gardé à vue", "Partie civile", "Victime", "Plaignant"];
   EB.IDENT = ["N° de parquet", "N° d'instruction", "N° de procès-verbal"];
-  EB.etat = (s) => (s.eb = s.eb || { n: 8000, ar: 13900, recus: [], envoyes: [], brouillons: [], corbeille: [] });
+  EB.etat = (s) => { const E = (s.eb = s.eb || { n: 8000, ar: 13900, recus: [], envoyes: [], brouillons: [], corbeille: [] }); E.partages = E.partages || []; return E; };
   // le tribunal et le numéro de procédure de l'affaire (affaires générées ; sinon Paris)
   EB.tjDe = function (s, cs) {
     const p = CR.GEN && CR.GEN.paramsOf ? CR.GEN.paramsOf(s, cs.id) : null;
@@ -109,8 +109,45 @@
       const r = C().transmettre(s, cs, p.key, "cep", { dest, pj: !p.manque, adresse: principal.adresse });
       p.resultat = r && r.msg;
     }
+    // la demande de copie du dossier (art. 114, D. 591) : au cabinet du juge d'instruction de la juridiction, avec la bonne
+    // référence ; sinon le cabinet répond que rien n'a été enregistré (choix du jeu)
+    if (env.objet === "Demande de copie du dossier" && cs0) {
+      const lieu = EB.tjDe(s, cs0), st = principal.st;
+      const bonNum = !lieu.proc || !m.proc || !m.proc.numero || String(m.proc.numero).replace(/\s+/g, "") === lieu.proc.replace(/\s+/g, "");
+      const bon = st && st.svc === "ji" && st.ville === lieu.ville && bonNum;
+      if (!st) CR.erreur(s, cs0, { id: "copie_hors", texte: "Demande de copie adressée hors de la liste du ministère.", sanction: "L'envoi ne vaut pas demande (art. D. 591) : aucune copie ne sera délivrée.", regul: "Renvoyer la demande à l'adresse du cabinet d'instruction, dans l'annuaire CEP." });
+      else if (bon && cs0.proc && cs0.proc.copieDemandee == null && CR.PEN && CR.PEN.demanderCopie) CR.PEN.demanderCopie(CR.api(s, cs0));
+      else if (!bon) CR.schedule(s, { day: CR.addBusinessDays(s.day, 1), min: 10 * 60, type: "fn", key: "ebRetour", data: { caseId: cs0.id, de: principal.adresse, objet: "Votre demande de copie du dossier", texte: !bonNum ? "Maître, le numéro de procédure indiqué ne correspond à aucune information suivie à notre cabinet. Rien n'a été enregistré." : "Maître, cette demande ne relève pas de notre service : la copie du dossier se demande au cabinet du juge d'instruction saisi. Rien n'a été enregistré." } });
+    }
     if (cs0) CR.timeline(s, cs0, `e-Barreau : message n° ${num} envoyé à ${m.a.join(", ")} (${env.objet}).`);
     return { ok: true, msg: `Message n° ${num} envoyé à ${CR.fmtTime(s.min)}.`, env };
+  };
+  CR.GLOBAL_FN = CR.GLOBAL_FN || {};
+  CR.GLOBAL_FN.ebRetour = (s, x) => recu(s, { de: x.de, objet: x.objet, caseId: x.caseId, corps: [x.texte] });
+  // e-Partage sécurisé (PLEX) : la copie est mise à disposition par un lien valable de 1 à 30 jours (guide du barreau de
+  // Paris, dev/ref/actes-canaux.md) ; le greffe fixe la durée. Non téléchargée à temps, il faut la redemander.
+  EB.partager = function (s, cs, docs, titres) {
+    const E = EB.etat(s), r = CR.seeded("eb:plex:" + cs.id + ":" + s.day);
+    const jours = 5 + Math.floor(r() * 11);
+    const P = { id: CR.uid("ebp"), caseId: cs.id, day: s.day, min: s.min, expire: s.day + jours, docs: docs.slice(), titres: titres || {}, de: `cep.instruction01.tj-${slug(EB.tjDe(s, cs).ville)}@justice.fr`, telecharge: false };
+    E.partages.unshift(P);
+    recu(s, { de: P.de, objet: `e-Partage — copie de la procédure (${CR.plural(docs.length, "pièce")})`, caseId: cs.id, corps: [`Maître, la copie de la procédure est mise à votre disposition sur e-Partage. Le lien de téléchargement expire le ${CR.fmtDate(P.expire, "long")}.`, "Rappel : la reproduction des pièces est réservée à l'usage exclusif de la défense (art. 114)."] });
+    return P;
+  };
+  EB.expire = (s, P) => s.day > P.expire;
+  EB.telecharger = function (s, P) {
+    const cs = s.cases[P.caseId];
+    if (!cs || P.telecharge) return { ok: false };
+    if (EB.expire(s, P)) {
+      if (!P.perime) { P.perime = true; if (cs.proc) cs.proc.copieDemandee = null; CR.timeline(s, cs, "e-Partage : le lien de la copie du dossier a expiré sans téléchargement."); }
+      return { ok: false, msg: "Ce lien a expiré. La copie doit être demandée à nouveau." };
+    }
+    CR.spend(s, 5, "admin");
+    const api = CR.api(s, cs);
+    for (const k of P.docs) if (!CR.hasDoc(cs, k)) api.doc(k, P.titres[k] || k);
+    P.telecharge = s.day;
+    CR.timeline(s, cs, `e-Partage : copie de la procédure téléchargée (${CR.plural(P.docs.length, "pièce")}).`);
+    return { ok: true, msg: `${CR.plural(P.docs.length, "pièce")} versée${P.docs.length > 1 ? "s" : ""} au dossier.` };
   };
   EB.brouillon = function (s, m) { const E = EB.etat(s); const b = Object.assign({ id: m.id || CR.uid("ebb"), day: s.day, min: s.min }, m); E.brouillons = E.brouillons.filter((x) => x.id !== b.id); E.brouillons.unshift(b); return b; };
   EB.nonLus = (s) => EB.etat(s).recus.filter((m) => !m.lu).length;
@@ -169,6 +206,7 @@
           <input className="eb-adr" placeholder="adresse" value=${m.libre} onInput=${(e) => set("libre", e.target.value)} onKeyDown=${(e) => { if (e.key === "Enter" && m.libre.trim()) { setM(Object.assign({}, m, { a: m.a.concat(m.libre.trim()), libre: "" })); } }} />
         </div><button className="eb-annu-b" title="Annuaire" onClick=${() => setAnnu("a")}>Annuaire</button></div>
       <div className="eb-dests"><span className="small">Destinataire(s) en copie</span><div className="eb-chips">${m.cc.map((x) => html`<span key=${x} className="eb-chip">${x}<button aria-label="Retirer" onClick=${() => set("cc", m.cc.filter((y) => y !== x))}>×</button></span>`)}</div><button className="eb-annu-b" onClick=${() => setAnnu("cc")}>Annuaire</button></div>
+      <label className="eb-f eb-objet"><span className="small">Associer à un dossier</span><select value=${m.caseId || ""} onChange=${(e) => set("caseId", e.target.value || null)}><option value=""></option>${(s.order || []).map((id) => s.cases[id]).filter((c) => c && ["active", "prospect"].includes(c.status)).map((c) => html`<option key=${c.id} value=${c.id}>${CR.caseTitle(s, c)}</option>`)}</select></label>
       <label className="eb-f eb-objet"><span className="small">Objet *</span><select value=${m.objet} onChange=${(e) => set("objet", e.target.value)}><option value=""></option>${EB.OBJETS.map((o) => html`<option key=${o}>${o}</option>`)}</select></label>
       ${etape === 1 ? html`<div>
         <p className="small muted">Le message sera généré automatiquement à partir de la complétion des champs suivants.</p>
@@ -208,6 +246,17 @@
     </div>`;
   }
 
+  function Partages({ s }) {
+    const E = EB.etat(s);
+    const [msg, setMsg] = useState(null);
+    return html`<div><h3>e-Partage sécurisé</h3><p className="small muted">Les fichiers partagés par les juridictions, à télécharger avant l'expiration du lien.</p>
+      ${E.partages.length === 0 ? html`<p className="small muted">Aucun partage reçu.</p>` : html`<table className="tbl eb-tbl"><thead><tr><th>Dossier</th><th>Expéditeur</th><th>Fichiers</th><th>Expire le</th><th></th></tr></thead><tbody>
+        ${E.partages.map((P) => { const cs = s.cases[P.caseId], exp = EB.expire(s, P); return html`<tr key=${P.id}><td>${cs ? CR.clientName(cs) : ""}</td><td className="small">${P.de}</td><td>${CR.plural(P.docs.length, "pièce")}</td><td className="small">${CR.fmtDate(P.expire, "short")}</td>
+          <td>${P.telecharge ? html`<span className="small">Téléchargé le ${CR.fmtDate(P.telecharge, "short")}</span>` : exp ? html`<span className="small warn-txt">Lien expiré</span>` : html`<${Btn} small kind="primary" onClick=${() => { const r = EB.telecharger(s, P); setMsg(r.msg); bump(); }}>Télécharger</${Btn}>`}</td></tr>`; })}
+      </tbody></table>`}
+      ${msg && html`<p className="small">${msg}</p>`}
+    </div>`;
+  }
   // le poste e-Barreau : menu, tableau de bord, boîtes
   UI.EBarreau = function EBarreau({ s, init, onClose }) {
     const E = EB.etat(s);
@@ -238,7 +287,7 @@
               <div className="eb-tuile"><b>${indis.length} TJ indisponible${indis.length > 1 ? "s" : ""}</b><span>${indis.length ? indis.join(", ") : "Tous les services répondent"}</span><span className="small">Météo des services</span></div></div>
             <${Btn} kind="primary" onClick=${() => { setBrou(null); setVue("nouveau"); }}>+ Nouveau message pénal</${Btn}></div>`
           : vue === "nouveau" ? html`<${Composer} key=${brou ? brou.id || "init" : "neuf"} s=${s} init=${brou} onDone=${() => { if (brou && brou.id) E.brouillons = E.brouillons.filter((x) => x.id !== brou.id); setBrou(null); setVue("envoyes"); bump(); }} onCancel=${() => { setBrou(null); setVue("tableau"); }} />`
-          : vue === "partage" ? html`<div><h3>e-Partage sécurisé</h3><p className="small muted">Aucun partage reçu.</p></div>`
+          : vue === "partage" ? html`<${Partages} s=${s} />`
           : vue === "aide" ? html`<div><h3>Aide</h3><p className="small">La communication électronique pénale s'adresse aux structures de l'annuaire CEP de la juridiction. Un message prend date à l'accusé de réception ; après 17 heures ou un jour non ouvrable, au premier jour ouvrable suivant.</p></div>`
           : liste(vue)}
       </main>
