@@ -19,3 +19,7 @@ Phase A : A1 à A4 faits (parole en garde à vue, tribunal qui raisonne, procès
 ## Prochaine action
 
 Voir la colonne « État » de `GAMEPLAY_ROADMAP.md` : le premier livrable qui n'est pas « Fait ».
+
+## Reprise automatique
+
+Une tâche planifiée ponctuelle (« Refonte du gameplay de La Permanence — reprise », 13 novembre 2026 à 3 h 38 UTC) lance une session neuve avec la consigne du mandat. Elle n'a pas de connecteur GitHub : elle attache le dépôt par add_repo si besoin et pousse par git. Chaque session programme la suivante tant que la refonte n'est pas achevée.
