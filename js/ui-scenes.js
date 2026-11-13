@@ -111,6 +111,23 @@
       onDone();
     };
     const adviceOpts = call.advice ? (call.adviceList || def.advice || []) : [];
+    // refonte (lot 3) : un entretien d'affaire générée se joue au compositeur, la parole s'efface, la patience ne s'affiche plus
+    const libreCall = CR.PAROLE && CR.PAROLE.appelLibre && CR.PAROLE.appelLibre(s, cs, call);
+    const askedRef = useRef(asked); askedRef.current = asked;
+    const geste = (t) => {
+      const np = patience - (t.tag === "bad" ? 13 : t.tag === "neutral" ? 6 : 3);
+      setPatience(np); setLastTag(t.tag || null); setElapsed((e) => e + (t.cost || 3));
+      const na = new Set(askedRef.current); na.add(t.id); setAsked(na);
+      const nu = new Set(unlocked); (t.unlock || []).forEach((u) => nu.add(u)); setUnlocked(nu);
+      if (t.fx) CR.applyFx(api, t.fx);
+      if (t.flag) cs.flags[t.flag] = s.day;
+      let answer = (typeof t.a === "function" ? t.a(api) : t.a || []).map(fmtSeg);
+      if (np <= 0) answer = [CR.fmt(call.hangup || "Écoutez, excusez-moi, je dois vraiment y aller. On se rappelle ?", v)];
+      for (const x of answer) if (x && x.f) { CR.addNote(s, cs, { text: segText(x).trim(), fact: x.f, src: call.src || "call" }); }
+      if (np <= 0 || t.ends) setTimeout(() => setPhase("closing"), 1500);
+      return answer;
+    };
+    const patienceLibre = (d) => setPatience((p) => { const np = p + d; if (np <= 0) setTimeout(() => setPhase("closing"), 1200); return Math.min(call.patience || 100, np); });
     const p = patience;
     const sceneName = call.scene || (s.at === "commissariat" || (CR.placeOf(s, s.at) || {}).type === "commissariat" ? "commissariat" : null);
     // le visage suit l'échange : défi ou larmes après une question qui blesse, soulagement quand on le rassure
@@ -126,12 +143,13 @@
         ${plan ? null : sceneName ? html`<div className="mini-stage"><${UI.SceneCanvas} name=${sceneName} opts=${{ min: s.min, client: look, clientExpr: faceExpr }} /></div>` : html`<${Portrait} look=${look} size=${176} expr=${faceExpr} />`}
         <strong>${who.nom || c.prenom + " " + c.nom}</strong>
         <span className="small muted">${call.label || (callKey === "intake" ? "Premier entretien" : callKey === "update" ? "Point sur le dossier" : "Appel")} · ${CR.fmtDuration(elapsed)}</span>
-        <div className="patience"><span className="pix">Patience</span><${Meter} value=${Math.max(0, p)} tone=${p < 30 ? "bad" : p < 55 ? "warn" : "ok"} /></div>
+        ${!libreCall && html`<div className="patience"><span className="pix">Patience</span><${Meter} value=${Math.max(0, p)} tone=${p < 30 ? "bad" : p < 55 ? "warn" : "ok"} /></div>`}
         <${UI.Coach} k="entretien" s=${s} />
         <${UI.DossierSide} s=${s} cs=${cs} ctx="entretien" />
       </div>
       <div className="call-main">
-        <div className="transcript" aria-live="polite">
+        ${libreCall && phase !== "advice" && html`<${UI.CallLibre} s=${s} cs=${cs} call=${call} nom=${who.nom || c.prenom} api=${api} fmt=${(x) => CR.fmt(x || "", v)} topics=${topics} onGeste=${geste} onTemps=${(m) => setElapsed((e) => e + m)} onPatience=${patienceLibre} onAsked=${(id) => setAsked((a) => (a.has(id) ? a : new Set(a).add(id)))} closing=${phase === "closing"} onClose=${() => setPhase("closing")} onConseil=${() => setPhase("advice")} adviceOn=${adviceOpts.length > 0} />`}
+        <div className="transcript" aria-live="polite" hidden=${!!libreCall}>
           ${lines.map((L, li) => html`<div key=${li} className=${cx("tline", "who-" + L.who)}>
             <span className="tl-who pix">${L.who === "client" ? (who.nom || c.prenom).toUpperCase() : L.who === "you" ? "VOUS" : ""}</span>
             <span className="tl-body">${L.segs.map((seg, si) => {
@@ -145,8 +163,8 @@
           </div>`)}
           <div ref=${endRef}></div>
         </div>
-        ${talking && html`<button className="link small" onClick=${skip}>Afficher toute la réponse</button>`}
-        ${phase === "talk" && html`<div className="questions">
+        ${talking && !libreCall && html`<button className="link small" onClick=${skip}>Afficher toute la réponse</button>`}
+        ${phase === "talk" && !libreCall && html`<div className="questions">
           ${topics.map((t) => html`<button key=${t.id} className="q-btn" onClick=${() => ask(t)}><span>${CR.fmt(t.q, v)}</span><span className="small muted">${t.cost || 3} min</span></button>`)}
           <div className="q-end">
             ${adviceOpts.length > 0 && html`<${Btn} onClick=${() => setPhase("advice")} disabled=${talking}>Conclure par des conseils</${Btn}>`}
@@ -159,7 +177,7 @@
           <${Btn} kind="primary" onClick=${() => { setElapsed(elapsed + 2 + advice.length); setPhase("closing"); }}>Le dire et terminer</${Btn}>
         </div>`}
         ${phase === "closing" && html`<div className="closing">
-          ${!talking ? html`<p className="muted">${CR.fmt(call.close || "D'accord. Merci. J'attends de vos nouvelles.", v)}</p><${Btn} kind="primary" onClick=${finish}>Terminer</${Btn}>` : html`<p className="muted small">…</p>`}
+          ${!talking || libreCall ? html`<p className="muted">${CR.fmt(call.close || "D'accord. Merci. J'attends de vos nouvelles.", v)}</p><${Btn} kind="primary" onClick=${finish}>Terminer</${Btn}>` : html`<p className="muted small">…</p>`}
         </div>`}
       </div>
     </div>`;

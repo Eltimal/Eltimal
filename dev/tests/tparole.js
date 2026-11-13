@@ -89,7 +89,7 @@ const P = require("./play"); const U = require("./util");
   {
     const env = await U.career("none", +(process.argv[3] || 7));
     const { w, doc, CR, s, errors } = env;
-    s.settings.saisie = "assiste"; CR.PAROLE.ACCEL = 60;
+    CR.PAROLE.ACCEL = 60;
     s.pending = s.pending.filter((e) => e.type !== "lead");
     let d = s.day + 1; while (!CR.isBusinessDay(d)) d++;
     // une permanence, jusqu'à tomber sur une affaire que la refonte prend en charge
@@ -109,6 +109,7 @@ const P = require("./play"); const U = require("./util");
     }
     ok(!!cs, "aucune garde à vue prise en charge par la refonte");
     if (cs) {
+      s.settings.saisie = "assiste"; // le jeu sans guidage, à partir de la garde à vue
       await P.openCase(w, doc, CR.client(cs).nom);
       await P.runTask(w, doc, /garde à vue/, "taxi");
       await P.waitFor(() => doc.querySelector(".gav-scene"));

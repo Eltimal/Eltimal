@@ -41,8 +41,26 @@
     { id: "temoins", label: "Les témoins", nom: "les personnes présentes", topic: null, key: ["confirme", "recit"] },
     { id: "sante", label: "La santé", nom: "votre santé", topic: null, key: ["recit", "comment"] },
   ];
+  // le sujet d'une entrée d'entretien, d'après son identifiant (entretiens des affaires générées), sinon d'après ses mots
+  P.IDS = { c_faits: "faits", v_quoi: "faits", g_faits: "faits", c_casier: "casier", g_casier: "casier", c_vie: "logement", g_logement: "logement", g_travail: "travail", c_convoc: "convocation", c_mesure: "gardeavue", c_enjeu: "inquietude", v_suite: "procedure", v_prejudice: "prejudice", v_temoin: "temoins", v_blesse: "blessures", v_depuis: "depuis", g_heure: "droits", p_info: "faits" };
+  // reconnaître le sujet d'une entrée d'entretien d'après sa question : [mots, sujet, intitulé, nom, angles clés]
+  P.REGLES = [
+    [/convocation/i, "convocation", "La convocation", "votre convocation", ["quand", "recit"]],
+    [/garde à vue|comment s'est passée la mesure/i, "gardeavue", "La garde à vue", "la garde à vue", ["recit", "comment"]],
+    [/droits/i, "droits", "Vos droits", "la notification de vos droits", ["quand"]],
+    [/passé|racontez|vos mots|version/i, "faits", "Les faits", "ce qui s'est passé", ["recit", "comment"]],
+    [/condamn|justice|casier/i, "casier", "Le casier", "vos antécédents judiciaires", ["recit", "quand"]],
+    [/habitez|vivez|logement|parlez-moi un peu de vous/i, "logement", "Le logement", "votre logement", ["ou", "confirme", "recit"]],
+    [/travail/i, "travail", "Le travail", "votre travail", ["recit", "comment", "confirme"]],
+    [/coûté|préjudice|frais/i, "prejudice", "Le préjudice", "ce que les faits vous ont coûté", ["recit", "comment"]],
+    [/blessé|blessure|médecin/i, "blessures", "Les blessures", "vos blessures", ["recit", "comment"]],
+    [/témoin/i, "temoins", "Les témoins", "les personnes présentes", ["confirme", "recit"]],
+    [/procédure|où en est/i, "procedure", "La procédure", "où en est la procédure", ["recit", "quand"]],
+    [/dormir|inquiète|peur/i, "inquietude", "Ce qui vous inquiète", "ce qui vous inquiète", ["recit", "pourquoi"]],
+    [/depuis/i, "depuis", "Depuis les faits", "comment vous allez depuis", ["recit", "comment"]],
+  ];
   // les questions du catalogue de l'infraction (qA) deviennent des sujets, nommés d'après leurs mots
-  const MOTS = [[/bu|alcool|verre/i, "L'alcool", "ce que vous aviez bu"], [/provoqu|insult|cherch/i, "La provocation", "ce qui vous a provoqué"], [/arme|couteau|objet/i, "L'objet", "l'objet dont on parle"], [/argent|euros|compte|payé|prix/i, "L'argent", "l'argent"], [/téléphone|message|appel/i, "Le téléphone", "votre téléphone"], [/voiture|permis|conduis|volant|scooter/i, "Le véhicule", "le véhicule"], [/produit|cannabis|drogue|résine|cocaïne/i, "Les produits", "les produits retrouvés"], [/enfant|garde|pension/i, "Les enfants", "les enfants"]];
+  const MOTS = [[/récupéré|votre bien|objet volé/i, "Le bien volé", "le bien volé"], [/message|capture|écrit/i, "Les messages", "les messages"], [/assurance|assureur/i, "L'assurance", "votre assurance"], [/plainte/i, "La plainte", "votre plainte"], [/bu|alcool|verre/i, "L'alcool", "ce que vous aviez bu"], [/provoqu|insult|cherch/i, "La provocation", "ce qui vous a provoqué"], [/arme|couteau|objet/i, "L'objet", "l'objet dont on parle"], [/argent|euros|compte|payé|prix/i, "L'argent", "l'argent"], [/téléphone|message|appel/i, "Le téléphone", "votre téléphone"], [/voiture|permis|conduis|volant|scooter/i, "Le véhicule", "le véhicule"], [/produit|cannabis|drogue|résine|cocaïne/i, "Les produits", "les produits retrouvés"], [/enfant|garde|pension/i, "Les enfants", "les enfants"]];
 
   // ------------------------------------------------------------------ Le client
   // M = { t, G, hum, reg, topics, sujets, confiance (cachée), dit[sujet] : segments déjà dits }
@@ -53,10 +71,23 @@
     const V = PR().voix(t, A, "garde");
     const topics = {};
     for (const tp of (g.entretien && g.entretien.topics) || []) topics[tp.id] = tp;
-    const sujets = SUJETS.map((x) => Object.assign({}, x)).filter((x) => !x.topic || topics[x.topic]);
-    for (const tp of Object.values(topics)) if (/^g_x/.test(tp.id)) {
+    const victime = t.client === "V" || (cs && cs.camp === "pc");
+    const sujets = SUJETS.map((x) => Object.assign({}, x)).filter((x) => (!x.topic || topics[x.topic]) && !(victime && ["interpellation", "police", "victime", "droits"].includes(x.id)));
+    if (victime) sujets.push({ id: "auteur", label: "L'auteur", nom: "la personne mise en cause", topic: null, key: ["recit", "pourquoi"] });
+    const pris = new Set(sujets.map((x) => x.topic).filter(Boolean));
+    for (const tp of Object.values(topics)) {
+      if (pris.has(tp.id)) continue;
+      // un entretien d'une autre scène (cabinet, dépôt, victime) : le sujet se reconnaît aux mots de la question
+      const parId = P.IDS[tp.id] || P.IDS[String(tp.id).replace(/^[a-z]+_/, "")];
+      const regle = parId ? P.REGLES.find((x) => x[1] === parId) || [null, parId, parId, parId, ["recit"]] : P.REGLES.find(([re]) => re.test(tp.q || ""));
+      const id0 = regle ? regle[1] : null;
+      const exist = id0 && sujets.find((x) => x.id === id0);
+      if (exist && !exist.topic) { exist.topic = tp.id; pris.add(tp.id); continue; }
+      if (regle && !exist) { const S0 = SUJETS.find((x) => x.id === id0); sujets.push(Object.assign({}, S0 || { id: id0, label: regle[2], nom: regle[3], key: regle[4] }, { topic: tp.id })); pris.add(tp.id); continue; }
       const m = MOTS.find(([re]) => re.test(tp.q));
-      sujets.push({ id: "x:" + tp.id, label: m ? m[1] : "Le contexte", nom: m ? m[2] : "le contexte", topic: tp.id, key: ["recit", "pourquoi", "comment"] });
+      const n = sujets.filter((x) => /^Un autre point/.test(x.label)).length;
+      sujets.push({ id: "x:" + tp.id, label: m && !sujets.some((x) => x.label === m[1]) ? m[1] : `Un autre point${n ? " (" + (n + 1) + ")" : ""}`, nom: m ? m[2] : "ce point", topic: tp.id, key: ["recit", "pourquoi", "comment"] });
+      pris.add(tp.id);
     }
     const hum = V.hum || "calme";
     return {
@@ -122,6 +153,7 @@
     const r = fil(M.sig + ":parole:" + M.poses.length + ":" + q.sujet + q.angle + q.forme);
     const tp = S0 && S0.topic ? M.topics[S0.topic] : null;
     const cle = S0 && S0.key.includes(q.angle);
+    if (tp && cle && q.forme !== "confrontation") M.utilises = (M.utilises || new Set()).add(tp.id);
     const deja = M.dit[q.sujet] || [];
     let segs = [];
     const quests = [];

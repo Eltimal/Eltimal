@@ -203,4 +203,39 @@
       <div className="ent-fin"><${Btn} kind="primary" onClick=${next}>Ne plus poser de questions</${Btn}></div>
     </div>`;
   };
+
+  // ------------------------------------------------------------------ Les entretiens hors garde à vue (cabinet, dépôt, victime, téléphone)
+  // Les entrées d'information de l'entretien deviennent des sujets du compositeur ; les gestes (prendre le dossier, refuser,
+  // promettre, rassurer, renvoyer…) restent des déclarations explicites : ce sont des décisions, pas des questions.
+  P.estGeste = (tp) => !!(tp.ends || tp.fx || (tp.unlock && tp.unlock.length) || tp.flag);
+  P.appelLibre = (s, cs, call) => !!(CR.libre(s) && call && call.topics && call.topics.some((tp) => !P.estGeste(tp)) && CR.GEN && CR.GEN.paramsOf && (CR.GEN.paramsOf(s, cs.id) || {}).t);
+  UI.CallLibre = function CallLibre({ s, cs, call, nom, api, fmt, topics, onGeste, onTemps, onPatience, onAsked, closing, onClose, onConseil, adviceOn }) {
+    const M = useMemo(() => {
+      const t = CR.GEN.paramsOf(s, cs.id).t;
+      const info = (call.topics || []).filter((tp) => !P.estGeste(tp)).map((tp) => Object.assign({}, tp, { q: fmt(tp.q), a: (typeof tp.a === "function" ? tp.a(api) : tp.a || []).map((x) => (typeof x === "string" ? fmt(x) : Object.assign({}, x, { t: fmt(x.t) }))) }));
+      return P.client(s, cs, { parole: { t }, entretien: { topics: info } });
+    }, [cs.id]);
+    const oral = useOral(false);
+    const { notees, noter } = useNoter(s, cs);
+    const [qClient, setQClient] = useState(null);
+    useEffect(() => { for (const x of call.opening || []) oral.dire("client", fmt(typeof x === "string" ? x : x.t)); }, []);
+    const poser = (q) => {
+      if (qClient) { P.repondreClient(M, qClient, false); setQClient(null); onPatience(-3); }
+      const res = P.repondre(M, q);
+      oral.dire("you", P.texteQuestion(M, q));
+      for (const l of res.lignes) oral.dire("client", l.t, l.f);
+      if (res.client) { oral.dire("client", res.client); setQClient(res.client); }
+      onTemps(res.min); onPatience(-({ ouverte: 3, fermee: 2, relance: 4, confrontation: 9 }[q.forme] || 3));
+      for (const id of M.utilises || []) onAsked(id);
+    };
+    const repondreClient = (oui) => { const r = P.repondreClient(M, qClient, oui); if (oui) { oral.dire("you", r.t); onTemps(r.min); onPatience(4); } else onPatience(-3); setQClient(null); };
+    const gestes = topics.filter((tp) => P.estGeste(tp));
+    return html`<div className="call-libre ent-parole">
+      <${Oral} oral=${oral} noms=${{ client: nom.toUpperCase(), you: "VOUS" }} onNote=${noter} notees=${notees} />
+      ${qClient && !closing && html`<div className="ent-qclient"><span>« ${qClient} »</span><${Btn} small onClick=${() => repondreClient(true)}>Lui répondre <small>2 min</small></${Btn}><${Btn} small onClick=${() => repondreClient(false)}>Passer</${Btn}></div>`}
+      ${!closing && html`<${Composer} M=${M} cs=${cs} onPoser=${poser} desactive=${oral.occupe} />`}
+      ${!closing && gestes.length > 0 && html`<div className="gestes"><span className="compo-h">Ce que vous dites</span><div>${gestes.map((tp) => html`<button type="button" key=${tp.id} className="compo-b geste" disabled=${oral.occupe} onClick=${() => { oral.dire("you", fmt(tp.q)); const a = onGeste(tp); for (const x of a || []) oral.dire("client", typeof x === "string" ? x : x.t, x && x.f); }}>${fmt(tp.q)}</button>`)}</div></div>`}
+      ${!closing && html`<div className="ent-fin">${adviceOn && html`<${Btn} onClick=${onConseil} disabled=${oral.occupe}>Conclure par des conseils</${Btn}>`}<${Btn} onClick=${onClose} disabled=${oral.occupe}>Terminer l'entretien</${Btn}></div>`}
+    </div>`;
+  };
 })();

@@ -541,6 +541,11 @@
       ${P.angles && angle && html`<p className="small muted">${(P.angles.find((a) => a.id === angle) || {}).sub || ""}</p>`}
       ${tonOn && html`<div className="ton-pick"><span className="small">Le ton :</span>${CR.PLAID.TONS.map((t) => html`<button key=${t.id} type="button" className=${cx("tonb", ton === t.id && "on")} aria-pressed=${ton === t.id} onClick=${() => setTon(t.id)} title=${t.sub}>${t.t}</button>`)}<span className="small muted">${(CR.PLAID.TONS.find((t) => t.id === ton) || {}).sub}</span></div>`}
       <p className="small">Vos arguments (${picked.length}/${max})${tonOn ? " — l'ordre compte : le principal d'abord, le subsidiaire ensuite" : ", dans l'ordre"} :</p>
+      ${cat && CR.TRAV && (() => { const W = cs.travail; const cols = CR.TRAV.COLONNES.map(([k, l]) => [k, l, CR.TRAV.planDe(cs, k)]).filter((x) => x[2].length); return html`<details className="plan-barre" open=${cols.length > 0}>
+        <summary>Votre plan de défense${cols.length ? "" : " — vide"}</summary>
+        ${cols.length === 0 && html`<p className="small muted">Rien n'a été préparé dans le dossier de travail. Vous plaidez de mémoire.</p>`}
+        ${cols.map(([k, l, L]) => html`<div key=${k} className="pb-col"><span className="cat-h">${l}</span>${L.map((m) => html`<div key=${m.id} className="pb-m"><b>${m.titre}</b>${m.annots.map((id) => { const an = CR.TRAV.annot(cs, id); return an && html`<span key=${id} className="pb-c">${an.cote ? an.cote + (an.f ? ", f. " + an.f : "") + " — " : ""}« ${an.t.length > 110 ? an.t.slice(0, 108) + "…" : an.t} »</span>`; })}</div>`)}</div>`)}
+      </details>`; })()}
       ${cat && html`<div className="args args-cat">${cat.map(([k, titre, l]) => html`<div key=${k} className="cat-rub"><span className="cat-h">${titre}</span>${l.map((u) => { const kk = picked.indexOf(u.id); return html`<button key=${u.id} type="button" className=${cx("arg", kk >= 0 && "on")} onClick=${() => toggle(u.id)}>${kk >= 0 && html`<span className="arg-n">${kk + 1}</span>`}<span>${u.label}</span></button>`; })}</div>`)}</div>`}
       <div className="args" hidden=${!!cat}>
         ${(cat ? [] : P.args).map((a) => { const ok = dispo(a); const k = picked.indexOf(a.id); const sp = specOf(a); return html`<div key=${a.id} className="arg-wrap"><button className=${cx("arg", k >= 0 && "on", !ok && "off")} disabled=${!ok} onClick=${() => toggle(a.id)}>

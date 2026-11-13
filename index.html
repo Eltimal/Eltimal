@@ -1834,6 +1834,19 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .cat-rub { display: grid; gap: 4px; align-content: start; }
 .cat-h { font: 600 calc(11px * var(--tz)) var(--f-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted, #9a958a); padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,.1); }
 .args-cat .arg { text-align: left; font-size: calc(13px * var(--tz)); }
+
+.plan-barre { margin: 4px 0 8px; padding: 6px 10px; border-left: 2px solid #c9a45c; background: rgba(201,164,92,.06); }
+.plan-barre summary { cursor: pointer; font: 600 calc(13px * var(--tz)) var(--f-ui); }
+.plan-barre .pb-col { display: grid; gap: 4px; margin-top: 6px; }
+.plan-barre .pb-m { display: grid; gap: 2px; font-size: calc(13px * var(--tz)); }
+.plan-barre .pb-c { font: italic calc(12px * var(--tz))/1.35 var(--f-doc); color: var(--muted, #b9b3a6); padding-left: 10px; }
+
+/* lot 3 : entretiens hors garde à vue au compositeur */
+.call-libre { display: grid; gap: 6px; }
+.call-libre .oral { min-height: 6em; max-height: 13em; }
+.gestes { display: grid; grid-template-columns: 5.4em 1fr; gap: 0.6em; align-items: start; }
+.gestes > div { display: flex; flex-wrap: wrap; gap: 0.3em; }
+.gestes .geste { font-style: italic; }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>

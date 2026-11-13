@@ -28,6 +28,20 @@
   const genT = (s, cs) => { const p = CR.GEN && CR.GEN.paramsOf ? CR.GEN.paramsOf(s, cs.id) : null; return p && p.t ? p.t : null; };
   T.actif = (s, cs, spec) => { const t = genT(s, cs); return !!(t && spec && spec.pieces && !t.info && t.genre !== "info" && !(CR.CAT && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].info)); };
 
+  // ------------------------------------------------------------------ Les motifs, en français de jugement
+  const LIB = { constat: "les constatations des fonctionnaires interpellateurs", plainte: "les déclarations constantes de la partie civile", certificat: "les constatations médicales", temoin: "le témoignage recueilli au cours de l'enquête", video: "l'exploitation des images de vidéoprotection", telephonie: "l'exploitation des données téléphoniques", adn: "la comparaison génétique", expertise: "les conclusions de l'expertise", saisie: "la saisie opérée", labo: "l'analyse du laboratoire", ecrits: "les messages versés au dossier", releve: "les relevés bancaires", ethylo: "la mesure de l'imprégnation alcoolique", fichier: "les mentions du fichier national des permis de conduire", autopsie: "les constatations médico-légales", aveux: "les déclarations du prévenu lui-même" };
+  const MOY = { doute_ident: "que l'identification du prévenu comme auteur des faits n'est pas établie avec certitude", alibi_tel: "que les données de son téléphone le situent ailleurs au moment des faits", temoin_contra: "que le témoin ne confirme pas la version de l'accusation", video: "que les images ne montrent pas le geste reproché", notif_permis: "que le prévenu ignorait la mesure dont la violation lui est reprochée", legitime_defense: "que le prévenu a agi en état de légitime défense", deleg: "que le prévenu avait valablement délégué ses pouvoirs" };
+  const liste = (a) => (a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " et " + a[a.length - 1]);
+  // la cote d'une preuve, si la pièce est au dossier (moteur de documents)
+  T.COTE_KEYS = { constat: ["pv_interpellation", "constat"], plainte: ["pv_victime", "plainte"], certificat: ["certificat_umj", "certificat", "umj"], temoin: ["pv_temoin", "temoin"], video: ["pv_video", "video"], telephonie: ["pv_telephonie"], adn: ["rapport_adn"], saisie: ["pv_saisie", "saisie", "pv_perquisition"], labo: ["rapport_labo"], ecrits: ["captures"], releve: ["releve"], ethylo: ["pv_alcoolemie"], fichier: ["fichier_permis"], aveux: ["pv_audition"], expertise: ["expertise"], autopsie: ["autopsie"] };
+  T.cote = function (s, cs, k) {
+    for (const key of T.COTE_KEYS[k] || []) {
+      const d = cs.docs.find((x) => x.key === key);
+      if (!d) continue;
+      try { const r = CR.renderDoc(s, cs, d); if (r && r.cote) return r.cote; } catch (e) { /* pièce ancienne */ }
+    }
+    return null;
+  };
   // ------------------------------------------------------------------ Le raisonnement
   // rend { coupable, elements: [{ id, porte, attaque, etabli, preuves:[{k, label, part}], moyens:[{k, label, soutenu}] }], ld, ... }
   T.raisonner = function (api, spec, ctx) {
@@ -73,35 +87,24 @@
     E.ld.admise = !!ldMoyen && E.ld.attaque - (E.acte.porte - 0.35) * 0.5 + bruit > 0.06;
     const manque = T.ELEMENTS.map(([id]) => E[id]).find((e) => !e.etabli) || null;
     const coupable = !manque && !E.ld.admise;
-    // trace pour le débrief (même forme qu'avant)
+    // le débrief, en corrigé d'examen : ce qui a établi chaque élément, ce que le dossier permettait et qui n'a pas été plaidé
     const calc = [];
+    const nomPc = (k) => { const c = T.cote(s, cs, k); return (LIB[k] || (spec.pieces[k] && spec.pieces[k].label) || k) + (c ? ` (${c})` : ""); };
     for (const [id] of T.ELEMENTS) {
       const e = E[id];
-      calc.push({ k: e.etabli ? "charge" : "decharge", t: `${e.label} : ${e.etabli ? "établi" : "non établi"} (preuves ${Math.round(e.porte * 100)}, moyens soutenus ${Math.round(e.attaque * 100)}, seuil ${Math.round(T.SEUIL[id] * 100)})` });
-      for (const m of e.moyens) if (!m.soutenu) calc.push({ k: "oubli", t: `${m.label} : jamais plaidé` });
-      for (const p of e.ecartees) calc.push({ k: "annulee", t: `${p.label} : annulée, écartée` });
+      const par = e.preuves.slice(0, 2).map((p) => nomPc(p.k));
+      calc.push({ k: e.etabli ? "charge" : "decharge", t: `${e.label} : ${e.etabli ? (par.length ? "établi par " + liste(par) : "établi par les circonstances") : "non établi" + (e.moyens.some((m) => m.soutenu) ? " : le moyen soutenu a fait naître le doute" : "")}.` });
+      for (const m of e.moyens) if (!m.soutenu) calc.push({ k: "oubli", t: `Le dossier permettait de soutenir ${MOY[m.k.replace(/^d_/, "")] || "un doute"} : ce moyen n'a pas été plaidé.` });
+      for (const p of e.ecartees) calc.push({ k: "annulee", t: `${CR.cap(LIB[p.k] || p.label)} : annulé${/^les /.test(LIB[p.k] || "") ? "s" : ""}, écarté${/^les /.test(LIB[p.k] || "") ? "s" : ""} du dossier.` });
+      if (!e.etabli) break;
     }
-    if (ldMoyen) calc.push({ k: E.ld.admise ? "decharge" : "charge", t: `Légitime défense : ${E.ld.admise ? "admise" : "écartée"}` });
+    if (ldMoyen) calc.push({ k: E.ld.admise ? "decharge" : "charge", t: `Légitime défense : ${E.ld.admise ? "admise" : "écartée, la riposte n'apparaissant pas proportionnée"}.` });
     const R = { coupable, manque: manque && manque.id, ld: E.ld.admise ? "admise" : ldMoyen ? "ecartee" : null, elements: T.ELEMENTS.map(([id]) => { const e = E[id]; return { id, etabli: e.etabli, preuves: e.preuves.slice(0, 3).map((p) => p.k), ecartees: e.ecartees.map((p) => p.k), moyens: e.moyens.map((m) => ({ k: m.k, soutenu: m.soutenu })) }; }), inf: t && t.inf };
     // score continu : la marge de l'élément le plus faible (positive = culpabilité établie), comme l'ancien score
     const score = Math.min(...T.ELEMENTS.map(([id]) => E[id].net - T.SEUIL[id])) - (E.ld.admise ? 1 : 0);
     return { coupable, score, calc, questions: [], raisonnement: R };
   };
 
-  // ------------------------------------------------------------------ Les motifs, en français de jugement
-  const LIB = { constat: "les constatations des fonctionnaires interpellateurs", plainte: "les déclarations constantes de la partie civile", certificat: "les constatations médicales", temoin: "le témoignage recueilli au cours de l'enquête", video: "l'exploitation des images de vidéoprotection", telephonie: "l'exploitation des données téléphoniques", adn: "la comparaison génétique", expertise: "les conclusions de l'expertise", saisie: "la saisie opérée", labo: "l'analyse du laboratoire", ecrits: "les messages versés au dossier", releve: "les relevés bancaires", ethylo: "la mesure de l'imprégnation alcoolique", fichier: "les mentions du fichier national des permis de conduire", autopsie: "les constatations médico-légales", aveux: "les déclarations du prévenu lui-même" };
-  const MOY = { doute_ident: "que l'identification du prévenu comme auteur des faits n'est pas établie avec certitude", alibi_tel: "que les données de son téléphone le situent ailleurs au moment des faits", temoin_contra: "que le témoin ne confirme pas la version de l'accusation", video: "que les images ne montrent pas le geste reproché", notif_permis: "que le prévenu ignorait la mesure dont la violation lui est reprochée", legitime_defense: "que le prévenu a agi en état de légitime défense", deleg: "que le prévenu avait valablement délégué ses pouvoirs" };
-  const liste = (a) => (a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " et " + a[a.length - 1]);
-  // la cote d'une preuve, si la pièce est au dossier (moteur de documents)
-  T.COTE_KEYS = { constat: ["pv_interpellation", "constat"], plainte: ["pv_victime", "plainte"], certificat: ["certificat_umj", "certificat", "umj"], temoin: ["pv_temoin", "temoin"], video: ["pv_video", "video"], telephonie: ["pv_telephonie"], adn: ["rapport_adn"], saisie: ["pv_saisie", "saisie", "pv_perquisition"], labo: ["rapport_labo"], ecrits: ["captures"], releve: ["releve"], ethylo: ["pv_alcoolemie"], fichier: ["fichier_permis"], aveux: ["pv_audition"], expertise: ["expertise"], autopsie: ["autopsie"] };
-  T.cote = function (s, cs, k) {
-    for (const key of T.COTE_KEYS[k] || []) {
-      const d = cs.docs.find((x) => x.key === key);
-      if (!d) continue;
-      try { const r = CR.renderDoc(s, cs, d); if (r && r.cote) return r.cote; } catch (e) { /* pièce ancienne */ }
-    }
-    return null;
-  };
   T.motifs = function (s, cs, R, nom) {
     const out = [];
     const cite = (k) => { const c = T.cote(s, cs, k); return LIB[k] + (c ? ` (${c})` : ""); };
@@ -149,7 +152,9 @@
       if (!R || !dec) return dec;
       const q = dec.questions.find((x) => x.q === "Sur la culpabilité");
       const M = T.motifs(s, cs, R, o.prevenuNom || "le prévenu");
-      if (q) q.motif = M.map((m) => `${m.titre}. ${m.t}`).join(" ");
+      // les motifs propres à la qualification (concours, requalification, récidive) suivent le raisonnement sur les éléments
+      const generique = /^Les éléments de la procédure, débattus contradictoirement|^Les éléments à charge qui subsistent/;
+      if (q) q.motif = M.map((m) => `${m.titre}. ${m.t}`).join(" ") + (q.motif && !generique.test(q.motif) ? " " + q.motif : "");
       T.notifier(api, o, dec, M);
       return dec;
     };
@@ -163,7 +168,7 @@
     const { s, cs } = api;
     const t = genT(s, cs);
     const jour = CR.addBusinessDays(s.day, 1 + (CR.hash(cs.id + ":notif") % 3));
-    cs.vars.jugementEcrit = { day: s.day, min: s.min, titre: o.titre || "Jugement correctionnel", juridiction: o.juridiction || "tc", motifs: M, dispositif: dec.dispositif, questions: dec.questions.map((x) => ({ q: x.q, r: x.r, motif: x.motif })), prevenu: o.prevenuNom || "", pc: o.pcNom || "", qualif: dec.qualif ? { label: dec.qualif.label, court: dec.qualif.court || dec.qualif.art || "" } : null, prevention: (cs.proc && cs.proc.prevention) || (t && CR.CAT && CR.CAT.INF[t.inf] ? CR.CAT.INF[t.inf].nom : ""), coupable: dec.coupable, notifie: jour, president: (CR.acteur(cs.actors && cs.actors.president) || {}).nom || "", parquet: (CR.acteur(cs.actors && cs.actors.parquet) || {}).nom || "", inf: t && t.inf };
+    cs.vars.jugementEcrit = { day: s.day, min: s.min, titre: o.titre || "Jugement correctionnel", juridiction: o.juridiction || "tc", motifs: M, dec, prevenu: o.prevenuNom || "", pc: o.pcNom || "", qualif: dec.qualif ? { label: dec.qualif.label, court: dec.qualif.court || dec.qualif.art || "" } : null, prevention: (cs.proc && cs.proc.prevention) || (t && CR.CAT && CR.CAT.INF[t.inf] ? CR.CAT.INF[t.inf].nom : ""), coupable: dec.coupable, notifie: jour, president: (CR.acteur(cs.actors && cs.actors.president) || {}).nom || "", parquet: (CR.acteur(cs.actors && cs.actors.parquet) || {}).nom || "", inf: t && t.inf };
     CR.schedule(s, { day: jour, min: 10 * 60 + (CR.hash(cs.id) % 300), type: "fn", key: "jugementEcrit", data: { caseId: cs.id } });
   };
   CR.GLOBAL_FN = CR.GLOBAL_FN || {};
@@ -188,6 +193,7 @@
     p("DÉBATS. Le président a constaté l'identité du prévenu, donné connaissance de l'acte qui a saisi le tribunal et informé le prévenu de son droit, au cours des débats, de faire des déclarations, de répondre aux questions ou de se taire. Il a été procédé à l'instruction de l'affaire et à l'interrogatoire du prévenu. Le ministère public a été entendu en ses réquisitions, l'avocat du prévenu en sa plaidoirie ; le prévenu a eu la parole en dernier. Le greffier a tenu note du déroulement des débats.");
     p("Le tribunal, après en avoir délibéré, a statué en ces termes :");
     p("MOTIFS — SUR L'ACTION PUBLIQUE");
+    J.questions = (J.dec && J.dec.questions) || J.questions || []; J.dispositif = (J.dec && J.dec.dispositif) || J.dispositif || "";
     const exc = J.questions.filter((q) => /nullité|recevabilité|prescription/i.test(q.q));
     for (const q of exc) p(`${q.q}. ${q.motif || ""} ${q.r}`.trim());
     for (const m of J.motifs || []) p(`${m.titre}. ${m.t}`);
