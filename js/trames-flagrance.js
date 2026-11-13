@@ -477,7 +477,7 @@
           ...(N.qV || []).map((x) => [q(x.q), rep(sansITT(x.a[0]) || "Pas encore.")]),
           S.blessures.length ? [q("Avez-vous été blessé(e) ?"), rep(`Oui, ${S.blessures[0]}.`.replace("Oui, une", "Oui, j'ai une").replace("Oui, un ", "Oui, j'ai un ").replace("Oui, des", "Oui, j'ai des"))] : null,
           T ? [q("D'autres personnes ont-elles assisté aux faits ?"), rep(conj || /domicile/.test(lieu) ? "Les voisins ont dû entendre." : "Oui, il y avait du monde autour.")] : null,
-          PL ? null : V.agent ? [q("Déposez-vous plainte ?"), rep("Oui, je dépose plainte et me constitue partie civile.")] : [q("Déposez-vous plainte ?"), rep(conj ? "Oui. Je ne veux plus que ça recommence." : "Oui, je dépose plainte.")],
+          PL ? null : V.agent ? [q("Déposez-vous plainte ?"), rep("Oui, je dépose plainte et me constitue partie civile.")] : [q("Déposez-vous plainte ?"), S.conjugal && S.conjugal.refus ? rep({ t: "Non. Je ne veux pas qu'il ait des problèmes. Je veux juste qu'il se calme.", f: "G_refus_plainte" }) : rep(conj ? "Oui. Je ne veux plus que ça recommence." : "Oui, je dépose plainte.")],
           V.agent ? null : p("Informons la victime de ses droits (art. 10-2) : obtenir réparation de son préjudice, se constituer partie civile, être assistée d'un avocat, être aidée par un service d'aide aux victimes, saisir le cas échéant la commission d'indemnisation des victimes d'infractions."),
           conj ? p("Lui faisons connaître la possibilité de solliciter une ordonnance de protection auprès du juge aux affaires familiales. Renseignons avec elle la grille d'évaluation du danger, jointe à la procédure.".replace("avec elle", "avec " + lui(V))) : null,
           S.blessures.length && E.umj ? p(`Lui remettons une réquisition à l'effet d'être examiné${e(V)} par l'unité médico-judiciaire.`) : null,
@@ -537,6 +537,15 @@
             p({ t: M.vente ? "La marchandise a été récupérée intacte et remise en rayon : elle est en état de vente." : "Emballages ouverts et antivols arrachés : la marchandise n'est plus en état de vente.", f: "G_etat_vente" }),
             mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
           ], sigs: ["Le directeur du magasin"] }));
+      }
+      // lot 1 ter : violences conjugales — l'état des lieux et la consultation des interventions passées
+      if (S.conjugal) {
+        const M = S.conjugal;
+        add("pv_recherches", M.jRech, "Recherches", () => DOCS.pv({ cote: cote("pv_recherches"), proc: t.proc, service, unite, titre: "Procès-verbal de constatations et de recherches", numPV: "00" + int(CR.seeded(t.sig + ":g:conj"), 101, 899), jour: j(M.jRech), heure: M.jRech, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`, objet: `OBJET : ${q0.label} — constatations et recherches`,
+          blocs: [
+            p({ t: `Lors de l'intervention, à notre arrivée au domicile, constatons ${M.desordre}.`, f: M.desordre.startsWith("aucun") ? "G_sans_desordre" : undefined }),
+            p({ t: M.mc ? `Consultation des fichiers du service : ${M.mc === 1 ? "une intervention antérieure" : M.mc + " interventions antérieures"} au domicile du couple, dont ${M.mc === 1 ? "une main courante déposée" : "une main courante déposée"} par ${nf(V)} il y a ${pk(CR.seeded(t.sig + ":g:mc"), ["onze mois", "un an", "quatorze mois"])}.` : `Consultation des fichiers du service : aucune intervention ni main courante antérieure enregistrée au nom de ${nf(V)} ou de ${n(A)}.`, f: M.mc ? "G_mains_courantes" : "G_mc_absente" }),
+          ], cloture: mention(`Dont procès-verbal, fait et clos ${at(M.jRech)}.`), signataires: [`${OPJ.signe}, officier de police judiciaire`], st: stO }));
       }
       // lot 1 ter : la rébellion — la déclaration du second fonctionnaire
       if (S.rebellion) {

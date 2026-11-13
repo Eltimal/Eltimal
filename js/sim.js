@@ -282,6 +282,7 @@
     if (SIM.deuxRoues(t, S)) S.deuxRoues = deuxRoues(S, t, k, r, E);
     if (SIM.deal(t, S)) S.deal = deal(S, t, k, r, E);
     if (SIM.detention(t, S)) S.detention = detention(S, t, k, r);
+    if (SIM.conjugal(t, S)) S.conjugal = { refus: ch(r, 0.25), mc: ch(r, 0.7) ? int(r, 1, 3) : 0, desordre: pk(r, ["une chaise renversée et des éclats de verre au sol", "la porte de la chambre fendue à hauteur d'épaule", "le contenu d'un sac renversé dans l'entrée", "aucun désordre apparent"]), jRech: E.debut + int(r, 60, 140) };
     if (SIM.rebellion(t, S)) S.rebellion = { passif: ch(r, 0.25), ordre: ch(r, 0.2), passant: k.has("video") || k.has("temoin"), duree: int(r, 20, 90) };
     if (SIM.outrage(t, S)) S.outrage = { ecart: ch(r, 0.3), cantonade: ch(r, 0.25), passant: k.has("video"), autre: pk(r, ["chiens", "bâtards", "guignols", "racistes", "bons à rien"]) };
     S.E = E;
@@ -433,6 +434,9 @@
   // sont parfois lancés « à la cantonade », vers la rue, plutôt qu'adressés aux policiers ; un passant a parfois filmé.
   // rébellion : le second policier, ou un passant, décrit parfois une résistance passive (se laisser tomber, se raidir) là où
   // les constatations disent « se débat » ; parfois aussi l'ordre des gestes : la clé de bras avant le refus.
+  // violences conjugales : l'état des lieux à l'arrivée, les interventions passées au fichier (la victime se souvient d'une
+  // main courante qui n'y est pas toujours), et la victime qui, parfois, ne veut pas déposer plainte à son audition
+  SIM.conjugal = (t, S) => !!(t && /^violences_conj/.test(t.inf) && t.flagrance && !(S && S.prelim) && t.V && t.f && t.f.sc !== "voiture" && t.f.sc !== "rue");
   SIM.rebellion = (t, S) => !!(t && t.inf === "rebellion" && t.flagrance && !(S && S.prelim));
   SIM.outrage = (t, S) => !!(t && t.inf === "outrage" && t.flagrance && !(S && S.prelim));
   // ---------------------------------------------------------------- lot 1 ter : la détention de stupéfiants

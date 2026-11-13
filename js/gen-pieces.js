@@ -548,6 +548,12 @@
         const rv = CR.seeded(t.sig + ":g:vid"); const d = rv() < 0.45 ? (rv() < 0.5 ? 1 : -1) * (1 + Math.floor(rv() * 6)) : 0;
         if (Math.abs(d) >= 3) fact("G_horodatage", { label: `L'horloge de l'enregistreur ${d > 0 ? "avance" : "retarde"} de ${Math.abs(d)} minutes`, key: true, why: "Les heures des images ne sont pas l'heure réelle : à rapprocher de la chronologie des autres pièces avant d'en tirer quoi que ce soit." });
       }
+      if (SS.conjugal) {
+        const M = SS.conjugal;
+        if (M.refus) fact("G_refus_plainte", { label: "La victime ne veut pas déposer plainte", key: true, why: "Le parquet peut poursuivre sans plainte : la preuve repose alors sur les constatations, le certificat et les témoins, que la défense examine sans la parole de la victime." });
+        if (!M.mc) fact("G_mc_absente", { label: "Aucune main courante antérieure au fichier, contrairement à ce que dit la victime", key: true, why: "La victime se souvient d'une main courante que le fichier n'a pas : un point de sa déclaration est contredit par une pièce." });
+        if (M.desordre.startsWith("aucun")) fact("G_sans_desordre", { label: "Aucun désordre constaté au domicile", key: false });
+      }
       if (SS.rebellion) {
         const R = SS.rebellion;
         if (R.passif) fact("G_passif", { label: "Le second policier décrit un « poids mort » : se laisser tomber, se raidir, sans frapper", key: true, why: "La rébellion suppose une résistance violente, active : la résistance passive n'en est pas une." });
