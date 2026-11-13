@@ -58,6 +58,7 @@
     return "Direction régionale de la police judiciaire · Brigade criminelle";
   };
 
+  GEN2.serviceCrim = SERVICE;
   GEN2.piecesCrim = function (t, N) {
     let r = CR.seeded(t.sig + ":pieces");
     const TJ = CR.MONDE.lieuxDe(t).TJ;
