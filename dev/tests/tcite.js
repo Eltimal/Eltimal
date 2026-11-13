@@ -163,6 +163,8 @@ const check = (label, ok, info) => { if (!ok) fails++; console.log((ok ? "ok   "
   await click(w, arg);
   inp = host.querySelector(".cite-num"); setVal(inp, "475-1 cpp"); await sleep(30); await click(w, findBtn(host, /^Citer$/));
   await click(w, findBtn(host, /^Plaider$/)); await sleep(200);
+  // mode libre (A4 ter) : la main s'ouvre par le geste « Produire une pièce ou citer un texte »
+  if (!host.querySelector(".hcard") && host.querySelector(".gestes-audience .produire")) { await click(w, host.querySelector(".gestes-audience .produire")); await sleep(30); }
   const t475 = CR.lib("CPP_475-1").titre;
   const hc = [...host.querySelectorAll(".hcard")].find((b) => texts(b).includes(t475) && !/475/.test(texts(b)));
   check("carte de texte sans numéro", !!hc, [...host.querySelectorAll(".hcard")].map((b) => texts(b)).join(" | ").slice(0, 200));

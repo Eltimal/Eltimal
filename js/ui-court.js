@@ -127,6 +127,7 @@
     const [verdict, setVerdict] = useState(null);
     const [citeCard, setCiteCard] = useState(null);
     const [jpCard, setJpCard] = useState(null);
+    const [mainOuverte, setMainOuverte] = useState(false);
     const logRef = useRef(null);
     const cps = 36 * CR.textSpeedMult(s);
     const fatigue = CR.fatigueMult(s);
@@ -142,7 +143,7 @@
       setCiteCard(null);
       if (cur._end) { setPhase("done"); return; }
       if (cur.choose) { setPhase("choose"); setTimer(cur.timer ? cur.timer * 1000 / fatigue : 0); if (cur.prompt) addLog({ who: "sys", t: T(cur.prompt) }); return; }
-      if (cur.card) { addLog({ who: "sys", t: T(cur.card.prompt) }); setPhase("card"); setTimer((cur.card.window || 12000) / fatigue); return; }
+      if (cur.card) { if (!CR.libre(s)) addLog({ who: "sys", t: T(cur.card.prompt) }); setPhase("card"); setTimer((cur.card.window || 12000) / fatigue); return; }
       if (cur.limine) { setPhase("limine"); return; }
       if (cur.questions) { setPhase("questions"); return; }
       if (cur.constitution) { setPhase("constitution"); return; }
@@ -230,6 +231,17 @@
       const fb = opts[opts.length - 1];
       if (fb) choose(fb); else next();
     }
+    // refonte (A4 ter) : en mode libre, produire ou citer est un geste toujours disponible ; hors du moment où cela sert,
+    // le président arrête l'avocat (rien n'annonce plus le moment)
+    function geste(card) {
+      setMainOuverte(false);
+      if (phase === "card") { playCard(card); return; }
+      addLog({ who: "you", t: card.kind === "texte" ? `(Vous citez : ${card.label})` : `(Vous produisez : ${card.label})` });
+      addLog({ who: "president", t: presProf === CR.PROFILS.formaliste ? "Maître, ce n'est pas le moment. Le tribunal vous entendra en temps utile." : "Pas maintenant, maître. Nous y viendrons." });
+      applyFx(s, cs, st, { cred: -1 });
+      st.gestesHorsMoment = (st.gestesHorsMoment || 0) + 1;
+      bump();
+    }
     // Une carte de texte, en saisie : on tape son numéro (le temps est suspendu pendant la saisie)
     function playCard(card) {
       if (card.jp) { if (CR.saisieOn(s)) setJpCard(card); else jpResolve(card, { id: card.id, g: "ok" }); return; }
@@ -287,7 +299,7 @@
     const roomOpts = Object.assign({}, room.opts, { min: s.min, rain: CR.dec.rainy(s), season: CR.dec.seasonOf(s), speaker: typing && speaker !== "sys" ? speaker : null, court, verdict, turn: ["choose", "card", "limine", "questions", "constitution", "plaidoirie"].includes(phase) });
     // refonte : l'audience se joue dans le plan plein cadre (CR.plans.audience) ; sinon l'ancienne salle
     const staged = UI.planOk && UI.planOk("audience");
-    return html`<div className=${cx("scene court-scene", staged && "staged")}>
+    return html`<div className=${cx("scene court-scene", staged && "staged")} data-phase=${phase}>
       ${staged ? html`<${UI.Plan} name="audience" opts=${Object.assign({}, roomOpts, { room: room.name })} />
       <div className="stg-top"><div className="stg-cap"><span className="pix">${title}</span><span className="stg-sub">${sub ? sub + " · " : ""}${CR.fmtTime(s.min)}</span></div></div>` : html`<div className="court-stage">
         <${UI.Room} name=${room.name} opts=${roomOpts} />
@@ -303,10 +315,16 @@
         <details className="court-dossier" open=${!staged}><summary className="pix">Votre dossier à la barre — carnet et textes enregistrés</summary><${UI.DossierSide} s=${s} cs=${cs} ctx="audience" /></details>
         </div>
         <div className="court-controls">
-          ${phase === "window" && html`<div className="window-bar"><div className="wb-fill" style=${{ width: Math.max(0, timer / ((cur.interject.window || 4500) / fatigue)) * 100 + "%" }}></div></div>`}
-          ${["type", "window", "pause"].includes(phase) && html`<div className="court-btns">
+          ${phase === "window" && !CR.libre(s) && html`<div className="window-bar"><div className="wb-fill" style=${{ width: Math.max(0, timer / ((cur.interject.window || 4500) / fatigue)) * 100 + "%" }}></div></div>`}
+          ${["type", "window", "pause"].includes(phase) && !CR.libre(s) && html`<div className="court-btns">
             <button className="parole" onClick=${demanderParole}>Demander la parole</button>
             <p className="small muted">Quand quelqu'un se trompe sur le dossier. Couper un magistrat sans raison vous coûtera.</p>
+          </div>`}
+          ${CR.libre(s) && ["type", "window", "pause", "card"].includes(phase) && html`<div className="court-btns gestes-audience">
+            ${jpCard ? html`<${UI.JPInput} key=${jpCard.id} s=${s} attendu=${jpCard.id} label=${"Citez l'arrêt : " + jpCard.label} onDone=${(r) => jpResolve(jpCard, r)} onSkip=${() => setJpCard(null)} />` : citeCard ? html`<${UI.CiteInput} key=${citeCard.id} s=${s} expect=${[citeCard.ref]} label=${"Citez : " + citeCard.label} onDone=${(r) => citeCardDone(citeCard, r)} onSkip=${() => setCiteCard(null)} />` : html`
+            <button className="parole" onClick=${phase === "card" ? () => setMainOuverte(true) : demanderParole}>Demander la parole</button>
+            <button className="parole produire" onClick=${() => setMainOuverte((x) => !x)}>Produire une pièce ou citer un texte</button>
+            ${mainOuverte && html`<div className="hand-cards">${hand.length === 0 && html`<p className="small muted">Rien noté, aucun texte enregistré dans ce dossier.</p>`}${hand.map((c, i) => html`<button key=${i} className=${cx("hcard", "hk-" + c.kind)} onClick=${() => geste(c)}><span className="pix">${c.kind === "texte" ? "Texte" : c.kind === "piece" ? "Pièce" : "Note"}</span>${c.label}</button>`)}</div>`}`}
           </div>`}
           ${phase === "choose" && cur && html`<div className="choices court-choices">
             ${cur.timer ? html`<div className="window-bar"><div className="wb-fill" style=${{ width: Math.max(0, timer / (cur.timer * 1000 / fatigue)) * 100 + "%" }}></div></div>` : null}
@@ -319,7 +337,7 @@
               return opts.map((o, i) => html`<button key=${i} className="choice" onClick=${() => { if (o.need && !CR.inHand(s, cs, o.need)) { addLog({ who: "you", t: T(o.t) }); addLog({ who: "president", t: "Qu'est-ce qui, dans le dossier, permet de le dire, maître ? … Bien. Poursuivons." }); applyFx(s, cs, st, { cred: -2 }); const repli = cur.choose.find((x) => !x.need) || cur.choose[cur.choose.length - 1]; if (repli && repli !== o) choose(Object.assign({}, repli, { t: null, reply: null })); else next(); return; } choose(o); }}>${T(o.t)}</button>`);
             })()}
           </div>`}
-          ${phase === "card" && html`<div className="hand">
+          ${phase === "card" && !CR.libre(s) && html`<div className="hand">
             <div className="window-bar urgent"><div className="wb-fill" style=${{ width: Math.max(0, timer / ((cur.card.window || 12000) / fatigue)) * 100 + "%" }}></div></div>
             <span className="pix">Produire une pièce ou citer un texte — ou laisser passer</span>
             ${jpCard ? html`<${UI.JPInput} key=${jpCard.id} s=${s} attendu=${jpCard.id} label=${"Citez l'arrêt : " + jpCard.label} onDone=${(r) => jpResolve(jpCard, r)} onSkip=${() => setJpCard(null)} />` : citeCard ? html`<${UI.CiteInput} key=${citeCard.id} s=${s} expect=${[citeCard.ref]} label=${"Citez : " + citeCard.label} onDone=${(r) => citeCardDone(citeCard, r)} onSkip=${() => setCiteCard(null)} />` : html`<div className="hand-cards">${hand.length === 0 && html`<p className="small muted">Votre main est vide : rien noté, aucun texte enregistré dans ce dossier.</p>`}${hand.map((c, i) => html`<button key=${i} className=${cx("hcard", "hk-" + c.kind)} onClick=${() => playCard(c)}><span className="pix">${c.kind === "texte" ? "Texte" : c.kind === "piece" ? "Pièce" : "Note"}</span>${c.label}</button>`)}</div>`}

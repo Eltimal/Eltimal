@@ -488,6 +488,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .parole { font: 400 calc(13px * var(--tz))/1.2 var(--f-pix); letter-spacing: .08em; text-transform: uppercase; background: #24376a; color: #f2f5ff; border: 2px solid #4b66ad; border-radius: 8px; padding: 16px 12px; box-shadow: 0 4px 0 #111b38; transition: transform .05s; }
 .parole:hover { background: #2d4482; }
 .parole:active { transform: translateY(3px); box-shadow: 0 1px 0 #111b38; }
+.gestes-audience .produire { background: #3a3324; border-color: #8a7444; box-shadow: 0 4px 0 #1f1a10; padding: 10px 12px; }
+.gestes-audience .produire:hover { background: #4a4130; }
+.gestes-audience .hand-cards { max-height: 30vh; overflow-y: auto; }
 .window-bar { height: 6px; width: 100%; background: #070a12; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
 .wb-fill { height: 100%; background: var(--amber); transition: width .1s linear; }
 .window-bar.urgent .wb-fill { background: var(--bad); }
@@ -1852,6 +1855,13 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .canaux { display: grid; gap: 6px; }
 .canaux .canal { all: unset; cursor: pointer; display: grid; gap: 2px; padding: 8px 12px; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; }
 .canaux .canal:hover, .canaux .canal:focus-visible { border-color: rgba(201,164,92,.7); background: rgba(201,164,92,.06); }
+.ebarreau { display: grid; gap: 10px; }
+.eb-annuaire { display: grid; gap: 4px; }
+.eb-dest { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: baseline; padding: 6px 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 4px; cursor: pointer; }
+.eb-dest .small { grid-column: 2; }
+.eb-dest.on { border-color: rgba(201,164,92,.8); background: rgba(201,164,92,.08); }
+.eb-objet, .eb-pj { margin: 0; }
+.eb-ar { display: grid; gap: 2px; padding: 8px 12px; margin-bottom: 8px; border-left: 3px solid #6f9a6a; background: rgba(111,154,106,.08); }
 
 /* lot 3 : l'entretien libre dans la scène d'appel en plein cadre — la parole à gauche, le compositeur à droite */
 .call-scene.staged .call-main:has(> .call-libre) { height: 48vh; }

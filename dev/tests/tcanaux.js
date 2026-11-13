@@ -47,6 +47,28 @@ const { boot } = require("./harness");
     const r2 = C.transmettre(s, cs, "dml", "cep");
     ok(r2.ok && CR.drafted(cs, "dml").irrecevable === "cep" && /D\. 593/.test(C.MOTIF("dml", "cep", "x")), "la demande de mise en liberté par e-Barreau n'est pas irrecevable");
   }
+  // 4 bis. l'écran e-Barreau (B1 bis) : adresse hors liste, mauvais service, pièce oubliée, bon envoi
+  {
+    s.min = 10 * 60;
+    const a = nouveau("plainte_simple");
+    C.transmettre(s, a, "plainte_simple", "cep", { dest: "hors", pj: true });
+    ok(CR.drafted(a, "plainte_simple").irrecevable === "cephors" && /D\. 591/.test(C.MOTIF("plainte_simple", "cephors", "x")), "une adresse hors liste n'est pas irrecevable");
+    const b = nouveau("plainte_simple");
+    const rb = C.transmettre(s, b, "plainte_simple", "cep", { dest: "doyen", pj: true });
+    ok(rb.retour && !CR.drafted(b, "plainte_simple").depose, "une plainte envoyée au doyen prend date", JSON.stringify(rb));
+    const c = nouveau("plainte_simple");
+    C.transmettre(s, c, "plainte_simple", "cep", { dest: "bop", pj: false });
+    ok(!CR.drafted(c, "plainte_simple").depose, "un message sans l'acte joint prend date");
+    const e = nouveau("plainte_simple");
+    C.transmettre(s, e, "plainte_simple", "cep", { dest: "bop", pj: true });
+    const de = CR.drafted(e, "plainte_simple");
+    ok(de.depose && !de.irrecevable && de.deposeDay === (CR.isOuvrable(s.day) ? s.day : CR.addOuvrables(s.day, 1)), "le bon envoi e-Barreau ne prend pas date", JSON.stringify(de));
+    const n0 = s.mails ? s.mails.length : (s.inbox || []).length;
+    for (let k = 0; k < 2; k++) CR.endDay(s);
+    const boite = JSON.stringify(s.mails || s.inbox || []);
+    ok(/ne relève pas de notre service/.test(boite) && /aucune pièce jointe/.test(boite), "le service destinataire ne répond pas au message mal adressé", n0);
+    ok(C.transmettre(s, b, "plainte_simple", "cep", { dest: "bop", pj: true }).ok && CR.drafted(b, "plainte_simple").depose, "le message mal adressé ne peut pas être renvoyé");
+  }
   // 5. le mode liste (parties automatiques) garde le dépôt en un clic
   {
     s.settings.saisie = "liste";

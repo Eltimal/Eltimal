@@ -24,7 +24,23 @@ async function runAudience(w, doc, CR, o = {}) {
     }
     const hand = sc.querySelector(".hand");
     if (hand) { const c = o.card && [...hand.querySelectorAll(".hcard")].find((x) => o.card.test(texts(x))); await click(w, c || findBtn(doc, "Laisser passer", hand)); log.push("CARTE " + (c ? texts(c).slice(0, 30) : "—")); continue; }
+    // mode libre (A4 ter) : pas d'invite ; au moment d'une pièce, on ouvre sa main et on produit, sinon on laisse le temps passer
+    const ges = sc.querySelector(".gestes-audience");
+    if (ges && o.horsMoment && !sc.dataset.hm && sc.dataset.phase === "type") {
+      if (!ges.querySelector(".hcard")) { await click(w, ges.querySelector(".produire")); continue; }
+      const c = ges.querySelector(".hcard"); if (c) { sc.dataset.hm = "1"; await click(w, c); log.push("HORS MOMENT"); continue; }
+    }
+    if (ges && sc.dataset.phase === "card") {
+      if (o.card && !sc.dataset.carte) {
+        if (!ges.querySelector(".hcard")) { await click(w, ges.querySelector(".produire")); continue; }
+        const c = [...ges.querySelectorAll(".hcard")].find((x) => o.card.test(texts(x)));
+        if (c) { sc.dataset.carte = "1"; await click(w, c); log.push("CARTE " + texts(c).slice(0, 30)); continue; }
+      }
+      i--; continue;
+    }
+    if (sc.dataset.carte && sc.dataset.phase !== "card") delete sc.dataset.carte;
     const del = sc.querySelector(".delibere");
+
     if (del) { log.push("DÉCISION: " + texts(del.querySelector(".decision")).slice(0, 600)); await click(w, findBtn(doc, "Continuer", del)); continue; }
     const done = sc.querySelector(".court-done");
     if (done) { await click(w, findBtn(doc, "Sortir de la salle")); log.push("SORTIE"); break; }

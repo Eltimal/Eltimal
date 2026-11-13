@@ -24,7 +24,7 @@
     citation: ["cj"], constitution_pc: ["lrar", "fax", "cep"], demande_actes: ["greffe", "lrar", "chef", "cep"], dml: ["greffe", "chef"], appel: ["greffe", "chef"],
   };
   const TEXTE = { conclusions_nullite: "art. 385 et 459", requete_nullite: "art. 173", plainte_simple: "art. 85 et D. 591", pcpc: "art. 85 et D. 591", citation: "art. 550", constitution_pc: "art. 420-1", demande_actes: "art. 82-1 et D. 591", dml: "art. 148-6 et D. 593", appel: "art. 502 et 503" };
-  C.MOTIF = (key, canal, titre) => ({
+  C.MOTIF = (key, canal, titre) => canal === "cephors" ? `${titre} a été adressé à une adresse électronique qui ne figure pas sur la liste du ministère de la Justice (art. D. 591) : l'envoi ne vaut pas transmission. L'acte est irrecevable.` : ({
     "dml|cep": "La demande de mise en liberté ne peut pas être adressée par la voie électronique (art. D. 593) ; elle se forme par déclaration au greffier (art. 148-6). Elle est irrecevable : votre client reste détenu.",
     "dml|lrar": "La demande de mise en liberté se forme par déclaration au greffier, ou au chef d'établissement pour un détenu (art. 148-6) ; une lettre ne la saisit pas. Irrecevable.",
     "appel|cep": "L'appel se forme par déclaration au greffier de la juridiction qui a statué (art. 502) ; un message ne vaut pas déclaration. Irrecevable.",
@@ -34,13 +34,38 @@
   C.gere = (s, key) => !!(CR.libre && CR.libre(s) && C.ADMIS[key]);
   C.detenu = (s, cs) => !!(s.detenus || []).find((d) => d.caseId === cs.id) || (cs.proc && cs.proc.detention && cs.proc.detention.statut === "dp");
 
-  // transmettre : rend { ok, effet (jour), msg }
-  C.transmettre = function (s, cs, key, canal) {
+  // B1 bis : l'annuaire e-Barreau. La CEP part vers une adresse de la liste du ministère (D. 591) : une adresse hors liste
+  // rend l'envoi irrecevable (vérifié, dev/ref/actes-canaux.md). Un service de la liste qui n'est pas le bon, ou un message
+  // sans l'acte joint, ne saisit personne : le message revient, l'acte ne prend pas date (choix du jeu, pas une règle lue).
+  C.SERVICES = [
+    ["bop", "Parquet — bureau d'ordre pénal", "Plaintes, demandes au procureur"],
+    ["doyen", "Doyen des juges d'instruction", "Plaintes avec constitution de partie civile"],
+    ["ji", "Cabinet du juge d'instruction saisi", "Demandes d'actes, observations, expertises"],
+    ["correc", "Greffe correctionnel", "Constitutions de partie civile, demandes de renvoi"],
+    ["chins", "Greffe de la chambre de l'instruction", "Mémoires"],
+    ["jld", "Service du juge des libertés et de la détention", "Débats contradictoires"],
+    ["hors", "Adresse nominative d'un greffier (messagerie personnelle)", "Échangée à l'audience"],
+  ];
+  C.DEST = { plainte_simple: ["bop"], pcpc: ["doyen"], demande_actes: ["ji"], constitution_pc: ["correc"] };
+  C.service = (k) => (C.SERVICES.find((x) => x[0] === k) || [null, k])[1];
+
+  // transmettre : rend { ok, effet (jour), msg } ; o = { dest, pj } pour l'écran e-Barreau
+  C.transmettre = function (s, cs, key, canal, o) {
     const d = CR.drafted(cs, key);
     if (!d || d.depose) return { ok: false, msg: "Rien à transmettre." };
     const tpl = CR.getTpl(s, cs, key);
+    if (canal === "cep" && o && o.dest !== "hors" && ((C.DEST[key] && !C.DEST[key].includes(o.dest)) || !o.pj)) {
+      // le message part, mais ne saisit personne
+      CR.spend(s, 10, "admin");
+      const r = { ok: true, retour: true, msg: `Message parti. Accusé de réception à ${CR.fmtTime(s.min)}.` };
+      CR.schedule(s, { day: CR.addBusinessDays(s.day, 1), min: 10 * 60, type: "fn", key: "cepRetour", data: { caseId: cs.id, key, dest: o.dest, pj: !!o.pj } });
+      cs.vars.cepRetours = (cs.vars.cepRetours || 0) + 1;
+      return r;
+    }
+    if (canal === "cep" && o && o.dest === "hors") { canal = "cephors"; }
     const admis = (C.ADMIS[key] || []).includes(canal);
     d.canal = canal;
+    if (canal === "cephors") canal = "cep";
     if (canal === "greffe" || canal === "cj") { cs.vars.canalChoisi = Object.assign({}, cs.vars.canalChoisi, { [key]: canal }); if (!admis) d.irrecevablePrevu = true; return { ok: true, trajet: true, msg: `Il reste à vous rendre ${canal === "cj" ? "à l'étude" : "au greffe"} : ${tpl.depotLabel || "le lieu du dépôt"}.` }; }
     if (canal === "chef" && !C.detenu(s, cs)) return { ok: false, msg: "Votre client n'est pas détenu : il n'y a pas de chef d'établissement pour recevoir sa déclaration." };
     CR.spend(s, canal === "cep" ? 10 : canal === "fax" ? 8 : canal === "lrar" ? 20 : 15, "admin");
@@ -52,8 +77,8 @@
     d.depose = true; d.deposeDay = jour; d.transmis = { canal, day: s.day, min };
     CR.timeline(s, cs, `${tpl.title} : transmis par ${C.lib(canal).toLowerCase()}${canal === "cep" ? ` (accusé de réception à ${CR.fmtTime(min)})` : ""}.`);
     if (!admis) {
-      d.irrecevable = canal;
-      CR.erreur(s, cs, { id: "canal_" + key, texte: `${tpl.title} transmis par ${C.lib(canal).toLowerCase()}.`, sanction: C.MOTIF(key, canal, tpl.title), regul: "Refaire l'acte par un canal admis, si le délai court encore." });
+      d.irrecevable = d.canal;
+      CR.erreur(s, cs, { id: "canal_" + key, texte: d.canal === "cephors" ? `${tpl.title} envoyé par e-Barreau à une adresse hors liste.` : `${tpl.title} transmis par ${C.lib(canal).toLowerCase()}.`, sanction: C.MOTIF(key, d.canal, tpl.title), regul: "Refaire l'acte par un canal admis, si le délai court encore." });
       CR.schedule(s, { day: CR.addBusinessDays(s.day, 2), min: 11 * 60, type: "fn", key: "canalIrrecevable", data: { caseId: cs.id, key } });
       return { ok: true, msg: canal === "cep" ? `Message parti. Accusé de réception à ${CR.fmtTime(min)}.` : "Envoyé." };
     }
@@ -77,6 +102,12 @@
   };
   CR.GLOBAL_FN = CR.GLOBAL_FN || {};
   CR.GLOBAL_FN.canalEffet = (s, x) => { const cs = s.cases[x.caseId]; if (cs) CR.deposer(s, cs, x.key, { sansTemps: true, deja: true }); };
+  CR.GLOBAL_FN.cepRetour = (s, x) => {
+    const cs = s.cases[x.caseId]; if (!cs) return;
+    const tpl = CR.getTpl(s, cs, x.key);
+    CR.mail(s, { from: C.service(x.dest), subject: `Votre envoi : ${tpl.title}`, kind: "greffe", caseId: cs.id, important: true,
+      body: [[x.pj ? `Maître, votre message ne relève pas de notre service. Il n'a pas été enregistré ; il vous appartient de l'adresser au service compétent.` : `Maître, votre message ne comportait aucune pièce jointe. Rien n'a été enregistré.`]] });
+  };
   CR.GLOBAL_FN.canalIrrecevable = (s, x) => {
     const cs = s.cases[x.caseId]; if (!cs) return;
     const tpl = CR.getTpl(s, cs, x.key), d = CR.drafted(cs, x.key);
@@ -90,13 +121,23 @@
     UI.CanalScene = function CanalScene({ s, cs, tplKey, onDone }) {
       const tpl = CR.getTpl(s, cs, tplKey);
       const [res, setRes] = React.useState(null);
-      const choisir = (k) => { const r = C.transmettre(s, cs, tplKey, k); setRes(r); CR.store.bump(); };
+      const [cep, setCep] = React.useState(null); // écran e-Barreau : { dest, pj }
+      const choisir = (k) => { if (k === "cep") { setCep({ dest: null, pj: false }); return; } const r = C.transmettre(s, cs, tplKey, k); setRes(r); CR.store.bump(); };
+      const envoyer = () => { const r = C.transmettre(s, cs, tplKey, "cep", cep); setRes(Object.assign({ ar: { min: s.min, dest: cep.dest } }, r)); setCep(null); CR.store.bump(); };
+      if (cep) return html`<${UI.Modal} title="e-Barreau — nouveau message" onClose=${() => setCep(null)} footer=${html`<${Btn} kind="ghost" onClick=${() => setCep(null)}>Retour</${Btn}><${Btn} kind="primary" disabled=${!cep.dest} onClick=${envoyer}>Envoyer</${Btn}>`}>
+        <div className="ebarreau">
+          <p className="small muted">Communication électronique pénale. Destinataire : une structure de l'annuaire de la juridiction.</p>
+          <div className="eb-annuaire">${C.SERVICES.map(([k, l]) => html`<label key=${k} className=${UI.cx("eb-dest", cep.dest === k && "on")}><input type="radio" name="eb-dest" checked=${cep.dest === k} onChange=${() => setCep(Object.assign({}, cep, { dest: k }))} /><b>${l}</b></label>`)}</div>
+          <p className="eb-objet"><span className="small muted">Objet</span> ${tpl.title} — ${CR.clientName(cs)}</p>
+          <label className="eb-pj"><input type="checkbox" checked=${cep.pj} onChange=${() => setCep(Object.assign({}, cep, { pj: !cep.pj }))} /> Joindre l'acte signé (${tpl.title}.pdf)</label>
+        </div>
+      </${UI.Modal}>`;
       return html`<${UI.Modal} title=${`Transmettre : ${tpl.title}`} onClose=${onDone} footer=${html`<${Btn} kind="primary" onClick=${onDone}>${res && res.ok ? "Fermer" : "Annuler"}</${Btn}>`}>
         ${!res || !res.ok ? html`<div className="canaux">
           <p className="small muted">Par quelle voie transmettez-vous l'acte ? Il prend date selon la voie choisie ; une voie que la loi n'admet pas pour cet acte le rend irrecevable.</p>
           ${C.LISTE.map(([k, l, sub]) => html`<button type="button" key=${k} className="canal" onClick=${() => choisir(k)}><b>${l}</b><span className="small muted">${sub}</span></button>`)}
           ${res && !res.ok && html`<p className="warn-txt small">${res.msg}</p>`}
-        </div>` : html`<p>${res.msg}</p>`}
+        </div>` : html`<div>${res.ar && html`<div className="eb-ar"><b className="pix">Accusé de réception</b><span>Message déposé le ${CR.fmtDate(s.day, "long")} à ${CR.fmtTime(res.ar.min)} — destinataire : ${C.service(res.ar.dest)}</span></div>`}<p>${res.msg}</p></div>`}
       </${UI.Modal}>`;
     };
   }

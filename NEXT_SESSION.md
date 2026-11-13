@@ -10,7 +10,7 @@
 
 ## Où on en est
 
-Phase A : A1 à A4 faits (parole en garde à vue, tribunal qui raisonne, procès-verbal tiré de l'audition, entretiens libres, plaidoirie par catalogue). A4 bis (débats intégraux), A5 (débrief « ce qu'il fallait demander »), B1 (canaux) faits. B2 avancé (ordre mélangé, fonds commun, clauses voisines : 51 %). Lot 4 (peine choisie, `peines.js`) et C1 en partie (aide juridictionnelle) faits. Prochain : A4 ter (incidents en gestes), B1 bis (écrans e-Barreau), C2 (économie du cabinet), puis lot 1 ter.
+Phase A : A1 à A4 faits (parole en garde à vue, tribunal qui raisonne, procès-verbal tiré de l'audition, entretiens libres, plaidoirie par catalogue). A4 bis (débats intégraux), A5 (débrief « ce qu'il fallait demander »), B1 (canaux) faits. B2 avancé (ordre mélangé, fonds commun, clauses voisines : 51 %). Lot 4 (peine choisie, `peines.js`) et C1 en partie (aide juridictionnelle) faits. A4 ter (gestes d'audience) et B1 bis (écran e-Barreau, sans PLEX) faits. Prochain : C2 (économie du cabinet recalée, carrière simulée d'un an), A5 reste (débrief général de l'affaire), puis lot 1 ter.
 
 ## Contrôle d'ensemble
 

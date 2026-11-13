@@ -13,7 +13,7 @@ Principe d'ordonnancement : on termine d'abord la boucle la plus jouée (permane
 | A3 | Lot 3 suite : le procès-verbal d'audition du dossier écrit depuis la transcription jouée ; entretiens hors garde à vue au compositeur | La pièce `pv_audition` reprend mot pour mot les réponses jouées ; `tappel` vert | Fait (13 nov.) |
 | A4 | Lot 4b : plaidoirie par le catalogue universel, plan de défense à la barre | `tplaidoirie` vert | Fait (13 nov.) |
 | A4 bis | Lot 4b suite : débats intégraux (interrogatoire du président, réquisitoire entier) | Interrogatoire tiré de l'audition, réquisitoire cotant les pièces par élément (`debats.js`, `tplaidoirie`) | Fait (13 nov.) pour la comparution immédiate générée |
-| A4 ter | Incidents d'audience et cartes en gestes toujours disponibles ; même débats pour les audiences sur convocation | Plus de boîte de choix qui annonce le moment | Débats intégraux sur convocation faits (13 nov.) ; incidents en gestes à faire |
+| A4 ter | Incidents d'audience et cartes en gestes toujours disponibles ; même débats pour les audiences sur convocation | Plus de boîte de choix qui annonce le moment | Fait (13 nov.) : débats intégraux sur convocation ; parole et pièces en gestes toujours disponibles, sans invite (`tplaidoirie`) |
 | A5 | Lot 6 partiel : fin des signaux « bon / mauvais » pendant les scènes refaites ; débrief en corrigé d'examen | Aucun signal dans les scènes A1 à A4 (`tplaidoirie` le vérifie sur le texte affiché) | Fait pour l'audience et le délibéré (13 nov.) ; reste le débrief général de l'affaire |
 
 ## Phase B — le métier écrit
@@ -21,7 +21,7 @@ Principe d'ordonnancement : on termine d'abord la boucle la plus jouée (permane
 | # | Livrable | Critère de fin |
 |---|---|---|
 | B1 | Lot 5 : canaux de transmission | Chaque acte part par un canal ; mauvais canal = irrecevabilité motivée — **fait (13 nov.)**, `tcanaux` |
-| B1 bis | Lot 5 suite : écrans e-Barreau (annuaire des CEP, accusé de réception, pièces jointes, PLEX), adresse hors liste = irrecevable | Envoi depuis le poste de travail du cabinet |
+| B1 bis | Lot 5 suite : écrans e-Barreau (annuaire des CEP, accusé de réception, pièces jointes, PLEX), adresse hors liste = irrecevable | Envoi depuis le poste de travail du cabinet — **fait en partie (13 nov.)** : annuaire, pièce jointe, accusé de réception, adresse hors liste irrecevable (`tcanaux`) ; reste PLEX |
 | B2 | Actes par clauses (fin des blancs à deux options) | `tplcheck` refait : aucune option devinable par l'ordre ou la longueur — **en cours** : ordre mélangé, fonds commun (`clauses.js`, `tclauses`) ; clauses voisines (`K.voisine`) : la bonne option n'est plus la plus longue que dans 51 % des blancs (78 % avant) ; reste les blancs à valeur propre |
 
 ## Phase C — l'économie et la progression
