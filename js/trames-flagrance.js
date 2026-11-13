@@ -542,6 +542,23 @@
             mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
           ], sigs: ["Le directeur du magasin"] }));
       }
+      // lot 1 ter : le vol chez l'employeur — le relevé des badges du soir des faits (qui avait accès)
+      if (t.inf === "vol" && t.f && t.f.sc === "vestiaire") {
+        const rv = CR.seeded(t.sig + ":g:badge");
+        const autres = int(rv, 0, 4);
+        const NOMS = ["Karima L.", "Julien M.", "Sophie D.", "Thomas R.", "Aminata K.", "Pierre V."];
+        const h0 = ((S.T0 % 1440) + 1440) % 1440;
+        const lignesB = [{ qui: `${n(A)} (badge n° ${int(rv, 1000, 9999)})`, h: h0 - int(rv, 5, 40), sortie: h0 + int(rv, 5, 30) }].concat(Array.from({ length: autres }, (_, k) => ({ qui: `${NOMS[k]} (badge n° ${int(rv, 1000, 9999)})`, h: h0 - int(rv, 0, 90), sortie: h0 + int(rv, -20, 60) })));
+        lignesB.sort((a, b) => a.h - b.h);
+        if (autres) fait("G_badges", { label: `${autres === 1 ? "Une autre personne" : autres + " autres personnes"} avaient badgé dans les locaux à l'heure des faits`, key: true, why: "Les images placent l'intéressé dans le bureau, mais d'autres avaient accès : l'imputation repose sur ce que montrent exactement les images." });
+        const mB = PL && E.enquete ? E.enquete(0) : E.debut + 150;
+        add("pv_badges", mB, "Relevé des badges", () => DOCS.pv({ cote: cote("pv_badges"), proc: t.proc, service, unite, titre: "Procès-verbal d'exploitation du relevé des accès", numPV: "00" + int(CR.seeded(t.sig + ":g:bdg2"), 101, 899), jour: j(mB), heure: mB, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`, objet: `OBJET : ${q0.label} — relevé des accès`,
+          blocs: [
+            p(`Exploitons le relevé du contrôle d'accès des locaux, remis par l'employeur, pour la soirée du ${DOCS.date(jf)} :`),
+            ...lignesB.map((x) => ligne(x.qui, `entrée ${hm(x.h)}, sortie ${hm(Math.max(x.h + 5, x.sortie))}`)),
+            p(autres ? `Outre ${n(A)}, ${autres === 1 ? "une personne était" : autres + " personnes étaient"} présente${autres > 1 ? "s" : ""} dans les locaux à l'heure des faits.` : `Seul ${n(A)} était présent${e(A)} dans les locaux à l'heure des faits.`),
+          ], cloture: mention(`Dont procès-verbal, fait et clos ${at(mB)}.`), signataires: [`${OPJ.signe}, officier de police judiciaire`], st: stO }));
+      }
       // lot 1 ter : dégradations — le devis de réparation, ligne par ligne, dont le total fait le montant du dommage ; il
       // comprend parfois la reprise d'un dommage antérieur que la victime a fait chiffrer avec le reste
       if (t.inf === "degradations" && t.f && t.f.montant && V) {
