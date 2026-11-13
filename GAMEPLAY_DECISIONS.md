@@ -169,3 +169,10 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
   - Toxicologie de la victime, positive dans un cas sur six environ : fait à discuter avec la causalité, sans effet automatique.
   - En comparution immédiate, si la garde à vue se clôt avant l'autopsie, le dossier ne contient que les premières indications du légiste, recueillies par téléphone (procès-verbal de renseignement).
   - Pièces anciennes restantes : 1 % des affaires (`tcatalogue`).
+- **D-76. Le certificat des urgences se compose sur la chronologie.**
+  - Dans les affaires du moteur générique où l'incapacité est discutée, la victime passe aux urgences entre les faits et sa plainte. L'urgentiste constate les mêmes lésions que l'unité médico-judiciaire et prescrit un arrêt de travail. La leçon du litige est conservée : un arrêt de travail n'est pas l'incapacité au sens pénal.
+  - Le pilote des violences garde son propre certificat.
+- **D-77. Une affaire générée deux fois donne le même dossier (correction).**
+  - `SIM.caler` recale l'heure des faits sur la garde à vue, et la chronologie d'une convocation en flagrance part de cette heure. Chaque génération décalait donc les heures : environ 4 % des affaires changeaient de dossier, par exemple à la relecture d'une sauvegarde.
+  - La génération repart désormais de l'heure tirée, conservée dans `t.d.h0`.
+  - Garde-fou `tidempotence` : 160 affaires de tous types générées deux fois.

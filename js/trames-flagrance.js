@@ -288,8 +288,32 @@
         blocs: [p(`Sur instruction du procureur de la République, restituons à ${nf(V)}, qui en justifie la propriété par la présentation de la facture, ${objet} placé sous scellé n° UN. ${Il(V)} reconnaît son bien.`), mention(`Fait ${at(E.restitution)}.`)], sigs: ["La victime", `${OPJ.signe}, officier de police judiciaire`] }));
     }
 
+    // lot 1 ter : le certificat médical initial des urgences (litige sur l'incapacité, t.quoi « itt ») — la victime passe aux
+    // urgences entre les faits et sa plainte ; l'urgentiste prescrit un arrêt de travail, que l'unité médico-judiciaire ne
+    // confondra pas avec l'incapacité totale de travail au sens pénal. Mêmes lésions que le certificat de l'UMJ.
+    const certifUrgences = (V) => {
+      if (t.quoi !== "itt" || !V || t.f.itt == null) return;
+      const ru = CR.seeded(t.sig + ":g:urg");
+      const borne = E.victime != null && !PL ? E.victime - 20 : S.T0 + 240;
+      const mU = Math.max(S.T0 + 30, Math.min(S.T0 + int(ru, 60, 150), borne));
+      const hop = pk(ru, ["Hôpital Lariboisière", "Hôpital Bichat", "Hôpital Saint-Antoine", "Hôpital de la Pitié-Salpêtrière"]);
+      const dr = pk(ru, ["Antoine Mercier", "Salomé Riva", "Karim Haddad", "Inès Morel"]);
+      const soins = pk(ru, ["Soins locaux, antalgiques de palier 1.", "Suture de la plaie, antalgiques.", "Radiographies sans fracture ; antalgiques et repos."]);
+      const les = S.blessures && S.blessures.length ? S.blessures : ["des contusions superficielles"];
+      add("certificat_urgences", mU + 40, "Certificat des urgences", () => DOCS.forme({ title: "Certificat médical initial — service d'accueil des urgences", kind: "courrier", cote: cote("certificat_urgences"), entete: [`${hop} · Service d'accueil des urgences`, `Procédure n° ${t.proc} — cote ${cote("certificat_urgences")}`],
+        blocs: [
+          p(`Je soussigné, Dr ${dr}, praticien hospitalier, certifie avoir examiné ${nf(V)}, ${V.age} ans, ${at(mU)}, à sa demande.`),
+          p(`Motif de la consultation : la personne déclare avoir été agressée le ${DOCS.date(jf)} vers ${hm(S.T0)}.`),
+          p(`Constatations : ${les.join(" ; ")}.`),
+          p(soins),
+          p({ t: `Arrêt de travail : ${t.f.itt} jours.`, f: "G_itt_urg" }),
+          mention("Certificat remis en main propre à l'intéressé" + (V.g === "f" ? "e" : "") + " pour servir et valoir ce que de droit."),
+        ], sigs: ["Le médecin urgentiste"] }));
+    };
+
     // ================================================================ D : UMJ (réquisition et certificat)
     if (S.arrachage && E.umj && t.f.itt != null) {
+      certifUrgences(V);
       const ittU = t.quoi === "itt" ? t.f2.itt : t.f.itt;
       add("requisition_umj", E.umj.req, "Réquisition à l'UMJ", () => DOCS.forme({ title: "Réquisition à personne qualifiée — examen de la victime", cote: cote("requisition_umj"), entete: [unite, `Procédure n° ${t.proc} — cote ${cote("requisition_umj")}`],
         blocs: [p(`Nous, ${OPJ.nom}, ${OPJ.qualite}, vu l'article ${PL ? "77-1" : "60"} du code de procédure pénale, requérons le médecin de l'${TJ.umj} à l'effet d'examiner ${nf(V)}, de décrire les lésions éventuelles, de dire si elles sont compatibles avec les faits déclarés et de fixer la durée de l'incapacité totale de travail.`), mention(`Fait ${at(E.umj.req)}.`)], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));
@@ -750,6 +774,7 @@
       }
       // médecin légiste de la victime
       if (E.umj && t.f.itt != null && V) {
+        certifUrgences(V);
         const ittU = t.quoi === "itt" ? t.f2.itt : t.f.itt;
         add("requisition_umj", E.umj.req, "Réquisition à l'UMJ", () => DOCS.forme({ title: "Réquisition à personne qualifiée — examen de la victime", cote: cote("requisition_umj"), entete: [unite, `Procédure n° ${t.proc} — cote ${cote("requisition_umj")}`],
           blocs: [p(`Nous, ${OPJ.nom}, ${OPJ.qualite}, vu l'article ${PL ? "77-1" : "60"} du code de procédure pénale, requérons le médecin de l'${TJ.umj} à l'effet d'examiner ${nf(V)}, de décrire les lésions éventuelles, de dire si elles sont compatibles avec les faits déclarés et de fixer la durée de l'incapacité totale de travail.`), mention(`Fait ${at(E.umj.req)}.`)], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));

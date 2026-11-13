@@ -67,6 +67,10 @@
     // ---------------------------------------------------------------- Chronologie de la mesure
     const C = {};
     const d = t.d;
+    // la génération repart toujours de l'heure tirée : SIM.caler la recale sur la garde à vue, et la chronologie d'une
+    // convocation en flagrance part de cette heure — sans ce point fixe, chaque génération décalait les heures
+    // (une sauvegarde relue n'aurait pas donné le même dossier)
+    if (d.h0 == null) d.h0 = d.h; else d.h = d.h0;
     if (t.mesure === "gav") {
       if (t.genre === "gav" || t.genre === "ci") { C.jg = t.day + (d.debut < 0 ? -1 : 0); C.debut = ((d.debut % 1440) + 1440) % 1440; }
       else { C.jg = d.mesure != null ? d.mesure : d.acte != null && !t.flagrance ? d.acte : d.faits; C.debut = t.flagrance ? (d.h + int(r, 10, 30)) : pk(r, [6 * 60 + 5, 8 * 60 + 40, 9 * 60 + 30]); }
