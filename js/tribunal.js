@@ -21,16 +21,22 @@
   };
   // ce que chaque moyen de la défense attaque (doutes du tirage) ; ld = cause d'irresponsabilité
   T.ATTAQUE = { doute_ident: "auteur", alibi_tel: "auteur", temoin_contra: "acte", d_video: "acte", notif_permis: "intention", legitime_defense: "ld", d_deleg: "auteur" };
+  // lot 7 : les moyens des affaires criminelles (enjeux du catalogue dont l'effet est l'acquittement)
+  Object.assign(T.ATTAQUE, { identification: "auteur", consentement: "intention", connaissance: "intention", geste_medical: "acte", ld: "ld", contrainte: "ld", force_legitime: "ld" });
   T.ELEMENTS = [["acte", "L'élément matériel"], ["auteur", "L'imputation des faits au prévenu"], ["intention", "L'élément moral"]];
   // seuils (calés contre l'ancien calcul, D-10) ; la sévérité du magistrat les déplace un peu
   T.SEUIL = { acte: 0.27, auteur: 0.265, intention: 0.2 };
 
   const genT = (s, cs) => { const p = CR.GEN && CR.GEN.paramsOf ? CR.GEN.paramsOf(s, cs.id) : null; return p && p.t ? p.t : null; };
-  T.actif = (s, cs, spec) => { const t = genT(s, cs); return !!(t && spec && spec.pieces && !t.info && t.genre !== "info" && !(CR.CAT && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].info)); };
+  T.MOLLES = ["victime", "temoin", "video", "constat", "interro", "plainte", "medical", "expertise"];
+  T.DOUTE_FORT = 0.5;
+  T.crimes = true; // lot 7 : l'information judiciaire et les crimes (calibré contre l'ancien calcul, D-59)
+  T.actif = (s, cs, spec) => { const t = genT(s, cs); if (!(t && spec && spec.pieces)) return false; const info = t.info || t.genre === "info" || (CR.CAT && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].info); return !info || !!T.crimes; };
 
   // ------------------------------------------------------------------ Les motifs, en français de jugement
   const LIB = { constat: "les constatations des fonctionnaires interpellateurs", plainte: "les déclarations constantes de la partie civile", certificat: "les constatations médicales", temoin: "le témoignage recueilli au cours de l'enquête", video: "l'exploitation des images de vidéoprotection", telephonie: "l'exploitation des données téléphoniques", adn: "la comparaison génétique", expertise: "les conclusions de l'expertise", saisie: "la saisie opérée", labo: "l'analyse du laboratoire", ecrits: "les messages versés au dossier", releve: "les relevés bancaires", ethylo: "la mesure de l'imprégnation alcoolique", fichier: "les mentions du fichier national des permis de conduire", autopsie: "les constatations médico-légales", aveux: "les déclarations du prévenu lui-même" };
   const MOY = { doute_ident: "que l'identification du prévenu comme auteur des faits n'est pas établie avec certitude", alibi_tel: "que les données de son téléphone le situent ailleurs au moment des faits", temoin_contra: "que le témoin ne confirme pas la version de l'accusation", video: "que les images ne montrent pas le geste reproché", notif_permis: "que le prévenu ignorait la mesure dont la violation lui est reprochée", legitime_defense: "que le prévenu a agi en état de légitime défense", deleg: "que le prévenu avait valablement délégué ses pouvoirs" };
+  Object.assign(MOY, { identification: "que l'identification de l'accusé comme auteur n'est pas établie avec certitude", consentement: "que l'absence de consentement n'est pas établie à son égard", connaissance: "qu'il ignorait ce que contenait le chargement", geste_medical: "qu'il s'agissait d'un geste médical", ld: "la légitime défense", contrainte: "la contrainte qu'il a subie", force_legitime: "que l'usage de la force était nécessaire et proportionné" });
   const liste = (a) => (a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " et " + a[a.length - 1]);
   // la cote d'une preuve, si la pièce est au dossier (moteur de documents)
   T.COTE_KEYS = { constat: ["pv_interpellation", "constat"], plainte: ["pv_victime", "plainte"], certificat: ["certificat_umj", "certificat", "umj"], temoin: ["pv_temoin", "temoin"], video: ["pv_video", "video"], telephonie: ["pv_telephonie"], adn: ["rapport_adn"], saisie: ["pv_saisie", "saisie", "pv_perquisition"], labo: ["rapport_labo"], ecrits: ["captures"], releve: ["releve"], ethylo: ["pv_alcoolemie"], fichier: ["fichier_permis"], aveux: ["pv_audition"], expertise: ["expertise"], autopsie: ["autopsie"] };
@@ -66,6 +72,16 @@
         if (soutenu) E[cible].attaque += pc.force * ({ ld: 1, acte: 1.9, intention: 0.8 }[cible] || 1.25);
       }
     }
+    // lot 7 : un moyen fort et soutenu fait douter des preuves qu'il discute (témoins, victime, images, constatations,
+    // déclarations), non des preuves matérielles (ADN, aveux, téléphonie, saisie) : l'élément perd une part de ce que ces
+    // preuves « molles » lui apportaient. Affaires criminelles seulement (calibré contre l'ancien calcul, D-59).
+    if (t && (t.info || t.genre === "info")) for (const [id] of T.ELEMENTS) {
+      const e = E[id];
+      if (!e.moyens.some((m) => m.soutenu && m.force >= 0.3)) continue;
+      const molles = e.preuves.filter((p) => T.MOLLES.includes(p.k));
+      const retire = molles.reduce((a, p) => a + p.part, 0) * T.DOUTE_FORT;
+      e.porte -= retire; e.doutees = molles.map((p) => p.k);
+    }
     // l'intention se déduit de l'acte établi, sauf moyen contraire
     E.intention.porte += Math.min(E.acte.porte, 0.45) * 0.6;
     // les arguments de culpabilité plaidés (anciennes fiches) : ils pèsent sur l'élément le plus discuté
@@ -84,13 +100,14 @@
       e.preuves.sort((x, y) => y.part - x.part);
     }
     // la légitime défense : admise si le moyen est soutenu et que l'accusation n'établit pas la riposte disproportionnée
+    if (E.ld.moyens.length && !E.ld.moyens.some((m) => /legitime_defense|^d_ld$/.test(m.k))) E.ld.label = "La cause d'irresponsabilité invoquée";
     const ldMoyen = E.ld.moyens.find((m) => m.soutenu);
     E.ld.admise = !!ldMoyen && E.ld.attaque - (E.acte.porte - 0.35) * 0.5 + bruit > 0.06;
     const manque = T.ELEMENTS.map(([id]) => E[id]).find((e) => !e.etabli) || null;
     const coupable = !manque && !E.ld.admise;
     // le débrief, en corrigé d'examen : ce qui a établi chaque élément, ce que le dossier permettait et qui n'a pas été plaidé
     const calc = [];
-    const nomPc = (k) => { const c = T.cote(s, cs, k); return (LIB[k] || (spec.pieces[k] && spec.pieces[k].label) || k) + (c ? ` (${c})` : ""); };
+    const nomPc = (k) => { const c = T.cote(s, cs, k); const lb = spec.pieces[k] && spec.pieces[k].label; return (LIB[k] || (lb ? lb.charAt(0).toLowerCase() + lb.slice(1) : k)) + (c ? ` (${c})` : ""); };
     for (const [id] of T.ELEMENTS) {
       const e = E[id];
       const par = e.preuves.slice(0, 2).map((p) => nomPc(p.k));
@@ -100,15 +117,23 @@
       if (!e.etabli) break;
     }
     if (ldMoyen) calc.push({ k: E.ld.admise ? "decharge" : "charge", t: `Légitime défense : ${E.ld.admise ? "admise" : "écartée, la riposte n'apparaissant pas proportionnée"}.` });
-    const R = { coupable, manque: manque && manque.id, ld: E.ld.admise ? "admise" : ldMoyen ? "ecartee" : null, elements: T.ELEMENTS.map(([id]) => { const e = E[id]; return { id, etabli: e.etabli, preuves: e.preuves.slice(0, 3).map((p) => p.k), ecartees: e.ecartees.map((p) => p.k), moyens: e.moyens.map((m) => ({ k: m.k, soutenu: m.soutenu })) }; }), inf: t && t.inf };
+    const R = { labels: Object.fromEntries(Object.entries(spec.pieces || {}).map(([k, pc]) => [k, pc.label])), coupable, manque: manque && manque.id, ld: E.ld.admise ? "admise" : ldMoyen ? "ecartee" : null, elements: T.ELEMENTS.map(([id]) => { const e = E[id]; return { id, etabli: e.etabli, preuves: e.preuves.slice(0, 3).map((p) => p.k), ecartees: e.ecartees.map((p) => p.k), moyens: e.moyens.map((m) => ({ k: m.k, soutenu: m.soutenu })) }; }), inf: t && t.inf };
     // score continu : la marge de l'élément le plus faible (positive = culpabilité établie), comme l'ancien score
     const score = Math.min(...T.ELEMENTS.map(([id]) => E[id].net - T.SEUIL[id])) - (E.ld.admise ? 1 : 0);
+    // devant une cour criminelle, l'accusé (et non le prévenu)
+    const jur = (cs.vars && (cs.vars.jurProces || "")) || (t && t.jur) || "";
+    if (/assises|ccd/.test(jur)) { R.accuse = true; for (const c of calc) c.t = c.t.replace(/\bau prévenu\b/g, "à l'accusé").replace(/\bdu prévenu\b/g, "de l'accusé").replace(/\ble prévenu\b/g, "l'accusé").replace(/\bprévenu(e?)\b/g, "accusé$1"); }
     return { coupable, score, calc, questions: [], raisonnement: R };
   };
 
+  const fr = (x) => x.replace(/\bde les\b/g, "des").replace(/\bde le\b/g, "du").replace(/\bà les\b/g, "aux").replace(/\bà le\b/g, "au");
   T.motifs = function (s, cs, R, nom) {
+    const acc = (x) => (R && R.accuse ? x.replace(/\bau prévenu\b/g, "à l'accusé").replace(/\bdu prévenu\b/g, "de l'accusé").replace(/\ble prévenu\b/g, "l'accusé").replace(/\bprévenu\b/g, "accusé") : x);
+    return T.motifs0(s, cs, R, nom).map((m) => Object.assign({}, m, { titre: acc(fr(m.titre || "")), t: acc(fr(m.t || "")) }));
+  };
+  T.motifs0 = function (s, cs, R, nom) {
     const out = [];
-    const cite = (k) => { const c = T.cote(s, cs, k); return LIB[k] + (c ? ` (${c})` : ""); };
+    const cite = (k) => { const c = T.cote(s, cs, k); const lb = R.labels && R.labels[k]; return (LIB[k] || (lb ? lb.charAt(0).toLowerCase() + lb.slice(1) : k)) + (c ? ` (${c})` : ""); };
     for (const el of R.elements) {
       const titre = { acte: "Sur la matérialité des faits", auteur: "Sur l'imputation des faits", intention: "Sur l'élément intentionnel" }[el.id];
       const moyens = el.moyens.filter((m) => m.soutenu).map((m) => MOY[m.k.replace(/^d_/, "")] || "que les faits ne sont pas établis");
