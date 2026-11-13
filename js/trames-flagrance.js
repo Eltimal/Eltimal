@@ -791,6 +791,22 @@
             p("La présence d'un ADN sur un objet ne renseigne pas, à elle seule, sur la date ni sur les circonstances du dépôt."),
           ], sigs: ["L'expert en génétique"] }));
       }
+      // lot 1 ter, pièces techniques : le relevé du fichier national des permis, la chaîne datée (décision, envoi du
+      // recommandé, présentation, avis de réception signé ou pli non réclamé) avant les faits
+      if (has("fichier") && t.f) {
+        const rp = CR.seeded(t.sig + ":g:fnpc");
+        const jDec = jf - (t.f.sc === "suspendu" ? int(rp, 30, 70) : int(rp, 60, 120)), jEnv = jDec + int(rp, 1, 3), jPres = jEnv + int(rp, 2, 4);
+        const nonRec = dou("notif_permis");
+        add("fichier_permis", E.presentation + 25, "Fichier des permis", () => DOCS.forme({ title: "Relevé du fichier national des permis de conduire", kind: "releve", cote: cote("fichier_permis"),
+          entete: ["Ministère de l'Intérieur · Fichier national des permis de conduire", `Consultation du ${DOCS.date(jf)} — cote ${cote("fichier_permis")}`],
+          blocs: [
+            p(`Identité : ${A.nom} ${A.prenom}, né${e(A)} ${A.naissance}.`),
+            t.f.sc === "jamais" ? p({ t: "Aucun permis de conduire délivré à cette identité.", f: "G_fichier" })
+              : p({ t: t.f.sc === "suspendu" ? `Suspension administrative de six mois, arrêté du préfet de police du ${DOCS.date(jDec)}.` : `Invalidation pour solde de points nul (décision 48 SI du ${DOCS.date(jDec)}).`, f: "G_fichier" }),
+            t.f.sc !== "jamais" ? p(`Envoi par lettre recommandée avec avis de réception le ${DOCS.date(jEnv)} ; première présentation le ${DOCS.date(jPres)}.`) : null,
+            t.f.sc !== "jamais" ? p({ t: nonRec ? `Pli avisé et non réclamé, retourné à l'expéditeur le ${DOCS.date(jPres + 15)}.` : `Avis de réception signé le ${DOCS.date(jPres)}.`, f: nonRec ? "G_notif_permis" : "G_notif_ar" }) : null,
+          ], sigs: [] }));
+      }
       // lot 1 ter, pièces techniques : le rapport du laboratoire sur les produits saisis, accordé à la pesée du service
       // (poids brut, emballages compris, à la pesée ; poids net au laboratoire) ; taux tirés dans les fourchettes d'usage
       if (S.stups && has("labo") && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].fam !== "route" && t.f.quantite) {
