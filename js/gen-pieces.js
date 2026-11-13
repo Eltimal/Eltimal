@@ -554,6 +554,11 @@
         const butin = /Ils ont pris (.+?)\. Préjudice/.exec((N.plainte || []).join(" "))[1];
         if (butin !== N.saisie) fact("G_partiel", { label: `Seule une partie du butin est retrouvée chez lui (${N.saisie})`, key: true, why: "Détenir un objet volé n'est pas avoir commis le cambriolage : la défense peut plaider le recel, ou l'absence de preuve de l'effraction." });
       }
+      if (SS.obtemperer) {
+        const M = SS.obtemperer;
+        if (!M.vu) fact("G_conducteur_non_vu", { label: "Le conducteur n'a pas été vu : seule la plaque est relevée", key: true, why: "Le titulaire de la carte grise n'est pas forcément celui qui conduisait : sans autre élément, l'imputation se discute." });
+        if (M.banal && !M.brassard) fact("G_insignes", { label: "Policiers en civil, dans un véhicule banalisé, sans brassard mentionné", key: true, why: "La sommation doit émaner d'un agent porteur des insignes extérieurs et apparents de sa qualité : le procès-verbal n'en mentionne aucun." });
+      }
       if (SS.conjugal) {
         const M = SS.conjugal;
         if (M.refus) fact("G_refus_plainte", { label: "La victime ne veut pas déposer plainte", key: true, why: "Le parquet peut poursuivre sans plainte : la preuve repose alors sur les constatations, le certificat et les témoins, que la défense examine sans la parole de la victime." });

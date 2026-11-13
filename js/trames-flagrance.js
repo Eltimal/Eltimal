@@ -539,6 +539,20 @@
             mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
           ], sigs: ["Le directeur du magasin"] }));
       }
+      // lot 1 ter : refus d'obtempérer — la sommation et ce qui a été vu du conducteur
+      if (S.obtemperer) {
+        const M = S.obtemperer;
+        const mP = Math.max(M.hS + 20, E.debut + 30);
+        add("pv_sommation", mP, "Refus d'obtempérer", () => DOCS.pv({ cote: cote("pv_sommation"), proc: t.proc, service, unite, cadre: "FLAGRANT DÉLIT", titre: "Procès-verbal de constatation d'un refus d'obtempérer", numPV: "00" + int(CR.seeded(t.sig + ":g:obt"), 101, 899), jour: j(mP), heure: mP, redacteur: apj(0), visa: "Vu les articles 53 et suivants du code de procédure pénale, L. 233-1 du code de la route,", lieu: "Agissant en flagrant délit", objet: `OBJET : ${q0.label} — constatations`,
+          blocs: [
+            M.sc === "barrage" ? p("Dispositif de contrôle routier en place : agents en tenue d'uniforme, chasubles réfléchissantes « Police », panneau « Police — Stop » et véhicule sérigraphié, gyrophares allumés.")
+              : p({ t: M.banal ? `À bord d'un véhicule banalisé équipé d'un gyrophare amovible et d'avertisseurs deux-tons, en tenue civile${M.brassard ? ", porteurs du brassard « Police »" : ""}.` : "À bord du véhicule sérigraphié, en tenue d'uniforme.", f: M.banal && !M.brassard ? "G_insignes" : undefined }),
+            p(`À ${hm(M.hS)}, ${M.sc === "barrage" ? `le conducteur du ${t.f.vehicule}, immatriculé ${M.plaque}, invité à s'arrêter par le geste réglementaire, redémarre brusquement` : `faisons usage des avertisseurs lumineux et sonores pour enjoindre au conducteur du ${t.f.vehicule}, immatriculé ${M.plaque}, de s'arrêter ; il accélère et prend la fuite`}${t.f.danger ? ", contraignant un piéton à se réfugier sur le trottoir" : ""}.`),
+            M.vu ? p({ t: `Le conducteur est vu ${M.vu}.`, f: "G_conducteur_vu" }) : p({ t: M.sc === "deux_roues" ? "Le conducteur, casqué, visière baissée, ne peut être décrit." : "Le conducteur n'a pu être vu ; l'immatriculation est relevée.", f: "G_conducteur_non_vu" }),
+            M.sc !== "barrage" ? p(`Perdons le véhicule de vue au bout de ${M.duree} minute${M.duree > 1 ? "s" : ""}, la poursuite étant interrompue pour ne pas exposer les usagers.`) : null,
+            p(`Consultation du fichier des immatriculations : le véhicule ${M.plaque} est enregistré au nom de ${n(A)}.`),
+          ], cloture: mention(`Dont procès-verbal, fait et clos ${at(mP)}.`), signataires: [`${apj(0).signe}, agent de police judiciaire`, `${apj(1).signe}, agent de police judiciaire`], st: stA }));
+      }
       // lot 1 ter : violences conjugales — l'état des lieux et la consultation des interventions passées
       if (S.conjugal) {
         const M = S.conjugal;
