@@ -34,7 +34,7 @@ Principe d'ordonnancement : on termine d'abord la boucle la plus jouée (permane
 
 ## Phase D — élargir
 
-Lot 1 ter (toutes les familles d'infractions au niveau de l'arrachage), lot 7 (instruction et assises), lot 8 (après jugement, victimes), lot 9 (bibliothèque), lot 10 (affaires écrites et tutoriel).
+Lot 1 ter (toutes les familles d'infractions au niveau de l'arrachage — **commencé le 13 nov.** : vol en magasin, `tmagasin` ; suivent vol simple, à la roulotte, à plusieurs, à scooter, puis stupéfiants), lot 7 (instruction et assises), lot 8 (après jugement, victimes), lot 9 (bibliothèque), lot 10 (affaires écrites et tutoriel).
 
 ## Risques suivis
 

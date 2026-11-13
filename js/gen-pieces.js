@@ -523,6 +523,13 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      // lot 1 ter : le vol en magasin
+      if (SS.magasin) {
+        const M = SS.magasin;
+        fact("G_agent_vu", { label: `L'agent de sécurité a vu la dissimulation ${M.ecrans ? "aux écrans de contrôle" : "en salle"}`, key: false });
+        if (M.qteDit !== M.qte) fact("G_agent_compte", { label: `L'agent dit avoir vu prendre ${M.qteDit} articles ; l'état du magasin en compte ${M.qte}`, key: true, why: "Un témoin qui se trompe sur le nombre se trompe peut-être sur le reste : sa déclaration se discute, pièce contre pièce." });
+        fact("G_etat_vente", M.vente ? { label: "La marchandise, récupérée intacte, est remise en vente", key: true, why: "Aucun préjudice matériel : cela pèse sur la peine et sur les intérêts civils." } : { label: "La marchandise n'est plus en état de vente", key: false });
+      }
     }
 
     // ---------------------------------------------------------------- Listes : ce que l'avocat voit, et quand

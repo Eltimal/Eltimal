@@ -275,6 +275,8 @@
       // la synthèse attend les derniers actes (certificat de l'UMJ, restitution, perquisition)
       E.synthese = Math.max(E.remise, E.perqFin || 0, E.umj ? E.umj.examen : 0, E.restitution || 0, E.scelle || 0) + int(r, 30, 150);
     }
+    // lot 1 ter : le vol en magasin, au niveau de l'arrachage
+    if (SIM.magasin(t, S)) S.magasin = magasin(S, t, k, r, E);
     S.E = E;
     S.auteurs = { apj: { nom: t.gpx[0], style: CR.DOCS.style(CR.seeded(t.sig + ":apj")) }, opj: { nom: k.opjN, style: CR.DOCS.style(CR.seeded(t.sig + ":opj")) } };
     S.indicatif = `TV ${pk(r, ["17", "18", "19", "20", "21", "22"])}${pk(r, ["1", "2", "3", "4"])}`;
@@ -289,6 +291,39 @@
       return CR.DOCS.hm(cur);
     }));
     return S;
+  }
+
+  // ---------------------------------------------------------------- lot 1 ter : le vol en magasin
+  // L'agent de sécurité repère l'auteur (aux écrans de contrôle ou en salle), le laisse franchir les caisses, le retient
+  // après le portique (art. 73 : toute personne peut appréhender l'auteur d'un flagrant délit) et appelle la police.
+  // La marchandise est décomptée article par article ; l'agent peut se tromper de bonne foi sur le nombre qu'il a vu.
+  SIM.magasin = (t, S) => !!(t && t.inf === "vol" && t.f && t.f.sc === "magasin" && t.flagrance && !(S && S.prelim) && t.V);
+  function magasin(S, t, k, r, E) {
+    const N = k.N, has = k.has;
+    const enseigne = ((/magasin (.+?), /.exec(N.lieu || "") || [])[1]) || "le magasin";
+    const NUM = { un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6 };
+    const m = /^(un|une|deux|trois|quatre|cinq|six|des)\s+(.*)$/.exec(t.f.objet || "");
+    const qte = m ? (m[1] === "des" ? int(r, 2, 4) : NUM[m[1]]) : 1;
+    const lib = m ? m[2] : t.f.objet;
+    const pu = Math.round((t.f.valeur / qte) * 100) / 100;
+    const prenom = pk(r, ["Moussa", "Kevin", "Yacine", "Sébastien", "Fatou", "Aïssatou", "Steeve", "Nadia"]);
+    const agent = { prenom, nom: pk(r, ["Diallo", "Martin", "Benali", "Lefèvre", "Camara", "Rousseau", "Traoré"]), g: /^(Fatou|Aïssatou|Nadia)$/.test(prenom) ? "f" : "m", societe: pk(r, ["Sécuritas", "Prosegur", "Fiducial Sécurité", "Seris"]), age: int(r, 24, 52) };
+    const ecrans = ch(r, 0.55);
+    const rayon = pk(r, ["au fond du rayon", "dans l'allée centrale", "près des rayonnages du fond", "à l'angle du rayon"]);
+    E.repere = S.T0 - int(r, 6, 18); E.portique = S.T0;
+    E.appelMag = Math.max(S.T0, E.requis - int(r, 1, 2));
+    E.agent = E.debut + int(r, 20, 45); E.agentFin = E.agent + int(r, 15, 25);
+    if (E.fin && E.agentFin > E.fin - 15) { E.agentFin = E.fin - 15; E.agent = E.agentFin - 15; }
+    E.etat = E.agentFin + int(r, 3, 10);
+    // l'erreur de bonne foi : l'agent croit avoir vu un article de plus
+    const qteDit = qte > 1 && ch(r, 0.22) ? qte + 1 : qte;
+    const M = {
+      enseigne, lib, qte, pu, total: Math.round(pu * qte * 100) / 100, agent, ecrans, rayon,
+      portique: ch(r, 0.6), sac: pk(r, ["son sac à dos", "son sac à dos", "la poche intérieure de son blouson", "un sac de course"]),
+      qteDit, vente: ch(r, 0.75), video: has("video"), caisse: ch(r, 0.4), // passé en caisse en payant un autre article
+    };
+    S.savoirs = Object.assign({}, S.savoirs, { agent: { vu: ecrans ? "aux écrans de contrôle" : "en salle, à quelques mètres", compte: qteDit, erreur: qteDit !== qte } });
+    return M;
   }
 
   // la victime se trompe sur un ou deux éléments (doute sur l'identification)

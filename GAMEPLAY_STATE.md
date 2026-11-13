@@ -13,7 +13,7 @@ Cabinet (plan plein écran, objets cliquables) → appel ou client (vivier, perm
 
 | Système | État | Couverture | Défauts connus |
 |---|---|---|---|
-| Simulation de l'affaire (`sim.js`, `trames-flagrance.js`) | Implémenté pour toute garde à vue (flagrance, préliminaire), audition libre et convocations ; vol par arrachage au niveau détaillé | `tsim` | Les autres délits partent encore des textes du catalogue (lot 1 ter) ; genre `al` joué et affaires sans mesure restent sur l'ancien générateur |
+| Simulation de l'affaire (`sim.js`, `trames-flagrance.js`) | Implémenté pour toute garde à vue (flagrance, préliminaire), audition libre et convocations ; au niveau détaillé : vol par arrachage, **vol en magasin** (lot 1 ter : agent de sécurité, repérage aux écrans ou en salle, rétention après le portique, décompte article par article avec erreur de bonne foi possible, état de la marchandise, bousculade si violences) | `tsim`, `tmagasin` | Les autres délits partent encore des textes du catalogue (lot 1 ter) ; genre `al` joué et affaires sans mesure restent sur l'ancien générateur |
 | Moteur de documents (`docs.js`) | Implémenté : trames de procès-verbaux, cotes, feuillets, plafond 2 000 mots, support papier ou numérique | `tsim` | Pièces techniques (éthylomètre, labo, ADN, téléphonie) gardent leur ancien texte |
 | Pilote des violences (`sim-violences.js`, `docs-violences.js`) | Référence, branché pour les comparutions immédiates de violences | `tsimv` | Deux moteurs pour un même rôle : à fondre dans `sim.js` |
 | Vidéosurveillance (`video.js`, `ui-video.js`) | Extrait joué par le moteur pour l'arrachage vers le métro | `tvideo` | Un seul décor, un seul fait |
@@ -50,4 +50,5 @@ Décisions : `GAMEPLAY_DECISIONS.md`, D-07 à D-14.
 
 - **Répétition** : phrases communes entre deux gardes à vue d'infractions différentes, 24,5 % pour un seuil de 25 % (`trepetition`), depuis que la mesure entend les débats intégraux du mode libre. Marge mince : toute nouvelle formule fixe de l'audition, de l'interrogatoire ou du réquisitoire doit avoir ses variantes (`V(...)` dans `parole.js` et `debats.js`).
 - **Longueur des options d'actes** : ordre mélangé et fonds commun (`tclauses`) ; clauses voisines ; la bonne option reste strictement la plus longue dans 51 % des blancs (le hasard serait vers 30 %). Reste : les blancs à valeur propre et ceux sans article ni délai à fausser.
+- **Tests d'interface sensibles à la charge** : `tparole` et `tcite` attendent des délais fixes ; lancés en parallèle d'une batterie lourde, ils échouent parfois (vert en exécution seule). À rendre robustes (attendre l'état plutôt qu'un délai).
 - **Mode libre par défaut** : une partie neuve est en mode libre (`CR.libre`) ; les parties automatiques jouent en mode liste (`dev/tests/util.js`) et gardent l'ancien parcours, que la batterie continue de vérifier.

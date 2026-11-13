@@ -507,6 +507,37 @@
         return DOCS.pv({ cote: cote("pv_temoin"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition de témoin", qualite: "Témoin", numPV: "00" + int(rr, 101, 899), jour: j(E.temoin), heure: E.temoin, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
           identite: { nom: T.nom, prenom: T.prenom, g: T.g, adresse: T.adresse, metier: T.metier }, blocs, cloture: DOCS.clotureAudition(ville, j(E.temoinFin), E.temoinFin, T.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
       });
+      // lot 1 ter : le vol en magasin — l'agent de sécurité, puis l'état de la marchandise dressé par le magasin
+      if (S.magasin) {
+        const M = S.magasin, G = M.agent, ag = { g: G.g };
+        const euros = (x) => `${x.toFixed(2).replace(".", ",")} €`;
+        const nb = (x) => ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept"][x] || String(x);
+        const art = M.qte > 1 ? `${nb(M.qte)} ${M.lib}` : t.f.objet;
+        const artDit = M.qteDit > 1 ? `${nb(M.qteDit)} ${M.lib}` : t.f.objet;
+        add("pv_agent", E.agent, "Audition de l'agent de sécurité", () => {
+          const rr = CR.seeded(t.sig + ":g:agent");
+          const blocs = [
+            decl(`« Je suis agent de sécurité pour la société ${G.societe}, affecté${e(ag)} au magasin ${M.enseigne} depuis ${pk(rr, ["deux ans", "huit mois", "un an et demi", "quatre ans"])}. ${M.ecrans ? "J'étais au poste de contrôle, devant les écrans." : "Je faisais ma ronde en salle."} »`),
+            decl({ t: `« Vers ${hm(E.repere)}, j'ai remarqué ${A.g === "f" ? "une femme" : "un homme"} ${M.rayon}. ${M.ecrans ? "Sur l'écran, je l'ai vu" : "Je l'ai vu, à quelques mètres,"} prendre ${artDit} et ${M.qteDit > 1 ? "les" : "le"} glisser dans ${M.sac}. Je ne l'ai plus quitté${e(A)} des yeux. »`, f: "G_agent_vu" }),
+            decl(`« ${Maj(il(A))} est passé${e(A)} en caisse${M.caisse ? " et a payé un article sans rapport, sans présenter le reste" : " sans rien présenter"}. ${M.portique ? "Le portique a sonné." : "Le portique n'a pas sonné : les antivols avaient été retirés."} Je l'ai rattrapé${e(A)} juste après, à ${hm(E.portique + 1)}, et je lui ai demandé de me suivre au bureau de la sécurité.${(t.f.agg || []).includes("violence0") ? ` ${Maj(il(A))} m'a bousculé${e(ag)} pour forcer le passage, j'ai heurté le portique ; je n'ai pas été blessé${e(ag)}. Avec un collègue, nous l'avons retenu${e(A)}.` : ""} »`),
+            decl(`« Je ne l'ai pas fouillé${e(A)} : ${il(A)} a sorti ${lui(A) === "elle" ? "elle-même" : "lui-même"} la marchandise${/poche/.test(M.sac) ? " de sa poche" : " de son sac"}. J'ai appelé la police à ${hm(E.appelMag)}. ${Maj(il(A))} est resté${e(A)} au bureau avec moi jusqu'à votre arrivée${(t.f.agg || []).includes("violence0") ? "" : pk(rr, [", calmement", ", en s'excusant", ", en répétant qu'" + il(A) + " allait payer", ""])}. »`),
+            titre("QUESTIONS ET RÉPONSES"),
+            q("Combien d'articles avez-vous vu prendre ?"), rep({ t: M.qteDit > 1 ? `${Maj(nb(M.qteDit))}, j'en suis sûr${e(ag)}.` : "Un seul.", f: M.qteDit !== M.qte ? "G_agent_compte" : undefined }),
+            q("Les images ont-elles été conservées ?"), rep(M.video ? "Oui. J'ai extrait la séquence sur une clé USB, je vous la remets." : "Les caméras ne couvrent pas ce rayon. Il n'y a que l'entrée."),
+            q("Avez-vous quelque chose à ajouter ?"), rep(pk(rr, ["Non.", "Non, c'est tout.", "Le magasin va déposer plainte, le directeur est prévenu."])),
+          ];
+          return DOCS.pv({ cote: cote("pv_agent"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition de témoin", qualite: "Témoin (agent de sécurité)", numPV: "00" + int(rr, 101, 899), jour: j(E.agent), heure: E.agent, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
+            objet: `OBJET : ${q0.label} — audition de l'agent de sécurité`, identite: { nom: G.nom, prenom: G.prenom, g: G.g, metier: `agent de sécurité (${G.societe})` }, blocs, cloture: DOCS.clotureAudition(ville, j(E.agentFin), E.agentFin, G.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
+        });
+        add("etat_marchandise", E.etat, "État de la marchandise", () => DOCS.forme({ title: "État de la marchandise", kind: "courrier", cote: cote("etat_marchandise"), entete: [`${M.enseigne} · ${lieu.replace(/^dans le magasin [^,]+, /, "")}`, `Procédure n° ${t.proc} — cote ${cote("etat_marchandise")}`],
+          blocs: [
+            p(`Articles retrouvés en possession de ${n(A)} le ${DOCS.date(jf)} à ${hm(E.portique + 1)}, après le passage des caisses :`),
+            ligne(`${Maj(art)}`, `${M.qte} × ${euros(M.pu)} TTC`),
+            ligne("Total", euros(M.total)),
+            p({ t: M.vente ? "La marchandise a été récupérée intacte et remise en rayon : elle est en état de vente." : "Emballages ouverts et antivols arrachés : la marchandise n'est plus en état de vente.", f: "G_etat_vente" }),
+            mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
+          ], sigs: ["Le directeur du magasin"] }));
+      }
       // médecin légiste de la victime
       if (E.umj && t.f.itt != null && V) {
         const ittU = t.quoi === "itt" ? t.f2.itt : t.f.itt;
