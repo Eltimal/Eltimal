@@ -236,7 +236,7 @@
     // stupéfiants : pesée et test au service ; perquisition au domicile pendant la mesure, aux heures légales (art. 59)
     S.stups = STUPS.includes(t.inf);
     if (S.stups && N.saisie) E.pesee = E.presentation + int(r, 10, 30);
-    S.perq = ["stups_detention", "stups_trafic", "recel", "cambriolage", "blanchiment", "abs"].includes(t.inf);
+    S.perq = ["stups_detention", "stups_trafic", "recel", "cambriolage", "blanchiment", "abs"].includes(t.inf) || (S.prelim && has("saisie")); // en préliminaire, toute saisie passe par une perquisition
     if (S.perq) {
       if (irr("perq_nuit")) E.perq = base + 1440 + 5 * 60 + int(r, 20, 50);
       else { let m = (S.gav ? E.notif : E.audFin) + int(r, 40, 120); const h = ((m % 1440) + 1440) % 1440; if (h < 6 * 60 + 5) m += 6 * 60 + int(r, 5, 50) - h; else if (h > 20 * 60 + 30) m += 1440 - h + 6 * 60 + int(r, 5, 50); E.perq = m; }
