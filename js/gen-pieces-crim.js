@@ -168,7 +168,7 @@
     if (N.victime && V) {
       const jv = jf + (t.flagrance ? 0 : int(r, 0, 4));
       add("pv_victime", proc ? "Audition enregistrée du mineur" : M.kind === "autopsie" ? "Audition" : "Audition de la victime", () => ({ title: proc ? "Procès-verbal d'audition d'un mineur victime (art. 706-52)" : "Procès-verbal d'audition de la victime", kind: "pv", entete: ent("pv_victime"), paras: [
-        proc ? [`Le ${D(jv)}, nous, ${opjN}, officier de police judiciaire de la ${svc.split(" · ").pop().toLowerCase()} :`] : [`Le ${D(jv)}, à ${hm(int(r, 9 * 60, 19 * 60))}, devant nous, ${opjN}, comparaît ${nf(V)}, ${V.age} ans, ${V.metier}, qui déclare :`],
+        proc ? [`Le ${D(jv)}, nous, ${opjN}, officier de police judiciaire de la ${svc.split(" · ").pop().toLowerCase()} :`] : [`Le ${D(jv)}, à ${hm(int(CR.seeded(t.sig + ":r:victh"), 9 * 60, 19 * 60))}, devant nous, ${opjN}, comparaît ${nf(V)}, ${V.age} ans, ${V.metier}, qui déclare :`],
         ...N.victime.map((x, i) => [proc || /^Audition /.test(x) ? { t: x, f: i === (proc ? 1 : 0) ? "X_victime" : undefined } : { t: `« ${guill(x)} »`, f: i === 0 ? "X_victime" : undefined }]),
         ...ed("pv_victime"),
         [proc ? "Dont procès-verbal." : "Lecture faite, persiste et signe."],
@@ -177,7 +177,7 @@
     }
     if (N.proche && P) {
       add("pv_proche", `Audition de ${nf(P)}`, () => ({ title: "Procès-verbal d'audition de témoin", kind: "pv", entete: ent("pv_proche"), paras: [
-        [`Le ${D(jf + int(r, 1, 3))}, entendons ${nf(P)}, ${P.age} ans, ${P.metier}, ${P.lien} de ${proc ? nomV(V) : n(V)}, qui déclare :`],
+        [`Le ${D(jf + int(CR.seeded(t.sig + ":r:proche"), 1, 3))}, entendons ${nf(P)}, ${P.age} ans, ${P.metier}, ${P.lien} de ${proc ? nomV(V) : n(V)}, qui déclare :`],
         ...N.proche.map((x, i) => [{ t: `« ${guill(x)} »`, f: i === 0 ? "X_proche" : undefined }]),
         ...ed("pv_proche"),
         ["Lecture faite, persiste et signe."],
@@ -279,7 +279,7 @@
     if (docs.video) fact("X_video", { label: "Ce que montrent les images", key: true });
     if ((has("ecrits") && N.ecrits && N.ecrits.length) || enjeuVers("ecrits")) add("captures", "Messages", () => ({ title: "Procès-verbal d'exploitation des messages", kind: "releve", entete: ent("captures"), paras: [["Extraits des messages retrouvés dans les téléphones exploités :"]].concat((N.ecrits || []).map((m, i) => [{ t: /^(Courrier|Main courante|Publications|Carnet|Messages de|Message à|Groupe|Avant|Après|À )/.test(m) ? m : `${CR.fmtDate(jf - (N.ecrits.length - i) * int(r, 1, 6), "num")}, ${hm(int(r, 0, 1439))} — ${m}`, f: i === 0 ? "X_ecrits" : undefined }]), ed("captures")), sigs: [{ qui: "L'officier de police judiciaire", t: S }] }));
     if (N.ecrits && N.ecrits.length) fact("X_ecrits", { label: "Les messages retrouvés" });
-    if (has("releve")) add("releve", "Relevés bancaires", () => ({ title: "Réponse à réquisition bancaire", kind: "releve", entete: [pk(r, ["Banque Postale", "BNP Paribas", "Société Générale"]) + " · service des réquisitions judiciaires", `Procédure n° ${t.proc}`], paras: [[`Titulaire : ${n(A)}.`], [{ t: `Mouvements en espèces et virements sans rapport avec les revenus déclarés : ${CR.money(int(r, 8, 120) * 1000)} sur les douze mois précédant les faits.`, f: "X_releve" }]], sigs: [] }));
+    if (has("releve")) add("releve", "Relevés bancaires", () => ({ title: "Réponse à réquisition bancaire", kind: "releve", entete: [pk(CR.seeded(t.sig + ":r:banque"), ["Banque Postale", "BNP Paribas", "Société Générale"]) + " · service des réquisitions judiciaires", `Procédure n° ${t.proc}`], paras: [[`Titulaire : ${n(A)}.`], [{ t: `Mouvements en espèces et virements sans rapport avec les revenus déclarés : ${CR.money(int(CR.seeded(t.sig + ":r:especes"), 8, 120) * 1000)} sur les douze mois précédant les faits.`, f: "X_releve" }]], sigs: [] }));
 
     // ---------------------------------------------------------------- D : expertise psychiatrique, enquête de personnalité, casier
     add("expertise_psy", "Expertise psychiatrique", () => ({ title: "Rapport d'expertise psychiatrique", kind: "courrier", entete: [`Expert psychiatre près la ${caDe}`, `Ordonnance du juge d'instruction — information n° ${t.ninfo}`], paras: [

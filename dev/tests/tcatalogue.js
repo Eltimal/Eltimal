@@ -19,6 +19,7 @@ const PERMISES = ["rapport_autopsie", "certificat_urgences", "pv_synthese", "pv_
     if (!t || !SIM.supporte(t)) continue;
     reste = null; try { G.pieces(t, G.recit(t)); } catch (e) { continue; }
     n++;
+    if (reste && reste.length && process.env.DETAIL) console.log("  · " + genre + " " + t.inf + " " + JSON.stringify(t.f).slice(0, 140) + " irr=" + (t.irr || []).join(",") + " → " + reste.join(","));
     if (reste && reste.length) { avec++; for (const k of reste) cles[k] = (cles[k] || 0) + 1; parInf[t.inf] = (parInf[t.inf] || 0) + 1; }
   }
   const top = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(", ");

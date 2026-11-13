@@ -462,9 +462,11 @@
       if (!CAT.delegationValide(t.deleg)) fact("G_deleg_defaut", { label: "Ce qui manquait au délégataire", key: true });
     }
     if (t.presc) add("comptes", "Comptes annuels approuvés", () => ({ title: "Procès-verbal de l'assemblée générale ordinaire", kind: "courrier", entete: [`Société gérée par ${n(A)}`, `Assemblée générale du ${D(t.presc.comptes)}`], paras: [
-      [`L'assemblée approuve les comptes de l'exercice clos le ${D(t.presc.comptes - int(r, 120, 160))}, annexes comprises.`],
-      [t.presc.dissimule ? { t: `Les dépenses en cause figurent au grand livre sous l'intitulé « prestations de conseil », facturées par une société sans activité réelle, domiciliée à ${pk(r, ["Dubaï", "Chypre", "Londres"])}.`, f: "G_comptes" } : { t: "Les dépenses en cause figurent en charges, sous l'intitulé « voyages, réceptions et véhicule du gérant », détaillées dans l'annexe remise aux associés.", f: "G_comptes" }],
-      [`Découverte des faits : ${D(t.presc.decouverte)} ; ouverture de l'enquête : ${D(t.presc.poursuite)}.`],
+      [`L'assemblée approuve les comptes de l'exercice clos le ${D(t.presc.comptes - int(CR.seeded(t.sig + ":exercice"), 120, 160))}, annexes comprises.`],
+      [t.presc.dissimule ? { t: `Les dépenses en cause figurent au grand livre sous l'intitulé « prestations de conseil », facturées par une société sans activité réelle, domiciliée à ${pk(CR.seeded(t.sig + ":comptes"), ["Dubaï", "Chypre", "Londres"])}.`, f: "G_comptes" } : { t: "Les dépenses en cause figurent en charges, sous l'intitulé « voyages, réceptions et véhicule du gérant », détaillées dans l'annexe remise aux associés.", f: "G_comptes" }],
+      // le procès-verbal d'assemblée précède la découverte : les dates de découverte et d'enquête sont la mention de
+      // l'enquêteur qui reçoit la pièce, pas une ligne de l'assemblée
+      [`Mention de l'officier de police judiciaire : document remis au service le ${D(t.presc.poursuite)} par l'associé qui a découvert les faits le ${D(t.presc.decouverte)}.`],
     ], sigs: [{ qui: "Le gérant", t: S }, { qui: "Le secrétaire de séance", t: S }] }));
     if (t.presc) fact("G_comptes", { label: `Les comptes approuvés le ${D(t.presc.comptes)}`, key: true, why: "La prescription de l'abus de biens sociaux court de la présentation des comptes, sauf dissimulation (Crim. 5 mai 1997 ; art. 9-1 CPP)." });
     if (t.cjip) {

@@ -44,8 +44,10 @@
     const dist = pk(rt, ["cinq mètres", "une dizaine de mètres", "une vingtaine de mètres", "l'autre côté de la rue"]);
     const lum = pk(rt, ["l'éclairage public", "la lumière de la cage d'escalier", "la vitrine d'en face", "presque rien, il faisait nuit"]);
     const reconnait = pk(rt, ["Oui, sans hésiter.", "Je crois, oui. Je ne pourrais pas le jurer.", "C'est lui, je le reconnais à sa silhouette."]);
+    // tirés ici, pas au rendu : la pièce se relit à l'identique (mêmes tirages, dans le même ordre qu'avant)
+    const ajout = pk(rt, ["Non.", "Non, j'ai tout dit.", "J'ai du mal à dormir depuis."]), finR = mR + int(rt, 25, 55);
     // le premier jour, il a donné l'heure des faits ; corrigée, elle s'écarte de 30 à 70 minutes
-    return { T, rt, h0, jR, mR, premiere, corrige, hDit, hAvant: h0, dist, lum, reconnait, nuit: /presque rien/.test(lum), hesite: /jurer/.test(reconnait), silhouette: /silhouette/.test(reconnait), loin: /vingtaine|autre côté/.test(dist) };
+    return { T, h0, jR, mR, ajout, finR, premiere, corrige, hDit, hAvant: h0, dist, lum, reconnait, nuit: /presque rien/.test(lum), hesite: /jurer/.test(reconnait), silhouette: /silhouette/.test(reconnait), loin: /vingtaine|autre côté/.test(dist) };
   };
 
   K.SOUS = { B: ["expertise_psy", "personnalite", "interro_cv"], C: ["ordo_dp", "dml", "ordo_prolong"] };
@@ -144,7 +146,7 @@
     // déclaration (l'heure, la distance, l'éclairage) — jamais pour un témoin mineur ni une victime mineure
     const T = t.T, W = K.temoin(t, N);
     if (W) {
-      const rt = W.rt, { jR, mR, premiere, corrige, hDit, dist, lum, reconnait } = W;
+      const { jR, mR, premiere, corrige, hDit, dist, lum, reconnait, ajout, finR } = W;
       add("pv_reaudition", "Seconde audition du témoin", ENQ, () => DOCS.pv({ cote: cotes.pv_reaudition, proc: t.proc, service, unite: svc, cadre: t.flagrance ? "FLAGRANT DÉLIT" : "ENQUÊTE", titre: "Procès-verbal d'audition de témoin", qualite: "Témoin", numPV: "00" + int(CR.seeded(t.sig + ":reaud2"), 101, 899),
         jour: jR, heure: mR, redacteur: opj, lieu: "Nous trouvant au service", objet: `OBJET : ${t.q.label} — seconde audition`,
         identite: { nom: T.nom, prenom: T.prenom, g: T.g, metier: T.metier, adresse: T.adresse },
@@ -155,8 +157,8 @@
           DOCS.q("À quelle distance vous trouviez-vous ?"), DOCS.r(`À ${dist}.`),
           DOCS.q("Comment étaient les lieux éclairés ?"), DOCS.r({ t: `Par ${lum}.`, f: /presque rien/.test(lum) ? "G_temoin_nuit" : undefined }),
           DOCS.q(`Reconnaissez-vous ${n(A)} sur la photographie qui vous est présentée ?`), DOCS.r({ t: reconnait, f: /jurer/.test(reconnait) ? "G_temoin_hesite" : undefined }),
-          DOCS.q("Avez-vous quelque chose à ajouter ?"), DOCS.r(pk(rt, ["Non.", "Non, j'ai tout dit.", "J'ai du mal à dormir depuis."])),
-        ], cloture: DOCS.clotureAudition("Paris", jR, mR + int(rt, 25, 55), T.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${opj.signe}, officier de police judiciaire`], st }));
+          DOCS.q("Avez-vous quelque chose à ajouter ?"), DOCS.r(ajout),
+        ], cloture: DOCS.clotureAudition("Paris", jR, finR, T.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${opj.signe}, officier de police judiciaire`], st }));
       if (corrige) fact("G_temoin_varie", { label: "Le témoin corrige l'heure des faits lors de sa seconde audition", key: true, why: "Un témoin qui varie sur l'heure peut varier sur le reste : la défense confronte ses deux déclarations." });
       if (/presque rien/.test(lum)) fact("G_temoin_nuit", { label: "Le témoin voyait les lieux presque sans éclairage", key: true, why: "Ce qu'on voit la nuit, sans lumière, se discute : l'identification par ce témoin est fragile." });
       if (/jurer/.test(reconnait)) fact("G_temoin_hesite", { label: "Le témoin hésite à reconnaître l'accusé", key: true, why: "Une reconnaissance hésitante ne vaut pas identification." });
@@ -250,8 +252,11 @@
       const rp = CR.seeded(t.sig + ":proche");
       const hDer = h0 - int(rp, 20, 150);
       const moyen = pk(rp, ["un message", "un appel de deux minutes", "un message vocal"]);
+      // tirés ici, pas au rendu (même ordre qu'au premier rendu d'avant)
+      const humeur = pk(rp, ["Rien d'inquiétant.", `${V.g === "f" ? "Elle" : "Il"} disait qu'${V.g === "f" ? "elle" : "il"} rentrait.`, `${V.g === "f" ? "Elle" : "Il"} avait l'air tendu${V.g === "f" ? "e" : ""}.`]);
+      const ennemis = pk(rp, ["Non. Personne.", "Des histoires d'argent, peut-être. Je ne sais pas avec qui.", "Je savais qu'il y avait des tensions avec lui."]);
       fact("G_dernier_signe", { label: `Dernier signe de vie de la victime : ${moyen} à ${hm(hDer)}`, key: false });
-      docs.pv_proche = (x) => { const o = vieux(x); const P = (o.paras || []).slice(); const fin = P.length && /Lecture faite|clos/.test(JSON.stringify(P[P.length - 1])) ? P.pop() : null; return Object.assign({}, o, { paras: P.concat([["QUESTIONS ET RÉPONSES"], [`Question : Quand avez-vous eu des nouvelles de ${V.prenom} pour la dernière fois ?`], [{ t: `Réponse : Le soir même. ${CR.cap(moyen)} à ${hm(hDer)}. ${pk(rp, ["Rien d'inquiétant.", `${V.g === "f" ? "Elle" : "Il"} disait qu'${V.g === "f" ? "elle" : "il"} rentrait.`, `${V.g === "f" ? "Elle" : "Il"} avait l'air tendu${V.g === "f" ? "e" : ""}.`])}`, f: "G_dernier_signe" }], ["Question : Lui connaissiez-vous des ennemis, des dettes, des menaces ?"], [`Réponse : ${pk(rp, ["Non. Personne.", "Des histoires d'argent, peut-être. Je ne sais pas avec qui.", "Je savais qu'il y avait des tensions avec lui."])}`]], fin ? [fin] : []) }); };
+      docs.pv_proche = (x) => { const o = vieux(x); const P = (o.paras || []).slice(); const fin = P.length && /Lecture faite|clos/.test(JSON.stringify(P[P.length - 1])) ? P.pop() : null; return Object.assign({}, o, { paras: P.concat([["QUESTIONS ET RÉPONSES"], [`Question : Quand avez-vous eu des nouvelles de ${V.prenom} pour la dernière fois ?`], [{ t: `Réponse : Le soir même. ${CR.cap(moyen)} à ${hm(hDer)}. ${humeur}`, f: "G_dernier_signe" }], ["Question : Lui connaissiez-vous des ennemis, des dettes, des menaces ?"], [`Réponse : ${ennemis}`]], fin ? [fin] : []) }); };
     }
 
     // 10. la commission rogatoire et la synthèse de son exécution

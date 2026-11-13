@@ -176,3 +176,13 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
   - `SIM.caler` recale l'heure des faits sur la garde à vue, et la chronologie d'une convocation en flagrance part de cette heure. Chaque génération décalait donc les heures : environ 4 % des affaires changeaient de dossier, par exemple à la relecture d'une sauvegarde.
   - La génération repart désormais de l'heure tirée, conservée dans `t.d.h0`.
   - Garde-fou `tidempotence` : 160 affaires de tous types générées deux fois.
+- **D-78. Une pièce se relit à l'identique d'un affichage à l'autre (correction).**
+  - Le garde-fou `tidempotence` rend maintenant chaque pièce deux fois dans une même génération, sur 400 affaires de tous types.
+  - Il a trouvé des tirages faits pendant le rendu, que chaque affichage faisait changer :
+    - la seconde audition du témoin (30 dossiers criminels sur 160) ;
+    - l'audition du proche de la victime ;
+    - le numéro de compte du relevé bancaire ;
+    - l'audition de la victime et le relevé du dossier criminel ;
+    - le procès-verbal d'assemblée générale de l'abus de biens sociaux.
+  - Tous sont tirés hors du rendu, ou par un tirage dédié, sans décaler les autres tirages de l'affaire.
+  - Le procès-verbal d'assemblée générale ne mentionne plus la découverte des faits, postérieure à l'assemblée. Ces dates passent dans une mention de l'enquêteur qui reçoit la pièce.
