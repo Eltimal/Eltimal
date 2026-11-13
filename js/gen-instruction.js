@@ -389,7 +389,12 @@
     const ji = CR.acteur(t.ji) || { nom: "le juge d'instruction" };
     const jiNom = ji.nom;
     const jld = CR.acteur(t.jld) || { nom: "le juge des libertés et de la détention" };
-    const enjeux = t.enjeux.map((id) => Object.assign({ id, fort: (t.f.forts || []).includes(id) }, CAT.enjeu(id, A, V)));
+    // fort : le dossier soutient l'enjeu (t.f.forts). Le catalogue porte aussi des phrases « fort » et « faible » : elles
+    // écrasaient ce booléen (tout enjeu passait pour fort) ; la phrase que porte la pièce du dossier va dans txtFort / faible
+    const enjeux = t.enjeux.map((id) => {
+      const E = CAT.enjeu(id, A, V) || {}, fort = (t.f.forts || []).includes(id), ne = (N.enjeux || {})[id];
+      return Object.assign({}, E, { id, fort, txtFort: ne && fort ? ne.t : E.fort, faible: ne && !fort ? ne.t : E.faible });
+    });
     const requalifEnjeu = t.q2 ? t.quoi : null;
     const decede = !!(V && PZ.docs.medical && N.medical.kind === "autopsie");
     const x = { t, N, PZ, I, A, V, C, e, nom, civ, q, r, vt: V ? "personne" : "aucune", prevention: (qq) => `${N.prevention}${(t.f.agg || []).map(CAT.aggPrev).filter(Boolean).map((s) => ", " + s).join("")}${t.rec ? ", en état de récidive légale" : ""}` };
@@ -412,10 +417,20 @@
     });
     const notesPerso = ["G_heberg", "G_emploi", "K_attest", "K_promesse"];
     // ------------------------------------------------------------ Les pièces de la suite de l'information (créées par le déroulé)
+    // lot 7 : les questions de l'avocat jouées à chaque interrogatoire, reprises au procès-verbal
+    const interroJoue = (xx) => {
+      const out = [];
+      for (const I0 of xx.cs.vars.interroQA || []) {
+        out.push([`${I0.jour != null ? `Le ${D(I0.jour)}, q` : "Q"}uestions posées par Me ${xx.s.player.prenom} ${xx.s.player.nom} (art. 120 du code de procédure pénale) :`]);
+        if (!I0.qa.length) out.push(["L'avocat indique ne pas avoir de question."]);
+        for (const x of I0.qa) out.push(x.refus ? [`Question : ${x.q} — Le juge d'instruction s'oppose à la question, déjà posée.`] : [`Question : ${x.q} — Réponse : `].concat(x.a.map((l) => (l.f ? { t: l.t + " ", f: l.f } : l.t + " ")), (x.juge || []).map((j) => ` Le juge d'instruction observe : « ${j} »`)));
+      }
+      return out;
+    };
     const flowDocs = {
       ordo_dp_live: (xx) => ({ title: xx.cs.vars.jldDecision === "dp" ? "Ordonnance de placement en détention provisoire" : "Ordonnance de placement sous contrôle judiciaire", kind: "greffe", entete: [`${jld.nom}, juge des libertés et de la détention`, `Information n° ${t.ninfo}`], paras: [[xx.cs.vars.jldDecision === "dp" ? `Ordonnons le placement en détention provisoire de ${nomA} (art. 144 et 145) ; la détention ne pourra excéder ${t.mineur ? "six mois" : crime ? "un an" : "quatre mois"}, sauf prolongation.` : `Disons n'y avoir lieu à détention provisoire ; plaçons ${nomA} sous ${xx.cs.vars.jldDecision === "arse" ? "assignation à résidence avec surveillance électronique" : "contrôle judiciaire"} : obligation de résider ${A.adresse}, interdiction d'entrer en contact avec ${V ? "la victime et les témoins" : "les autres mis en examen"}, pointage hebdomadaire au commissariat.`]] }),
       pv_ipc_live: (xx) => ({ title: "Procès-verbal d'interrogatoire de première comparution", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Le ${D(t.d.mex)}, comparaît ${nomA}, assisté${e(A)} de Me ${xx.s.player.prenom} ${xx.s.player.nom}.`], [`Faits notifiés : ${q.label}. Droit de se taire rappelé.`], [{ t: xx.cs.vars.ipcChoix === "silence" ? "La personne déclare : « Je ne souhaite pas m'exprimer aujourd'hui. »" : `La personne déclare : « ${N.version[t.stance]} »`, f: "X_ipc" }], [xx.cs.vars.statut === "ta" ? `Disons que ${nomA} sera entendu${e(A)} en qualité de témoin assisté (art. 113-1).` : `Mettons ${nomA} en examen du chef de ${q.label} (art. 80-1).`]] }),
-      pv_interro: (xx) => ({ title: "Procès-verbal d'interrogatoire", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Interrogatoire de ${nomA}${D0 ? `, assisté${e(A)} de Me ${xx.s.player.nom}` : ""}.`], ...(N.interro.length ? N.interro : [{ q: "Maintenez-vous vos déclarations ?", a: { nie: "Oui. Je n'ai rien fait.", minimise: "Oui, pour l'essentiel.", reconnait: "Oui. Je reconnais les faits." } }]).map((qq) => [`Question : ${qq.q} — Réponse : ${qq.a[t.stance]}`])] }),
+      pv_interro: (xx) => ({ title: "Procès-verbal d'interrogatoire", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Interrogatoire de ${nomA}${D0 ? `, assisté${e(A)} de Me ${xx.s.player.nom}` : ""}.`], ...(N.interro.length ? N.interro : [{ q: "Maintenez-vous vos déclarations ?", a: { nie: "Oui. Je n'ai rien fait.", minimise: "Oui, pour l'essentiel.", reconnait: "Oui. Je reconnais les faits." } }]).map((qq) => [`Question : ${qq.q} — Réponse : ${qq.a[t.stance]}`]), ...CR.CONF ? interroJoue(xx) : []] }),
       pv_confront: (xx) => CR.CONF.pv(xx.cs, { jiNom, ninfo: t.ninfo, nomA, eA: e(A), avocat: `${xx.s.player.prenom} ${xx.s.player.nom}`, nomT: nom(t.T), premiere: (CR.CRIMD && CR.CRIMD.temoin(t, N) || {}).premiere, version: N.version[t.stance] }),
       contre_expertise: (xx) => ({ title: "Rapport de contre-expertise", kind: "courrier", entete: ["Collège d'experts désigné par le juge d'instruction", `Information n° ${t.ninfo}`], paras: [[`Mission : ${xx.cs.vars.contreObjet || "examen des conclusions de la première expertise"}.`], [{ t: xx.cs.vars.contreResultat || "Les contre-experts confirment les conclusions initiales.", f: "K_contre" }]] }),
       reconstitution: () => ({ title: "Procès-verbal de reconstitution", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Transport sur les lieux ${N.lieu}, en présence des parties et de leurs avocats.`], [{ t: enjeux[0] && enjeux[0].fort ? `La reconstitution rend plausible la version de la défense sur un point essentiel : ${enjeux[0].label.toLowerCase()}.` : "La reconstitution ne remet pas en cause les constatations initiales.", f: "K_reconst" }]] }),
@@ -441,7 +456,7 @@
     const docs = Object.assign({}, PZ.docs, flowDocs);
     const docTitles = Object.assign({}, PZ.titres, flowTitles);
     facts.K_contre = { label: "Les conclusions de la contre-expertise", key: true };
-    if (CR.CONF) { Object.assign(facts, CR.CONF.CONCESSIONS); facts.G_conf_certain = CR.CONF.CERTAIN; }
+    if (CR.CONF) { Object.assign(facts, CR.CONF.CONCESSIONS, CR.CONF.FAITS_CLIENT(enjeux)); facts.G_conf_certain = CR.CONF.CERTAIN; }
     facts.K_reconst = { label: "La reconstitution" };
     // ------------------------------------------------------------ Arguments : enjeux, personnalité, peine
     const argEnjeu = (en, role) => ({ id: en.id, label: en.label, say: role === "pc" ? `La défense invoquera : « ${en.label.toLowerCase()} ». Le dossier y répond.` : en.arg, cards: ["E_" + en.id].concat((en.textes || []).filter((k) => CR.TEXTES[k]).slice(0, 2)), pertinent: () => en.fort || en.effet === "peine" });
@@ -476,10 +491,14 @@
         const renfort = cs.vars.renfort && cs.vars.renfort[en.id] ? 0.12 : 0;
         // lot 7 : les pièces ajoutées au dossier (crim-dossier.js) appuient aussi les moyens qu'elles concernent
         const appuis = en.id === "identification" ? ["G_temoin_hesite", "G_temoin_nuit", "G_heures_voisins", "G_temoin_varie", "G_aucune_trace", "G_conf_heure", "G_conf_nuit", "G_conf_loin", "G_conf_reco"] : en.id === "ld" ? ["G_heures_voisins"] : [];
+        appuis.push("C_" + en.id); // lot 7 : l'explication du client devant le juge, confirmée par le dossier
         pieces["d_" + en.id] = { label: en.label, sens: "decharge", force: (en.fort ? 0.34 : 0.07) + renfort, need: ["arg:" + en.id, "E_" + en.id].concat(appuis), noteSuffit: !!o.instruction };
       }
       // lot 7 : le témoin qui s'est dit certain à la confrontation raffermit l'accusation
       if (cs.vars.confront && cs.vars.confront.certain) pieces.confront = { label: "La confrontation", sens: "charge", force: 0.1 };
+      // une explication que le dossier contredit, donnée devant le juge sur la question de son avocat, pèse contre lui
+      const contredit = (cs.vars.interroQA || []).reduce((n, x) => n + (x.contredit || 0), 0);
+      if (contredit && pieces.interro) pieces.interro.force += Math.min(0.12, 0.05 * contredit);
       return { seuil: o.seuil || 0.48, pieces };
     }
     function requalifObtenue(api, played) {
@@ -672,7 +691,7 @@
       if (peutCopie && pr.copieDemandee == null && enInfo) T({ id: "copie", label: "Demander la copie du dossier", sub: "Article 114. Pour le mis en examen, la date compte pour le délai des nullités.", kind: "admin", time: 10, run: () => { if (CR.EB && CR.libre && CR.libre(s)) return { scene: "ebarreau", objet: "Demande de copie du dossier" }; PEN.demanderCopie(api); return null; } });
       // préparation des interrogatoires
       const prochain = cs.hearings.find((h) => !h.attended && !h.missed && !h.canceled && h.day >= s.day && ["interro", "ipc_convoc"].includes(h.script));
-      if (D0 && prochain && !cs.flags.prepInterro && pr.detention.statut !== "dp") T({ id: "prep_interro", label: `Préparer ${A.prenom} à son interrogatoire`, sub: "Au cabinet : ce que dit le dossier, ce qu'il faut expliquer, ce qu'il vaut mieux taire.", kind: "meet", time: 60, run: () => { CR.spend(s, 60, "meet"); cs.flags.prepInterro = s.day; CR.updatedClient(s, cs, 1.5); api.tl(`${A.prenom} préparé${e(A)} à son interrogatoire.`); return null; } });
+      if (D0 && prochain && cs.flags.prepInterro == null && pr.detention.statut !== "dp") T({ id: "prep_interro", label: `Préparer ${A.prenom} à son interrogatoire`, sub: "Au cabinet : ce que dit le dossier, ce qu'il faut expliquer, ce qu'il vaut mieux taire.", kind: "meet", time: 60, run: () => { CR.spend(s, 60, "meet"); cs.flags.prepInterro = s.day; CR.updatedClient(s, cs, 1.5); api.tl(`${A.prenom} préparé${e(A)} à son interrogatoire.`); return null; } });
       // pièces de personnalité (garanties)
       if (D0 && enInfo) PEN.persoTasks(api, T, [
         { id: "attest", label: "Obtenir une attestation d'hébergement", sub: "Avec un justificatif de domicile.", fact: "K_attest", text: `Attestation d'hébergement de ${A.proche}, ${A.adresse}, justificatif de domicile joint.`, time: 20, cond: () => CR.hasFact(cs, "G_heberg") },
@@ -1250,16 +1269,19 @@
         ],
       };
     };
-    const qAvocatOptions = () => enjeux.slice(0, 3).map((en) => ({ id: "q_" + en.id, t: en.q, a: en.fort ? en.fort.replace(/^« |»$/g, "") : en.faible.replace(/^« |»$/g, ""), f: "E_" + en.id, signal: en.fort ? "bon" : "mauvais" }));
+    const qAvocatOptions = () => enjeux.slice(0, 3).map((en) => ({ id: "q_" + en.id, t: en.q, a: en.fort ? en.txtFort.replace(/^« |»$/g, "") : en.faible.replace(/^« |»$/g, ""), f: "E_" + en.id, signal: en.fort ? "bon" : "mauvais" }));
     AU.interro = function (api, h) {
       const { cs } = api;
-      const prep = !!cs.flags.prepInterro;
+      const prep = cs.flags.prepInterro != null; // le jour 0 est un jour
       const steps = D0 ? [
         { who: "sys", t: cs.proc.detention.statut === "dp" ? `(${nomA} arrive de détention, escorté${e(A)}. Le greffier a déjà ouvert le dossier.)` : `(${nomA} s'assoit à côté de vous. ${prep ? `${GEN2.PR.Il(A)} a relu ses notes dans le couloir.` : `${GEN2.PR.Il(A)} tripote sa veste.`})` },
         { who: "ji", t: `Nous reprenons. ${N.mobile ? `Les enquêteurs retiennent ce contexte : ${(N.mobile.replace(/\.$/, "")[0].toLowerCase() + N.mobile.replace(/\.$/, "").slice(1))}.` : ""} Qu'avez-vous à dire ?` },
         { if: () => prep, then: [{ who: "client", t: N.version[t.stance], signal: "bon", fx: { csFlags: { interroBon: true } } }], else: [{ who: "client", t: `${N.version[t.stance]} Je sais pas, je sais plus.`, fx: { cred: -2 }, signal: "mauvais" }] },
       ].concat((N.interro || []).slice(0, 2).map((qq) => [{ who: "ji", t: qq.q }, { who: "client", t: qq.a[t.stance] }]).flat(), [
-        { questions: { prompt: "Vos questions (art. 120)", to: "client", who: "client", max: 2, options: enjeux.slice(0, 3).map((en) => ({ id: "c_" + en.id, t: en.q, a: t.stance === "nie" ? "Je l'ai déjà dit, je n'y suis pour rien." : "Je l'ai dit aux policiers, ils n'ont pas écrit.", signal: "neutre" })).concat([{ id: "c_vie", t: "Que faites-vous depuis votre mise en examen ?", a: cs.proc.detention.statut === "dp" ? "Je travaille aux ateliers. Je suis une formation." : "Je travaille. Je respecte toutes mes obligations.", signal: "bon" }]) } },
+        // lot 7 : en mode libre, les questions de l'avocat à son client se composent (confrontation.js, K.repondreClient)
+        CR.CONF && CR.libre(api.s)
+          ? { parole: { M: CR.CONF.modeleClient(api.s, cs, t, N, enjeux, { idx: (h && h.idx) || 0, prep, detenu: cs.proc.detention.statut === "dp" }), repondre: CR.CONF.repondreClient, max: CR.CONF.MAX, who: "client", juge: "ji", prompt: "Vos questions à votre client (art. 120)" } }
+          : { questions: { prompt: "Vos questions (art. 120)", to: "client", who: "client", max: 2, options: enjeux.slice(0, 3).map((en) => ({ id: "c_" + en.id, t: en.q, a: t.stance === "nie" ? "Je l'ai déjà dit, je n'y suis pour rien." : "Je l'ai dit aux policiers, ils n'ont pas écrit.", signal: "neutre" })).concat([{ id: "c_vie", t: "Que faites-vous depuis votre mise en examen ?", a: cs.proc.detention.statut === "dp" ? "Je travaille aux ateliers. Je suis une formation." : "Je travaille. Je respecte toutes mes obligations.", signal: "bon" }]) } },
         { who: "ji", t: "Je vous remercie. L'interrogatoire est terminé." },
       ]) : [
         { who: "sys", t: `(${nom(C)} s'assoit. ${proc ? "L'administrateur ad hoc est présent à ses côtés." : "Ses mains tremblent."})` },
@@ -1482,7 +1504,7 @@
     def.corrige = function () {
       const out = [{ probleme: "Quelle qualification, quelle juridiction ?", regle: `${CR.cap(q.label)} : ${CAT.encourueTexte(q)} (${q.court}).${t.mineur ? " Atténuation de minorité : la moitié de la peine encourue." : ""}`, application: `${N.resume} Juridiction : ${CAT.JUR_LABEL[t.jur]}.` }];
       if (t.q2) out.push({ probleme: "Une autre qualification ?", regle: `${CR.cap(t.q2.label)} (${t.q2.court}) : ${CAT.encourueTexte(t.q2)}.`, application: CAT.ENJEUX[requalifEnjeu] ? `${CAT.enjeu(requalifEnjeu, A, V).label} : ${CAT.enjeu(requalifEnjeu, A, V).arg}` : "" });
-      for (const en of enjeux) out.push({ probleme: en.label, regle: (en.textes || []).filter((k) => CR.TEXTES[k]).map((k) => CR.TEXTES[k].cite).join(" ; ") || "—", application: en.fort ? en.fort.replace(/^« |»$/g, "") : `Le dossier le dément : ${en.faible.replace(/^« |»$/g, "")}` });
+      for (const en of enjeux) out.push({ probleme: en.label, regle: (en.textes || []).filter((k) => CR.TEXTES[k]).map((k) => CR.TEXTES[k].cite).join(" ; ") || "—", application: en.fort ? en.txtFort.replace(/^« |»$/g, "") : `Le dossier le dément : ${en.faible.replace(/^« |»$/g, "")}` });
       for (const id of t.irr) { const an = PZ.anomalies[id]; if (an) { const ir = CR.IRREG[an.irreg]; out.push({ probleme: ir.label, regle: ir.regle, application: `${PZ.titres[an.piece] || "Pièce"} : ${ir.effet}.` }); } }
       return out;
     };

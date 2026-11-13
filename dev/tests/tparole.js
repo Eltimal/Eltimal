@@ -118,7 +118,8 @@ const P = require("./play"); const U = require("./util");
       await step(/consulter les pièces/); await step(/Rendre les pièces/);
       ok(!!doc.querySelector(".ent-parole .compo") && !doc.querySelector(".gav-card .q-btn"), "l'entretien n'est pas celui de la refonte");
       ok(!texts(doc.querySelector(".gav-steps")).includes("Conseil"), "l'étape de conseil à trois boutons subsiste");
-      const attendre = async () => { for (let k = 0; k < 400 && doc.querySelector(".oral .oral-caret"); k++) await sleep(20); await sleep(40); };
+      // attendre que la voix se taise : plus de curseur, et le bouton redevenu « Poser la question » (le client a fini)
+      const attendre = async () => { await sleep(60); for (let k = 0; k < 400 && (doc.querySelector(".oral .oral-caret") || [...doc.querySelectorAll(".compo-go button")].some((x) => /parle…|parlez…|Un instant…/.test(texts(x)))); k++) await sleep(20); await sleep(40); };
       let vuParle = false;
       const composer = async (sujet, angle, forme) => {
         const b = (re, root) => [...(root || doc).querySelectorAll(".compo .compo-b")].find((x) => re.test(texts(x)) && !x.disabled);

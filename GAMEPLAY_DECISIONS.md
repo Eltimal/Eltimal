@@ -130,3 +130,15 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
   - Leçon du métier : demander « Vous êtes certain ? » à un témoin sûr de lui raffermit l'accusation (charge supplémentaire au délibéré).
   - Ce qu'il concède entre dans les notes et au procès-verbal de confrontation, versé au dossier et tiré des questions jouées. Ces concessions appuient le moyen d'identification ; à partir de deux, le moyen est renforcé, comme par un acte d'enquête obtenu.
   - Hors mode libre, ou sans témoin principal (victime mineure, témoin de moins de seize ans), la confrontation reste la scène d'avant.
+- **D-68. Un enjeu n'est fort que si le dossier le soutient (correction).**
+  - Dans `gen-instruction.js`, le booléen `fort` d'un enjeu était écrasé par la phrase « fort » du catalogue (`CAT.ENJEUX`) : tout enjeu passait pour fort.
+  - Conséquences du défaut : force maximale au délibéré, requalification à 82 %, actes d'enquête presque toujours fructueux, débrief qui disait toujours « le dossier le soutenait ».
+  - Désormais, `fort` suit le tirage (`t.f.forts`) et la phrase de la pièce va dans `txtFort` / `faible`.
+  - Nouvelle mesure (`tcrimes`) : moyens d'acquittement forts plaidés, 77 % de condamnations ; faibles plaidés, 100 % ; rien plaidé, 99 %. La mesure de D-59 (69 % pour « tous les moyens ») mélangeait les deux à cause du défaut.
+- **D-69. À l'interrogatoire au fond, l'avocat fait s'expliquer son client, et ne doit pas l'exposer.**
+  - Les questions de l'avocat à son client se composent (art. 120), au plus quatre.
+  - Chaque enjeu du catalogue a sa version du client (`CR.CONF.ENJ`, vingt enjeux). Posée en question ouverte, à l'angle qui le fait s'expliquer, elle devient une explication consignée qui appuie le moyen, si le dossier la confirme. Si le dossier la contredit, le juge le relève et cela pèse contre le client (charge de ses déclarations devant le juge, +0,05 par contradiction, au plus +0,12).
+  - Leçon inverse de la confrontation : à son propre client, la question fermée n'apporte rien ; il faut le laisser s'expliquer, sur un point que l'on sait solide.
+  - Qui nie n'explique pas un geste. Un client que l'avocat n'a pas préparé cherche ses mots : il faut le relancer (une question de plus). Le jour 0 compte comme un jour de préparation (le drapeau valait 0, lu comme faux).
+  - Le procès-verbal d'interrogatoire reprend les questions jouées, les réponses et les observations du juge.
+- **D-70. Les scènes jouées gardent leur modèle vivant.** La retouche typographique des étapes de scène (`PH.walk`) recopiait tout objet d'étape, y compris le modèle de la confrontation : les réponses s'enregistraient dans une copie. L'étape `parole` passe désormais telle quelle.

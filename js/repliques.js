@@ -232,7 +232,7 @@
     const r = {};
     for (const [k, v] of Object.entries(o)) {
       if (typeof v === "function") r[k] = NE_PAS_ENVELOPPER.includes(k) ? v : function (...x) { return PH.walk(v.apply(this, x), C); };
-      else if (["cards", "accept", "need", "fx", "play", "f", "id", "key", "doc", "who", "kind", "flag", "paire", "textes"].includes(k)) r[k] = v;
+      else if (["cards", "accept", "need", "fx", "play", "f", "id", "key", "doc", "who", "kind", "flag", "paire", "textes", "parole"].includes(k)) r[k] = v; // parole : le modèle vivant d'une scène jouée (confrontation.js), à ne pas recopier
       else r[k] = PH.walk(v, C, d + 1);
     }
     // garder les propriétés non énumérables (rare) : rien à faire, elles ne sont pas des textes

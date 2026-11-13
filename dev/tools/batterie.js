@@ -7,7 +7,7 @@ const { spawn } = require("child_process");
 const os = require("os");
 const path = require("path");
 const RAPIDE = ["t1", "t2", "t3", "t4", "t20", "tgenjeu", "tparole", "ttribunal", "tplaidoirie", "tappel", "tcanaux", "tebarreau", "tplex", "tlibre", "tclauses", "tpeines", "tcomp", "tdossier", "tbill", "tcarriere", "tcoherence",
-  "tmagasin", "ttransport", "ttire", "t2roues", "tdeal", "tdetention", "toutrage", "trebellion", "tconjugal", "tappels", "tcambriolage", "tobtemperer", "tfuite", "trecel", "tlabo", "timages", "ttelephonie", "tcaptures", "treleve", "tadn", "tpermis", "texpertise", "tdegradations", "tviolation", "tabus", "tvestiaire", "tharcelement", "tcatalogue", "tcrimes", "tpeinescrime", "tmemoirechins", "tcrimdossier", "tconfront"];
+  "tmagasin", "ttransport", "ttire", "t2roues", "tdeal", "tdetention", "toutrage", "trebellion", "tconjugal", "tappels", "tcambriolage", "tobtemperer", "tfuite", "trecel", "tlabo", "timages", "ttelephonie", "tcaptures", "treleve", "tadn", "tpermis", "texpertise", "tdegradations", "tviolation", "tabus", "tvestiaire", "tharcelement", "tcatalogue", "tcrimes", "tpeinescrime", "tmemoirechins", "tcrimdossier", "tconfront", "tinterro"];
 const LONGS = ["tgen", "tsim", "trepetition", "tecono", "tcite", "tplaid", "tassises", "t15", "t16", "tp3", "tcassation", "tmemoire", ["tboucle", "7"], ["tboucle", "9"], ["tboucle", "5"]];
 const arg = process.argv.slice(2);
 const liste = arg[0] === "complete" ? LONGS.concat(RAPIDE) : arg.length ? arg.map((a) => (a.includes(":") ? a.split(":") : a)) : RAPIDE;
