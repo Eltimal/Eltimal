@@ -354,12 +354,18 @@
     return { ferme: perpetuite ? 360 : base, sursis: 0, complementaires: comp, perpetuite, mandatDepot: true, reclusion: q.nature === "crime", max: perpetuite ? 360 : cap };
   };
   // Le texte d'une peine criminelle : réclusion au-delà de dix ans, période de sûreté de plein droit (art. 132-23)
+  // période de sûreté de plein droit (art. 132-23, al. 1) : seulement pour « les infractions spécialement prévues par la
+  // loi » — les articles du code pénal qui y renvoient (relevés sur codes.droit.org le 13 novembre 2026, version du 26 août
+  // 2026). Ni le meurtre simple (221-1), ni le viol (222-23, 222-24) n'en sont : la sûreté y est facultative (al. 3).
+  GEN2.SURETE_PLEIN_DROIT = new Set(["211-1", "212-1", "212-2", "212-3", "214-3", "214-4", "221-2", "221-3", "221-4", "221-5", "221-12", "222-1", "222-2", "222-3", "222-4", "222-5", "222-6", "222-8", "222-10", "222-12", "222-14", "222-14-1", "222-14-5", "222-15", "222-25", "222-26", "222-34", "222-35", "222-36", "222-37", "222-38", "222-39", "224-1", "224-2", "224-3", "224-4", "224-5", "224-5-2", "224-6", "225-7", "225-8", "225-9", "225-10", "311-6", "311-7", "311-8", "311-9", "311-10", "312-3", "312-4", "312-5", "312-6", "312-7", "322-8", "322-9", "322-10", "411-2", "412-1", "421-7", "442-1", "442-2", "462-2"]);
+  GEN2.sureteDePleinDroit = (q) => !!q && q.nature === "crime" && (String(q.court || "").match(/\d{3}-\d+(?:-\d+)?/g) || []).some((a) => GEN2.SURETE_PLEIN_DROIT.has(a));
   GEN2.peineCrimeTexte = function (pn, o = {}) {
     if (!pn) return "";
     const parts = [];
-    if (pn.perpetuite) parts.push("Réclusion criminelle à perpétuité" + (o.mineur ? "" : ", période de sûreté de dix-huit ans (art. 132-23)"));
+    if (pn.perpetuite) parts.push("Réclusion criminelle à perpétuité" + (o.mineur || !o.surete ? "" : ", période de sûreté de dix-huit ans (art. 132-23)"));
     else if (pn.ferme >= 120 && o.crime) parts.push(`${CR.fmtMois(pn.ferme)} de réclusion criminelle` + (o.mineur || !o.surete ? "" : `, période de sûreté de plein droit de la moitié de la peine (art. 132-23)`));
-    else if (pn.ferme > 0 && o.crime) parts.push(`${CR.fmtMois(pn.ferme)} d'emprisonnement (art. 132-18)` + (o.detenu ? ", maintien en détention" : ", mandat de dépôt"));
+    else if (pn.ferme > 0 && o.crime && !pn.sursis) parts.push(`${CR.fmtMois(pn.ferme)} d'emprisonnement (art. 132-18)` + (o.detenu ? ", maintien en détention" : ", mandat de dépôt"));
+    else if (o.crime && pn.sursis) parts.push(`${CR.fmtMois(pn.ferme + pn.sursis)} d'emprisonnement (art. 132-18)` + (pn.ferme ? `, dont ${CR.fmtMois(pn.sursis)} avec sursis${pn.sursisType === "probatoire" ? " probatoire" : ""}` : ` avec sursis${pn.sursisType === "probatoire" ? " probatoire" : ""}`) + (pn.ferme ? (o.detenu ? ", maintien en détention" : ", mandat de dépôt") : ""));
     else if (pn.ferme || pn.sursis) parts.push(CR.PROC.peineTexte(Object.assign({}, pn, { complementaires: [] })).replace(/\.$/, ""));
     for (const c of pn.complementaires || []) parts.push(c);
     return parts.join(", ");
@@ -1151,9 +1157,10 @@
         const pn = dec.peine;
         if (!pn.choisie && requis.perpetuite && pn.ferme >= Math.round(requis.ferme * 0.97) && !altere && !t.mineur && qq.perpetuite) { pn.perpetuite = true; pn.ferme = 360; }
         if (!pn.perpetuite && pn.ferme > 360) pn.ferme = 360;
-        if (qq.nature === "crime" && pn.ferme > 0) { pn.sursis = 0; pn.amenagement = pn.ferme > 24 ? null : pn.amenagement; pn.mandatDepot = pn.ferme > 12 || pn.mandatDepot; }
+        // l'ancien calcul excluait le sursis en matière criminelle ; la peine choisie (peines.js) l'applique selon la loi
+        if (qq.nature === "crime" && pn.ferme > 0 && !pn.choisie) { pn.sursis = 0; pn.amenagement = pn.ferme > 24 ? null : pn.amenagement; pn.mandatDepot = pn.ferme > 12 || pn.mandatDepot; }
         const old = pn.texte;
-        pn.texte = GEN2.peineCrimeTexte(pn, { crime: qq.nature === "crime", mineur: t.mineur, surete: qq.nature === "crime", detenu: cs.proc.detention.statut === "dp" }) || old;
+        pn.texte = GEN2.peineCrimeTexte(pn, { crime: qq.nature === "crime", mineur: t.mineur, surete: GEN2.sureteDePleinDroit(qq), detenu: cs.proc.detention.statut === "dp" }) || old;
         for (const qx of dec.questions) { if (qx.q === "Sur la peine") qx.r = pn.texte + "."; if (t.mineur && qx.q === "Sur la peine") qx.motif = (qx.motif ? qx.motif + " " : "") + "La juridiction applique l'atténuation de la peine due à la minorité (art. L. 121-5 CJPM)."; }
         dec.dispositif = dec.dispositif.replace(old.replace(/^./, (c) => c.toLowerCase()), pn.texte.replace(/^./, (c) => c.toLowerCase()));
         cs.vars.peine = pn;

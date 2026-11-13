@@ -123,10 +123,15 @@
   // Étalon : « Les condamnations en 2022 » (SG/SSER) — crimes : réclusion criminelle 60 %, emprisonnement ferme 22,5 % (dans
   // le rapport, sans les sursis : réclusion 64 %, emprisonnement 36 %) ; réclusion à temps de 15 ans en moyenne (homicides
   // 18, viols 13, vols criminels 14) ; perpétuité 1,6 % des réclusions ; emprisonnement ferme pour crime de 5,4 ans en
-  // moyenne. Règle du jeu (art. 131-1, texte du jeu) : réclusion à temps de dix ans au moins, sinon emprisonnement. Le
-  // sursis reste exclu en matière criminelle et l'emprisonnement ne descend pas sous deux ans (planchers de l'art. 132-18
-  // non relus sur source). Poids des facteurs : estimations, calées sur ces proportions.
-  K.SEUILS_CRIME = { reclusion: -0.2, perpetuite: 2.35 };
+  // moyenne. Règles (relues sur codes.droit.org le 13 novembre 2026, version du 26 août 2026) : réclusion à temps de dix ans
+  // au moins (art. 131-1) ; sinon emprisonnement, qui ne descend pas sous deux ans si la perpétuité est encourue, sous un an
+  // si c'est la réclusion à temps (art. 132-18) ; l'emprisonnement de cinq ans au plus peut être assorti du sursis, en tout
+  // ou partie (art. 132-31 et 132-41 : « en raison d'un crime ou d'un délit ») ; le sursis simple suppose qu'aucune
+  // condamnation à l'emprisonnement ou à la réclusion pour crime ou délit de droit commun n'a été prononcée dans les cinq ans
+  // qui précèdent les faits (art. 132-30) — le jeu ne date pas les condamnations du casier : un casier non vide donne le
+  // sursis probatoire. Étalon : 17,5 % des condamnations pour crime ne sont ni réclusion ni emprisonnement ferme (sursis).
+  // Poids des facteurs : estimations, calées sur ces proportions.
+  K.SEUILS_CRIME = { reclusion: -0.05, perpetuite: 2.35, sursis: -0.68, partiel: -0.45 };
   K.actifCrime = (s, cs) => { const t = genT(s, cs); const I = t && CR.CAT && CR.CAT.INF[t.inf]; return !!(t && I && /^crim/.test(I.fam || "") && !t.mineur); };
   K.calculerCrime = function (api, r, ctx) {
     const { s, cs } = api;
@@ -164,17 +169,30 @@
       peine.ferme = ans * 12; peine.reclusion = true;
       motifs.push(`Une peine de réclusion criminelle de ${ans} ans répond à la gravité des faits (art. 131-1 du code pénal).`);
     } else {
-      // emprisonnement (moins de dix ans) : deux ans au moins dans le jeu
-      const mois = Math.max(24, Math.min(119, Math.round(60 * Math.pow(1.45, z - T.reclusion + 0.6))));
-      peine.ferme = mois;
+      // emprisonnement (moins de dix ans) : un an au moins, deux si la perpétuité est encourue (art. 132-18)
+      const plancher = perp ? 24 : 12;
+      let mois = Math.max(plancher, Math.min(119, Math.round(60 * Math.pow(1.45, z - T.reclusion + 0.6))));
+      // la cour qui veut un sursis partiel s'en tient à cinq ans, la limite du sursis
+      if (z >= T.sursis && z < T.partiel) mois = Math.min(mois, 60);
       motifs.push(`La cour retient une peine d'emprisonnement de ${CR.fmtMois(mois)}, inférieure à dix ans (art. 131-1 et 132-18 du code pénal).`);
+      // cinq ans au plus : le sursis est possible (art. 132-31 et 132-41) ; simple sans condamnation antérieure (art. 132-30)
+      const sursisPossible = mois <= 60, simple = !A.casier;
+      if (sursisPossible && z < T.sursis) {
+        peine.ferme = 0; peine.sursis = mois; peine.sursisType = simple ? "simple" : "probatoire"; peine.mandatDepot = false;
+        motifs.push(simple ? "L'accusé n'a jamais été condamné : la peine est assortie en totalité du sursis simple (art. 132-29 à 132-31 du code pénal)." : "La peine est assortie en totalité du sursis probatoire, qui permet d'accompagner l'accusé (art. 132-40 et 132-41 du code pénal).");
+      } else if (sursisPossible && z < T.partiel) {
+        const ferme = Math.max(plancher >= 24 ? 12 : 6, Math.round(mois * 0.5));
+        peine.ferme = ferme; peine.sursis = mois - ferme; peine.sursisType = simple ? "simple" : "probatoire";
+        motifs.push(`Une partie de la peine, ${CR.fmtMois(mois - ferme)}, est assortie du sursis ${simple ? "simple (art. 132-31, al. 3" : "probatoire (art. 132-42, al. 2"} du code pénal).`);
+      } else peine.ferme = mois;
     }
     if (peine.ferme > encA && !peine.perpetuite) peine.ferme = encA;
     peine.regles = motifs;
     peine.choisie = true; peine.crime = true;
     peine.facteurs = raisons.map((x) => ({ why: x.why, sens: x.v > 0 ? "aggr" : "att" }));
     peine.manques = perso ? [] : ["Aucun élément de personnalité n'a été produit (expertise, attestations, parcours) : la cour n'avait rien à mettre en balance de la gravité des faits."];
-    peine.texte = peine.perpetuite ? "Réclusion criminelle à perpétuité" : peine.reclusion ? `${CR.fmtMois(peine.ferme)} de réclusion criminelle` : `${CR.fmtMois(peine.ferme)} d'emprisonnement`;
+    const tot = peine.ferme + peine.sursis;
+    peine.texte = peine.perpetuite ? "Réclusion criminelle à perpétuité" : peine.reclusion ? `${CR.fmtMois(peine.ferme)} de réclusion criminelle` : !peine.sursis ? `${CR.fmtMois(peine.ferme)} d'emprisonnement` : !peine.ferme ? `${CR.fmtMois(tot)} d'emprisonnement avec sursis${peine.sursisType === "probatoire" ? " probatoire" : ""}` : `${CR.fmtMois(tot)} d'emprisonnement, dont ${CR.fmtMois(peine.sursis)} avec sursis${peine.sursisType === "probatoire" ? " probatoire" : ""}`;
     return peine;
   };
   K.texte = function (pn) {

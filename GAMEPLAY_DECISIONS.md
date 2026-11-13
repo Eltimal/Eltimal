@@ -142,3 +142,16 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
   - Qui nie n'explique pas un geste. Un client que l'avocat n'a pas préparé cherche ses mots : il faut le relancer (une question de plus). Le jour 0 compte comme un jour de préparation (le drapeau valait 0, lu comme faux).
   - Le procès-verbal d'interrogatoire reprend les questions jouées, les réponses et les observations du juge.
 - **D-70. Les scènes jouées gardent leur modèle vivant.** La retouche typographique des étapes de scène (`PH.walk`) recopiait tout objet d'étape, y compris le modèle de la confrontation : les réponses s'enregistraient dans une copie. L'étape `parole` passe désormais telle quelle.
+
+## Règles relues sur source (13 novembre 2026, codes.droit.org de nouveau joignable)
+
+- **D-71. La peine criminelle suit les articles 131-1, 132-18, 132-23, 132-30, 132-31 et 132-41 du code pénal** (version du 26 août 2026).
+  - Emprisonnement prononcé pour crime : deux ans au moins si la perpétuité est encourue, un an si c'est la réclusion à temps.
+  - De cinq ans au plus, il peut être assorti du sursis, en tout ou en partie (« en raison d'un crime ou d'un délit »). La cour qui choisit un sursis partiel s'en tient à cinq ans.
+  - Le sursis simple suppose l'absence de condamnation à l'emprisonnement ou à la réclusion dans les cinq ans précédant les faits. Le jeu ne datant pas le casier, un casier non vide donne le sursis probatoire.
+  - Correction : la période de sûreté de plein droit ne vaut que pour les infractions que la loi désigne (65 articles relevés) ; ni le meurtre simple ni le viol n'en sont. Le jeu l'appliquait à toute réclusion.
+  - Correction : le déroulé criminel effaçait tout sursis (ancienne règle) ; il ne le fait plus pour la peine choisie.
+  - Mesure (`tpeinescrime`) : réclusion 61 % (60 en 2022), emprisonnement entièrement assorti du sursis 16 % (17,5), emprisonnement ferme 23 % (22,5), réclusion moyenne 15,5 ans.
+- **D-72. La vérification de l'alcoolémie suit les articles L. 234-5 et R. 234-4 du code de la route.**
+  - Le résultat est notifié immédiatement, avec l'avis qu'un second contrôle peut être demandé. Demandé (un cas sur trois environ), il est fait aussitôt, après vérification du bon fonctionnement de l'appareil. La seconde mesure ne fait pas passer sous le seuil du délit une mesure qui l'atteignait.
+  - Le délai entre dépistage positif et vérification doit être « le plus court possible » : au-delà de 75 minutes, c'est un fait du dossier à discuter. Aucune nullité n'est codée, car son régime n'a pas été relu. Les chronologies actuelles ne dépassent jamais ce délai : la règle est en place, sans cas pour l'instant.

@@ -543,13 +543,21 @@
           ], sigs: ["Le directeur du magasin"] }));
       }
       // lot 1 ter, pièces techniques : la vérification de l'alcoolémie, datée sur la chronologie (dépistage sur place,
-      // mesure au service) ; contenu identique à l'ancienne pièce (aucune règle nouvelle : second contrôle, délai et marge
-      // restent ceux du catalogue, en attendant la lecture des textes)
+      // mesure au service). Règles relues sur codes.droit.org (13 novembre 2026) : délai entre le dépistage positif et la
+      // vérification « le plus court possible » (art. R. 234-4, 1°, C. route) ; résultat notifié immédiatement, avec l'avis
+      // qu'un second contrôle peut être demandé (R. 234-4, 2°) ; second contrôle de droit s'il est demandé, fait aussitôt
+      // après vérification du bon fonctionnement de l'appareil (L. 234-5). Un long délai est un fait à discuter (aucune
+      // nullité codée : son régime n'est pas relu). La marge d'erreur reste celle du catalogue.
       if ((has("ethylo") || t.inf === "alcool") && t.f) {
         const ra = CR.seeded(t.sig + ":g:ethy");
         const tx = String((t.f.taux || 0).toFixed(2)).replace(".", ",");
         const mDep = (E.interp || S.T0) + int(ra, 2, 6), mMes = Math.max(mDep + 15, (E.presentation || mDep + 20) + int(ra, 8, 20)), mClos = mMes + int(ra, 10, 20);
         const serie = `ARCA-0${int(ra, 100, 999)}`, verif = jf - int(ra, 30, 300);
+        const rs = CR.seeded(t.sig + ":g:ethy3"), second = !t.f.refus && rs() < 0.3;
+        const taux2 = second ? Math.max((t.f.taux || 0) >= 0.4 ? 0.4 : 0, Math.round(((t.f.taux || 0) + (rs() < 0.5 ? -1 : 1) * int(rs, 1, 3) / 100) * 100) / 100) : null;
+        const tx2 = taux2 != null ? taux2.toFixed(2).replace(".", ",") : "", m2 = mMes + int(rs, 2, 5);
+        const delai = mMes - mDep;
+        if (!t.f.refus && delai > 75) fait("G_delai_ethylo", { label: `${Math.floor(delai / 60)} h ${String(delai % 60).padStart(2, "0")} entre le dépistage et la vérification`, key: true, why: "Le délai entre le dépistage positif et la vérification doit être le plus court possible (art. R. 234-4, 1°, du code de la route) : un long délai se discute." });
         add("pv_alcoolemie", mMes, t.f.refus ? "Refus de vérification" : "Vérification de l'alcoolémie", () => DOCS.pv({ cote: cote("pv_alcoolemie"), proc: t.proc, service, unite, titre: t.f.refus ? "Procès-verbal de refus de se soumettre aux vérifications" : "Procès-verbal de vérification de l'alcoolémie", numPV: "00" + int(CR.seeded(t.sig + ":g:ethy2"), 101, 899), jour: j(mMes), heure: mMes, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`, objet: `OBJET : ${q0.label} — alcoolémie`,
           blocs: t.f.refus ? [
             p(`À ${hm(mDep)}, sur les lieux, invitons ${n(A)} à se soumettre aux épreuves de dépistage, puis, au service à ${hm(mMes)}, à la vérification par éthylomètre.`),
@@ -559,7 +567,11 @@
             p(`À ${hm(mMes)}, au service, procédons à la vérification de l'état alcoolique de ${n(A)} par éthylomètre de marque Dräger, modèle 7110 FP.`),
             p({ t: irr("ethylo") ? `Appareil homologué, numéro de série ${serie}.` : `Appareil homologué, numéro de série ${serie}, dernière vérification périodique le ${DOCS.date(verif)}.`, flag: irr("ethylo") ? "ethylo" : undefined, f: irr("ethylo") ? "G_ethylo" : undefined }),
             p({ t: `Mesure : ${tx} mg par litre d'air expiré.`, f: t.quoi === "marge" ? "G_marge" : "G_taux" }),
-            p("Notifions le résultat et le droit à une seconde vérification ; la personne n'en fait pas usage."),
+            p({ t: `Notifions immédiatement le résultat à ${n(A)} et l'avisons qu'${il(A)} peut demander un second contrôle (art. R. 234-4 du code de la route).`, f: delai > 75 ? "G_delai_ethylo" : undefined }),
+            ...(second ? [
+              p(`${Maj(il(A))} demande un second contrôle. Après vérification du bon fonctionnement de l'appareil, procédons immédiatement, à ${hm(m2)}, à une seconde mesure (art. L. 234-5 du code de la route).`),
+              p(`Seconde mesure : ${tx2} mg par litre d'air expiré. Résultat porté immédiatement à la connaissance de l'intéressé${A.g === "f" ? "e" : ""}.`),
+            ] : [p(`${Maj(il(A))} déclare ne pas demander de second contrôle.`)]),
           ], cloture: mention(`Dont procès-verbal, clos ${at(mClos)}, signé après lecture.`), signataires: [`${OPJ.signe}, officier de police judiciaire`, "La personne contrôlée"], st: stO }));
       }
       // lot 1 ter : le vol chez l'employeur — le relevé des badges du soir des faits (qui avait accès)
