@@ -523,6 +523,12 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      if (PS.docs.releve && has("releve") && PS.ordre.some((o) => o.key === "releve" && !o.ancien)) {
+        const rb = CR.seeded(t.sig + ":g:bq"); rb(); // banque
+        if (!N.montant) rb();
+        const nm = 4 + Math.floor(rb() * 4); for (let i = 0; i < nm; i++) rb(); for (let i = 0; i < nm; i++) rb();
+        if (rb() < 0.25) fact("G_pret", { label: "Un des mouvements est un virement d'un proche libellé « prêt »", key: true, why: "Une partie de la somme s'explique peut-être : un justificatif du proche la retire du compte de l'accusation." });
+      }
       if (PS.docs.captures && has("ecrits") && N.ecrits && N.ecrits.length) {
         const rc = CR.seeded(t.sig + ":g:cap");
         if (rc() < 0.25) fact("G_numero_autre", { label: "Les messages viennent d'un numéro qui n'est pas celui de l'intéressé", key: true, why: "Qui écrivait ? Un numéro inconnu ne s'attribue pas sans réquisition à l'opérateur ou sans aveu." });

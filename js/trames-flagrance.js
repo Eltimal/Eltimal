@@ -746,6 +746,31 @@
             partielle ? p({ t: `${V ? Maj(il(V)) : "Le plaignant"} précise avoir supprimé ses propres réponses ; seuls les messages reçus apparaissent.`, f: "G_captures_partielles" }) : null,
           ], sigs: [`${OPJ.signe}, officier de police judiciaire`] }));
       }
+      // lot 1 ter, pièces techniques : la réponse à réquisition bancaire, mouvement par mouvement, dont la somme fait le
+      // total annoncé ; l'un d'eux porte parfois un libellé que la défense peut justifier (prêt familial)
+      if (has("releve")) {
+        const rb = CR.seeded(t.sig + ":g:bq");
+        const banque = pk(rb, ["Banque Postale", "BNP Paribas", "Société Générale", "Crédit Agricole Île-de-France"]);
+        const total = N.montant || int(rb, 30, 200) * 100;
+        const nm = int(rb, 4, 7), stups = /^stups/.test(t.inf);
+        const parts = Array.from({ length: nm }, () => 0.5 + rb()); const somme = parts.reduce((a, x) => a + x, 0);
+        const mts = parts.map((x) => Math.round((total * x) / somme / 10) * 10); mts[nm - 1] += total - mts.reduce((a, x) => a + x, 0);
+        const jours = mts.map((_, i) => jf - int(rb, 3, 12) * (nm - i)).sort((a, b) => a - b);
+        const pret = ch(rb, 0.25) ? int(rb, 0, nm - 1) : -1;
+        const proche = A.proche || "sa mère";
+        const lib = (i) => (i === pret ? `virement reçu de ${proche.replace(/^sa |^son /, "")} ${A.nom}, libellé « prêt »` : stups ? pk(rb, ["dépôt d'espèces au guichet automatique", "dépôt d'espèces en agence", "versement d'espèces"]) : V ? `virement reçu de ${nf(V)}` : pk(rb, ["virement reçu d'un compte en ligne", "dépôt d'espèces", "virement instantané reçu"]));
+        const mRel = PL && E.enquete ? E.enquete(3) : E.debut + 360;
+        const libs = mts.map((_, i) => lib(i));
+        add("releve", mRel, "Relevés bancaires", () => DOCS.forme({ title: "Réponse à réquisition bancaire — relevés de compte", kind: "releve", cote: cote("releve"),
+          entete: [`${banque} · service des réquisitions judiciaires`, `Procédure n° ${t.proc} — cote ${cote("releve")}`],
+          blocs: [
+            irr("requisition") && !has("telephonie") ? p({ t: `Réquisition adressée le ${DOCS.date(j(mRel))} par l'officier de police judiciaire ${OPJ.nom}.`, flag: "requisition" }) : p(`Réquisition du ${DOCS.date(j(mRel))}, sur autorisation du procureur de la République.`),
+            p(`Titulaire : ${n(A)}. Compte courant n° ${int(rb, 10000, 99999)} ${int(rb, 100000, 999999)}.`),
+            ...mts.map((m, i) => ligne(`${DOCS.date(jours[i])} — ${libs[i]}`, `+ ${CR.money ? CR.money(m) : m + " €"}`)),
+            p({ t: `Mouvements sans rapport avec les revenus déclarés : ${CR.money ? CR.money(total) : total + " €"} au total sur la période.`, f: "G_releve" }),
+            pret >= 0 ? p({ t: `L'un de ces mouvements (${DOCS.date(jours[pret])}) est un virement libellé « prêt », émis par un proche du titulaire.`, f: "G_pret" }) : null,
+          ], sigs: [] }));
+      }
       // lot 1 ter, pièces techniques : le rapport du laboratoire sur les produits saisis, accordé à la pesée du service
       // (poids brut, emballages compris, à la pesée ; poids net au laboratoire) ; taux tirés dans les fourchettes d'usage
       if (S.stups && has("labo") && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].fam !== "route" && t.f.quantite) {
