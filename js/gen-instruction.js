@@ -1073,7 +1073,7 @@
       // la peine criminelle : réclusion, perpétuité, période de sûreté ; l'atténuation des mineurs
       if (dec.peine) {
         const pn = dec.peine;
-        if (requis.perpetuite && pn.ferme >= Math.round(requis.ferme * 0.97) && !altere && !t.mineur && qq.perpetuite) { pn.perpetuite = true; pn.ferme = 360; }
+        if (!pn.choisie && requis.perpetuite && pn.ferme >= Math.round(requis.ferme * 0.97) && !altere && !t.mineur && qq.perpetuite) { pn.perpetuite = true; pn.ferme = 360; }
         if (!pn.perpetuite && pn.ferme > 360) pn.ferme = 360;
         if (qq.nature === "crime" && pn.ferme > 0) { pn.sursis = 0; pn.amenagement = pn.ferme > 24 ? null : pn.amenagement; pn.mandatDepot = pn.ferme > 12 || pn.mandatDepot; }
         const old = pn.texte;

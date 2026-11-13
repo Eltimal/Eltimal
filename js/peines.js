@@ -119,6 +119,64 @@
     peine.texte = K.texte(peine);
     return peine;
   };
+  // ------------------------------------------------------------------ lot 7 : la peine criminelle
+  // Étalon : « Les condamnations en 2022 » (SG/SSER) — crimes : réclusion criminelle 60 %, emprisonnement ferme 22,5 % (dans
+  // le rapport, sans les sursis : réclusion 64 %, emprisonnement 36 %) ; réclusion à temps de 15 ans en moyenne (homicides
+  // 18, viols 13, vols criminels 14) ; perpétuité 1,6 % des réclusions ; emprisonnement ferme pour crime de 5,4 ans en
+  // moyenne. Règle du jeu (art. 131-1, texte du jeu) : réclusion à temps de dix ans au moins, sinon emprisonnement. Le
+  // sursis reste exclu en matière criminelle et l'emprisonnement ne descend pas sous deux ans (planchers de l'art. 132-18
+  // non relus sur source). Poids des facteurs : estimations, calées sur ces proportions.
+  K.SEUILS_CRIME = { reclusion: -0.2, perpetuite: 2.35 };
+  K.actifCrime = (s, cs) => { const t = genT(s, cs); const I = t && CR.CAT && CR.CAT.INF[t.inf]; return !!(t && I && /^crim/.test(I.fam || "") && !t.mineur); };
+  K.calculerCrime = function (api, r, ctx) {
+    const { s, cs } = api;
+    const t = genT(s, cs), A = t.A || {}, I = CR.CAT.INF[t.inf] || {};
+    const enc = r.encourue && r.encourue.prison != null ? r.encourue.prison : 240;
+    const perp = enc >= (CR.CAT.PERPETUITE || 1200);
+    const encA = perp ? 360 : Math.min(enc, 360);
+    const f = [];
+    const add = (v, why) => { if (v) f.push({ v, why }); };
+    add(((I.gravite || 0.7) - 0.75) * 2.2, null);
+    add(I.deces ? 0.35 : 0, I.deces ? "la mort de la victime" : null);
+    add((((t.f && t.f.agg) || []).length) * 0.25, ((t.f && t.f.agg) || []).length ? "les circonstances aggravantes retenues" : null);
+    if (A.casier) add(A.casier >= 2 ? 0.6 : 0.3, "les antécédents judiciaires de l'accusé");
+    if (t.rec && !cs.vars.recEcartee) add(0.7, "l'état de récidive légale");
+    const altere = (t.f && t.f.psy === "altere") || (cs.vars.renfort && cs.vars.renfort.altere);
+    if (altere) add(-0.9, "l'altération du discernement au moment des faits (art. 122-1, al. 2)");
+    const perso = Math.min(5, ctx.personnalite || 0);
+    if (perso) add(-0.22 * perso, "les éléments de personnalité produits par la défense");
+    if (t.stance === "reconnait") add(-0.35, "la reconnaissance des faits");
+    add(((ctx.juge && ctx.juge.severite) || 0.5) - 0.5, null);
+    const z = f.reduce((a, x) => a + x.v, 0) + gauss(CR.seeded(cs.id + ":peinecrim:" + s.seed)) * 0.6;
+    const T = K.SEUILS_CRIME;
+    const peine = { ferme: 0, sursis: 0, sursisType: "simple", amende: 0, complementaires: ((r.requis && r.requis.complementaires) || []).slice(), amenagement: null, mandatDepot: true, regles: [], reclusion: false };
+    const raisons = f.filter((x) => x.why);
+    const aggr = raisons.filter((x) => x.v > 0).map((x) => x.why), att = raisons.filter((x) => x.v < 0).map((x) => x.why);
+    const liste = (a) => (a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " et " + a[a.length - 1]);
+    const motifs = [`La cour tient compte de la gravité des faits, de la personnalité de l'accusé et de sa situation (art. 132-1 du code pénal)${aggr.length ? ` : ${liste(aggr)}` : ""}${att.length ? `${aggr.length ? " ; mais aussi " : " : "}${liste(att)}` : ""}.`];
+    if (perp && !altere && z > T.perpetuite) {
+      peine.perpetuite = true; peine.ferme = 360; peine.reclusion = true;
+      motifs.push("La gravité exceptionnelle des faits commande la réclusion criminelle à perpétuité.");
+    } else if (z > T.reclusion) {
+      // réclusion à temps : de dix ans au plafond, autour de la moyenne de la famille
+      const moy = I.deces ? 18 : /sexuel/.test(I.fam || "") ? 13 : 14;
+      const ans = Math.max(10, Math.min(encA / 12, Math.round(moy + (z - 0.7) * 3)));
+      peine.ferme = ans * 12; peine.reclusion = true;
+      motifs.push(`Une peine de réclusion criminelle de ${ans} ans répond à la gravité des faits (art. 131-1 du code pénal).`);
+    } else {
+      // emprisonnement (moins de dix ans) : deux ans au moins dans le jeu
+      const mois = Math.max(24, Math.min(119, Math.round(60 * Math.pow(1.45, z - T.reclusion + 0.6))));
+      peine.ferme = mois;
+      motifs.push(`La cour retient une peine d'emprisonnement de ${CR.fmtMois(mois)}, inférieure à dix ans (art. 131-1 et 132-18 du code pénal).`);
+    }
+    if (peine.ferme > encA && !peine.perpetuite) peine.ferme = encA;
+    peine.regles = motifs;
+    peine.choisie = true; peine.crime = true;
+    peine.facteurs = raisons.map((x) => ({ why: x.why, sens: x.v > 0 ? "aggr" : "att" }));
+    peine.manques = perso ? [] : ["Aucun élément de personnalité n'a été produit (expertise, attestations, parcours) : la cour n'avait rien à mettre en balance de la gravité des faits."];
+    peine.texte = peine.perpetuite ? "Réclusion criminelle à perpétuité" : peine.reclusion ? `${CR.fmtMois(peine.ferme)} de réclusion criminelle` : `${CR.fmtMois(peine.ferme)} d'emprisonnement`;
+    return peine;
+  };
   K.texte = function (pn) {
     const P = CR.PROC;
     const base = P.peineTexte(Object.assign({}, pn, { complementaires: [] }));
@@ -130,7 +188,10 @@
   };
   if (CR.PROC && CR.PROC.calculerPeine && !CR.PROC.calculerPeine.choisie) {
     const ancien = CR.PROC.calculerPeine;
-    CR.PROC.calculerPeine = function (api, r, ctx) { return !K.off && K.actif(api.s, api.cs) ? K.calculer(api, r, ctx || {}) : ancien(api, r, ctx); };
+    CR.PROC.calculerPeine = function (api, r, ctx) {
+      if (!K.off && !K.offCrime && K.actifCrime(api.s, api.cs) && r && r.encourue && (r.qualifNature === "crime" || (r.encourue.prison || 0) > 120)) return K.calculerCrime(api, r, ctx || {});
+      return !K.off && K.actif(api.s, api.cs) ? K.calculer(api, r, ctx || {}) : ancien(api, r, ctx);
+    };
     CR.PROC.calculerPeine.choisie = true;
     CR.PROC.calculerPeine.ancien = ancien;
   }
