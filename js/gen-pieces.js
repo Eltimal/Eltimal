@@ -559,6 +559,7 @@
         if (rd() < 0.25 && !t.f.leger) fact("G_devis_ante", { label: "Le devis comprend la reprise d'un dommage antérieur", key: true, why: "Le dommage imputable est moindre que le total du devis : cela pèse sur la qualification (dommage léger) et sur les intérêts civils." });
         if (!t.f.leger && t.f.montant <= 900) fact("G_devis_faible", { label: `Dommage chiffré à ${t.f.montant} € seulement`, key: true, why: "Un dommage léger relève de la contravention (art. R. 635-1) : le montant est un argument de qualification." });
       }
+      if (SS.violation && SS.violation.cotitulaire) fact("G_cotitulaire", { label: "Le bail est toujours aux deux noms", key: true, why: "La violation de domicile suppose le domicile d'autrui : un cotitulaire du bail entre chez lui. Restent les violences ou les dégradations, s'il y en a." });
       if (SS.recel && SS.recel.paye) {
         const R = SS.recel;
         fact(R.normal ? "G_prix_normal" : "G_prix_derisoire", R.normal ? { label: `Prix payé proche de la valeur (${R.paye} euros pour ${R.val})`, key: true, why: "Le recel suppose de savoir l'origine frauduleuse : un prix normal plaide la bonne foi." } : { label: `Prix dérisoire : ${R.paye} euros pour une valeur de ${R.val}`, key: false });

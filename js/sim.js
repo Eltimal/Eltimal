@@ -322,6 +322,12 @@
       O.ecart = O.mots2 !== O.mots;
       if (O.cantonade) S.constat = S.constat.map((x) => x.replace(/nous déclare à voix haute :/, "lance à voix haute, en direction de la rue et sans se tourner vers nous :"));
     }
+    // violation de domicile chez l'ex : le bail est parfois toujours aux deux noms (vérifié auprès du bailleur)
+    if (t && t.inf === "violation_domicile" && t.f && t.f.sc === "ex") {
+      const rv = CR.seeded(t.sig + ":viol");
+      S.violation = { cotitulaire: rv() < 0.3 };
+      S.constat = S.constat.concat([S.violation.cotitulaire ? "Vérification faite auprès du bailleur : le bail de l'appartement est toujours établi aux deux noms ; aucun congé n'a été donné." : "Vérification faite auprès du bailleur : le bail est au seul nom de la plaignante depuis la séparation."]);
+    }
     // recel : ce que l'intéressé a payé, au regard de la valeur ; pour une boutique, le registre des achats d'occasion
     if (t && t.inf === "recel" && t.f && t.flagrance !== undefined) {
       const rr = CR.seeded(t.sig + ":recel");
