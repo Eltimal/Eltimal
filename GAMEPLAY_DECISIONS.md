@@ -97,3 +97,26 @@ Chaque décision : ce qui est tranché, pourquoi, ce qui a été écarté. Les d
 - **D-61. Le mémoire plaide pour l'avocat absent.** Devant la chambre de l'instruction, un mémoire déposé à temps (en détention, jusqu'au jour de l'audience ; sinon trois jours avant : art. 198, table vérifiée) porte ses moyens même si l'avocat ne vient pas. S'il ne récapitule pas les moyens de la déclaration d'appel, ceux-ci sont réputés abandonnés. Il se transmet au greffe, par télécopie, recommandé ou e-Barreau (structure CHINS de la cour d'appel).
 - **D-62. Le dossier criminel grandit par pièces cohérentes, pas par remplissage.** Chaque pièce ajoutée porte une information que les autres recoupent : les scellés du transport sont ceux de l'inventaire ; la fourchette de l'autopsie contient l'heure des faits ; les voisins situent les faits à des heures qui peuvent s'écarter (fait du dossier au-delà de vingt-cinq minutes). Pour une victime mineure, ni voisinage ni description : le registre est procédural.
 - **D-63. Une pièce nouvelle doit pouvoir servir.** Les faits que portent les pièces ajoutées au dossier criminel (témoin hésitant, nuit sans éclairage, heure corrigée, heures divergentes des voisins, aucune trace papillaire) appuient le moyen d'identification : produits à l'audience, ils le soutiennent comme la note prévue par le catalogue.
+
+## Audit de l'entretien (13 novembre 2026, à la demande de Kevin)
+
+Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la réponse :
+- même alignement, même taille, couleurs voisines, seule une étiquette de 11 px les séparait ;
+- l'italique servait à la question, au récit et à l'aperçu de la question en préparation ;
+- la question s'effaçait environ cinq secondes après avoir été dite, avant que la réponse ne soit comprise ;
+- une question posée pendant que le client parlait était ignorée sans un mot ;
+- les sujets changeaient de place après chaque choix.
+
+- **D-64. L'oral est un dialogue, et le dernier échange reste.**
+  - Vos questions s'affichent à droite, en bulle bleue ; l'interlocuteur à gauche, en bulle neutre, son nom en or ; le récit au centre, en italique, qui lui est réservé.
+  - L'échange en cours (votre question et la réponse) ne s'efface pas. Le précédent part quand la question suivante est dite. L'exigence de prise de notes demeure : on ne remonte pas l'entretien.
+  - L'audition, sans question de l'avocat, garde l'effacement au fil de l'eau.
+- **D-65. Le compositeur ne trompe pas.**
+  - L'aperçu est un brouillon encadré en pointillé, titré « Votre question ».
+  - Le bouton dit qui parle (« Bilal parle… ») au lieu d'être grisé sans explication.
+  - Les sujets restent dans un ordre fixe ; une pastille marque ceux déjà abordés.
+  - L'indication tient compte de ce qui est choisi (« Vos droits : choisissez un angle »).
+  - Les questions générées perdent le préfixe « Sujet : » (« Et votre famille, qui pourrait le confirmer ? »), avec l'élision « des », « du », « d' ».
+- **D-66. Le fil de l'entretien suit le niveau.**
+  - Au niveau « assisté » de la compétence Entretien (ou en mode assisté), l'onglet des notes garde le fil des questions et des réponses.
+  - Au niveau « libre » et au-delà, il disparaît : on retient le dernier échange, et on note le reste.

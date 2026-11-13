@@ -119,12 +119,15 @@ const P = require("./play"); const U = require("./util");
       ok(!!doc.querySelector(".ent-parole .compo") && !doc.querySelector(".gav-card .q-btn"), "l'entretien n'est pas celui de la refonte");
       ok(!texts(doc.querySelector(".gav-steps")).includes("Conseil"), "l'étape de conseil à trois boutons subsiste");
       const attendre = async () => { for (let k = 0; k < 400 && doc.querySelector(".oral .oral-caret"); k++) await sleep(20); await sleep(40); };
+      let vuParle = false;
       const composer = async (sujet, angle, forme) => {
         const b = (re, root) => [...(root || doc).querySelectorAll(".compo .compo-b")].find((x) => re.test(texts(x)) && !x.disabled);
         await click(w, b(new RegExp("^" + sujet)));
         if (forme) await click(w, b(new RegExp(forme)));
         if (angle) await click(w, b(new RegExp(angle)));
-        let go = null; for (let k = 0; k < 100 && !(go = findBtn(doc, /^Poser la question/)); k++) await sleep(20); if (!go) return false; await click(w, go); await attendre(); return true;
+        let go = null; for (let k = 0; k < 100 && !(go = findBtn(doc, /^Poser la question/)); k++) await sleep(20); if (!go) return false; await click(w, go); await sleep(30);
+        vuParle = vuParle || [...doc.querySelectorAll(".compo-go button")].some((x) => x.disabled && /parle…|parlez…|Un instant…/.test(texts(x)));
+        await attendre(); return true;
       };
       const t0 = texts(doc.querySelector(".chrono"));
       ok(await composer("Les faits", "Ce qui s'est passé"), "poser une question");
@@ -134,6 +137,11 @@ const P = require("./play"); const U = require("./util");
       ok(cs.notes.length > avant, "une réplique ne se note pas");
       ok(CR.hasFact(cs, "G_version"), "la version notée ne donne pas le fait");
       await composer("Vos droits", "Quand");
+      // le dernier échange reste lisible : votre question (à droite) et la réponse ; le bouton dit qui parle
+      ok(/notifié vos droits/.test(texts(doc.querySelector(".oral .who-you:not(.oral-efface)") || doc.body.firstChild)), "la question posée ne reste pas affichée", texts(doc.querySelector(".oral")).slice(0, 200));
+      ok(!!doc.querySelector(".oral .who-client:not(.oral-efface)"), "la réponse du dernier échange ne reste pas affichée");
+      ok(vuParle, "le bouton ne dit pas que le client parle");
+      ok(!!doc.querySelector(".compo-sujets .compo-b.dit"), "les sujets abordés ne sont pas marqués");
       ok(texts(doc.querySelector(".chrono")) !== t0, "l'horloge de l'entretien n'avance pas");
       // une réplique s'efface
       for (let k = 0; k < 60 && !doc.querySelector(".oral-efface"); k++) await sleep(30);
@@ -143,6 +151,9 @@ const P = require("./play"); const U = require("./util");
       for (const l of [...doc.querySelectorAll(".cons-l")].slice(2, 4)) await click(w, [...l.querySelectorAll(".compo-b")].find((x) => /Se taire/.test(texts(x))));
       // une note à soi
       await click(w, [...doc.querySelectorAll(".ent-onglet")].find((x) => /notes/.test(texts(x))));
+      ok(doc.querySelectorAll(".ent-fil li").length >= 2 && !!doc.querySelector(".ent-fil .fil-r"), "le fil de l'entretien est absent au niveau assisté", texts(doc.querySelector(".ent-notes") || doc.body).slice(0, 200));
+      { const sl = { settings: {}, comp: { entretien: { niveau: 1 } } }, ancien = CR.libre; CR.libre = () => true;
+        ok(!CR.PAROLE.filVisible(sl) && CR.PAROLE.filVisible({ settings: {}, comp: {} }), "le fil de l'entretien ne dépend pas du niveau"); CR.libre = ancien; }
       const inp = doc.querySelector(".ent-note-in input"); if (inp) { await P.saisir(w, inp, "Vérifier l'heure de notification"); await click(w, findBtn(doc, /^Noter$/)); }
       ok(cs.notes.some((n) => n.own && /notification/.test(n.text)), "la note tapée n'est pas gardée");
       await step(/Terminer l'entretien|Sortir de l'entretien/);

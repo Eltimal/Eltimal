@@ -1,6 +1,8 @@
 // La Permanence — refonte du gameplay, lot 3 : l'entretien, l'audition et les questions de l'avocat (UI.*Parole)
 // L'oral s'efface : chaque réplique s'écrit au rythme de la voix près de celui qui parle, reste un instant, puis disparaît.
-// Ce qui n'est pas noté est perdu (un clic sur la réplique la note ; on peut aussi taper sa propre note).
+// Le dernier échange (votre question et sa réponse) reste lisible jusqu'à la question suivante ; les plus anciens s'effacent.
+// Ce qui n'est pas noté est perdu (un clic sur la réplique la note ; on peut aussi taper sa propre note). Au niveau
+// « assisté » de la compétence Entretien, l'onglet des notes garde en plus le fil des questions et des réponses.
 // La question se compose : sujet, angle, forme. Clavier : 1 à 6 pour l'angle ; O, F, R, C pour la forme ; Entrée pour poser.
 (function () {
   "use strict";
@@ -13,50 +15,73 @@
   const VITESSE = 32;  // caractères par seconde : une voix posée
   const TENUE = 2600;  // une réplique entière reste lisible un instant…
   const PAR_CAR = 28;  // …un peu plus longtemps si elle est longue
-  function useOral(rapide) {
+  // garde : le dernier échange ne s'efface pas (entretiens à questions) ; sans garde (audition), tout s'efface au fil de l'eau
+  function useOral(rapide, garde) {
     const [lignes, setLignes] = useState([]);
     const [now, setNow] = useState(Date.now());
     const fin = useRef(Date.now());
+    const ex = useRef({ n: 0, relais: 0 }); // n : l'échange en cours ; relais : la fin de votre dernière question
     useEffect(() => { const h = setInterval(() => setNow(Date.now()), 90); return () => clearInterval(h); }, []);
     const k = (rapide ? 3 : 1) * (P.ACCEL || 1); // P.ACCEL : les tests accélèrent la voix
     const dire = (who, t, f, o) => {
       const born = Math.max(Date.now(), fin.current) + 250 / k;
       const dur = (t.length / VITESSE) * 1000 / k;
       fin.current = born + dur;
-      const L = Object.assign({ id: CR.uid("l"), who, t, f: f || null, born, dur, hold: (TENUE + t.length * PAR_CAR) / k }, o || {});
+      if (garde && who === "you") { ex.current.n++; ex.current.relais = born + dur; }
+      const L = Object.assign({ id: CR.uid("l"), who, t, f: f || null, born, dur, hold: (TENUE + t.length * PAR_CAR) / k, ex: ex.current.n }, o || {});
       setLignes((x) => x.concat([L]));
       return L;
     };
-    const vivantes = lignes.filter((L) => now < L.born + L.dur + L.hold + 1400);
+    // l'instant où une réplique commence à s'effacer : l'échange en cours tient ; le précédent part quand la question suivante est dite
+    const efface = (L) => Math.max(L.born + L.dur + L.hold, !garde ? 0 : L.ex === ex.current.n ? Infinity : L.ex === ex.current.n - 1 ? ex.current.relais : 0);
+    const vivantes = lignes.filter((L) => now < efface(L) + 1400);
     const occupe = now < fin.current + 200;
-    return { lignes: vivantes, now, dire, occupe, finit: () => fin.current };
+    const enCours = occupe ? lignes.slice().reverse().find((L) => now >= L.born - 300) : null;
+    return { lignes: vivantes, now, dire, occupe, efface, ex: garde ? ex.current.n : -1, qui: enCours ? enCours.who : null, finit: () => fin.current };
   }
-  function Replique({ L, now, nom, onNote, notee }) {
+  function Replique({ L, now, nom, onNote, notee, efface }) {
     if (now < L.born) return null;
     const n = Math.min(L.t.length, Math.ceil(((now - L.born) / L.dur) * L.t.length));
-    const passe = now > L.born + L.dur + L.hold;
+    const passe = now > efface;
     const peutNoter = !!onNote && n > 0;
     return html`<div className=${cx("oral-l", "who-" + L.who, passe && "oral-efface", notee && "oral-notee")}>
-      <span className="oral-who">${nom}</span>
+      ${nom && html`<span className="oral-who">${nom}</span>`}
       <button type="button" className="oral-t" disabled=${!peutNoter} onClick=${() => peutNoter && onNote(L)} title=${peutNoter ? "Noter cette phrase" : ""}>${L.t.slice(0, n)}${n < L.t.length ? html`<span className="oral-caret"></span>` : null}</button>
     </div>`;
   }
+  // les répliques en dialogue : vous à droite, votre interlocuteur à gauche, le récit au centre ; la zone suit la voix
   function Oral({ oral, noms, onNote, notees, vide }) {
-    return html`<div className="oral" aria-live="polite">
+    const ref = useRef(null);
+    const ecrit = oral.lignes.some((L) => oral.now >= L.born && oral.now < L.born + L.dur + 400);
+    useEffect(() => { const el = ref.current; if (el && ecrit) el.scrollTop = el.scrollHeight; });
+    return html`<div className="oral" aria-live="polite" ref=${ref}>
       ${oral.lignes.length === 0 && html`<p className="oral-vide">${vide || ""}</p>`}
-      ${oral.lignes.map((L) => html`<${Replique} key=${L.id} L=${L} now=${oral.now} nom=${noms[L.who] || ""} onNote=${L.who !== "you" ? onNote : null} notee=${notees.has(L.id)} />`)}
+      ${oral.lignes.map((L, i) => html`<${Replique} key=${L.id} L=${L} now=${oral.now} nom=${i && oral.lignes[i - 1].who === L.who && oral.now >= oral.lignes[i - 1].born ? "" : noms[L.who] || ""} efface=${oral.efface(L)} onNote=${L.who !== "you" ? onNote : null} notee=${notees.has(L.id)} />`)}
     </div>`;
   }
+  // qui parle, pour le bouton : « Bilal parle… » plutôt qu'un bouton grisé sans explication
+  const parleur = (oral, noms) => (!oral.occupe ? null : oral.qui === "you" ? "Vous parlez…" : oral.qui === "sys" || !oral.qui ? "Un instant…" : `${CR.cap((noms[oral.qui] || "").toLowerCase()) || "On"} parle…`);
   function useNoter(s, cs) {
     const [notees, setNotees] = useState(new Set());
     const noter = (L) => { CR.addNote(s, cs, { text: L.t.trim(), fact: L.f || null, src: "gav" }); setNotees((x) => new Set(x).add(L.id)); bump(); };
     return { notees, noter };
   }
-  function Notes({ s, cs }) {
+  // le fil de l'entretien (questions → réponses), au niveau assisté seulement : au-delà, on retient ou on note
+  P.filVisible = (s) => !(CR.libre && CR.libre(s)) || !(CR.COMP && CR.COMP.niveau(s, "entretien") > 0);
+  function Fil({ M }) {
+    const poses = M.poses.filter((q) => q.texte);
+    if (!poses.length) return null;
+    return html`<details className="ent-fil" open>
+      <summary>Fil de l'entretien <small className="muted">(${poses.length} question${poses.length > 1 ? "s" : ""} — disparaît au niveau « libre » de l'entretien)</small></summary>
+      <ol>${poses.map((q, i) => html`<li key=${i}><p className="fil-q">${q.texte}</p>${(q.rep || []).map((t, j) => html`<p key=${j} className="fil-r">${t}</p>`)}</li>`)}</ol>
+    </details>`;
+  }
+  function Notes({ s, cs, M }) {
     const [txt, setTxt] = useState("");
     const mes = cs.notes.filter((n) => (n.src === "gav" || n.own) && n.day === s.day).slice(-12);
     const ajouter = () => { if (!txt.trim()) return; CR.addOwnNote(s, cs, { text: txt }); setTxt(""); bump(); };
     return html`<div className="ent-notes">
+      ${M && P.filVisible(s) && html`<${Fil} M=${M} />`}
       <ol>${mes.map((n) => html`<li key=${n.id} className=${n.own ? "own" : ""}>${n.text}</li>`)}</ol>
       ${mes.length === 0 && html`<p className="small muted">Cliquez une phrase pendant qu'elle est dite pour la noter, ou écrivez la vôtre.</p>`}
       <div className="ent-note-in"><input type="text" value=${txt} placeholder="Votre note…" aria-label="Votre note" onInput=${(e) => setTxt(e.target.value)} onKeyDown=${(e) => { if (e.key === "Enter") { e.stopPropagation(); ajouter(); } }} /><${Btn} small onClick=${ajouter}>Noter</${Btn}></div>
@@ -64,9 +89,8 @@
   }
 
   // ------------------------------------------------------------------ Le compositeur de questions
-  function Composer({ M, cs, onPoser, desactive, cout }) {
-    const recents = [...new Set(M.poses.slice().reverse().map((q) => q.sujet))];
-    const ordre = recents.map((id) => P.sujet(M, id)).filter(Boolean).concat(M.sujets.filter((x) => !recents.includes(x.id)));
+  function Composer({ M, cs, onPoser, desactive, cout, attente }) {
+    const ordre = M.sujets; // un ordre fixe : les boutons ne bougent pas sous le curseur
     const [sujet, setSujet] = useState(null);
     const [angle, setAngle] = useState(null);
     const [forme, setForme] = useState("ouverte");
@@ -75,6 +99,8 @@
     const q = { sujet, angle: angle || "recit", forme, extrait: forme === "confrontation" ? extraits.find((a) => a.id === extrait) || null : null };
     const pret = sujet && (angle || forme === "confrontation") && P.possible(M, q) && !desactive;
     const texte = sujet && (angle || forme === "confrontation") ? P.texteQuestion(M, q) : "";
+    const S1 = sujet && P.sujet(M, sujet);
+    const manque = !S1 ? "Choisissez un sujet, puis un angle." : forme === "confrontation" ? `${S1.label} : choisissez le passage de la procédure à lui opposer.` : `${S1.label} : choisissez un angle (touches 1 à 6).`;
     const poser = () => { if (!pret) return; onPoser(q); setAngle(null); if (forme !== "ouverte") setForme("ouverte"); };
     useEffect(() => {
       const kd = (e) => {
@@ -89,13 +115,13 @@
       return () => window.removeEventListener("keydown", kd);
     });
     return html`<div className="compo">
-      <div className="compo-l"><span className="compo-h">Sujet</span><div className="compo-sujets">${ordre.map((x) => html`<button type="button" key=${x.id} className=${cx("compo-b", sujet === x.id && "on")} onClick=${() => setSujet(x.id)}>${x.label}</button>`)}</div></div>
+      <div className="compo-l"><span className="compo-h">Sujet</span><div className="compo-sujets">${ordre.map((x) => html`<button type="button" key=${x.id} className=${cx("compo-b", sujet === x.id && "on", M.dit[x.id] && "dit")} title=${M.dit[x.id] ? "Déjà abordé" : ""} onClick=${() => setSujet(x.id)}>${x.label}</button>`)}</div></div>
       <div className="compo-l"><span className="compo-h">Angle</span><div>${P.ANGLES.map(([k, l], i) => html`<button type="button" key=${k} className=${cx("compo-b", angle === k && "on")} disabled=${forme === "confrontation"} onClick=${() => setAngle(k)}><kbd>${i + 1}</kbd>${l}</button>`)}</div></div>
       <div className="compo-l"><span className="compo-h">Forme</span><div>${P.FORMES.map(([k, l]) => html`<button type="button" key=${k} className=${cx("compo-b", forme === k && "on")} disabled=${k === "relance" && sujet && !M.dit[sujet]} onClick=${() => setForme(k)}><kbd>${l[0]}</kbd>${l}</button>`)}</div></div>
       ${forme === "confrontation" && html`<div className="compo-l"><span className="compo-h">Passage</span>${extraits.length ? html`<select value=${extrait || ""} onChange=${(e) => setExtrait(e.target.value || null)} aria-label="Passage de la procédure"><option value="">Choisir un passage annoté…</option>${extraits.map((a) => html`<option key=${a.id} value=${a.id}>${a.cote ? a.cote + " — " : ""}${a.t.slice(0, 90)}</option>`)}</select>` : html`<span className="small muted">Annotez d'abord un passage d'une pièce : c'est lui qu'on oppose.</span>`}</div>`}
       <div className="compo-go">
-        <p className="compo-q">${texte || html`<span className="muted">Choisissez un sujet, un angle, une forme.</span>`}</p>
-        <${Btn} kind="primary" disabled=${!pret} onClick=${poser}>Poser la question${pret ? html` <small>≈ ${cout != null ? cout : P.DUREE[forme]} min</small>` : null}</${Btn}>
+        <div className=${cx("compo-q", !texte && "vide")}><span className="compo-q-h">Votre question</span>${texte ? html`<span>${texte}</span>` : html`<span className="muted">${manque}</span>`}</div>
+        <${Btn} kind="primary" disabled=${!pret} onClick=${poser}>${desactive && attente ? attente : html`Poser la question${pret ? html` <small>≈ ${cout != null ? cout : P.DUREE[forme]} min</small>` : null}`}</${Btn}>
       </div>
     </div>`;
   }
@@ -103,7 +129,7 @@
   // ------------------------------------------------------------------ L'entretien confidentiel (art. 63-4)
   UI.EntretienParole = function EntretienParole({ s, cs, G, ctx, next }) {
     const M = useMemo(() => (ctx.M = ctx.M || P.client(s, cs, G)), []);
-    const oral = useOral(false);
+    const oral = useOral(false, true);
     const { notees, noter } = useNoter(s, cs);
     const [min, setMin] = useState(0);
     const [over, setOver] = useState(false);
@@ -130,12 +156,12 @@
       ${qClient && !over && html`<div className="ent-qclient"><span>« ${qClient} »</span><${Btn} small onClick=${() => repondreClient(true)}>Lui répondre <small>2 min</small></${Btn}><${Btn} small onClick=${() => repondreClient(false)}>Passer</${Btn}></div>`}
       <div className="ent-cote">
       <div className="ent-onglets" role="tablist">${[["questions", "Questions"], ["conseil", "Conseil"], ["notes", "Vos notes"]].map(([k, l]) => html`<button type="button" role="tab" key=${k} aria-selected=${onglet === k} className=${cx("ent-onglet", onglet === k && "on")} onClick=${() => setOnglet(k)}>${l}</button>`)}</div>
-      ${onglet === "questions" && html`<${Composer} M=${M} cs=${cs} onPoser=${poser} desactive=${over || oral.occupe} />`}
+      ${onglet === "questions" && html`<${Composer} M=${M} cs=${cs} onPoser=${poser} desactive=${over || oral.occupe} attente=${!over && parleur(oral, { client: nom })} />`}
       ${onglet === "conseil" && html`<div className="ent-conseil">
         <p className="small muted">L'audition suivra. ${M.G.Il} déclinera son identité ; pour le reste, dites-${M.G.lui} sujet par sujet s'${M.G.il} répond ou se tait. Expliquer un sujet prend une minute.</p>
         ${P.SUJETS_AUDITION.map(([k, l, sub]) => html`<div key=${k} className="cons-l"><span><b>${l}</b><small>${sub}</small></span><span className="cons-b">${P.CONSEILS.map(([c, cl]) => html`<button type="button" key=${c} className=${cx("compo-b", (M.conseil || {})[k] === c && "on")} disabled=${over} onClick=${() => conseiller(k, c)}>${cl}</button>`)}</span></div>`)}
       </div>`}
-      ${onglet === "notes" && html`<${Notes} s=${s} cs=${cs} />`}
+      ${onglet === "notes" && html`<${Notes} s=${s} cs=${cs} M=${M} />`}
       </div>
     </div>`;
   };
@@ -180,7 +206,7 @@
   // ------------------------------------------------------------------ Les questions de l'avocat à l'issue de l'audition
   UI.QuestionsParole = function QuestionsParole({ s, cs, G, ctx, opj, next, rerender }) {
     const M = useMemo(() => (ctx.M = ctx.M || P.client(s, cs, G)), []);
-    const oral = useOral(false);
+    const oral = useOral(false, true);
     const { notees, noter } = useNoter(s, cs);
     const nom = (M.A.prenom || "").toUpperCase();
     const poser = (q) => {
@@ -199,7 +225,7 @@
     return html`<div className="gav-card ent-parole">
       <p className="small muted">L'audition est terminée. Vous pouvez poser vos questions ; l'officier ne s'y oppose que si elles nuisent au bon déroulement de l'enquête, et le refus est mentionné au procès-verbal. Chaque question prend quelques minutes.</p>
       <${Oral} oral=${oral} noms=${{ client: nom, you: "VOUS", opj: "OPJ" }} onNote=${noter} notees=${notees} />
-      <${Composer} M=${M} cs=${cs} onPoser=${poser} desactive=${oral.occupe} cout=${4} />
+      <${Composer} M=${M} cs=${cs} onPoser=${poser} desactive=${oral.occupe} cout=${4} attente=${parleur(oral, { client: nom, opj: "L'officier" })} />
       <div className="ent-fin"><${Btn} kind="primary" onClick=${next}>Ne plus poser de questions</${Btn}></div>
     </div>`;
   };
@@ -215,7 +241,7 @@
       const info = (call.topics || []).filter((tp) => !P.estGeste(tp)).map((tp) => Object.assign({}, tp, { q: fmt(tp.q), a: (typeof tp.a === "function" ? tp.a(api) : tp.a || []).map((x) => (typeof x === "string" ? fmt(x) : Object.assign({}, x, { t: fmt(x.t) }))) }));
       return P.client(s, cs, { parole: { t }, entretien: { topics: info } });
     }, [cs.id]);
-    const oral = useOral(false);
+    const oral = useOral(false, true);
     const { notees, noter } = useNoter(s, cs);
     const [qClient, setQClient] = useState(null);
     useEffect(() => { for (const x of call.opening || []) oral.dire("client", fmt(typeof x === "string" ? x : x.t)); P.corriger(s, cs, M, call.label || "Entretien"); }, []);
@@ -234,7 +260,7 @@
     return html`<div className="call-libre ent-parole">
       <${Oral} oral=${oral} noms=${{ client: nom.toUpperCase(), you: "VOUS" }} onNote=${noter} notees=${notees} />
       ${qClient && !closing && html`<div className="ent-qclient"><span>« ${qClient} »</span><${Btn} small onClick=${() => repondreClient(true)}>Lui répondre <small>2 min</small></${Btn}><${Btn} small onClick=${() => repondreClient(false)}>Passer</${Btn}></div>`}
-      ${!closing && html`<${Composer} M=${M} cs=${cs} onPoser=${poser} desactive=${oral.occupe} />`}
+      ${!closing && html`<${Composer} M=${M} cs=${cs} onPoser=${poser} desactive=${oral.occupe} attente=${parleur(oral, { client: nom })} />`}
       ${!closing && gestes.length > 0 && html`<div className="gestes"><span className="compo-h">Ce que vous dites</span><div>${gestes.map((tp) => html`<button type="button" key=${tp.id} className="compo-b geste" disabled=${oral.occupe} onClick=${() => { oral.dire("you", fmt(tp.q)); const a = onGeste(tp); for (const x of a || []) oral.dire("client", typeof x === "string" ? x : x.t, x && x.f); }}>${fmt(tp.q)}</button>`)}</div></div>`}
       ${!closing && html`<div className="ent-fin">${adviceOn && html`<${Btn} onClick=${onConseil} disabled=${oral.occupe}>Conclure par des conseils</${Btn}>`}<${Btn} onClick=${onClose} disabled=${oral.occupe}>Terminer l'entretien</${Btn}></div>`}
     </div>`;
