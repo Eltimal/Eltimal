@@ -136,7 +136,29 @@
       if (/jurer/.test(reconnait)) fact("G_temoin_hesite", { label: "Le témoin hésite à reconnaître l'accusé", key: true, why: "Une reconnaissance hésitante ne vaut pas identification." });
     }
 
-    // 6. la commission rogatoire et la synthèse de son exécution
+    // 6. l'expertise psychiatrique mise en forme de rapport : mission, entretien, antécédents, examen, discussion (le texte
+    // d'origine et ses phrases de défense, intacts), réponses aux questions — accordées à l'état psychique tiré (art. 122-1)
+    if (docs.expertise_psy && t.f) {
+      const vieux = docs.expertise_psy;
+      const rp = CR.seeded(t.sig + ":psy");
+      const etat = t.f.psy || "intact";
+      const sexuel = /sexuel/.test(I.fam || "");
+      const duree = int(rp, 2, 3), lieuE = t.entree === "detenu" || (t.d && t.d.dp != null) ? "à la maison d'arrêt" : "au cabinet de l'expert";
+      const ant = pk(rp, ["Aucun antécédent psychiatrique connu ; pas de suivi.", "Un suivi en centre médico-psychologique pendant l'adolescence, interrompu.", "Une hospitalisation de quelques jours il y a plusieurs années, après une crise d'angoisse.", "Une consommation régulière d'alcool, sans prise en charge."]);
+      const rep = {
+        intact: ["L'examen ne révèle pas de trouble psychique ou neuropsychique ayant aboli ou altéré son discernement ou le contrôle de ses actes au moment des faits (art. 122-1 du code pénal).", "La dangerosité relève de la criminologie, non de la psychiatrie ; aucune pathologie ne la fonde.", "Il est accessible à une sanction pénale."],
+        altere: ["L'intéressé présentait au moment des faits un trouble psychique ayant altéré son discernement et entravé le contrôle de ses actes, au sens de l'article 122-1, alinéa 2, du code pénal.", "Une prise en charge psychiatrique durable réduirait le risque de réitération.", "Il est accessible à une sanction pénale, qui devra s'accompagner de soins."],
+        aboli: ["L'intéressé était atteint au moment des faits d'un trouble psychique ayant aboli son discernement et le contrôle de ses actes, au sens de l'article 122-1, alinéa 1, du code pénal.", "Son état justifie une hospitalisation sous contrainte et des soins de longue durée.", "Il n'est pas accessible à une sanction pénale au sens où elle suppose la compréhension de l'acte."],
+      }[etat] || [];
+      docs.expertise_psy = (x) => {
+        const o = vieux(x);
+        const avant = [["MISSION"], [`Désigné par ordonnance du juge d'instruction, avec mission d'examiner ${n(A)}, de dire s'il présentait au moment des faits un trouble psychique ou neuropsychique ayant aboli ou altéré son discernement, s'il est dangereux, accessible à une sanction pénale, curable ou réadaptable${sexuel ? ", et si une injonction de soins est opportune" : ""}.`], ["ENTRETIEN"], [`Examen réalisé ${lieuE}, en ${duree} entretiens. L'intéressé se présente calme, orienté, coopérant ; le discours est cohérent.`], ["ANTÉCÉDENTS"], [ant], ["DISCUSSION"]];
+        const apres = [["RÉPONSES AUX QUESTIONS"]].concat(rep.map((x0, i) => [`${i + 1}. ${x0}`])).concat(sexuel && etat !== "aboli" ? [["4. Une injonction de soins, dans le cadre d'un suivi socio-judiciaire, est opportune."]] : []);
+        return Object.assign({}, o, { paras: avant.concat(o.paras || [], apres) });
+      };
+    }
+
+    // 7. la commission rogatoire et la synthèse de son exécution
     if (t.d.ri != null) {
       const jCR = t.d.ri + int(r, 1, 4), jRet = jCR + int(r, 18, 40);
       const actes = [].concat(N.actes || []).map((x) => (typeof x === "string" ? x : x.t)).filter(Boolean).slice(0, 4);

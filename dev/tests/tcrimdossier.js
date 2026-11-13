@@ -34,6 +34,9 @@ const { boot } = require("./harness");
       ok(dans, `${tag} : la fourchette du décès ne contient pas l'heure des faits`, `${m && m[0]} / ${h0}`);
     }
     if (N.procedural) { mineurs++; ok(!PZ.docs.pv_voisinage && !PZ.docs.pv_reaudition, `${tag} : voisinage ou seconde audition pour une victime mineure`); }
+    { const P = txt(rend(PZ, "expertise_psy", t)); const et = t.f.psy || "intact";
+      ok(/RÉPONSES AUX QUESTIONS/.test(P) && (et === "aboli" ? /aboli son discernement/.test(P) : et === "altere" ? /altéré son discernement/.test(P) : /ni aboli ni altéré|ayant aboli ou altéré/.test(P)), `${tag} : expertise psychiatrique incohérente avec l'état tiré (${et})`, P.slice(-300));
+      ok(JSON.stringify(rend(PZ, "expertise_psy", t).paras).includes('"f":"X_psy"'), `${tag} : marqueur de l'expertise perdu`); }
     if (PZ.docs.pv_reaudition) { const R = txt(rend(PZ, "pv_reaudition", t)); ok(/Je me suis trompée? la première fois/.test(R) === !!PZ.facts.G_temoin_varie, `${tag} : correction du témoin dite et notée différemment`); }
     if (PZ.docs.pv_voisinage) {
       vois++;
