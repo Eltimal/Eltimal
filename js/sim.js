@@ -322,6 +322,17 @@
       O.ecart = O.mots2 !== O.mots;
       if (O.cantonade) S.constat = S.constat.map((x) => x.replace(/nous déclare à voix haute :/, "lance à voix haute, en direction de la rue et sans se tourner vers nous :"));
     }
+    // recel : ce que l'intéressé a payé, au regard de la valeur ; pour une boutique, le registre des achats d'occasion
+    if (t && t.inf === "recel" && t.f && t.flagrance !== undefined) {
+      const rr = CR.seeded(t.sig + ":recel");
+      const val = N.valeur || 0, paye = t.f.prix || 0, normal = val > 0 && paye >= val * 0.4;
+      const boutique = t.f.sc === "boutique", registre = boutique && rr() < 0.4;
+      S.recel = { paye, val, normal, boutique, registre };
+      const ajout = [];
+      if (paye) ajout.push(`${A.g === "f" ? "L'intéressée" : "L'intéressé"} déclare avoir acheté ${boutique ? "les appareils" : "l'objet"} ${paye} euros${normal ? "" : " en espèces, à un inconnu"}${val ? ` (valeur estimée : ${val} euros)` : ""}.`);
+      if (boutique) ajout.push(registre ? "Le registre des achats d'occasion de la boutique mentionne ces achats, à un particulier dont une copie de la pièce d'identité est jointe." : "Aucun registre des achats d'occasion n'est présenté.");
+      S.constat = S.constat.concat(ajout);
+    }
     if (S.detention) {
       const D = S.detention, ajout = [];
       if (D.dom) ajout.push(D.coloc ? `L'appartement, ${D.pieces === "un studio" ? "un studio" : "de " + D.pieces}, est partagé avec un colocataire, ${D.colocN}, absent lors de la perquisition ; la cuisine est commune.` : `${A.g === "f" ? "L'intéressée" : "L'intéressé"} occupe seul${A.g === "f" ? "e" : ""} l'appartement, ${D.pieces === "un studio" ? "un studio" : "de " + D.pieces}.`);

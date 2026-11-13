@@ -554,6 +554,11 @@
         const butin = /Ils ont pris (.+?)\. Préjudice/.exec((N.plainte || []).join(" "))[1];
         if (butin !== N.saisie) fact("G_partiel", { label: `Seule une partie du butin est retrouvée chez lui (${N.saisie})`, key: true, why: "Détenir un objet volé n'est pas avoir commis le cambriolage : la défense peut plaider le recel, ou l'absence de preuve de l'effraction." });
       }
+      if (SS.recel && SS.recel.paye) {
+        const R = SS.recel;
+        fact(R.normal ? "G_prix_normal" : "G_prix_derisoire", R.normal ? { label: `Prix payé proche de la valeur (${R.paye} euros pour ${R.val})`, key: true, why: "Le recel suppose de savoir l'origine frauduleuse : un prix normal plaide la bonne foi." } : { label: `Prix dérisoire : ${R.paye} euros pour une valeur de ${R.val}`, key: false });
+        if (R.boutique && R.registre) fact("G_registre", { label: "Le registre des achats d'occasion mentionne le vendeur, avec sa pièce d'identité", key: true, why: "Un professionnel qui tient son registre et identifie le vendeur a pu être trompé : la connaissance de l'origine se discute." });
+      }
       if (SS.fuite && SS.fuite.partielle) fact("G_plaque_partielle", { label: `Le témoin n'a retenu qu'une partie de la plaque (${SS.fuite.masque}) ; ${SS.fuite.nb} véhicules correspondent`, key: true, why: "L'identification repose sur une plaque incomplète et une trace de choc : d'autres véhicules du même modèle restaient possibles." });
       if (SS.obtemperer) {
         const M = SS.obtemperer;
