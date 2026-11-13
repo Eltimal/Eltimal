@@ -13,7 +13,7 @@ Principe d'ordonnancement : on termine d'abord la boucle la plus jouée (permane
 | A3 | Lot 3 suite : le procès-verbal d'audition du dossier écrit depuis la transcription jouée ; entretiens hors garde à vue au compositeur | La pièce `pv_audition` reprend mot pour mot les réponses jouées ; `tappel` vert | Fait (13 nov.) |
 | A4 | Lot 4b : plaidoirie par le catalogue universel, plan de défense à la barre | `tplaidoirie` vert | Fait (13 nov.) |
 | A4 bis | Lot 4b suite : débats intégraux (interrogatoire du président, réquisitoire entier) | Interrogatoire tiré de l'audition, réquisitoire cotant les pièces par élément (`debats.js`, `tplaidoirie`) | Fait (13 nov.) pour la comparution immédiate générée |
-| A4 ter | Incidents d'audience et cartes en gestes toujours disponibles ; même débats pour les audiences sur convocation | Plus de boîte de choix qui annonce le moment | À faire |
+| A4 ter | Incidents d'audience et cartes en gestes toujours disponibles ; même débats pour les audiences sur convocation | Plus de boîte de choix qui annonce le moment | Débats intégraux sur convocation faits (13 nov.) ; incidents en gestes à faire |
 | A5 | Lot 6 partiel : fin des signaux « bon / mauvais » pendant les scènes refaites ; débrief en corrigé d'examen | Aucun signal dans les scènes A1 à A4 (`tplaidoirie` le vérifie sur le texte affiché) | Fait pour l'audience et le délibéré (13 nov.) ; reste le débrief général de l'affaire |
 
 ## Phase B — le métier écrit

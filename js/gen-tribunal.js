@@ -45,9 +45,12 @@
           { if: () => !!cs.flags.prepClient, then: [{ who: "client", t: versionPM, signal: "bon" }], else: [{ who: "client", t: `${versionPM} Enfin… je n'étais pas là, je l'avoue.`, fx: { cred: -2 }, signal: "mauvais" }] },
           { who: "president", t: "Le casier judiciaire de la société ne porte aucune condamnation." },
         ] : [
+          // refonte (lot 4b) : en mode libre, l'interrogatoire entier du président (CR.DEB) ; sinon les débats courts d'avant
+          ...(CR.DEB && CR.DEB.actif(api) ? CR.DEB.interrogatoire(api, x) : [
           { who: "president", t: `Je résume le dossier. ${N.resume}` },
           { who: "president", t: `${A.g === "f" ? "Madame" : "Monsieur"} ${A.nom}, qu'avez-vous à dire ?` },
           { if: () => !!cs.flags.prepClient, then: [{ who: "client", t: N.version[t.stance], signal: t.stance === "nie" && t.preuves.length > 3 ? "mauvais" : "bon" }], else: [{ who: "client", t: `${N.version[t.stance]} Et puis… je sais pas, tout le monde ment dans ce dossier.`, fx: { cred: -2 }, signal: "mauvais" }] },
+          ]),
           { who: "president", t: B.casierLigne(x) },
           ...B.stepsRecidive(x),
         ].concat(x.PM ? [{ who: "president", t: `La ${x.PM.nom} est également poursuivie comme personne morale (art. 121-2), représentée par son propre conseil.` }] : []),

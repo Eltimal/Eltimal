@@ -25,7 +25,7 @@
   D.interrogatoire = function (api, x) {
     const { s, cs } = api;
     const t = x.t, A = x.A, N = x.N || {};
-    const prepare = !!cs.flags.depotVu || !!(cs.vars.asked && cs.vars.asked.length);
+    const prepare = !!cs.flags.depotVu || !!cs.flags.prepClient || !!(cs.vars.asked && cs.vars.asked.length);
     const M = CR.PAROLE.client(s, cs, { parole: { t, N }, entretien: { topics: [] } });
     const Q = CR.PAROLE.audition(M).filter((q) => ["faits", "details", "preuves"].includes(q.sujet));
     const nom = `${civ(A)} ${A.nom}`;
