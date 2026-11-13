@@ -164,3 +164,8 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
 - **D-74. Les secours datent les faits.** Quand il y a une victime (et jamais pour une victime mineure), le dossier criminel contient le journal de la plateforme des appels d'urgence (réquisition et réponse) et l'audition de la personne qui a appelé, voisin ou passant arrivé après les faits.
   - L'appel suit les faits de 3 à 14 minutes. La personne entendue l'est après son appel. Elle n'identifie personne : elle a vu la victime seule, deux silhouettes, ou un homme de dos.
   - Si le témoin principal a corrigé l'heure en seconde audition, le journal des appels dément la correction : c'est un fait qui appuie le moyen d'identification, comme « un homme de dos ».
+- **D-75. L'autopsie de la victime d'un homicide routier se compose sur la chronologie.**
+  - Décès constaté cinquante minutes après les faits (comme le dit le procès-verbal de constatations). Autopsie le lendemain ou le surlendemain matin ; lésions accordées au scénario (piéton : jambes à hauteur du pare-chocs ; cycliste : bassin ; deux-roues : thorax).
+  - Toxicologie de la victime, positive dans un cas sur six environ : fait à discuter avec la causalité, sans effet automatique.
+  - En comparution immédiate, si la garde à vue se clôt avant l'autopsie, le dossier ne contient que les premières indications du légiste, recueillies par téléphone (procès-verbal de renseignement).
+  - Pièces anciennes restantes : 1 % des affaires (`tcatalogue`).

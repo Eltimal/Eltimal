@@ -38,7 +38,7 @@ const { boot } = require("./harness");
     const dep = H((/À (\d+\s*h\s*\d+), sur les lieux, dépistage/.exec(T) || [])[1] || ""), mes = H((/À (\d+\s*h\s*\d+), au service/.exec(T) || [])[1] || "");
     if (dep != null && mes != null) {
       const d = ((mes - dep) % 1440 + 1440) % 1440;
-      const marque = !!(PZ.faits || {}).G_delai_ethylo;
+      const marque = !!(PZ.facts || {}).G_delai_ethylo;
       ok(marque === d > 75, `${tag} : délai de ${d} min, fait ${marque ? "noté" : "absent"}`);
       if (marque) delais++;
     }

@@ -967,6 +967,38 @@
               : p({ t: (t.f.produit === "cocaïne" || t.f.produit === "cocaine" ? "Présence de cocaïne et de benzoylecgonine." : `Présence de delta-9-tétrahydrocannabinol (THC) : ${thc} ng/ml.`) + " Usage récent établi.", f: "G_tox" }),
           ], sigs: ["L'ingénieur du laboratoire"] }));
       }
+      // lot 1 ter : l'autopsie de la victime d'un homicide routier, datée sur la chronologie (le décès est constaté cinquante
+      // minutes après les faits, comme le dit le procès-verbal de constatations ; l'autopsie a lieu le lendemain ou le
+      // surlendemain, le matin), accordée au scénario (piéton, cycliste, deux-roues). Si la procédure se clôt avant, le dossier
+      // ne contient que les premières indications du médecin légiste, recueillies par téléphone.
+      if (has("autopsie") && t.V && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].fam === "route") {
+        const ru = CR.seeded(t.sig + ":g:autop"), V = t.V;
+        const mDeces = S.T0 + 50, jD = Math.floor(mDeces / 1440);
+        const mAut = (jD + int(ru, 1, 2)) * 1440 + 9 * 60 + int(ru, 0, 120);
+        // comparution immédiate ou défèrement : le dossier se clôt à la fin de la garde à vue ; sur convocation, il est jugé des
+        // semaines plus tard et contient le rapport
+        const avant = ["ci", "gav"].includes(t.genre) && E.fin != null && mAut > E.fin - 60;
+        const LES = {
+          pieton: ["fractures ouvertes des deux jambes, à hauteur du pare-chocs", "traumatisme crânien par projection sur la chaussée, avec fracture du crâne et hémorragie méningée"],
+          cycliste: ["fracture du bassin et de la cuisse gauches, au point d'impact", "traumatisme crânien grave, fracture de la base du crâne"],
+          scooter: ["fractures costales multiples et contusion pulmonaire", "rupture de l'aorte thoracique, cause directe du décès"],
+        }[t.f.sc] || ["polytraumatisme", "traumatisme crânien"];
+        const alcV = ru() < 0.18, tauxV = (int(ru, 30, 140) / 100).toFixed(2).replace(".", ",");
+        if (alcV && !avant) fait("G_victime_alcool", { label: `La victime présentait ${tauxV} g d'alcool par litre de sang`, key: false, why: "Le comportement de la victime est un élément de contexte à discuter avec le lien de causalité ; il n'efface pas, à lui seul, la faute reprochée." });
+        if (avant) add("rapport_autopsie", Math.max(mDeces + 120, E.fin - 120), "Premières indications du médecin légiste", () => DOCS.pv({ cote: cote("rapport_autopsie"), proc: t.proc, service, unite, titre: "Procès-verbal de renseignement", numPV: "00" + int(CR.seeded(t.sig + ":g:autop2"), 101, 899), jour: j(Math.max(mDeces + 120, E.fin - 120)), heure: Math.max(mDeces + 120, E.fin - 120), redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`, objet: `OBJET : ${q0.label} — décès de la victime`,
+          blocs: [
+            p(`Prenons attache téléphonique avec l'institut médico-légal. Le médecin légiste de permanence nous indique que l'autopsie de ${n(V)} est prévue le ${DOCS.date(j(mAut))}.`),
+            p({ t: `Il nous précise, au vu de l'examen externe, que les lésions constatées (${LES[0]}) sont compatibles avec un heurt par un véhicule ; ses conclusions définitives suivront.`, f: "G_autopsie" }),
+          ], cloture: mention(`Dont procès-verbal, clos ${at(Math.max(mDeces + 120, E.fin - 120) + 10)}.`), signataires: [`${OPJ.signe}, officier de police judiciaire`], st: stO }));
+        else add("rapport_autopsie", mAut, "Rapport d'autopsie", () => DOCS.forme({ title: "Rapport d'autopsie médico-légale", kind: "courrier", cote: cote("rapport_autopsie"), entete: ["Institut médico-légal de Paris", `Procédure n° ${t.proc} — cote ${cote("rapport_autopsie")}`],
+          blocs: [
+            p(`Sur réquisition du procureur de la République, autopsie de ${n(V)}, ${V.age} ans, pratiquée le ${DOCS.date(j(mAut))} ; décès constaté ${at(mDeces)}.`),
+            p(`Examen externe : dermabrasions et ecchymoses ; ${LES[0]}.`),
+            p(`Examen interne : ${LES[1]}.`),
+            p({ t: alcV ? `Analyses toxicologiques sur prélèvement sanguin : alcoolémie de ${tauxV} g/l ; absence de stupéfiants.` : "Analyses toxicologiques sur prélèvement sanguin : absence d'alcool et de stupéfiants.", f: alcV ? "G_victime_alcool" : undefined }),
+            p({ t: "Conclusion : décès consécutif à un polytraumatisme par choc à haute énergie, compatible avec un heurt par un véhicule ; aucun état antérieur susceptible d'avoir contribué au décès.", f: "G_autopsie" }),
+          ], sigs: ["Le médecin légiste"] }));
+      }
       // lot 1 ter, pièces techniques : le rapport du laboratoire sur les produits saisis, accordé à la pesée du service
       // (poids brut, emballages compris, à la pesée ; poids net au laboratoire) ; taux tirés dans les fourchettes d'usage
       if (S.stups && has("labo") && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].fam !== "route" && t.f.quantite) {
