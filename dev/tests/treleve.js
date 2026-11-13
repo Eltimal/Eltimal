@@ -9,7 +9,7 @@ const { boot } = require("./harness");
   const s = CR.newGame({ prenom: "A", nom: "B", mode: "carriere", seed: 3 }); CR.store.s = s;
   const txt = (PZ, k, t) => { const r = PZ.docs[k]({ s, cs: { vars: {}, proc: { faitsDay: t.d.faits }, enq: {} }, def: {}, c: t.A, api: {} }); return [].concat(...(r.paras || [])).map((x) => (typeof x === "string" ? x : x && x.t)).join(" | "); };
   const eur = (x) => +x.replace(/[\s  .]/g, "").replace(",", ".");
-  let n = 0, prets = 0;
+  let n = 0, prets = 0, escros = 0;
   for (let i = 0; i < 20000 && n < 30; i++) {
     const genre = ["ci", "gav", "copj", "op", "pc"][i % 5];
     let t; try { t = G.tirer("trv" + i, genre, { day: 12 + (i % 9) }); } catch (e) { continue; }
@@ -25,13 +25,18 @@ const { boot } = require("./harness");
     const lignes = [...R.matchAll(/: \+ ([\d\s  .,]+) ?€/g)].map((m) => eur(m[1]));
     const tot = eur((/au total sur la période/.test(R) && /Mouvements sans rapport avec les revenus déclarés : ([\d\s  .,]+) ?€/.exec(R) || [])[1] || "NaN");
     ok(lignes.length >= 4 && Math.abs(lignes.reduce((a, x) => a + x, 0) - tot) < 1, `${tag} : la somme des mouvements ne fait pas le total`, `${lignes} = ${tot}`);
+    if (/^escroquerie/.test(t.inf)) {
+      const hs = [...R.matchAll(/, (\d+)[\s\u00a0\u202f]h[\s\u00a0\u202f](\d+) — (virement|retrait)/g)].map((m) => ({ h: +m[1] * 60 + +m[2], k: m[3] }));
+      const vir = hs.filter((x) => x.k === "virement").map((x) => x.h), ret = hs.filter((x) => x.k === "retrait").map((x) => x.h);
+      if (vir.length && ret.length) { escros++; ok(Math.min(...ret) > Math.max(...vir) && PZ.facts.G_retraits, `${tag} : retraits avant les virements, ou non notés`, JSON.stringify(hs)); }
+    }
     const p = /libellé « prêt », émis par un proche/.test(R); if (p) prets++;
     ok(p === !!PZ.facts.G_pret, `${tag} : prêt dit et noté différemment`);
     ok(txt(((t2) => G.pieces(t2, G.recit(t2)))(JSON.parse(tCopie)), "releve", t) === R, `${tag} : pièce non déterministe`);
   }
   ok(n >= 12, "trop peu de relevés composés par le moteur", n);
   ok(prets > 0 && prets < n, "prêt d'un proche : jamais, ou toujours", `${prets}/${n}`);
-  console.log(`relevés : ${n} · prêts d'un proche ${prets}`);
+  console.log(`relevés : ${n} · prêts d'un proche ${prets} · escroqueries datées ${escros}`);
   if (errors.length) { echecs++; console.log("  ✗ erreurs : " + errors.slice(0, 2).join(" | ")); }
   console.log("échecs:", echecs);
   process.exit(echecs ? 1 : 0);

@@ -529,6 +529,7 @@
         if (q === "partiel") fact("G_adn_partiel", { label: "Le profil génétique n'est que partiel", key: true, why: "Un profil partiel peut correspondre à d'autres personnes : la concordance ne vaut pas identification." });
         if (q === "melange") fact("G_adn_melange", { label: "Le prélèvement est un mélange de plusieurs ADN", key: true, why: "« Ne peut être exclu » n'est pas « est l'auteur » : plusieurs personnes ont touché l'objet." });
       }
+      if (PS.docs.releve && has("releve") && /^escroquerie/.test(t.inf) && V) fact("G_retraits", { label: "Les fonds ont été retirés au distributeur dans l'heure, sans images", key: true, why: "La carte du compte peut avoir été remise à un tiers (compte « mule ») : le titulaire du compte n'est pas forcément celui qui a retiré." });
       if (PS.docs.releve && has("releve") && PS.ordre.some((o) => o.key === "releve" && !o.ancien)) {
         const rb = CR.seeded(t.sig + ":g:bq"); rb(); // banque
         if (!N.montant) rb();

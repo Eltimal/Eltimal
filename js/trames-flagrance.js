@@ -772,12 +772,20 @@
         const lib = (i) => (i === pret ? `virement reçu de ${proche.replace(/^sa |^son /, "")} ${A.nom}, libellé « prêt »` : stups ? pk(rb, ["dépôt d'espèces au guichet automatique", "dépôt d'espèces en agence", "versement d'espèces"]) : V ? `virement reçu de ${nf(V)}` : pk(rb, ["virement reçu d'un compte en ligne", "dépôt d'espèces", "virement instantané reçu"]));
         const mRel = PL && E.enquete ? E.enquete(3) : E.debut + 360;
         const libs = mts.map((_, i) => lib(i));
+        // escroquerie : les virements partent pendant l'appel, le jour des faits, à quelques minutes d'intervalle ; les fonds
+        // sont retirés en espèces dans l'heure qui suit (dates et heures sur le relevé)
+        const escro = /^escroquerie/.test(t.inf) && V;
+        const h0 = Math.min(((S.T0 % 1440) + 1440) % 1440, 20 * 60);
+        const hVir = escro ? (() => { let h = h0; return mts.map((_, i) => (i ? (h += 3 + Math.floor(rb() * 6)) : h)); })() : null;
+        const retraits = escro ? (() => { const k = int(rb, 2, 4); let h = hVir[hVir.length - 1] + int(rb, 15, 35); return Array.from({ length: k }, (_, i) => ({ h: i ? (h += int(rb, 8, 20)) : h, m: Math.min(1000, Math.round(total / k / 10) * 10), dab: pk(rb, ["Barbès", "Château-Rouge", "Clignancourt", "Saint-Ouen", "Pigalle"]) })); })() : null;
         add("releve", mRel, "Relevés bancaires", () => DOCS.forme({ title: "Réponse à réquisition bancaire — relevés de compte", kind: "releve", cote: cote("releve"),
           entete: [`${banque} · service des réquisitions judiciaires`, `Procédure n° ${t.proc} — cote ${cote("releve")}`],
           blocs: [
             irr("requisition") && !has("telephonie") ? p({ t: `Réquisition adressée le ${DOCS.date(j(mRel))} par l'officier de police judiciaire ${OPJ.nom}.`, flag: "requisition" }) : p(`Réquisition du ${DOCS.date(j(mRel))}, sur autorisation du procureur de la République.`),
             p(`Titulaire : ${n(A)}. Compte courant n° ${int(rb, 10000, 99999)} ${int(rb, 100000, 999999)}.`),
-            ...mts.map((m, i) => ligne(`${DOCS.date(jours[i])} — ${libs[i]}`, `+ ${CR.money ? CR.money(m) : m + " €"}`)),
+            ...mts.map((m, i) => ligne(`${DOCS.date(escro ? jf : jours[i])}${escro ? ", " + hm(hVir[i]) : ""} — ${libs[i]}`, `+ ${CR.money ? CR.money(m) : m + " €"}`)),
+            ...(retraits || []).map((x) => ligne(`${DOCS.date(jf)}, ${hm(x.h)} — retrait d'espèces, distributeur ${x.dab}`, `− ${CR.money ? CR.money(x.m) : x.m + " €"}`)),
+            escro ? p({ t: "Les retraits ont été effectués avec la carte attachée au compte ; la banque ne dispose pas des images des distributeurs.", f: "G_retraits" }) : null,
             p({ t: `Mouvements sans rapport avec les revenus déclarés : ${CR.money ? CR.money(total) : total + " €"} au total sur la période.`, f: "G_releve" }),
             pret >= 0 ? p({ t: `L'un de ces mouvements (${DOCS.date(jours[pret])}) est un virement libellé « prêt », émis par un proche du titulaire.`, f: "G_pret" }) : null,
           ], sigs: [] }));
