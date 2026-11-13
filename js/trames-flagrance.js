@@ -539,6 +539,26 @@
             mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
           ], sigs: ["Le directeur du magasin"] }));
       }
+      // lot 1 ter : dégradations — le devis de réparation, ligne par ligne, dont le total fait le montant du dommage ; il
+      // comprend parfois la reprise d'un dommage antérieur que la victime a fait chiffrer avec le reste
+      if (t.inf === "degradations" && t.f && t.f.montant && V) {
+        const rd = CR.seeded(t.sig + ":g:devis");
+        const ent = { voiture: "Carrosserie", scooter: "Atelier deux-roues", vitrine: "Miroiterie", tag: "Nettoyage de façades", porte: "Serrurerie" }[t.f.sc] || "Entreprise";
+        const LIG = { voiture: ["Dépose et repose de la portière", "Peinture et vernis", "Pneumatiques", "Rétroviseur", "Main-d'œuvre"], scooter: ["Carénage avant", "Compteur", "Peinture", "Main-d'œuvre"], vitrine: ["Vitrage feuilleté", "Pose", "Déplacement", "Main-d'œuvre"], tag: ["Décapage basse pression", "Produit anti-graffiti", "Échafaudage", "Main-d'œuvre"], porte: ["Bloc-porte", "Serrure trois points", "Pose", "Main-d'œuvre"] }[t.f.sc] || ["Fournitures", "Main-d'œuvre"];
+        const ante = ch(rd, 0.25) && !t.f.leger;
+        const nl = Math.min(LIG.length, 2 + Math.floor(rd() * (LIG.length - 1)));
+        const parts = Array.from({ length: nl }, () => 0.5 + rd()); const sm = parts.reduce((a, x) => a + x, 0);
+        const mts = parts.map((x) => Math.round((t.f.montant * x) / sm / 10) * 10); mts[nl - 1] += t.f.montant - mts.reduce((a, x) => a + x, 0);
+        const anteM = ante ? Math.round((t.f.montant * (0.15 + rd() * 0.2)) / 10) * 10 : 0;
+        const mDev = PL && E.enquete ? E.enquete(2) : E.debut + 200;
+        add("devis", mDev, "Devis de réparation", () => DOCS.forme({ title: "Devis de réparation", kind: "courrier", cote: cote("devis"), entete: [`${ent} ${pk(CR.seeded(t.sig + ":g:ent"), ["Moreau", "du Nord", "Lambert & fils", "Ordener"])}`, `Procédure n° ${t.proc} — cote ${cote("devis")}`],
+          blocs: [
+            p(`Client : ${nf(V)}. Devis établi le ${DOCS.date(j(mDev))}.`),
+            ...mts.map((m, k) => ligne(LIG[k], `${m} € TTC`)),
+            ante ? p({ t: `Dont reprise ${({ voiture: "d'une rayure ancienne sur l'aile arrière", scooter: "d'un éclat ancien sur le garde-boue", vitrine: "d'un joint de vitrage ancien, déjà fendu", tag: "d'anciennes inscriptions sur le pignon", porte: "d'une gâche déjà déformée" })[t.f.sc] || "d'un dommage antérieur"}, signalée par le client : ${anteM} € TTC.`, f: "G_devis_ante" }) : null,
+            ligne("Total", `${t.f.montant} € TTC`),
+          ], sigs: ["Pour l'entreprise"] }));
+      }
       // lot 1 ter : refus d'obtempérer — la sommation et ce qui a été vu du conducteur
       if (S.obtemperer) {
         const M = S.obtemperer;
