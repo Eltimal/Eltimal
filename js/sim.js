@@ -280,6 +280,7 @@
     if (SIM.transport(t, S)) S.transport = transport(S, t, k, r, E);
     if (SIM.tire(t, S)) S.tire = tire(S, t, k, r, E);
     if (SIM.deuxRoues(t, S)) S.deuxRoues = deuxRoues(S, t, k, r, E);
+    if (SIM.deal(t, S)) S.deal = deal(S, t, k, r, E);
     S.E = E;
     S.auteurs = { apj: { nom: t.gpx[0], style: CR.DOCS.style(CR.seeded(t.sig + ":apj")) }, opj: { nom: k.opjN, style: CR.DOCS.style(CR.seeded(t.sig + ":opj")) } };
     S.indicatif = `TV ${pk(r, ["17", "18", "19", "20", "21", "22"])}${pk(r, ["1", "2", "3", "4"])}`;
@@ -294,6 +295,11 @@
       return CR.DOCS.hm(cur);
     }));
     // vol à la tire : l'objet retrouvé au sol n'était pas « en possession » de l'intéressé
+    if (S.deal) {
+      const D = S.deal, nb = ["zéro", "une", "deux", "trois", "quatre", "cinq"];
+      S.constat = S.constat.map((x) => x.replace("à trois personnes successives", `à ${nb[D.nT] || D.nT} personnes successives`)
+        .replace(/^Interpellation ; découverte de /, D.guet ? "Interpellation ; découverte, dans le hall, derrière la porte du local à poubelles, de " : D.cache ? `Interpellation ; découverte, ${D.cacheOu}, de ` : "Interpellation ; découverte de "));
+    }
     if (S.deuxRoues && !S.deuxRoues.outilMain) S.constat = S.constat.map((x) => x.replace(/, un tournevis à la main\./, " ; un tournevis est au sol, à un mètre."));
     if (S.tire && S.tire.sol) S.constat = S.constat.map((x) => x.replace(/ est interpellée? en possession de (.+)\.$/, (m0, o) => ` est interpellé${A.g === "f" ? "e" : ""} ; ${o} est retrouvé au sol, près de ${A.g === "f" ? "elle" : "lui"}.`));
     return S;
@@ -377,6 +383,29 @@
       appel, nuit, etage: pk(r, ["deuxième", "troisième", "quatrième", "cinquième"]), outilMain: ch(r, 0.7), deplace: ch(r, 0.4),
       metres: int(r, 3, 15), eclairage: nuit ? pk(r, ["sous un réverbère", "dans la pénombre, entre deux réverbères", "éclairé par la vitrine d'une pharmacie"]) : "en plein jour",
       degats: pk(r, ["neiman forcé, carénage avant fendu", "neiman forcé, câbles du contacteur arrachés", "neiman arraché, antivol en U intact au sol"]),
+    };
+  }
+
+  // ---------------------------------------------------------------- lot 1 ter : le point de deal
+  // Les policiers observent d'un poste (véhicule banalisé, appartement prêté, angle de rue) à une distance donnée, parfois
+  // gênés (feuillage, passants) ; ils voient des remises successives, à des heures précises ; un acheteur est contrôlé, ou
+  // non. La drogue est sur l'intéressé, ou dans une cache à quelques mètres : la détention se discute alors. Le guetteur,
+  // lui, n'a rien sur lui : ce sont ses cris et sa place qui le désignent.
+  SIM.deal = (t, S) => !!(t && t.inf === "stups_trafic" && t.f && ["point_deal", "guetteur"].includes(t.f.sc) && t.flagrance && !(S && S.prelim));
+  function deal(S, t, k, r, E) {
+    const guet = t.f.sc === "guetteur";
+    const poste = pk(r, ["d'un véhicule banalisé stationné", "d'un appartement mis à disposition par un riverain, au deuxième étage,", "de l'angle de la rue"]);
+    const distance = int(r, 2, 8) * 10;
+    const gene = ch(r, 0.35) ? pk(r, ["à travers le feuillage d'un platane", "entre les passants", "par intermittence, des véhicules passant dans notre champ"]) : null;
+    E.debutSurv = S.T0 - int(r, 35, 90);
+    const nT = guet ? 0 : int(r, 2, 4);
+    const tr = []; let m = E.debutSurv + int(r, 6, 15);
+    for (let i = 0; i < nT; i++) { tr.push(m); m += int(r, 6, 18); }
+    const cache = !guet && ch(r, 0.35);
+    return {
+      guet, poste, distance, gene, nT, tr, cache, acheteur: !guet && ch(r, 0.55),
+      cacheOu: pk(r, ["dans une boîte aux lettres éventrée du hall", "dans un trou du muret, à trois mètres", "sous la grille d'un arbre, à cinq mètres"]),
+      cri: pk(r, ["Ara ! Ara !", "Ça bouge !", "Les condés !"]),
     };
   }
 

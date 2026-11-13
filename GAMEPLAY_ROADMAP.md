@@ -34,7 +34,7 @@ Principe d'ordonnancement : on termine d'abord la boucle la plus jouée (permane
 
 ## Phase D — élargir
 
-Lot 1 ter (toutes les familles d'infractions au niveau de l'arrachage — **commencé le 13 nov.** : vol en magasin (`tmagasin`), vol dans le métro (`ttransport`), vol à la tire (`ttire`), vol de deux-roues (`t2roues`) ; suivent vol chez l'employeur, puis stupéfiants), lot 7 (instruction et assises), lot 8 (après jugement, victimes), lot 9 (bibliothèque), lot 10 (affaires écrites et tutoriel).
+Lot 1 ter (toutes les familles d'infractions au niveau de l'arrachage — **commencé le 13 nov.** : vol en magasin (`tmagasin`), vol dans le métro (`ttransport`), vol à la tire (`ttire`), vol de deux-roues (`t2roues`), point de deal et guetteur (`tdeal`) ; suivent la livraison de stupéfiants, la détention et l'usage, le vol chez l'employeur et au préjudice d'une personne vulnérable (enquête préliminaire), puis la route ; vol chez l'employeur, puis stupéfiants), lot 7 (instruction et assises), lot 8 (après jugement, victimes), lot 9 (bibliothèque), lot 10 (affaires écrites et tutoriel).
 
 ## Risques suivis
 

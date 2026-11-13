@@ -538,6 +538,27 @@
             mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
           ], sigs: ["Le directeur du magasin"] }));
       }
+      // lot 1 ter : le point de deal — le procès-verbal de surveillance
+      if (S.deal) {
+        const M = S.deal;
+        add("pv_surveillance", E.interp + 35, "Surveillance", () => {
+          const rr = CR.seeded(t.sig + ":g:deal");
+          const blocs = [
+            p(`À ${hm(E.debutSurv)}, en tenue civile, mettons en place un dispositif de surveillance du point de vente connu des services, ${lieu.replace(/^au pied de l'immeuble du /, "au pied du ").replace(/, point de vente connu des services$/, "")}, à partir ${M.poste}, à environ ${M.distance} mètres.`),
+            M.gene ? p({ t: `L'observation se fait ${M.gene}.`, f: "G_vue_genee" }) : p("Le champ de vision est dégagé."),
+            ...(M.guet ? [p({ t: `À ${hm(S.T0)}, à l'approche d'un véhicule de police sérigraphié, observons ${n(A)}, posté${e(A)} à l'entrée du hall, crier « ${M.cri} » ; plusieurs personnes quittent aussitôt les lieux.`, f: "G_guet_cri" })]
+              : M.tr.map((h, i) => p({ t: `À ${hm(h)}, ${pk(CR.seeded(t.sig + ":tr" + i), ["un homme d'une trentaine d'années", "une femme en survêtement", "un jeune homme à vélo", "un homme en costume"])} s'approche de ${n(A)} ; échange rapide : un billet contre un petit objet sorti de ${M.cache ? "derrière le muret" : "sa poche"}.`, f: i === 0 ? "G_transactions" : undefined }))),
+            !M.guet && M.acheteur ? p(`L'un des acheteurs est contrôlé à distance par un équipage : il est trouvé porteur d'une barrette de résine de cannabis et déclare l'avoir achetée « au pied de l'immeuble ».`) : null,
+            p(`Interpellation de ${n(A)} à ${hm(E.interp)}.`),
+            M.guet ? p({ t: `Palpation : rien de prohibé sur l'intéressé${e(A)}, porteur de deux téléphones${t.f.especes ? ` et de ${t.f.especes} euros en coupures de dix et vingt euros` : ""}. Les produits sont découverts dans le hall, derrière la porte du local à poubelles.`, f: "G_guet_rien" })
+              : M.cache ? p({ t: `Palpation : sur l'intéressé${e(A)}, ${t.f.especes ? `${t.f.especes} euros en petites coupures` : "rien"} ; les produits sont découverts ${M.cacheOu}, à l'endroit d'où nous l'avons vu${e(A)} sortir les objets remis.`, f: "G_cache" })
+              : p(`Palpation, puis fouille par l'officier de police judiciaire : découverte sur l'intéressé${e(A)} de ${N.saisie || "produits stupéfiants"}.`),
+          ];
+          return DOCS.pv({ cote: cote("pv_surveillance"), proc: t.proc, service, unite, cadre: "FLAGRANT DÉLIT", titre: "Procès-verbal de surveillance et d'interpellation", numPV: "00" + int(rr, 101, 899),
+            jour: j(E.interp + 35), heure: E.interp + 35, redacteur: apj(0), visa: "Vu les articles 53 et 73 du code de procédure pénale,", lieu: "Agissant en flagrant délit", objet: `OBJET : ${q0.label} — surveillance`,
+            blocs, cloture: mention(`Dont procès-verbal, fait et clos au ${commLong} ${at(E.interp + 35)}.`), signataires: [`${apj(0).signe}, agent de police judiciaire`, `${apj(1).signe}, agent de police judiciaire`], st: stA });
+        });
+      }
       // lot 1 ter : le vol de deux-roues — constatations sur l'engin et sur les lieux
       if (S.deuxRoues) {
         const M = S.deuxRoues;

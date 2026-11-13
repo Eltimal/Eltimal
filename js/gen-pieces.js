@@ -523,6 +523,13 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      if (SS.deal) {
+        const M = SS.deal;
+        if (M.gene) fact("G_vue_genee", { label: `L'observation s'est faite ${M.gene}, à ${M.distance} mètres`, key: true, why: "Ce qu'un policier voit d'une remise de la main à la main, de loin et gêné, se discute : la défense interroge les conditions de l'observation." });
+        if (M.cache) fact("G_cache", { label: "Les produits étaient dans une cache, pas sur lui", key: true, why: "La détention suppose la maîtrise du produit : une cache sur la voie publique peut servir à plusieurs." });
+        if (M.guet) fact("G_guet_rien", { label: "Le guetteur n'avait rien de prohibé sur lui", key: true, why: "Le guet n'est punissable que comme participation au trafic : encore faut-il établir le trafic lui-même et le rôle de chacun." });
+        if (!M.guet) fact("G_transactions", { label: `${M.nT} remises observées, aux heures notées`, key: false });
+      }
       if (SS.deuxRoues) {
         const M = SS.deuxRoues;
         if (!M.outilMain) fact("G_outil_sol", { label: "Le tournevis était au sol, pas dans sa main", key: true, why: "Être près d'un engin forcé n'est pas le forcer : rien ne rattache l'outil à la personne, sauf une expertise." });
