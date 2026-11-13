@@ -280,6 +280,8 @@
       if (cards.length && !cards.some(enMain)) continue;
       args.push(a);
     }
+    // lot 8 : l'exclusion du bulletin n° 2 (art. 775-1 CPP) — un argument de toute défense, appuyé sur l'emploi du client
+    if (P.role === "defense" && CR.AP && CR.AP.argB2 && !args.some((a) => a.id === "b2")) { const b = CR.AP.argB2(s, cs, C); if (b && (b.cards || []).some(enMain)) args.push(b); }
     // les arguments piégés se mêlent à ce que le joueur a trouvé : sans rien en main, ils ne se distingueraient que trop bien
     const trouves = args.filter((a) => (a.cards || []).length).length;
     const pieges = o.toutVoir || trouves > 0 ? PL.piegesDe(C, P.role) : [];
@@ -458,6 +460,7 @@
       { id: "u_mesures", label: "Les efforts accomplis depuis les faits", ids: ["mesures", "indemn"] },
       { id: "u_confusion", label: "La confusion avec une peine déjà prononcée (art. 132-4 CP)", ids: ["confusion"] },
       { id: "u_revocation", label: "Pas de révocation du sursis antérieur", ids: ["revocation"] },
+      { id: "u_b2", label: "L'exclusion de la mention au bulletin n° 2 du casier (art. 775-1 CPP)", ids: ["b2"] },
       { id: "u_amende", label: "Une amende proportionnée aux ressources", ids: ["amende"] },
       { id: "u_attenuantes", label: "Les circonstances de l'espèce et la personnalité", ids: ["attenuantes", "personnalite", "perso"] },
     ]],

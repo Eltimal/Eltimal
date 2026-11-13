@@ -129,6 +129,14 @@
       questions.push({ q: "Sur la peine", r: peine.texte + ".", motif: peine.regles.join(" ") || (o.personnalite >= 2 ? "Le tribunal tient compte des éléments de personnalité produits." : "Le dossier de personnalité est mince.") });
       cs.vars.peine = peine;
       cs.vars.requisJuge = req;
+      // lot 8 : l'exclusion de la mention au bulletin n° 2 (art. 775-1 CPP), si la défense l'a demandée ; jamais pour les
+      // infractions de l'article 706-47 ; le tribunal la retient plus volontiers pour un premier passage
+      if (played.has("arg:b2") && CR.AP && CR.AP.b2Possible) {
+        const justifie = ["G_emploi", "AP_travail", "K_promesse"].some((f) => CR.hasFact(cs, f));
+        const ok = CR.AP.b2Possible(api, qualif) && justifie && CR.seeded(cs.id + ":b2")() < [0.75, 0.45, 0.15][Math.min(2, (CR.AP.casier && CR.AP.casier(api)) || 0)];
+        cs.vars.b2Exclu = !!ok;
+        questions.push({ q: "Sur le bulletin n° 2 du casier judiciaire", r: ok ? "Le tribunal exclut la mention de la condamnation au bulletin n° 2." : "Le tribunal rejette la demande d'exclusion de la mention au bulletin n° 2.", motif: ok ? "La mention compromettrait l'insertion professionnelle du condamné, qui en justifie (art. 775-1 du code de procédure pénale)." : CR.AP.b2Possible(api, qualif) ? (justifie ? "Les antécédents et la nature des faits ne justifient pas l'exclusion demandée." : "Rien au dossier ne montre ce que la mention compromettrait : l'exclusion n'est pas justifiée.") : "L'exclusion n'est pas possible pour les infractions mentionnées à l'article 706-47 du code de procédure pénale (art. 775-1)." });
+      }
     }
 
     // 4. intérêts civils
@@ -162,6 +170,7 @@
     const disp = [];
     if (d.coupable) disp.push(`Déclare ${o.prevenuNom} coupable${qualif ? " " + de(qualif.label) : ""} ; ${peine.texte.replace(/^./, (c) => c.toLowerCase())}`);
     else disp.push(`Relaxe ${o.prevenuNom}`);
+    if (cs.vars.b2Exclu && d.coupable) disp.push("dit que la condamnation ne sera pas mentionnée au bulletin n° 2 du casier judiciaire (art. 775-1 CPP)");
     if (civil && !civil.renvoi) disp.push(`condamne ${o.prevenuNom} à payer à ${o.pcNom} la somme de ${CR.money(civil.total + (civil.art475 || 0))}`);
     const cour = ["assises", "ccd", "chapp", "chins", "assises_mineurs", "assises_spe", "assises_appel", "chmin"].includes(o.juridiction);
     if (cour) {

@@ -70,6 +70,24 @@
     ancienClose.call(this, s, cs, o);
   };
 
+  // ================================================================ le bulletin n° 2 (art. 775-1 CPP)
+  // Exclusion possible dans le jugement de condamnation (ou plus tard sur requête), sauf pour les infractions de l'article
+  // 706-47 (meurtre d'un mineur, tortures, viol, agressions sexuelles, atteintes sexuelles et infractions sur mineurs…).
+  const ART_706_47 = /222-(1|2|3|4|5|6)\b|222-10\b|222-2[3-9]|222-3[0-3]|222-26-1|225-4-[1-4]|225-7\b|225-7-1|225-12-[12]|227-2[2-8]|521-1-1/;
+  K.casier = (api) => { const t = genT(api.s, api.cs); return (t && t.A && t.A.casier) || 0; };
+  K.b2Possible = function (api, qualif) {
+    const t = genT(api.s, api.cs), I = t && CR.CAT && CR.CAT.INF[t.inf];
+    const court = String((qualif && (qualif.court || qualif.label)) || (t && t.q && t.q.court) || "");
+    if (ART_706_47.test(court) || /sexuel/.test((I && I.fam) || "")) return false;
+    return true;
+  };
+  K.argB2 = function (s, cs, C) {
+    const t = genT(s, cs); if (!t || !t.A) return null;
+    const A = t.A, G = C && C.G ? C.G : { il: A.g === "f" ? "elle" : "il", Il: A.g === "f" ? "Elle" : "Il" };
+    return { id: "b2", label: "Exclure la condamnation du bulletin n° 2", say: `${G.Il} travaille${A.metier ? " comme " + A.metier : ""} : une mention au bulletin n° 2 le lui ferait perdre. Je demande au tribunal de l'en exclure (art. 775-1 du code de procédure pénale).`, cards: ["G_emploi", "K_promesse", "AP_travail"], pertinent: () => !!A.emploi && K.b2Possible({ s, cs }, null) };
+  };
+  if (CR.TEXTES && !CR.TEXTES["CPP_775-1"]) CR.TEXTES["CPP_775-1"] = X("Art. 775-1 du code de procédure pénale", "Le tribunal qui prononce une condamnation peut exclure expressément sa mention au bulletin n° 2 soit dans le jugement de condamnation, soit par jugement rendu postérieurement sur la requête du condamné […]. L'exclusion de la mention d'une condamnation au bulletin n° 2 emporte relèvement de toutes les interdictions, déchéances ou incapacités de quelque nature qu'elles soient résultant de cette condamnation. Les dispositions du présent article ne sont pas applicables aux personnes condamnées pour l'une des infractions mentionnées à l'article 706-47. […]");
+
   // ================================================================ les victimes : le recouvrement des dommages et intérêts
   // La décision sur l'action civile devient définitive au terme du délai d'appel du procureur général, vingt jours (art. 505
   // CPP ; dix pour les parties, art. 498). La juridiction informe la partie civile de ses recours (art. 706-15).

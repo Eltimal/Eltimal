@@ -223,3 +223,11 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
   - **Rien fait dans l'année de la décision définitive** : forclusion, erreur datée avec son remède (relevé de forclusion pour motif légitime).
   - Chaque geste de l'avocat tient le client informé. Un client laissé sans nouvelles finit par se plaindre (règle existante).
   - Le cas des préjudices moindres sous condition de ressources (706-14) n'est pas codé : son plafond suit l'aide juridictionnelle partielle, non relue.
+- **D-82. L'exclusion du bulletin n° 2 se plaide au jugement (art. 775-1 CPP).**
+  - Argument de toute défense, proposé quand l'emploi du client est au dossier, avec une entrée au catalogue (« L'exclusion de la mention au bulletin n° 2 du casier »).
+  - Le tribunal répond toujours, motifs à l'appui. Il refuse :
+    - pour les infractions de l'article 706-47 ;
+    - quand rien au dossier ne montre ce que la mention compromettrait ;
+    - plus souvent avec des antécédents (estimation : 75 % d'exclusions pour un premier passage, 45 % avec une condamnation, 15 % au-delà).
+  - Accordée, l'exclusion est inscrite au dispositif.
+  - Reste à faire : la requête après jugement.
