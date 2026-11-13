@@ -326,6 +326,21 @@
     return { segs };
   };
 
+  // ------------------------------------------------------------------ Le corrigé de l'entretien (lot 6, débrief)
+  // les sujets dont la bonne question aurait livré un fait, jamais ouverts ; gardé dans cs.vars.corrige[scène]
+  P.corriger = function (s, cs, M, scene) {
+    const def = CR.caseDef(cs) || {};
+    const out = [];
+    for (const S0 of M.sujets) {
+      if (!S0.topic || (M.utilises && M.utilises.has(S0.topic))) continue;
+      const tp = M.topics[S0.topic];
+      const f = tp && (tp.a || []).map((x) => x && x.f).find(Boolean);
+      if (!f) continue;
+      const lib = (def.facts && def.facts[f] && def.facts[f].label) || "";
+      out.push({ sujet: S0.label, angle: (P.ANGLES.find((x) => x[0] === S0.key[0]) || [null, ""])[1], fait: lib });
+    }
+    cs.vars.corrige = Object.assign({}, cs.vars.corrige || {}, { [scene]: out });
+  };
   // ------------------------------------------------------------------ Le procès-verbal d'audition du dossier (lot 3, A3)
   // La pièce versée au dossier reprend l'audition jouée, mot pour mot ; une erreur de retranscription non rectifiée
   // à la relecture y reste. L'en-tête, l'identité, la présence de l'avocat et la clôture de la pièce d'origine sont gardés.

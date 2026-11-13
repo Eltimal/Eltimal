@@ -161,6 +161,8 @@ const P = require("./play"); const U = require("./util");
       ok(cs.vars.auditionGav.filter((x) => x.sujet !== "identite" && x.a).every((x) => pv.includes(x.a.slice(0, 30)) || /je savais ce que je faisais/.test(pv)), "le procès-verbal relu n'est pas ce qui a été dit");
       await step(/Signer et continuer|fidèle/);
       ok(!!findBtn(doc, /^Quitter/), "pas d'issue de la garde à vue", texts(card()).slice(0, 200));
+      ok(cs.vars.corrige && Array.isArray(cs.vars.corrige["Garde à vue"]), "le corrigé de l'entretien n'est pas gardé");
+      ok((cs.vars.corrige["Garde à vue"] || []).every((x) => x.sujet && x.fait), "corrigé mal formé", JSON.stringify(cs.vars.corrige));
       ok(!!cs.vars.voie, "le parquet n'a pas orienté l'affaire");
       // la pièce du dossier reprend l'audition jouée (A3)
       if (CR.caseDef(cs).docs.pv_audition) {

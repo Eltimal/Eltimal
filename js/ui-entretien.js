@@ -123,7 +123,7 @@
     };
     const repondreClient = (oui) => { const r = P.repondreClient(M, qClient, oui); if (oui) { oral.dire("you", r.t); temps(r.min); } setQClient(null); };
     const conseiller = (k, c) => { const m = P.conseiller(M, k, c); if (m) temps(m); bump(); };
-    const finir = () => { ctx.entretien = min; cs.vars.conseilParole = Object.assign({}, M.conseil || {}); CR.spend(s, Math.max(5, min), "gav", { busy: true }); bump(); next(); };
+    const finir = () => { ctx.entretien = min; cs.vars.conseilParole = Object.assign({}, M.conseil || {}); P.corriger(s, cs, M, "Garde à vue"); CR.spend(s, Math.max(5, min), "gav", { busy: true }); bump(); next(); };
     return html`<div className="gav-card ent-card ent-parole">
       <div className="entretien-head"><span className="pix">Entretien confidentiel</span><span className="ent-tete-d"><span className=${cx("chrono", min >= 25 && "urgent")} title="Minutes écoulées sur trente">${min} / ${P.LIMITE} min</span><${Btn} small kind="primary" onClick=${finir}>${over ? "Sortir de l'entretien" : "Terminer l'entretien"}</${Btn}></span></div>
       <${Oral} oral=${oral} noms=${{ client: nom, you: "VOUS", sys: "" }} onNote=${noter} notees=${notees} vide="Le local est silencieux." />
@@ -218,7 +218,7 @@
     const oral = useOral(false);
     const { notees, noter } = useNoter(s, cs);
     const [qClient, setQClient] = useState(null);
-    useEffect(() => { for (const x of call.opening || []) oral.dire("client", fmt(typeof x === "string" ? x : x.t)); }, []);
+    useEffect(() => { for (const x of call.opening || []) oral.dire("client", fmt(typeof x === "string" ? x : x.t)); P.corriger(s, cs, M, call.label || "Entretien"); }, []);
     const poser = (q) => {
       if (qClient) { P.repondreClient(M, qClient, false); setQClient(null); onPatience(-3); }
       const res = P.repondre(M, q);
@@ -227,6 +227,7 @@
       if (res.client) { oral.dire("client", res.client); setQClient(res.client); }
       onTemps(res.min); onPatience(-({ ouverte: 3, fermee: 2, relance: 4, confrontation: 9 }[q.forme] || 3));
       for (const id of M.utilises || []) onAsked(id);
+      P.corriger(s, cs, M, call.label || "Entretien");
     };
     const repondreClient = (oui) => { const r = P.repondreClient(M, qClient, oui); if (oui) { oral.dire("you", r.t); onTemps(r.min); onPatience(4); } else onPatience(-3); setQClient(null); };
     const gestes = topics.filter((tp) => P.estGeste(tp));

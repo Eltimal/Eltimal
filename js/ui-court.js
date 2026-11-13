@@ -310,7 +310,14 @@
           </div>`}
           ${phase === "choose" && cur && html`<div className="choices court-choices">
             ${cur.timer ? html`<div className="window-bar"><div className="wb-fill" style=${{ width: Math.max(0, timer / (cur.timer * 1000 / fatigue)) * 100 + "%" }}></div></div>` : null}
-            ${cur.choose.filter((o) => !o.need || CR.inHand(s, cs, o.need)).map((o, i) => html`<button key=${i} className="choice" onClick=${() => choose(o)}>${T(o.t)}</button>`)}
+            ${(() => {
+              // refonte (lot 6) : en mode libre, toutes les options s'affichent, dans un ordre mélangé (fixe pour une audience) ;
+              // une option que rien n'appuie dans le dossier reçoit une question du président et ne vaut rien
+              if (!CR.libre(s)) return cur.choose.filter((o) => !o.need || CR.inHand(s, cs, o.need)).map((o, i) => html`<button key=${i} className="choice" onClick=${() => choose(o)}>${T(o.t)}</button>`);
+              const r = CR.seeded(cs.id + ":choix:" + (cur.choose[0] && cur.choose[0].t));
+              const opts = cur.choose.map((o) => ({ o, k: r() })).sort((a, b) => a.k - b.k).map((x) => x.o);
+              return opts.map((o, i) => html`<button key=${i} className="choice" onClick=${() => { if (o.need && !CR.inHand(s, cs, o.need)) { addLog({ who: "president", t: "Qu'est-ce qui, dans le dossier, permet de le dire, maître ?" }); applyFx(s, cs, st, { cred: -2 }); bump(); return; } choose(o); }}>${T(o.t)}</button>`);
+            })()}
           </div>`}
           ${phase === "card" && html`<div className="hand">
             <div className="window-bar urgent"><div className="wb-fill" style=${{ width: Math.max(0, timer / ((cur.card.window || 12000) / fatigue)) * 100 + "%" }}></div></div>
