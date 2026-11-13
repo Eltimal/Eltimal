@@ -105,7 +105,7 @@
       slots: {
         voie: CR.choiceSlot("Envoi", [
           { t: "Par lettre recommandée avec demande d'avis de réception, adressée au procureur de la République.", ok: true, v: "lrar" },
-          { t: "Par courrier simple au commissariat.", ok: false, defect: "voie:simple", v: "simple" },
+          { t: "Par courrier simple déposé à l'accueil du commissariat du domicile, qui transmettra la plainte au procureur de la République.", ok: false, defect: "voie:simple", v: "simple" },
         ]),
         victime: CR.autoSlot(titre(api)),
         date: CR.factSlot("date des faits", P.date || []),
@@ -138,8 +138,8 @@
       slots: {
         juge: CR.choiceSlot("Destinataire", [
           { t: "Le doyen des juges d'instruction du tribunal judiciaire compétent.", ok: true },
-          { t: "Le procureur de la République.", ok: false, defect: "juge:procureur" },
-          { t: "Le président du tribunal correctionnel.", ok: false, defect: "juge:tc" },
+          { t: "Le procureur de la République près le tribunal judiciaire du lieu de l'infraction.", ok: false, defect: "juge:procureur" },
+          { t: "Le président du tribunal correctionnel du tribunal judiciaire compétent.", ok: false, defect: "juge:tc" },
         ]),
         victime: CR.autoSlot(titre(api)),
         faits: CR.factSlot("les faits", P.faits || []),
@@ -147,7 +147,7 @@
         prejudice: CR.factSlot("le préjudice", P.prejudice || []),
         prealable: CR.choiceSlot("Recevabilité (art. 85)", [
           { t: "La plainte simple déposée au procureur est restée sans réponse depuis plus de trois mois, ou a été classée.", ok: true, v: "ok" },
-          { t: "(Aucune mention de la plainte préalable.)", ok: false, defect: "prealable:absent", v: "rien" },
+          { t: "Aucune plainte préalable n'est nécessaire : la victime saisit directement le juge d'instruction, comme l'article 85 le lui permet.", ok: false, defect: "prealable:absent", v: "rien" },
         ]),
         qualif: CR.choiceSlot("Qualification", P.qualifs || [{ t: "Toute qualification que l'information permettra de retenir.", ok: true }]),
       },
@@ -308,7 +308,7 @@
       to: `${(api.actor("ji") || { nom: "Le juge d'instruction" }).nom}, juge d'instruction`,
       slots: { motivation: CR.choiceSlot("Motivation", [
         { t: "Ces actes sont nécessaires à la manifestation de la vérité, pour les raisons exposées ci-dessous.", ok: true },
-        { t: "Le juge voudra bien faire ce qui lui paraît utile.", ok: false, defect: "motivation:absente" },
+        { t: "Le juge d'instruction appréciera souverainement l'utilité de ces actes, sans qu'il soit besoin d'en exposer les raisons.", ok: false, defect: "motivation:absente" },
       ]) },
       checks: [{ id: "actes", label: "Les actes demandés", heading: "La partie demande qu'il soit procédé à :", options: P }],
       body: [["Madame, Monsieur le juge d'instruction,"], ["En application de l'article 82-1 du code de procédure pénale, la partie que j'assiste sollicite les actes suivants. ", { s: "motivation" }]],

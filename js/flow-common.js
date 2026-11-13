@@ -265,7 +265,7 @@
       ]),
       frais: CR.choiceSlot("Frais et débours", [
         { t: "Les frais de déplacement hors Île-de-France, les frais de commissaire de justice et les copies de dossier sont facturés en sus, sur justificatifs.", ok: true },
-        { t: "(Aucune mention.)", ok: false, defect: "frais:silence" },
+        { t: "Les frais exposés pour le dossier restent à la charge du cabinet : ils sont compris dans l'honoraire convenu, sans facturation distincte.", ok: false, defect: "frais:silence" },
       ]),
       litige: CR.choiceSlot("Contestation", [
         { t: "En cas de contestation, le bâtonnier de l'Ordre des avocats de Paris peut être saisi (art. 174 et suivants du décret du 27 novembre 1991).", ok: true },
@@ -304,11 +304,11 @@
         client: CR.autoSlot(`${c.prenom} ${c.nom}`),
         decision: CR.choiceSlot("La décision", [
           { t: "Après examen, je ne suis pas en mesure d'assurer votre défense dans ce dossier. Je n'ai accompli aucun acte en votre nom.", ok: true },
-          { t: "Je vais réfléchir encore et je reviendrai vers vous.", ok: false, defect: "decision:ambigu" },
+          { t: "Je réserve ma décision sur la suite à donner à votre dossier ; je reviendrai vers vous dès que j'aurai pu en examiner l'ensemble des pièces.", ok: false, defect: "decision:ambigu" },
         ]),
         delai: CR.choiceSlot("Les délais", [
           { t: "Je vous rappelle que la procédure pénale enferme les actes dans des délais stricts. Consultez sans tarder un autre avocat ; vous pouvez aussi demander un avocat commis d'office au bâtonnier.", ok: true },
-          { t: "Rien ne presse.", ok: false, defect: "delai:faux" },
+          { t: "Rien ne presse : les délais de la procédure pénale ne courent qu'à compter de la décision définitive, et vous aurez tout le temps nécessaire pour consulter un confrère de votre choix.", ok: false, defect: "delai:faux" },
         ]),
       },
       body: [["Madame, Monsieur, ", { s: "client" }, ","], [{ s: "decision" }], [{ s: "delai" }], ["Je vous prie d'agréer l'expression de mes salutations distinguées."]],
