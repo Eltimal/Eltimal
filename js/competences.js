@@ -21,7 +21,7 @@
     [/^canal_|^citation_courte|^projet_|^consignation|^constitution_doyen|^cass_greffe/, "ecrits"],
     [/^appel_|^op_tardive|^appel_ordo/, "recours"], [/^dml_/, "detention"], [/^gav_absent|^audition_seul/, "gav"],
     [/^ci_absent|^proces_absent|^absent|^incompetence/, "audience"], [/^vie_|^promesse|^presse|^deleg_/, "deonto"],
-    [/^prescrit/, "lecture"], [/^ipc_absent/, "instruction"],
+    [/^prescrit/, "lecture"], [/^ipc_absent/, "instruction"], [/^jap_/, "ap"],
   ];
   const t = (s, cs) => { const p = CR.GEN && CR.GEN.paramsOf ? CR.GEN.paramsOf(s, cs.id) : null; return (p && p.t) || {}; };
   const drafted = (cs, k) => !!(cs.drafted && cs.drafted[k] && cs.drafted[k].length);
@@ -41,6 +41,7 @@
     if (cs.drafted && Object.keys(cs.drafted).length) c.add("ecrits");
     if ((cs.erreurs || []).some((e) => /^vie_|^promesse|^presse/.test(e.id))) c.add("deonto");
     if (cs.fee || cs.facture) c.add("gestion");
+    if (v.ap) c.add("ap"); // lot 8 : le débat devant le juge de l'application des peines
     return c;
   };
   // ce qui a manqué, compétence par compétence (pour le classeur et le test)
@@ -59,6 +60,12 @@
       const souleves = new Set((cs.proc.moyens || []).map((x) => x.flag));
       const oublis = cs.issues.filter((i) => i.flag && CR.IRREG && CR.IRREG[i.flag] && !souleves.has(i.flag));
       if (oublis.length) add("nullites", "Une irrégularité de la procédure n'a pas été soulevée.");
+    }
+    // lot 8 : une mesure d'aménagement était possible, mais les justificatifs n'ont pas été réunis
+    const ap = cs.vars && cs.vars.ap;
+    if (ap && ap.incarceration != null && !ap.justifsFaits) {
+      const p = CR.GEN && CR.GEN.paramsOf ? CR.GEN.paramsOf(s, cs.id) : null, A = p && p.t && p.t.A;
+      if (A && (A.emploi || A.heberg)) add("ap", "Une mesure d'aménagement était possible : les justificatifs du client n'ont pas été réunis.");
     }
     if (cs.vars && cs.vars.decision && cs.vars.decision.motifsPeine && (cs.vars.decision.motifsPeine.manques || []).length) add("peine", cs.vars.decision.motifsPeine.manques[0]);
     return m;

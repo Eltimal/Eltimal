@@ -20,6 +20,10 @@ Première famille, **faite le 13 novembre** (`tmagasin`) : le vol en magasin (`c
 
 Mesure du 13 novembre : un dossier criminel généré comptait 14 pièces et environ 1 000 mots ; `crim-dossier.js` en ajoute six et enrichit les expertises et les auditions (20 pièces, 2 000 mots, `tcrimdossier`). Confrontation jouée faite (`confrontation.js`, `tconfront`, D-67). Interrogatoire au fond joué fait (`tinterro`, D-69). Sous-dossiers fond, personnalité, détention et interrogatoire de curriculum vitae faits (D-73, `tcrimdossier`). Journal des appels d'urgence et audition de l'appelant faits (D-74). Lot 7 à compléter au besoin : volume des auditions (plus longues), expertises détaillées. Plan d'origine : une simulation de l'affaire criminelle sur le modèle de `sim.js` (chronologie de l'enquête de flagrance criminelle ou préliminaire, transport sur les lieux, constatations de l'identité judiciaire, auditions de plusieurs témoins, voisinage, autopsie, expertises balistique, génétique, toxicologique et psychiatrique, interrogatoires de première comparution et au fond, confrontations, commission rogatoire), les pièces composées par le moteur (`DOCS.pv`, `DOCS.forme`), cotées par sous-dossiers (fond, personnalité, détention), avec les règles de contenu de `dev/ref/refonte-gameplay.md` (« Ce qui ne change pas » : mineurs). Test : volume, cohérence d'une pièce à l'autre, `tcatalogue` étendu aux affaires criminelles.
 
+## Lot 8 — après le jugement
+
+Fait : l'aménagement de la peine devant le juge de l'application des peines (`apres.js`, `tjap`, D-79, D-80). Règles relues pour la suite (D-79) : exclusion du bulletin n° 2 (art. 775-1 CPP, à plaider au jugement ou sur requête), CIVI (706-3, 706-5) et SARVI (706-15-1, 706-15-2) pour les dossiers de victimes. Reste : ces trois gestes, le volet civil (renvoi sur les intérêts civils, assignation).
+
 ## Contrôle d'ensemble
 
 Compris dans `node tools/batterie.js complete` (boucles 7, 9, 5 : la boucle principale en mode libre, de bout en bout).

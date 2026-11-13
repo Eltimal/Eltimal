@@ -186,3 +186,31 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
     - le procès-verbal d'assemblée générale de l'abus de biens sociaux.
   - Tous sont tirés hors du rendu, ou par un tirage dédié, sans décaler les autres tirages de l'affaire.
   - Le procès-verbal d'assemblée générale ne mentionne plus la découverte des faits, postérieure à l'assemblée. Ces dates passent dans une mention de l'enquêteur qui reçoit la pièce.
+
+## Lot 8 : après le jugement (13 novembre 2026)
+
+- **D-79. Règles relues avant d'écrire** (code de procédure pénale et code pénal sur codes.droit.org, version du 26 août 2026).
+  - **Convocation (art. 474 CPP).** Le condamné libre à un an ou moins d'emprisonnement ferme, sans mandat de dépôt (à effet différé compris), reçoit à l'audience un avis de convocation devant le juge de l'application des peines, dans les vingt jours, et devant le SPIP, dans les trente jours. S'il ne se présente pas sans excuse légitime, la peine est mise à exécution en détention.
+  - **Aménagement (art. 723-15 CPP).** Il se fait « dans la mesure du possible et si leur personnalité et leur situation le permettent ». Les mesures possibles :
+    - semi-liberté, placement à l'extérieur, détention à domicile sous surveillance électronique ;
+    - fractionnement ou suspension ;
+    - libération conditionnelle ;
+    - conversion (art. 747-1).
+  - **Six mois ou moins.** La peine doit être aménagée (DDSE, semi-liberté ou placement extérieur), sauf impossibilité tenant à la personnalité ou à la situation du condamné.
+  - **Décision (art. 723-15-1 et 712-6).** Avec l'accord de l'intéressé, le juge ordonne la mesure après un débat contradictoire : avis de l'administration pénitentiaire, réquisitions du parquet, observations du condamné et de son avocat. Faute d'éléments suffisants, il saisit le SPIP, qui rend un rapport motivé sous deux mois.
+  - **Refus (art. 723-15-2).** Sinon, ou si le condamné refuse, le juge peut fixer la date d'incarcération. En cas de non-présentation, le parquet ramène la peine à exécution.
+  - **Conversion (art. 747-1).** Pour un délit, une peine ferme de six mois ou moins peut être convertie : DDSE, travail d'intérêt général, jours-amende, sursis probatoire avec TIG ou sursis probatoire renforcé.
+  - **Contenu des mesures (art. 131-4-1, 132-26 CP).** DDSE : demeurer au domicile, avec sorties pour le travail, la formation, les soins, la recherche d'emploi ou la vie de famille. Semi-liberté : rejoindre l'établissement hors du temps de l'activité.
+  - **Bulletin n° 2 (art. 775-1 CPP).** La juridiction peut exclure la condamnation du bulletin n° 2, dans le jugement ou plus tard sur requête. Jamais pour les infractions de l'article 706-47.
+  - **CIVI (art. 706-3 et 706-5 CPP).** Pour les atteintes graves (mort, incapacité permanente, incapacité de travail d'un mois ou plus, infractions sexuelles et autres infractions listées), la demande se fait dans les trois ans des faits ; si des poursuites ont eu lieu, jusqu'à un an après la décision définitive.
+  - **SARVI (art. 706-15-1 et 706-15-2 CPP).** La partie civile non indemnisable par la CIVI, à qui une décision définitive accorde des dommages et intérêts, peut demander l'aide au recouvrement si le condamné n'a pas payé dans les deux mois. Elle le fait dans l'année qui suit la décision définitive.
+- **D-80. L'exécution de la peine se plaide devant le juge de l'application des peines.**
+  - Une condamnation à un an ou moins de prison ferme, client libre, sans mandat de dépôt ni aménagement prononcé à l'audience, ne clôt plus le dossier. Elle ouvre la convocation devant le JAP, dans les vingt jours (art. 474).
+  - L'avocat réunit les justificatifs, tirés de la fiche du client : travail, domicile, hébergement d'un proche, soins, formation.
+  - Au débat contradictoire (art. 712-6), il plaide une mesure : surveillance électronique, semi-liberté, placement à l'extérieur, conversion (747-1, qui suppose le texte enregistré dans le dossier).
+  - Le juge accorde la mesure plaidée si les pièces la justifient. À six mois ou moins, il ordonne toute mesure que les pièces permettent, même non plaidée : la loi l'impose sauf impossibilité.
+  - Faute d'éléments, il charge le SPIP d'un rapport et fixe un second débat (723-15-1). Après ce rapport, sans mesure possible, il fixe la date d'incarcération (723-15-2).
+  - Antécédents lourds, au-delà de six mois : il faut des garanties doublées (domicile et activité).
+  - Un appel interrompt la procédure (art. 474), et le dossier se clôt comme avant.
+  - L'absence de l'avocat est une erreur datée. Compétence « Application des peines » : travaillée par ce débat, manquée si une mesure était possible sans que les justificatifs soient réunis.
+  - Le dossier se clôt avec l'issue du jugement, complétée de l'exécution. Écran : scène commune (`CR.AUDIENCES`), panneau « Observations sur l'exécution de la peine ».

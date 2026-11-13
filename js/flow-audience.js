@@ -153,6 +153,8 @@
 
     // inscription au dossier
     cs.vars.jugementDay = s.day;
+    // lot 8 : le détail de la peine, pour son exécution (convocation devant le juge de l'application des peines)
+    cs.vars.peineDetail = d.coupable && peine ? { ferme: peine.ferme || 0, sursis: peine.sursis || 0, mandatDepot: !!peine.mandatDepot, amenagement: peine.amenagement || null, crime: !!peine.crime || !!peine.reclusion } : null;
     cs.vars.decision = { coupable: d.coupable, qualif: qualif && qualif.id, peine: peine && peine.texte, civil: civil && civil.total, score: d.score, motifsPeine: peine && peine.choisie ? { regles: peine.regles, facteurs: peine.facteurs, manques: peine.manques } : null };
     cs.proc.decisions.push({ day: s.day, type: "jugement", coupable: d.coupable });
     CR.PROC.event(api, `Jugement : ${d.coupable ? "culpabilité" + (qualif ? ` (${qualif.court || qualif.label})` : "") + (peine ? `, ${peine.texte.toLowerCase()}` : "") : "relaxe"}.`);

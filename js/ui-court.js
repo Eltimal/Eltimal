@@ -565,7 +565,7 @@
     const ordre = picked.map((id) => { const a = argOf(id); return a && Object.assign({}, a, { _uid: id, label: libU(id) || a.label }); }).filter(Boolean);
     return html`<div className="plaidoirie">
       <${UI.Coach} k="plaidoirie" s=${s} />
-      <span className="pix">${P.role === "pc" ? "Plaidoirie de la partie civile" : P.role === "jld" ? "Observations sur la détention" : P.role === "crpc" ? "Discussion avec le procureur" : P.role === "parquet" ? "Observations au parquet" : "Plaidoirie de la défense"}</span>
+      <span className="pix">${P.titre ? P.titre : P.role === "pc" ? "Plaidoirie de la partie civile" : P.role === "jld" ? "Observations sur la détention" : P.role === "crpc" ? "Discussion avec le procureur" : P.role === "parquet" ? "Observations au parquet" : "Plaidoirie de la défense"}</span>
       ${P.angles && html`<div className="chips">${P.angles.map((a) => html`<button key=${a.id} className=${cx("chip", angle === a.id && "on")} onClick=${() => setAngle(a.id)} title=${a.sub || ""}>${a.t}</button>`)}</div>`}
       ${P.angles && angle && html`<p className="small muted">${(P.angles.find((a) => a.id === angle) || {}).sub || ""}</p>`}
       ${tonOn && html`<div className="ton-pick"><span className="small">Le ton :</span>${CR.PLAID.TONS.map((t) => html`<button key=${t.id} type="button" className=${cx("tonb", ton === t.id && "on")} aria-pressed=${ton === t.id} onClick=${() => setTon(t.id)} title=${t.sub}>${t.t}</button>`)}<span className="small muted">${(CR.PLAID.TONS.find((t) => t.id === ton) || {}).sub}</span></div>`}
@@ -721,7 +721,9 @@
       bump();
       onDone();
     };
-    const cfg = (def.audiences && def.audiences[h.script]) ? def.audiences[h.script](api, h) : { steps: [{ who: "president", t: "L'affaire est renvoyée." }] };
+    // lot 8 : les audiences communes à toutes les affaires (juge de l'application des peines…) viennent de CR.AUDIENCES
+    const aud = (def.audiences && def.audiences[h.script]) || (CR.AUDIENCES && CR.AUDIENCES[h.script]);
+    const cfg = aud ? aud(api, h) : { steps: [{ who: "president", t: "L'affaire est renvoyée." }] };
     if (cfg.jury && !jury) return html`<${UI.JuryScene} s=${s} cs=${cs} defense=${cfg.juryDefense !== false} n=${cfg.juryN || 6} titre=${cfg.juryTitre || "cour d'assises de Paris"} onDone=${(j) => { setJury(j); cs.vars.jures = j.map((x) => ({ nom: x.nom, lean: x.lean, metier: x.metier })); bump(); }} />`;
     const decor = Object.assign({}, cfg.decor || {}, jury ? { jures: jury.length, jureLooks: jury.map((x) => x.look) } : {});
     return html`<${UI.AudienceScene} key=${hid} s=${s} cs=${cs} steps=${souvenir.length ? souvenir.concat(cfg.steps) : cfg.steps} title=${cfg.title || h.title} sub=${cfg.sub || h.where} decor=${decor} onEnd=${finish} />`;
