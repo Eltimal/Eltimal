@@ -435,13 +435,15 @@
       ${tab === "pieces" && lecteur && UI.DossierReel && (() => {
         // pièces reçues, dans l'ordre des cotes quand elles en ont, sinon dans l'ordre d'arrivée
         // la cote : celle de la pièce composée, sinon celle de son titre (« Exploitation vidéo (D11) »)
-        const coteDe = (d, r) => (r && r.cote) || ((/\((D\d+)\)$/.exec(d.title) || [])[1]) || null;
+        // lot 7 : un dossier d'information a ses sous-dossiers — fond (D), personnalité (B), détention (C), lus dans cet ordre
+        const coteDe = (d, r) => (r && r.cote) || ((/\(([BCD]\d+)\)$/.exec(d.title) || [])[1]) || null;
         const recues = cs.docs.filter((d) => d.dir !== "out").map((d) => { const r = CR.renderDoc(s, cs, d); return { d, r, cote: coteDe(d, r) }; });
-        const num = (x) => (x.cote ? +String(x.cote).replace(/\D/g, "") : 1e6 + x.d.day);
+        const SOUS = { D: 0, B: 1e4, C: 2e4 };
+        const num = (x) => (x.cote ? (SOUS[String(x.cote)[0]] || 0) + +String(x.cote).replace(/\D/g, "") : 1e6 + x.d.day);
         recues.sort((a, b) => num(a) - num(b));
         const pr = ((recues.find((x) => x.r && x.r.bandeau) || {}).r || {}).bandeau;
         const proc = pr ? (pr.grille.find(([k]) => k === "Procédure") || [])[1] : null;
-        const docs = recues.map((x) => UI.lecteurDe(x.r, { id: x.d.id, cote: x.cote, titre: x.d.title.replace(/ \(D\d+\)$/, ""), date: CR.fmtDate(x.d.day, "num").slice(0, 5), proc }));
+        const docs = recues.map((x) => UI.lecteurDe(x.r, { id: x.d.id, cote: x.cote, titre: x.d.title.replace(/ \([BCD]\d+\)$/, ""), date: CR.fmtDate(x.d.day, "num").slice(0, 5), proc }));
         return html`<${UI.DossierReel} docs=${docs} proc=${proc} titre="Le dossier" sousTitre=${`${CR.caseTitle(s, cs)} · ${docs.length} pièces`} onClose=${(min) => { setLecteur(false); if (min > 0 && cs.status !== "closed") { CR.spend(s, min, "desk", { caseId: cs.id }); bump(); } }} />`;
       })()}
       ${tab === "irreg" && html`<div className="cf-irreg">

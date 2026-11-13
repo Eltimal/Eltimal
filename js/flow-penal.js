@@ -409,12 +409,23 @@
   H._copieDelivree = (api) => {
     const { s, cs, def } = api;
     cs.proc.copieDelivree = s.day;
-    const docs = (cfg(api).copie || []);
+    // une pièce datée (interrogatoire de curriculum vitae, retour de commission rogatoire) n'est copiée qu'une fois faite
+    const jp = cfg(api).joursPieces || {};
+    const docs = (cfg(api).copie || []).filter((k) => !(jp[k] > s.day));
+    // les pièces à venir suivent, le jour où elles sont faites
+    for (const k of (cfg(api).copie || []).filter((x) => jp[x] > s.day)) api.at(CR.rollForward(jp[k]), "_pieceNouvelle", { k }, 16 * 60);
     // mode libre : la copie arrive par e-Partage (PLEX), à télécharger avant l'expiration du lien
     if (CR.EB && CR.libre && CR.libre(s)) { CR.EB.partager(s, cs, docs, def.docTitles || {}); if (CR.hookExists(cs, "copieDelivree")) api.run("copieDelivree", {}); return; }
     for (const k of docs) if (!CR.hasDoc(cs, k)) api.doc(k, (def.docTitles && def.docTitles[k]) || k);
     api.mail({ from: "Greffe du juge d'instruction", subject: "Copie du dossier de la procédure", kind: "greffe", pages: 10, body: [[`La copie du dossier est à votre disposition : ${CR.plural(docs.length, "pièce")} versée${docs.length > 1 ? "s" : ""} à votre dossier.`], ["Rappel : la reproduction des pièces est réservée à l'usage exclusif de la défense (art. 114)."]] });
     if (CR.hookExists(cs, "copieDelivree")) api.run("copieDelivree", {});
+  };
+  H._pieceNouvelle = (api, { k }) => {
+    const { s, cs, def } = api;
+    if (CR.hasDoc(cs, k) || cs.status === "closed") return;
+    const ti = (def.docTitles && def.docTitles[k]) || k;
+    api.doc(k, ti);
+    api.mail({ from: "Greffe du juge d'instruction", subject: "Pièce nouvelle au dossier", kind: "greffe", body: [[`Une pièce nouvelle est versée au dossier : ${ti}. Elle est jointe à la copie qui vous a été délivrée.`]] });
   };
   PEN.demanderPermis = (api) => {
     const { s, cs } = api;

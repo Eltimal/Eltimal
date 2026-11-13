@@ -124,13 +124,18 @@
     });
     if (!doc) return html`<div className="dr"><p className="dr-vide">Aucune pièce n'est encore consultable.</p></div>`;
     const luDoc = (d) => d.feuillets.every((_, k) => lus[d.id + ":" + k] != null);
+    // lot 7 : les sous-dossiers d'une information (fond D, personnalité B, détention C) s'annoncent dans le bordereau
+    const SOUS = { D: "Fond", B: "Personnalité", C: "Détention" };
+    const lettre = (d) => (d && /^[BCD]\d/.test(d.cote || "") ? d.cote[0] : null);
+    const avecSous = docs.some((d) => lettre(d) === "B" || lettre(d) === "C");
+    const sousTete = (d, p) => (avecSous && lettre(d) && lettre(d) !== lettre(p) ? html`<li key=${"sous-" + lettre(d)} className="dr-sous" aria-hidden="true">Sous-dossier ${SOUS[lettre(d)].toLowerCase()} · cote ${lettre(d)}</li>` : null);
     return html`<div className="dr">
       <aside className="dr-rail" aria-label="Pièces du dossier">
         <header>
           <b>${titre || (stade === "gav" ? "Pièces consultables" : "Copie de la procédure")}</b>
           <span>${sousTitre || (stade === "gav" ? "article 63-4-1 du code de procédure pénale" : `n° ${proc || S.proc} · ${docs.length - 1} pièces`)}</span>
         </header>
-        <ol>${docs.map((d) => html`<li key=${d.id}><button type="button" className=${cx("dr-piece", d.id === doc.id && "on", luDoc(d) && "lu")} onClick=${() => aller(d)} aria-current=${d.id === doc.id ? "true" : undefined}>
+        <ol>${docs.map((d, i) => html`${sousTete(d, docs[i - 1])}<li key=${d.id}><button type="button" className=${cx("dr-piece", d.id === doc.id && "on", luDoc(d) && "lu")} onClick=${() => aller(d)} aria-current=${d.id === doc.id ? "true" : undefined}>
           <span className="dr-pc">${d.cote || "—"}</span><span className="dr-pt">${d.titre}</span><span className="dr-pd">${d.date || SIM.date(S, d.m, "num").slice(0, 5)} · ${d.feuillets.length} f.</span>
         </button></li>`)}</ol>
         ${entete}

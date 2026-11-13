@@ -48,6 +48,21 @@
     return { T, rt, h0, jR, mR, premiere, corrige, hDit, hAvant: h0, dist, lum, reconnait, nuit: /presque rien/.test(lum), hesite: /jurer/.test(reconnait), silhouette: /silhouette/.test(reconnait), loin: /vingtaine|autre côté/.test(dist) };
   };
 
+  K.SOUS = { B: ["expertise_psy", "personnalite", "interro_cv"], C: ["ordo_dp", "dml", "ordo_prolong"] };
+  K.sousDossier = (k) => (K.SOUS.B.includes(k) ? "B" : K.SOUS.C.includes(k) ? "C" : "D");
+  K.SOUS_LABEL = { D: "Fond", B: "Personnalité", C: "Détention" };
+  K.recoter = function (PZ) {
+    const num = (c) => +String(c).replace(/\D/g, "") || 0;
+    const ordre = Object.keys(PZ.cotes).sort((a, b) => num(PZ.cotes[a]) - num(PZ.cotes[b]));
+    const n = { B: 0, C: 0, D: 0 };
+    for (const k of ordre) {
+      const L = K.sousDossier(k), ancien = PZ.cotes[k];
+      PZ.cotes[k] = L + ++n[L];
+      if (PZ.titres && PZ.titres[k]) PZ.titres[k] = PZ.titres[k].replace(new RegExp("\\(" + ancien + "\\)$"), `(${PZ.cotes[k]})`);
+    }
+    PZ.sousDossiers = true;
+    return PZ;
+  };
   K.ajouter = function (t, N, PZ) {
     const DOCS = CR.DOCS; if (!DOCS || !DOCS.pv) return PZ;
     const I = CR.CAT.INF[t.inf] || {};
@@ -244,6 +259,7 @@
       const jCR = t.d.ri + int(r, 1, 4), jRet = jCR + int(r, 18, 40);
       const actes = [].concat(N.actes || []).map((x) => (typeof x === "string" ? x : x.t)).filter(Boolean).slice(0, 4);
       const liste = actes.length ? actes : ["Procéder à toutes auditions utiles", "Exploiter les données téléphoniques des lignes en cause", "Rechercher et exploiter les images de vidéoprotection"];
+      PZ.jours = Object.assign(PZ.jours || {}, { commission_rogatoire: jCR, pv_retour_cr: jRet });
       add("commission_rogatoire", "Commission rogatoire", INS, () => DOCS.forme({ title: "Commission rogatoire", kind: "greffe", cote: cotes.commission_rogatoire, entete: [`Tribunal judiciaire — cabinet du juge d'instruction`, `Information n° ${t.ninfo} — cote ${cotes.commission_rogatoire}`],
         blocs: [
           DOCS.p(`Nous, juge d'instruction, vu les articles 81, 151 et 152 du code de procédure pénale, donnons commission rogatoire au chef de la ${svc} de procéder aux actes suivants :`),
@@ -255,6 +271,33 @@
         blocs: [DOCS.p(`Exécutant la commission rogatoire du ${DOCS.date(jCR)}, avons accompli les actes suivants :`)].concat(liste.map((x, i) => DOCS.ligne(String(i + 1), `${x.replace(/\.$/, "")} : ${pk(CR.seeded(t.sig + ":cr" + i), ["procès-verbaux joints", "exécuté, résultats joints", "exécuté en partie ; la suite est en cours", "sans résultat exploitable"])}`))).concat([DOCS.p("Retournons la commission rogatoire au magistrat mandant, avec les procès-verbaux d'exécution.")]),
         cloture: DOCS.mention(`Dont procès-verbal, fait et clos le ${DOCS.date(jRet)}.`), signataires: [`${opj.signe}, officier de police judiciaire`], st }));
     }
+
+    // 11. l'interrogatoire de curriculum vitae (sous-dossier de personnalité) : le juge interroge la personne mise en examen
+    // sur son parcours — tiré de sa fiche (famille, scolarité, travail, logement, santé, antécédents)
+    if (t.d.mex != null && A) {
+      const rc = CR.seeded(t.sig + ":cv");
+      const jCV = t.d.mex + int(rc, 12, 45);
+      const e = A.g === "f" ? "e" : "";
+      const ji = (CR.acteur && CR.acteur(t.ji)) || { nom: "le juge d'instruction" };
+      const etudes = { populaire: ["Jusqu'en troisième. Après, un CAP que je n'ai pas fini.", "J'ai arrêté au lycée professionnel, en première."], moyen: ["Un baccalauréat professionnel.", "Le bac, puis un an de BTS."], aise: ["Une licence, à l'université.", "Une école de commerce."] }[A.mil] || ["Jusqu'au collège."];
+      const casier = !A.casier ? "Jamais. C'est la première fois que j'ai affaire à la justice." : A.casier === 1 ? "Une fois. Une condamnation avec sursis, il y a quelques années." : `${A.casier === 2 ? "Deux" : "Plusieurs"} fois. Je ne le cache pas.`;
+      const sante = t.f && t.f.psy === "aboli" ? "J'ai été hospitalisé" + e + " deux fois en psychiatrie avant les faits. J'avais un traitement." : t.f && t.f.psy === "altere" ? "Je voyais un psychiatre. J'avais arrêté mon traitement." : pk(rc, ["Rien de particulier.", "Je fume, c'est tout.", "Je bois un peu trop, le week-end. Je le reconnais."]);
+      const Q = [
+        ["Où êtes-vous né" + e + " ? Comment s'est passée votre enfance ?", `Je suis né${e} ${A.naissance || "en région parisienne"}. ${pk(rc, ["Mes parents se sont séparés quand j'avais huit ans.", "Une enfance normale, avec mes frères et sœurs.", "J'ai été élevé" + e + " surtout par " + (A.proche || "ma mère").replace(/^s(a|on) /, "m$1 ") + "."])}`],
+        ["Quelle scolarité avez-vous suivie ?", pk(rc, etudes)],
+        ["Quel est votre parcours professionnel ?", A.emploi ? `Je suis ${A.metier || "salarié" + e}. Je gagne environ ${A.revenu || 1400} euros par mois.` : `Je n'ai pas de travail en ce moment.${A.metier ? ` J'ai été ${A.metier}.` : ""} Je fais des missions d'intérim quand j'en trouve.`],
+        ["Où vivez-vous, et avec qui ?", A.heberg ? `${A.adresse || "À Paris"}. ${A.enfants ? `Avec mes enfants, ${A.enfants === 1 ? "j'en ai un" : `j'en ai ${A.enfants}`}.` : "Seul" + e + ", ou chez " + (A.proche || "ma famille").replace(/^s(a|on) /, "m$1 ") + "."}` : "Je n'ai pas d'adresse fixe. Je dors chez des amis."],
+        ["Avez-vous des problèmes de santé, des addictions ?", sante],
+        ["Avez-vous déjà été condamné" + e + " ?", casier],
+        ["Quels sont vos projets ?", pk(rc, ["Reprendre mon travail. M'occuper de ma famille.", "Me soigner. Et trouver une formation.", "Je ne sais pas. J'attends de savoir ce qui va se passer."])],
+      ];
+      PZ.jours = Object.assign(PZ.jours || {}, { interro_cv: jCV });
+      add("interro_cv", "Interrogatoire de curriculum vitae", INS, () => ({ title: "Procès-verbal d'interrogatoire de curriculum vitae", kind: "pv", entete: [`Cabinet de ${ji.nom}, juge d'instruction`, `Information n° ${t.ninfo}`, `Cote ${cotes.interro_cv}`], paras: [[`Le ${DOCS.date(jCV)}, en notre cabinet, comparaît ${n(A)}, personne mise en examen, assisté${e} de son avocat, convoqué régulièrement. Interrogé${e} sur sa personnalité et sa situation (art. 81, al. 6, du code de procédure pénale) :`]].concat(Q.map(([q, a]) => [`Question : ${q} — Réponse : ${a}`]), [["Lecture faite, persiste et signe avec nous et le greffier."]]) }));
+    }
+
+    // 12. les sous-dossiers (pratique des greffes, inventaires d'archives des dossiers d'assises) : fond (D), personnalité (B),
+    // détention (C). Chaque pièce garde sa place dans l'ordre du dossier ; les cotes se lisent au rendu des pièces.
+    K.recoter(PZ);
     return PZ;
   };
 

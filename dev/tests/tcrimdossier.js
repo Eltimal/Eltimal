@@ -11,7 +11,7 @@ const { boot } = require("./harness");
   const rend = (PZ, k, t) => PZ.docs[k]({ s, cs: { vars: {}, proc: { faitsDay: t.d.faits }, enq: {}, docs: [] }, def: {}, c: t.A, api: {} });
   const txt = (r) => [].concat(...(r.paras || [])).map((x) => (typeof x === "string" ? x : x && x.t)).join(" | ");
   const H = (x) => { const m = /(\d+)[\s  ]h[\s  ](\d+)/.exec(x); return m ? +m[1] * 60 + +m[2] : null; };
-  let n = 0, auto = 0, vois = 0, ecarts = 0, mineurs = 0;
+  let n = 0, auto = 0, vois = 0, ecarts = 0, mineurs = 0, cvs = 0;
   for (let i = 0; i < 400 && n < 60; i++) {
     let t; try { t = G.tirer("tcd" + i, "info", { day: 30 }); } catch (e) { continue; } if (!t) continue;
     const tc = JSON.stringify(t);
@@ -19,6 +19,14 @@ const { boot } = require("./harness");
     n++;
     const tag = `${t.inf} ${t.sig.slice(0, 30)}`;
     const cs = Object.values(PZ.cotes); ok(new Set(cs).size === cs.length, `${tag} : cotes en double`);
+    // sous-dossiers : personnalité (B), détention (C), fond (D) ; numérotation continue dans chacun ; titres à jour
+    for (const [k, c] of Object.entries(PZ.cotes)) {
+      const L = ["expertise_psy", "personnalite", "interro_cv"].includes(k) ? "B" : ["ordo_dp", "dml", "ordo_prolong"].includes(k) ? "C" : "D";
+      ok(c[0] === L, `${tag} : ${k} cotée ${c} (sous-dossier ${L} attendu)`);
+      ok(!PZ.titres[k] || PZ.titres[k].endsWith(`(${c})`), `${tag} : titre de ${k} sans sa cote`, PZ.titres[k]);
+    }
+    for (const L of ["B", "C", "D"]) { const ns = cs.filter((c) => c[0] === L).map((c) => +c.slice(1)).sort((a, b) => a - b); ok(ns.every((x, i) => x === i + 1), `${tag} : numérotation de la cote ${L} discontinue`, ns.join(",")); }
+    if (PZ.docs.interro_cv) { cvs++; const x = txt(rend(PZ, "interro_cv", t)); ok(!/undefined|NaN|\$\{|\[object/.test(x) && /curriculum|art\. 81/.test(x) && (x.match(/Question :/g) || []).length >= 6, `${tag} : interrogatoire de curriculum vitae incomplet`, x.slice(0, 300)); }
     for (const k of ["pv_transport", "inventaire_scelles", "pv_voisinage", "pv_autopsie", "commission_rogatoire", "pv_retour_cr", "pv_reaudition"]) if (PZ.docs[k]) { const x = txt(rend(PZ, k, t)); ok(!/undefined|NaN|\$\{|\[object/.test(x), `${tag}/${k} : texte incomplet`, (x.match(/.{40}(undefined|NaN).{20}/) || [""])[0]); }
     if (PZ.docs.inventaire_scelles) {
       const T1 = txt(rend(PZ, "pv_transport", t)), T2 = txt(rend(PZ, "inventaire_scelles", t));
@@ -61,7 +69,23 @@ const { boot } = require("./harness");
     ok(txt(rend(G.piecesCrim(JSON.parse(tc), G.recit(JSON.parse(tc))), "pv_transport", t)) === txt(rend(PZ, "pv_transport", t)), `${tag} : pièce non déterministe`);
   }
   ok(n >= 40 && auto > 0 && vois > 0, "trop peu de dossiers, d'autopsies ou de voisinages", `${n}/${auto}/${vois}`);
-  console.log(`dossiers criminels : ${n} · autopsies ${auto} · voisinages ${vois} (écarts notés ${ecarts}) · victimes mineures ${mineurs}`);
+  // la copie du dossier ne contient pas une pièce qui n'est pas encore faite ; le greffe la transmet le jour venu
+  {
+    const g = CR.newGame({ prenom: "A", nom: "B", mode: "carriere", seed: 8 }); g.settings.saisie = "liste"; CR.store.s = g;
+    let c = null, jcv = null;
+    for (let i = 0; i < 60 && !c; i++) { let x; try { x = CR.GEN.open(g, "info", {}); } catch (e) { continue; } const def = CR.caseDef(x); const P0 = CR.GEN.paramsOf(g, x.id); const PZ = P0 && P0.t ? G.piecesCrim(P0.t, G.recit(P0.t)) : null; if (PZ && PZ.jours && PZ.jours.interro_cv > g.day + 3 && (def.docs || {}).interro_cv) { c = x; jcv = PZ.jours.interro_cv; } }
+    ok(c, "pas d'information dont l'interrogatoire de curriculum vitae est à venir");
+    if (c) {
+      c.status = "active";
+      CR.runHook(g, c, "_copieDelivree", {});
+      ok(!CR.hasDoc(c, "interro_cv"), "la copie contient un interrogatoire qui n'a pas encore eu lieu", `jour ${g.day}, interrogatoire le ${jcv}`);
+      for (let k = 0; k < 80 && g.day <= jcv + 3; k++) CR.endDay(g);
+      ok(CR.hasDoc(c, "interro_cv"), "l'interrogatoire de curriculum vitae n'est pas transmis le jour venu", `jour ${g.day}`);
+    }
+    CR.store.s = s;
+  }
+  ok(cvs >= n * 0.5, "trop peu d'interrogatoires de curriculum vitae", `${cvs}/${n}`);
+  console.log(`dossiers criminels : ${n} · curriculum vitae ${cvs} · autopsies ${auto} · voisinages ${vois} (écarts notés ${ecarts}) · victimes mineures ${mineurs}`);
   if (errors.length) { echecs++; console.log("  ✗ erreurs : " + errors.slice(0, 2).join(" | ")); }
   console.log("échecs:", echecs);
   process.exit(echecs ? 1 : 0);

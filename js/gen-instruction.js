@@ -561,6 +561,7 @@
           { id: "duree", t: "La durée de la détention au regard de l'avancement de l'information.", needs: ["X_dp"] },
         ] },
         copie: PZ.listes.copie,
+        joursPieces: PZ.jours || {}, // lot 7 : une pièce datée n'entre dans la copie qu'une fois faite
         chiffrage: { postes, art475: decede ? 3000 : 1800 },
       },
       flow: { tasks: PEN.tasks },
