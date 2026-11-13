@@ -585,7 +585,7 @@
         },
       },
       gav: (api) => ({
-        mode: "gav", attente: p.night ? 35 : 20,
+        mode: "gav", attente: p.night ? 35 : 20, parole: { t, N },
         arrivee: [p.night ? `${x.SF.comm}, ${CR.fmtTime(api.s.min)}. Les néons, une odeur de café froid. L'officier de quart : « Désolé de vous avoir réveillé, maître. Trente minutes. »` : `${x.SF.comm}, ${CR.fmtTime(api.s.min)}. L'officier vous tend la procédure : « Trente minutes, maître. »`],
         pieces: PZ.listes.gav,
         entretien,

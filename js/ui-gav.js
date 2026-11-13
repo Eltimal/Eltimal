@@ -31,6 +31,8 @@
     const need = { pieces: "pieces", entretien: "entretien", droits: "droits", questions: "questions", relecture: "relecture", audition: "audition" };
     const phases = (G.phases || (mode === "gav" ? ["arrivee", "pieces", "entretien", "conseil", "audition", "questions", "observations", "relecture", "issue"] : ["arrivee", "droits", "conseil", "audition", "questions", "observations", "relecture", "issue"])).filter((p) => !need[p] || G[need[p]]);
     const [pi, setPi] = useState(0);
+    const parole = CR.PAROLE && CR.PAROLE.actif(s, G);
+    if (parole && phases.includes("conseil")) phases.splice(phases.indexOf("conseil"), 1); // le conseil se donne pendant l'entretien
     const phase = phases[pi];
     const next = () => setPi((x) => Math.min(phases.length - 1, x + 1));
     const ctx = useRef({ conseil: null, questions: [], refus: [], observations: [], rectif: false, entretien: 0 }).current;
@@ -60,10 +62,10 @@
             ${phase === "arrivee" && html`<${Arrivee} s=${s} cs=${cs} G=${G} opj=${opj} mode=${mode} next=${next} />`}
             ${phase === "pieces" && html`<${Pieces} s=${s} cs=${cs} G=${G} next=${next} />`}
             ${phase === "droits" && html`<${Droits} s=${s} cs=${cs} G=${G} next=${next} />`}
-            ${phase === "entretien" && html`<${Entretien} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
+            ${phase === "entretien" && html`<${parole ? UI.EntretienParole : Entretien} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
             ${phase === "conseil" && html`<${Conseil} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
-            ${phase === "audition" && html`<${Audition} s=${s} cs=${cs} G=${G} ctx=${ctx} opj=${opj} next=${next} />`}
-            ${phase === "questions" && html`<${Questions} s=${s} cs=${cs} G=${G} ctx=${ctx} opj=${opj} next=${next} rerender=${rerender} />`}
+            ${phase === "audition" && html`<${parole ? UI.AuditionParole : Audition} s=${s} cs=${cs} G=${G} ctx=${ctx} opj=${opj} next=${next} />`}
+            ${phase === "questions" && html`<${parole ? UI.QuestionsParole : Questions} s=${s} cs=${cs} G=${G} ctx=${ctx} opj=${opj} next=${next} rerender=${rerender} />`}
             ${phase === "observations" && html`<${Observations} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
             ${phase === "relecture" && html`<${Relecture} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
             ${phase === "issue" && html`<${Issue} s=${s} cs=${cs} G=${G} ctx=${ctx} onDone=${onDone} />`}
@@ -84,10 +86,10 @@
           ${phase === "arrivee" && html`<${Arrivee} s=${s} cs=${cs} G=${G} opj=${opj} mode=${mode} next=${next} />`}
           ${phase === "pieces" && html`<${Pieces} s=${s} cs=${cs} G=${G} next=${next} />`}
           ${phase === "droits" && html`<${Droits} s=${s} cs=${cs} G=${G} next=${next} />`}
-          ${phase === "entretien" && html`<${Entretien} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
+          ${phase === "entretien" && html`<${parole ? UI.EntretienParole : Entretien} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
           ${phase === "conseil" && html`<${Conseil} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
-          ${phase === "audition" && html`<${Audition} s=${s} cs=${cs} G=${G} ctx=${ctx} opj=${opj} next=${next} />`}
-          ${phase === "questions" && html`<${Questions} s=${s} cs=${cs} G=${G} ctx=${ctx} opj=${opj} next=${next} rerender=${rerender} />`}
+          ${phase === "audition" && html`<${parole ? UI.AuditionParole : Audition} s=${s} cs=${cs} G=${G} ctx=${ctx} opj=${opj} next=${next} />`}
+          ${phase === "questions" && html`<${parole ? UI.QuestionsParole : Questions} s=${s} cs=${cs} G=${G} ctx=${ctx} opj=${opj} next=${next} rerender=${rerender} />`}
           ${phase === "observations" && html`<${Observations} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
           ${phase === "relecture" && html`<${Relecture} s=${s} cs=${cs} G=${G} ctx=${ctx} next=${next} />`}
           ${phase === "issue" && html`<${Issue} s=${s} cs=${cs} G=${G} ctx=${ctx} onDone=${onDone} />`}
@@ -269,7 +271,7 @@
   }
 
   function Relecture({ s, cs, G, ctx, next }) {
-    const R0 = G.relecture;
+    const R0 = ctx.relecture || G.relecture;
     const [asked, setAsked] = useState(null);
     const segs = R0.segs;
     const demander = (seg) => {

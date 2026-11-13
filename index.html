@@ -1770,6 +1770,64 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .moyen-irr { color: var(--muted); margin-top: 2px; }
 .doc-row.doc-onglet { box-shadow: inset 4px 0 0 var(--amber); }
 .onglet-mark { display: inline-block; width: 10px; height: 16px; background: var(--amber); margin-right: 6px; }
+
+/* ============================================================ Refonte du gameplay, lot 3 : la parole (entretien, audition) */
+.ent-parole .oral { min-height: 11.5em; max-height: 19em; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 0.45em; padding: 0.6em 0.2em; }
+.oral-vide { margin: auto 0 0; color: var(--muted, #9a958a); font-style: italic; font-size: calc(14px * var(--tz)); }
+.oral-l { display: grid; grid-template-columns: 5.4em 1fr; gap: 0.6em; align-items: baseline; transition: opacity 1.2s ease, filter 1.2s ease; }
+.oral-l.oral-efface { opacity: 0; filter: blur(1.5px); }
+.oral-who { font: 600 calc(11px * var(--tz)) var(--f-ui); letter-spacing: 0.08em; color: var(--muted, #9a958a); text-align: right; }
+.oral-t { all: unset; font: calc(16px * var(--tz))/1.42 var(--f-ui); color: var(--fg, #ece6da); cursor: pointer; border-radius: 3px; padding: 0 0.15em; }
+.oral-t:disabled { cursor: default; }
+.oral-t:not(:disabled):hover, .oral-t:focus-visible { background: rgba(201, 164, 92, 0.16); }
+.who-you .oral-t { color: #c9d4e6; font-style: italic; }
+.who-sys .oral-t { color: var(--muted, #9a958a); font-style: italic; }
+.who-opj .oral-t { color: #d9c9a8; }
+.oral-notee .oral-t { box-shadow: inset 0 -0.14em 0 rgba(201, 164, 92, 0.7); }
+.oral-caret { display: inline-block; width: 0.45em; height: 1em; margin-left: 1px; vertical-align: -0.12em; background: currentColor; opacity: 0.35; }
+.ent-qclient { display: flex; align-items: center; gap: 0.6em; flex-wrap: wrap; padding: 0.4em 0.6em; border-left: 2px solid #c9a45c; background: rgba(201, 164, 92, 0.08); font-size: calc(14px * var(--tz)); }
+.ent-qclient span { flex: 1; }
+.ent-onglets { display: flex; gap: 0.2em; border-bottom: 1px solid rgba(255, 255, 255, 0.12); margin-top: 0.4em; }
+.ent-onglet { all: unset; cursor: pointer; padding: 0.35em 0.8em; font: 600 calc(13px * var(--tz)) var(--f-ui); color: var(--muted, #9a958a); border-bottom: 2px solid transparent; }
+.ent-onglet.on { color: var(--fg, #ece6da); border-bottom-color: #c9a45c; }
+.ent-onglet:focus-visible { outline: 1px solid #c9a45c; }
+.compo { display: grid; gap: 0.45em; padding: 0.5em 0; }
+.compo-l { display: grid; grid-template-columns: 5.4em 1fr; gap: 0.6em; align-items: start; }
+.compo-h { font: 600 calc(11px * var(--tz)) var(--f-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted, #9a958a); padding-top: 0.45em; text-align: right; }
+.compo-l > div { display: flex; flex-wrap: wrap; gap: 0.3em; }
+.compo-b { all: unset; cursor: pointer; padding: 0.28em 0.6em; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 3px; font: calc(13px * var(--tz)) var(--f-ui); color: var(--fg, #ece6da); }
+.compo-b:hover:not(:disabled), .compo-b:focus-visible { border-color: rgba(201, 164, 92, 0.7); }
+.compo-b.on { background: #c9a45c; border-color: #c9a45c; color: #17130c; }
+.compo-b:disabled { opacity: 0.35; cursor: default; }
+.compo-b kbd { font: 600 calc(10px * var(--tz)) var(--f-mono); opacity: 0.6; margin-right: 0.35em; }
+.compo-l select { max-width: 100%; font: calc(13px * var(--tz)) var(--f-ui); }
+.compo-go { display: flex; align-items: center; gap: 0.8em; margin-top: 0.2em; padding-top: 0.5em; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.compo-q { flex: 1; margin: 0; font: italic calc(15px * var(--tz))/1.35 var(--f-ui); color: #c9d4e6; }
+.ent-conseil { display: grid; gap: 0.35em; padding: 0.5em 0; }
+.cons-l { display: flex; justify-content: space-between; align-items: center; gap: 0.8em; padding: 0.3em 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.cons-l > span:first-child { display: grid; } .cons-l small { color: var(--muted, #9a958a); font-size: calc(12px * var(--tz)); }
+.cons-b { display: flex; gap: 0.3em; }
+.ent-notes ol { margin: 0.5em 0; padding-left: 1.4em; display: grid; gap: 0.25em; font-size: calc(14px * var(--tz)); }
+.ent-notes li.own { font-family: "Caveat", cursive; font-size: 1.2em; }
+.ent-note-in { display: flex; gap: 0.4em; } .ent-note-in input { flex: 1; font: calc(14px * var(--tz)) var(--f-ui); }
+.ent-fin { display: flex; align-items: center; justify-content: flex-end; gap: 0.6em; margin-top: 0.5em; }
+.ent-fin > span { margin-right: auto; }
+@media (prefers-reduced-motion: reduce) { .oral-l { transition: none; } }
+
+/* lot 3, plan plein écran : la parole en haut, le compositeur dessous */
+.staged .ent-card.ent-parole { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(4.4em, auto) auto auto; grid-template-areas: "head" "oral" "qc" "cote"; height: auto; max-height: 50vh; gap: 5px; }
+.staged .ent-parole > .oral { min-height: 4.4em; max-height: 6.8em !important; }
+.ent-tete-d { display: flex; align-items: center; gap: 0.8em; }
+.ent-qclient span { font-style: italic; }
+.staged .ent-parole > .entretien-head { grid-area: head; }
+.staged .ent-parole > .oral { grid-area: oral; max-height: none; min-height: 0; background: rgba(4, 6, 11, 0.55); border-radius: 4px; padding: 0.6em 0.8em; }
+.staged .ent-parole > .ent-qclient { grid-area: qc; }
+.staged .ent-parole > .ent-cote { grid-area: cote; min-height: 0; overflow-y: auto; }
+.staged .ent-parole > .ent-fin { grid-area: fin; }
+.staged .ent-parole .ent-onglets { margin-top: 0; }
+.staged .gav-card.ent-parole:not(.ent-card) { display: flex; flex-direction: column; gap: 0.4em; max-height: 48vh; overflow-y: auto; }
+.staged .gav-card.ent-parole:not(.ent-card) > .oral { background: rgba(4, 6, 11, 0.55); border-radius: 4px; padding: 0.6em 0.8em; }
+@media (max-width: 900px) { .staged .ent-card.ent-parole { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "oral" "qc" "cote" "fin"; grid-template-rows: auto minmax(8em, 1fr) auto auto auto; height: 62vh; } }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
@@ -1810,6 +1868,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/equipe.js"></script>
 <script src="js/dossier.js"></script>
 <script src="js/travail.js"></script>
+<script src="js/parole.js"></script>
 <script src="js/cat-base.js"></script>
 <script src="js/cat-personnes.js"></script>
 <script src="js/cat-biens.js"></script>
@@ -1871,6 +1930,7 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 <script src="js/ui-scenes.js"></script>
 <script src="js/ui-gav.js"></script>
 <script src="js/ui-travail.js"></script>
+<script src="js/ui-entretien.js"></script>
 <script src="js/ui-court.js"></script>
 <script src="js/ui-moments.js"></script>
 <script src="js/carriere.js"></script>
