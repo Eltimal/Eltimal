@@ -282,6 +282,7 @@
     if (SIM.deuxRoues(t, S)) S.deuxRoues = deuxRoues(S, t, k, r, E);
     if (SIM.deal(t, S)) S.deal = deal(S, t, k, r, E);
     if (SIM.detention(t, S)) S.detention = detention(S, t, k, r);
+    if (SIM.rebellion(t, S)) S.rebellion = { passif: ch(r, 0.25), ordre: ch(r, 0.2), passant: k.has("video") || k.has("temoin"), duree: int(r, 20, 90) };
     if (SIM.outrage(t, S)) S.outrage = { ecart: ch(r, 0.3), cantonade: ch(r, 0.25), passant: k.has("video"), autre: pk(r, ["chiens", "bâtards", "guignols", "racistes", "bons à rien"]) };
     S.E = E;
     S.auteurs = { apj: { nom: t.gpx[0], style: CR.DOCS.style(CR.seeded(t.sig + ":apj")) }, opj: { nom: k.opjN, style: CR.DOCS.style(CR.seeded(t.sig + ":opj")) } };
@@ -430,6 +431,9 @@
   // ---------------------------------------------------------------- lot 1 ter : l'outrage
   // Deux policiers ont entendu les propos ; le second ne rapporte pas toujours les mêmes mots (de bonne foi). Les propos
   // sont parfois lancés « à la cantonade », vers la rue, plutôt qu'adressés aux policiers ; un passant a parfois filmé.
+  // rébellion : le second policier, ou un passant, décrit parfois une résistance passive (se laisser tomber, se raidir) là où
+  // les constatations disent « se débat » ; parfois aussi l'ordre des gestes : la clé de bras avant le refus.
+  SIM.rebellion = (t, S) => !!(t && t.inf === "rebellion" && t.flagrance && !(S && S.prelim));
   SIM.outrage = (t, S) => !!(t && t.inf === "outrage" && t.flagrance && !(S && S.prelim));
   // ---------------------------------------------------------------- lot 1 ter : la détention de stupéfiants
   // Ce qui fait l'affaire : à qui sont les produits. Au domicile, un colocataire partage parfois la cuisine où est le

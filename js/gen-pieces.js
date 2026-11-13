@@ -523,6 +523,12 @@
       for (const k of Object.keys(PS.titres)) titres[k] = PS.titres[k];
       for (const k of Object.keys(PS.docs)) docs[k] = PS.docs[k];
       if (!PS.docs.pv_temoin && T && has("temoin")) fact("G_temoin_pv", { label: `Le témoignage de ${nf(T)}`, key: t.genre === "pc" });
+      if (SS.rebellion) {
+        const R = SS.rebellion;
+        if (R.passif) fact("G_passif", { label: "Le second policier décrit un « poids mort » : se laisser tomber, se raidir, sans frapper", key: true, why: "La rébellion suppose une résistance violente, active : la résistance passive n'en est pas une." });
+        if (R.ordre) fact("G_ordre", { label: "La clé de bras a précédé la résistance", key: true, why: "L'ordre des gestes compte : une résistance qui répond à une contrainte se discute, et la proportion de la contrainte aussi." });
+        if (R.passant) fact("G_video_passant", { label: "Des passants ont assisté à la scène ; l'un filmait", key: false });
+      }
       if (SS.outrage && SS.outrage.mots) {
         const O = SS.outrage;
         if (O.ecart) fact("G_mots_ecart", { label: `Les deux policiers ne rapportent pas les mêmes mots : « ${O.mots} » / « ${O.mots2} »`, key: true, why: "L'outrage tient aux propos eux-mêmes : deux versions des mots, c'est une preuve qui se discute." });

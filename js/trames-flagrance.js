@@ -538,6 +538,23 @@
             mention(`Établi par la direction du magasin, le ${DOCS.date(j(E.etat))}.`),
           ], sigs: ["Le directeur du magasin"] }));
       }
+      // lot 1 ter : la rébellion — la déclaration du second fonctionnaire
+      if (S.rebellion) {
+        const R = S.rebellion;
+        add("pv_collegue", E.debut + 50, "Déclaration du second fonctionnaire", () => {
+          const rr = CR.seeded(t.sig + ":g:reb");
+          const blocs = [
+            decl(`« J'étais avec ${apjTxt(0)}. ${Maj(il(A))} refusait de nous suivre. »`),
+            R.ordre ? decl({ t: `« Mon collègue lui a fait une clé de bras pour le conduire au véhicule ; c'est à ce moment qu'${il(A)} a résisté. »`, f: "G_ordre" }) : decl(`« Nous lui avons demandé plusieurs fois de nous suivre ; ${il(A)} a refusé, puis ${il(A)} a résisté au menottage. »`),
+            R.passif ? decl({ t: `« ${Maj(il(A))} s'est laissé${e(A)} tomber, ${il(A)} s'est raidi${e(A)} ; ${il(A)} ne frappait pas, ${il(A)} faisait le poids mort. Il a fallu ${le(A)} porter. »`, f: "G_passif" })
+              : decl(`« ${Maj(il(A))} se débattait, ${il(A)} donnait des coups dans tous les sens. ${pk(rr, ["Ça a duré", "Il a fallu"])} ${R.duree} secondes environ pour ${le(A)} menotter. »`),
+            R.passant ? decl({ t: "« Des passants étaient là ; l'un d'eux filmait. »", f: "G_video_passant" }) : null,
+          ];
+          return DOCS.pv({ cote: cote("pv_collegue"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition", qualite: "Fonctionnaire de police, témoin", numPV: "00" + int(rr, 101, 899), jour: j(E.debut + 50), heure: E.debut + 50, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
+            objet: `OBJET : ${q0.label} — audition du second fonctionnaire`, identite: { nom: t.gpx[1].split(" ").slice(-1)[0], prenom: t.gpx[1].split(" ")[0], g: gp(t.gpx[1]).startsWith("Gardienne") ? "f" : "m", metier: gp(t.gpx[1]).toLowerCase() }, blocs,
+            cloture: DOCS.clotureAudition(ville, j(E.debut + 70), E.debut + 70, gp(t.gpx[1]).startsWith("Gardienne") ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
+        });
+      }
       // lot 1 ter : l'outrage — la déclaration du second fonctionnaire
       if (S.outrage && S.outrage.mots) {
         const O = S.outrage;
