@@ -253,21 +253,23 @@
     const q = (sujet, texte, rep, plus) => Q.push(Object.assign({ sujet, q: texte, rep }, plus || {}));
     const lieu = t.rue ? `${t.rue}` : "sur les lieux";
     const prox = PR().proche(A);
+    // une formule par affaire, tirée de sa signature : deux auditions ne se ressemblent pas mot pour mot
+    const V = (k, arr) => arr[CR.hash(M.sig + ":v:" + k) % arr.length];
     // personnalité
-    q("identite", "Déclinez vos nom, prénoms, date et lieu de naissance, filiation, adresse.", `${A.nom.toUpperCase()} ${A.prenom}, né${G.e} ${A.naissance || ""}. J'habite ${A.adresse || "chez " + prox.ma}.`.replace(/\s+\./, "."));
-    q("personnalite", "Quelle est votre situation familiale ?", A.enfants ? `J'ai ${PR().enfants(A.enfants) || "des enfants"}.` : "Je n'ai pas d'enfant.");
-    q("personnalite", "Où et avec qui demeurez-vous ?", A.heberg ? `Chez ${prox.ma}, ${A.rue || ""}.`.replace(", .", ".") : "Je n'ai pas d'adresse fixe. Chez des amis.");
-    q("personnalite", "Quelle est votre profession, quelles sont vos ressources ?", A.emploi ? `Je suis ${A.metier}. Je gagne environ ${CR.num(Math.round((A.revenu || 1500) / 100) * 100)} euros par mois.` : `Je ne travaille pas.${A.revenu ? ` Je touche environ ${CR.num(Math.round(A.revenu / 100) * 100)} euros.` : ""}`);
-    q("personnalite", "Êtes-vous suivi" + G.e + " pour un problème de santé, prenez-vous un traitement ?", "Non.");
-    q("antecedents", "Avez-vous déjà été condamné" + G.e + " ?", A.casier ? (t.rec ? "Oui. Pour le même genre de chose." : "Une fois. Il y a longtemps.") : "Non, jamais.");
-    q("antecedents", "Êtes-vous connu" + G.e + " des services de police pour d'autres faits ?", A.casier ? "Je sais pas ce que vous avez dans vos fichiers." : "Non.");
+    q("identite", V("id", ["Déclinez vos nom, prénoms, date et lieu de naissance, filiation, adresse.", "Veuillez décliner votre identité complète : nom, prénoms, date et lieu de naissance, adresse.", "Pour le procès-verbal, déclinez votre identité, votre date et votre lieu de naissance, votre adresse."]), `${A.nom.toUpperCase()} ${A.prenom}, né${G.e} ${A.naissance || ""}. J'habite ${A.adresse || "chez " + prox.ma}.`.replace(/\s+\./, "."));
+    q("personnalite", V("fam", ["Quelle est votre situation familiale ?", "Êtes-vous marié" + G.e + ", en couple, avez-vous des enfants ?", "Parlez-nous de votre situation de famille."]), A.enfants ? `J'ai ${PR().enfants(A.enfants) || "des enfants"}.` : "Je n'ai pas d'enfant.");
+    q("personnalite", V("dem", ["Où et avec qui demeurez-vous ?", "Quelle est votre adresse, et avec qui y vivez-vous ?", "Où habitez-vous, et depuis quand ?"]), A.heberg ? `Chez ${prox.ma}, ${A.rue || ""}.`.replace(", .", ".") : "Je n'ai pas d'adresse fixe. Chez des amis.");
+    q("personnalite", V("res", ["Quelle est votre profession, quelles sont vos ressources ?", "De quoi vivez-vous ? Quel est votre emploi ?", "Travaillez-vous ? Quels sont vos revenus mensuels ?"]), A.emploi ? `Je suis ${A.metier}. Je gagne environ ${CR.num(Math.round((A.revenu || 1500) / 100) * 100)} euros par mois.` : `Je ne travaille pas.${A.revenu ? ` Je touche environ ${CR.num(Math.round(A.revenu / 100) * 100)} euros.` : ""}`);
+    q("personnalite", V("sante", ["Êtes-vous suivi" + G.e + " pour un problème de santé, prenez-vous un traitement ?", "Avez-vous des problèmes de santé, un traitement en cours ?", "Consommez-vous habituellement de l'alcool ou des produits stupéfiants ? Êtes-vous soigné" + G.e + " pour quelque chose ?"]), "Non.");
+    q("antecedents", V("cond", ["Avez-vous déjà été condamné" + G.e + " ?", "Avez-vous déjà eu affaire à la justice ?", "Votre casier judiciaire porte-t-il des condamnations ?"]), A.casier ? (t.rec ? "Oui. Pour le même genre de chose." : "Une fois. Il y a longtemps.") : "Non, jamais.");
+    q("antecedents", V("connu", ["Êtes-vous connu" + G.e + " des services de police pour d'autres faits ?", "Avez-vous déjà été entendu" + G.e + " par nos services ?", "Avez-vous déjà fait l'objet d'une garde à vue ?"]), A.casier ? "Je sais pas ce que vous avez dans vos fichiers." : "Non.");
     // les faits
     const version = (N.version && N.version[t.stance]) || "Je n'ai rien fait.";
-    q("faits", "Vous êtes entendu" + G.e + " sur des faits commis " + (t.flagrance ? "ce jour" : "il y a quelques jours") + ". Qu'avez-vous à dire ?", version, { cle: true });
-    if (t.d && t.d.h != null) q("faits", "Où vous trouviez-vous au moment des faits, et que faisiez-vous ?", t.stance === "nie" && t.vie && t.vie.ment && t.vie.ment.k === "absent" ? "J'étais pas là. J'étais chez moi." : t.rue ? `${cap(t.rue)}. J'étais là, oui.` : "J'étais là, oui.");
+    q("faits", V("intro", ["Vous êtes entendu" + G.e + " sur des faits commis " + (t.flagrance ? "ce jour" : "il y a quelques jours") + ". Qu'avez-vous à dire ?", "Expliquez-nous ce qui s'est passé.", "Donnez-nous votre version des faits qui vous sont reprochés.", "Nous vous écoutons sur les faits : que s'est-il passé ?"]), version, { cle: true });
+    if (t.d && t.d.h != null) q("faits", V("ou", ["Où vous trouviez-vous au moment des faits, et que faisiez-vous ?", "Que faisiez-vous à l'heure des faits ?", "Où étiez-vous, à ce moment-là ?"]), t.stance === "nie" && t.vie && t.vie.ment && t.vie.ment.k === "absent" ? "J'étais pas là. J'étais chez moi." : t.rue ? `${cap(t.rue)}. J'étais là, oui.` : "J'étais là, oui.");
     if (vict) q("faits", `Connaissez-vous ${vict.civ} ${t.V.nom.toUpperCase()} ?`, libre(M, { id: "victime" }, "recit", r)[0]);
-    q("faits", "Pourquoi les choses se sont-elles passées ainsi ?", t.stance === "reconnait" ? "Je sais pas. J'ai perdu les pédales." : phrases(version).slice(-1)[0] || "Je sais pas.");
-    q("faits", "Reconnaissez-vous les faits qui vous sont reprochés ?", { reconnait: "Oui.", minimise: "En partie. Pas comme ils le disent.", nie: "Non." }[t.stance]);
+    q("faits", V("pq", ["Pourquoi les choses se sont-elles passées ainsi ?", "Comment en est-on arrivé là ?", "Qu'est-ce qui vous a poussé" + G.e + " à agir ainsi ?"]), t.stance === "reconnait" ? "Je sais pas. J'ai perdu les pédales." : phrases(version).slice(-1)[0] || "Je sais pas.");
+    q("faits", V("rec", ["Reconnaissez-vous les faits qui vous sont reprochés ?", "Reconnaissez-vous les faits ?", "Admettez-vous ce qui vous est reproché ?"]), { reconnait: "Oui.", minimise: "En partie. Pas comme ils le disent.", nie: "Non." }[t.stance]);
     for (const a of N.audition || []) q("details", a.q, a.a.expliquer || a.a.partiel || "", { fq: a.fq || null, silence: a.a.silence, partiel: a.a.partiel });
     // ce que l'enquêteur a en main
     if (preuves.includes("plainte") && vict) q("preuves", `${vict.civ} ${t.V.nom.toUpperCase()} a déposé plainte contre vous. Que répondez-vous à ses déclarations ?`, { reconnait: "Ce qu'" + vict.il + " dit est vrai.", minimise: vict.Il + " exagère. Ça s'est pas passé comme ça.", nie: vict.Il + " ment." }[t.stance]);
@@ -277,15 +279,15 @@
     if (preuves.includes("certificat") && vict) q("preuves", `Le médecin a constaté des blessures sur ${vict.civ} ${t.V.nom.toUpperCase()}. D'où viennent-elles ?`, { reconnait: "C'est moi. Je regrette.", minimise: "Pas de moi. Ou alors en tombant.", nie: "Je sais pas. Pas de moi." }[t.stance]);
     // l'interpellation
     if (t.flagrance) q("interpellation", "Pourquoi avez-vous quitté les lieux ?", { reconnait: "J'ai paniqué.", minimise: "Je voulais pas d'histoires.", nie: "Je suis pas parti, je rentrais chez moi." }[t.stance]);
-    q("interpellation", "Comment s'est passée votre interpellation ? Avez-vous des observations ?", pk(["Ça s'est passé. Les menottes étaient serrées.", "Rien à dire.", "Ils m'ont un peu bousculé" + G.e + ". C'est tout."]));
+    q("interpellation", V("interp", ["Comment s'est passée votre interpellation ? Avez-vous des observations ?", "Avez-vous des observations sur les conditions de votre interpellation ?", "Votre interpellation s'est-elle passée sans incident ?"]), pk(["Ça s'est passé. Les menottes étaient serrées.", "Rien à dire.", "Ils m'ont un peu bousculé" + G.e + ". C'est tout."]));
     if (/ivresse|alcool/.test(JSON.stringify((t.f && t.f.agg) || [])) || ["alcool", "stups_volant"].includes(t.inf)) q("details", "Aviez-vous consommé de l'alcool ou des stupéfiants ?", t.stance === "reconnait" ? "Oui, j'avais bu." : "Un verre, pas plus.");
     for (const x of (N.qA || []).slice(0, 3)) if (x && x.q) q("details", CR.cap(x.q.replace(/^(Vous|Tu) /, "Vous ")), segT((x.a || [])[0]) || "Je sais pas.");
-    q("faits", "Qu'avez-vous fait juste après les faits ?", t.flagrance ? (t.stance === "reconnait" ? "Je suis parti. J'ai eu peur." : "Je rentrais chez moi. C'est là qu'ils m'ont arrêté" + G.e + ".") : "Rien de spécial. J'ai continué ma vie normalement.");
-    q("personnalite", "Avez-vous un téléphone portable ? Quel est votre numéro ?", A.tel ? `Oui. Le ${A.tel}.` : "Oui. Ils l'ont pris, il est dans la fouille.");
-    q("interpellation", "Avez-vous pu vous alimenter et vous reposer depuis le début de la mesure ?", pk(["On m'a donné un plat. J'ai pas dormi.", "Oui. Enfin, sur le banc.", "J'ai pas faim."]));
-    q("interpellation", "Acceptez-vous de vous soumettre aux relevés signalétiques : photographies, empreintes ?", "Oui.");
-    q("antecedents", "Faites-vous l'objet d'une autre procédure, d'un contrôle judiciaire, d'un sursis en cours ?", A.casier && t.rec ? "Un sursis, oui." : "Non.");
-    q("fin", "Avez-vous quelque chose à ajouter ?", { reconnait: "Je regrette. Je voudrais m'excuser.", minimise: "Je regrette que ça ait dégénéré.", nie: "Non. J'ai rien fait." }[t.stance]);
+    q("faits", V("apres", ["Qu'avez-vous fait juste après les faits ?", "Et ensuite, qu'avez-vous fait ?", "Où êtes-vous allé" + G.e + " après ?"]), t.flagrance ? (t.stance === "reconnait" ? "Je suis parti. J'ai eu peur." : "Je rentrais chez moi. C'est là qu'ils m'ont arrêté" + G.e + ".") : "Rien de spécial. J'ai continué ma vie normalement.");
+    q("personnalite", V("tel", ["Avez-vous un téléphone portable ? Quel est votre numéro ?", "Quel est votre numéro de téléphone ?", "Possédez-vous un téléphone ? Lequel, à quel numéro ?"]), A.tel ? `Oui. Le ${A.tel}.` : "Oui. Ils l'ont pris, il est dans la fouille.");
+    q("interpellation", V("repos", ["Avez-vous pu vous alimenter et vous reposer depuis le début de la mesure ?", "Vous a-t-on proposé à manger, avez-vous pu dormir ?", "Comment s'est passée la mesure jusqu'ici : repas, repos ?"]), pk(["On m'a donné un plat. J'ai pas dormi.", "Oui. Enfin, sur le banc.", "J'ai pas faim."]));
+    q("interpellation", V("sign", ["Acceptez-vous de vous soumettre aux relevés signalétiques : photographies, empreintes ?", "Vous serez photographié" + G.e + " et vos empreintes relevées. Vous ne vous y opposez pas ?", "Acceptez-vous la prise de vos empreintes et de photographies ?"]), "Oui.");
+    q("antecedents", V("autre", ["Faites-vous l'objet d'une autre procédure, d'un contrôle judiciaire, d'un sursis en cours ?", "Êtes-vous sous contrôle judiciaire ou sous le coup d'un sursis ?", "Une autre affaire est-elle en cours vous concernant ?"]), A.casier && t.rec ? "Un sursis, oui." : "Non.");
+    q("fin", V("fin", ["Avez-vous quelque chose à ajouter ?", "Voulez-vous ajouter quelque chose ?", "Souhaitez-vous faire une dernière déclaration ?"]), { reconnait: "Je regrette. Je voudrais m'excuser.", minimise: "Je regrette que ça ait dégénéré.", nie: "Non. J'ai rien fait." }[t.stance]);
     return Q;
   };
   // déroule l'audition : la réponse de chaque question suit ce que le client fait du conseil

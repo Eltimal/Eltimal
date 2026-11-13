@@ -3,7 +3,7 @@
 Tenu par la direction du chantier de refonte. Chaque ligne dit ce qui est **implémenté**, **testé** (un test automatique le couvre) ou **validé** (jugé en jeu, captures comprises). « Ancien » = le système d'avant la refonte, toujours en service.
 Référence de conception : `dev/ref/refonte-gameplay.md` (copie de l'onglet du document de conception) ; fiche technique : `dev/README.md`.
 
-Dernière mise à jour : 13 novembre 2026, après les lots 4a et 4b et les entretiens libres.
+Dernière mise à jour : 13 novembre 2026. La boucle principale (permanence → garde à vue → orientation → comparution immédiate → jugement raisonné → décision écrite → débrief) se joue de bout en bout en mode libre : `tests/tboucle.js` (graines 3, 5, 7, 9).
 
 ## Boucle principale du joueur
 
@@ -44,3 +44,9 @@ Cabinet (plan plein écran, objets cliquables) → appel ou client (vivier, perm
 | Ignorance de la suspension plaidée | 100 % | 44 % (voulu : l'élément moral manque) |
 
 Décisions : `GAMEPLAY_DECISIONS.md`, D-07 à D-14.
+
+## Points de vigilance mesurés
+
+- **Répétition** : phrases communes entre deux gardes à vue d'infractions différentes, 24,5 % pour un seuil de 25 % (`trepetition`), depuis que la mesure entend les débats intégraux du mode libre. Marge mince : toute nouvelle formule fixe de l'audition, de l'interrogatoire ou du réquisitoire doit avoir ses variantes (`V(...)` dans `parole.js` et `debats.js`).
+- **Longueur des options d'actes** : l'ordre est mélangé, mais la bonne option reste souvent la plus longue (85 % dans l'audit). À traiter avec B2.
+- **Mode libre par défaut** : une partie neuve est en mode libre (`CR.libre`) ; les parties automatiques jouent en mode liste (`dev/tests/util.js`) et gardent l'ancien parcours, que la batterie continue de vérifier.

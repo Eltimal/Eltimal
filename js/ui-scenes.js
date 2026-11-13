@@ -148,7 +148,7 @@
         <${UI.DossierSide} s=${s} cs=${cs} ctx="entretien" />
       </div>
       <div className="call-main">
-        ${libreCall && phase !== "advice" && html`<${UI.CallLibre} s=${s} cs=${cs} call=${call} nom=${who.nom || c.prenom} api=${api} fmt=${(x) => CR.fmt(x || "", v)} topics=${topics} onGeste=${geste} onTemps=${(m) => setElapsed((e) => e + m)} onPatience=${patienceLibre} onAsked=${(id) => setAsked((a) => (a.has(id) ? a : new Set(a).add(id)))} closing=${phase === "closing"} onClose=${() => setPhase("closing")} onConseil=${() => setPhase("advice")} adviceOn=${adviceOpts.length > 0} />`}
+        ${libreCall && phase !== "advice" && html`<${UI.CallLibre} s=${s} cs=${cs} call=${call} nom=${who.nom || c.prenom} api=${api} fmt=${(x) => CR.fmt(x || "", v)} topics=${topics} onGeste=${geste} onTemps=${(m) => setElapsed((e) => e + m)} onPatience=${patienceLibre} onAsked=${(id) => { setAsked((a) => (a.has(id) ? a : new Set(a).add(id))); const tp = (call.topics || []).find((x) => x.id === id); if (tp && tp.unlock && tp.unlock.length) setUnlocked((u0) => { const n = new Set(u0); tp.unlock.forEach((x) => n.add(x)); return n; }); }} closing=${phase === "closing"} onClose=${() => setPhase("closing")} onConseil=${() => setPhase("advice")} adviceOn=${adviceOpts.length > 0} />`}
         <div className="transcript" aria-live="polite" hidden=${!!libreCall}>
           ${lines.map((L, li) => html`<div key=${li} className=${cx("tline", "who-" + L.who)}>
             <span className="tl-who pix">${L.who === "client" ? (who.nom || c.prenom).toUpperCase() : L.who === "you" ? "VOUS" : ""}</span>

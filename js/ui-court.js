@@ -215,7 +215,7 @@
     }
     function choose(opt) {
       setTimer(0);
-      addLog({ who: "you", t: T(opt.say || opt.t) });
+      if (opt.say || opt.t) addLog({ who: "you", t: T(opt.say || opt.t) });
       applyFx(s, cs, st, opt.fx);
       if (opt.reply) addLog({ who: opt.replyWho || "president", t: T(opt.reply) });
       if (opt.signal) (CR.libre(s) || addLog({ who: "sys", t: CR.ACT.signal(api, opt.signal) }));
@@ -316,7 +316,7 @@
               if (!CR.libre(s)) return cur.choose.filter((o) => !o.need || CR.inHand(s, cs, o.need)).map((o, i) => html`<button key=${i} className="choice" onClick=${() => choose(o)}>${T(o.t)}</button>`);
               const r = CR.seeded(cs.id + ":choix:" + (cur.choose[0] && cur.choose[0].t));
               const opts = cur.choose.map((o) => ({ o, k: r() })).sort((a, b) => a.k - b.k).map((x) => x.o);
-              return opts.map((o, i) => html`<button key=${i} className="choice" onClick=${() => { if (o.need && !CR.inHand(s, cs, o.need)) { addLog({ who: "president", t: "Qu'est-ce qui, dans le dossier, permet de le dire, maître ?" }); applyFx(s, cs, st, { cred: -2 }); bump(); return; } choose(o); }}>${T(o.t)}</button>`);
+              return opts.map((o, i) => html`<button key=${i} className="choice" onClick=${() => { if (o.need && !CR.inHand(s, cs, o.need)) { addLog({ who: "you", t: T(o.t) }); addLog({ who: "president", t: "Qu'est-ce qui, dans le dossier, permet de le dire, maître ? … Bien. Poursuivons." }); applyFx(s, cs, st, { cred: -2 }); const repli = cur.choose.find((x) => !x.need) || cur.choose[cur.choose.length - 1]; if (repli && repli !== o) choose(Object.assign({}, repli, { t: null, reply: null })); else next(); return; } choose(o); }}>${T(o.t)}</button>`);
             })()}
           </div>`}
           ${phase === "card" && html`<div className="hand">
@@ -465,13 +465,13 @@
       const on = picked.includes(id);
       setPicked(on ? picked.filter((x) => x !== id) : picked.length < max ? picked.concat(id) : picked);
       const a = argOf(id);
-      if (!on && picked.length < max && a && specOf(a) && !acites[id]) setCiting(id);
+      if (!on && picked.length < max && a && (specOf(a) || (cat && saisie && /\(art/.test((cat.flatMap((x) => x[2]).find((u) => u.id === id) || {}).label || ""))) && !acites[id]) setCiting(id);
       if (on && citing === id) setCiting(null);
     };
     const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const plaider = () => {
       st.angle = angle;
-      const args = picked.map((id) => argOf(id)).filter(Boolean);
+      const args = picked.map((id) => { const a = argOf(id); return a && (cat ? Object.assign({}, a, { _uid: id }) : a); }).filter(Boolean);
       if (P.intro) addLog({ who: "you", t: T(P.intro) });
       let bons = 0, hors = 0;
       const retenus = [];
@@ -486,7 +486,7 @@
         let textOk = true;
         let say = a.say || a.label;
         if (sp) {
-          const r = acites[a.id];
+          const r = acites[a._uid || a.id];
           const g = r ? r.g : "absent";
           if (r && r.ref) for (const e of sp.expect) say = say.replace(new RegExp(`(art\\.|article)\\s+${esc(CR.numLabel(e))}(?![\\d-])`, "g"), `$1 ${CR.numLabel(r.ref)}`);
           addLog({ who: "you", t: say });
@@ -555,7 +555,9 @@
         ${cols.length === 0 && html`<p className="small muted">Rien n'a été préparé dans le dossier de travail. Vous plaidez de mémoire.</p>`}
         ${cols.map(([k, l, L]) => html`<div key=${k} className="pb-col"><span className="cat-h">${l}</span>${L.map((m) => html`<div key=${m.id} className="pb-m"><b>${m.titre}</b>${m.annots.map((id) => { const an = CR.TRAV.annot(cs, id); return an && html`<span key=${id} className="pb-c">${an.cote ? an.cote + (an.f ? ", f. " + an.f : "") + " — " : ""}« ${an.t.length > 110 ? an.t.slice(0, 108) + "…" : an.t} »</span>`; })}</div>`)}</div>`)}
       </details>`; })()}
-      ${cat && html`<div className="args args-cat">${cat.map(([k, titre, l]) => html`<div key=${k} className="cat-rub"><span className="cat-h">${titre}</span>${l.map((u) => { const kk = picked.indexOf(u.id); return html`<button key=${u.id} type="button" className=${cx("arg", kk >= 0 && "on")} onClick=${() => toggle(u.id)}>${kk >= 0 && html`<span className="arg-n">${kk + 1}</span>`}<span>${u.label}</span></button>`; })}</div>`)}</div>`}
+      ${cat && html`<div className="args args-cat">${cat.map(([k, titre, l]) => html`<div key=${k} className="cat-rub"><span className="cat-h">${titre}</span>${l.map((u) => { const kk = picked.indexOf(u.id); const ra = kk >= 0 ? argOf(u.id) : null; const sp = ra && !ra.horsSujet && !ra.sansPiece ? specOf(ra) : null; const lab = saisie ? u.label.replace(/\((art\.|articles?)[^)]*\)/, "(art. …)") : u.label; return html`<div key=${u.id} className="arg-wrap"><button type="button" className=${cx("arg", kk >= 0 && "on")} onClick=${() => toggle(u.id)}>${kk >= 0 && html`<span className="arg-n">${kk + 1}</span>`}<span>${lab}</span></button>
+          ${kk >= 0 && /\(art/.test(u.label) && saisie && (acites[u.id] ? html`<p className="small cite-line">Article : <${UI.CiteDone} s=${s} r=${acites[u.id]} /></p>` : citing === u.id ? html`<${UI.CiteInput} s=${s} expect=${sp ? sp.expect : ["__aucun"]} label="Citez l'article" onDone=${(r) => { setAcites(Object.assign({}, acites, { [u.id]: r })); setCiting(null); }} onSkip=${() => setCiting(null)} />` : html`<button type="button" className="link small" onClick=${() => setCiting(u.id)}>Citer l'article : art. …</button>`)}
+        </div>`; })}</div>`)}</div>`}
       <div className="args" hidden=${!!cat}>
         ${(cat ? [] : P.args).map((a) => { const ok = dispo(a); const k = picked.indexOf(a.id); const sp = specOf(a); return html`<div key=${a.id} className="arg-wrap"><button className=${cx("arg", k >= 0 && "on", !ok && "off")} disabled=${!ok} onClick=${() => toggle(a.id)}>
           ${k >= 0 && html`<span className="arg-n">${k + 1}</span>`}<span>${sp && sp.raw ? CR.citeMasked(sp) : a.label}</span>${!ok && html`<span className="small muted"> — rien dans votre main pour l'appuyer</span>`}
