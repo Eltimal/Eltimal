@@ -40,6 +40,9 @@ const { boot } = require("./harness");
     }
     if (PZ.docs.interro_cv) { cvs++; const x = txt(rend(PZ, "interro_cv", t)); ok(!/undefined|NaN|\$\{|\[object/.test(x) && /curriculum|art\. 81/.test(x) && (x.match(/Question :/g) || []).length >= 6, `${tag} : interrogatoire de curriculum vitae incomplet`, x.slice(0, 300)); }
     for (const k of ["pv_transport", "inventaire_scelles", "pv_voisinage", "pv_autopsie", "commission_rogatoire", "pv_retour_cr", "pv_reaudition"]) if (PZ.docs[k]) { const x = txt(rend(PZ, k, t)); ok(!/undefined|NaN|\$\{|\[object/.test(x), `${tag}/${k} : texte incomplet`, (x.match(/.{40}(undefined|NaN).{20}/) || [""])[0]); }
+    // l'enquête de personnalité en rapport (art. 81, al. 6) ; la synthèse développée, ses pièces citées par leur cote
+    if (PZ.docs.personnalite) { const x = txt(rend(PZ, "personnalite", t)); ok(/art\. 81, al\. 6|socio-éducatifs/.test(x) && /PARCOURS SCOLAIRE ET PROFESSIONNEL/.test(x) && /PERSPECTIVES/.test(x) && !(/médecin|avocat|ingénieur/.test(t.A.metier || "") && /abandonnées|arrêtée à seize ans|CAP obtenu/.test(x)) && !/undefined|NaN/.test(x), `${tag} : enquête de personnalité incomplète ou incohérente avec le métier`, x.slice(0, 400)); }
+    if (PZ.docs.pv_synthese) { const x = txt(rend(PZ, "pv_synthese", t)); ok(/CHRONOLOGIE/.test(x) && /INVESTIGATIONS CONDUITES/.test(x) && /\(D\d+\)/.test(x) && !/undefined|NaN/.test(x), `${tag} : synthèse sans chronologie ni investigations`, x.slice(0, 400)); }
     if (PZ.docs.inventaire_scelles) {
       const T1 = txt(rend(PZ, "pv_transport", t)), T2 = txt(rend(PZ, "inventaire_scelles", t));
       const s1 = [...T1.matchAll(/Scellé n° (\w+) : ([^|]+)/g)].map((m) => m[1] + ":" + m[2].trim()), s2 = [...T2.matchAll(/Scellé n° (\w+) — ([^:|]+)/g)].map((m) => m[1] + ":" + m[2].trim());

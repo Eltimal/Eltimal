@@ -259,6 +259,45 @@
       docs.pv_proche = (x) => { const o = vieux(x); const P = (o.paras || []).slice(); const fin = P.length && /Lecture faite|clos/.test(JSON.stringify(P[P.length - 1])) ? P.pop() : null; return Object.assign({}, o, { paras: P.concat([["QUESTIONS ET RÉPONSES"], [`Question : Quand avez-vous eu des nouvelles de ${V.prenom} pour la dernière fois ?`], [{ t: `Réponse : Le soir même. ${CR.cap(moyen)} à ${hm(hDer)}. ${humeur}`, f: "G_dernier_signe" }], ["Question : Lui connaissiez-vous des ennemis, des dettes, des menaces ?"], [`Réponse : ${ennemis}`]], fin ? [fin] : []) }); };
     }
 
+    // 9 ter. l'enquête de personnalité (art. 81, al. 6, du code de procédure pénale : obligatoire en matière criminelle),
+    // en forme de rapport : méthode, famille, scolarité, travail, logement, santé, antécédents, perspectives. Le texte
+    // d'origine et sa ligne sur l'hébergement (fait G_heberg) restent. Pour un mineur : la protection judiciaire de la jeunesse.
+    if (docs.personnalite) {
+      const vieux = docs.personnalite, rq = CR.seeded(t.sig + ":perso"), eA = A.g === "f" ? "e" : "", Il = A.g === "f" ? "Elle" : "Il", il = A.g === "f" ? "elle" : "il";
+      const detenuP = t.entree === "detenu" || (t.d && t.d.dp != null);
+      const metier = String(A.metier || "");
+      const diplome = /médecin|avocat|pharmacien|dentiste|ingénieur|enseignant|professeur|architecte|juriste|cadre|infirmi|kinésithérapeute|vétérinaire|psycholog|notaire|directeur|directrice/.test(metier);
+      const liberal = /médecin|avocat|pharmacien|dentiste|architecte|kinésithérapeute|vétérinaire|notaire|artisan|commerçant|gérant|chef d'entreprise|à son compte/.test(metier);
+      const etudiant = /étudiant|lycéen|collégien|élève/.test(metier);
+      const ecole = etudiant ? `${Il} poursuit sa scolarité ou ses études ; ${pk(rq, ["résultats corrects", "absentéisme signalé cette année", "redoublement l'an dernier"])}.` : diplome ? "Études supérieures conduites à leur terme ; diplôme obtenu." : pk(rq, [`Scolarité suivie jusqu'au baccalauréat, qu'${il} n'a pas obtenu.`, "Un CAP obtenu à dix-huit ans.", "Une scolarité difficile, arrêtée à seize ans."]);
+      const travail = etudiant ? "Sans activité professionnelle ; à la charge de sa famille." : A.emploi ? (liberal ? `${Il} exerce comme ${metier}, à titre indépendant ; ses dernières déclarations de revenus sont produites.` : `${Il} est employé${eA} comme ${metier}${pk(rq, [", en contrat à durée indéterminée", ", en intérim, par missions régulières", ", à temps partiel"])}. L'employeur, joint par téléphone, confirme l'emploi.`) : `${Il} est sans emploi${metier ? ` (dernier emploi : ${metier})` : ""} ; ${pk(rq, ["inscrit" + eA + " à France Travail, sans démarche récente", "sans ressources déclarées", "quelques missions non déclarées, selon ses dires"])}.`;
+      const enfance = pk(rq, ["Parents séparés pendant son enfance ; élevé" + eA + " par sa mère.", "Dernier" + (A.g === "f" ? "-née" : "-né") + " d'une fratrie de quatre ; famille unie.", "Placé" + eA + " en foyer de dix à quatorze ans.", "Parents mariés ; un père peu présent."]);
+      const sante = pk(rq, ["Ne signale aucun problème de santé.", "Déclare une consommation d'alcool les fins de semaine.", "Déclare fumer du cannabis quotidiennement depuis l'adolescence.", "Suivi par un médecin traitant pour des troubles du sommeil."]);
+      const perspectives = A.heberg && (A.emploi || etudiant) ? `${Il} pourrait retrouver son logement${etudiant ? " et sa scolarité" : " et son activité"} ; ${A.proche} se dit prêt${/^sa /.test(A.proche) ? "e" : ""} à l'accueillir.` : A.heberg ? `${A.proche.charAt(0).toUpperCase() + A.proche.slice(1)} accepte de l'héberger ; aucune perspective d'emploi à court terme.` : "Aucun hébergement ni projet d'insertion n'a pu être vérifié à ce jour.";
+      docs.personnalite = (x) => {
+        const o = vieux(x), P = (o.paras || []).slice();
+        return Object.assign({}, o, { paras: [
+          [t.mineur ? "Recueil de renseignements socio-éducatifs, à la demande du juge d'instruction." : "Enquête sur la personnalité et la situation matérielle, familiale et sociale de la personne mise en examen, ordonnée par le juge d'instruction (art. 81, al. 6, du code de procédure pénale)."],
+          [`Méthode : entretien d'une heure avec l'intéressé${eA} ${detenuP ? "au parloir de la maison d'arrêt" : "au service"} ; entretien téléphonique avec ${A.proche}${A.emploi && !liberal ? " ; contact avec l'employeur" : ""} ; consultation du bulletin n° 1 du casier judiciaire.`],
+          ["RENSEIGNEMENTS RECUEILLIS"],
+        ].concat(P, [["ENFANCE ET FAMILLE"], [`Né${eA} ${A.naissance}. ${enfance}`], ["PARCOURS SCOLAIRE ET PROFESSIONNEL"], [ecole], [travail], ["SANTÉ ET MODE DE VIE"], [sante], ["PERSPECTIVES"], [perspectives], ["L'enquêteur ne se prononce pas sur les faits, dont il n'a pas été question au cours des entretiens."]]) });
+      };
+    }
+
+    // 9 quater. le procès-verbal de synthèse développé : saisine, chronologie, investigations conduites (les pièces du
+    // dossier, dans l'ordre de leurs cotes), éléments recueillis, position du mis en cause. Les phrases d'origine (faits marqués) restent.
+    if (docs.pv_synthese) {
+      const vieux = docs.pv_synthese;
+      const EXCLU = /^(ordo_|arret_|verdict|avis175|reconstitution|contre_expertise|pv_ipc_live|pv_interro|pv_confront|pv_synthese|personnalite|expertise_psy|interro_cv|commission_rogatoire|pv_retour_cr|casier)/;
+      docs.pv_synthese = (x) => {
+        const o = vieux(x), P = (o.paras || []).slice(), fin = P.length > 1 ? P.pop() : null;
+        const num = (c) => +String(c).replace(/\D/g, "") || 0;
+        const pieces = Object.keys(cotes).filter((k) => !EXCLU.test(k) && docs[k] && /^D/.test(cotes[k] || "")).sort((a, b) => num(cotes[a]) - num(cotes[b])).map((k) => `${(titres[k] || k).replace(/\s*\(D\d+\)$/, "")} (${cotes[k]})`);
+        const chrono = [`Faits : le ${DOCS.date(jf)}, vers ${hm(h0)}, ${lieu}.`, t.d.gav != null ? `Placement en garde à vue : le ${DOCS.date(t.d.gav)}.` : null, t.d.ri != null ? `Ouverture d'une information judiciaire : le ${DOCS.date(t.d.ri)}.` : null].filter(Boolean);
+        return Object.assign({}, o, { paras: [P[0]].concat([["CHRONOLOGIE"]], chrono.map((c) => [c]), [["INVESTIGATIONS CONDUITES"]], pieces.map((c) => [`— ${c}`]), [["ÉLÉMENTS RECUEILLIS"]], P.slice(1), fin ? [["POSITION DE LA PERSONNE MISE EN CAUSE"], fin] : []) });
+      };
+    }
+
     // 10. la commission rogatoire et la synthèse de son exécution
     if (t.d.ri != null) {
       const jCR = t.d.ri + int(r, 1, 4), jRet = jCR + int(r, 18, 40);

@@ -394,3 +394,15 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
     - Le doute sur l'identification passe par la plainte : l'agent a confié avoir perdu l'auteur de vue un instant, alors qu'il dit le contraire dans son audition.
   - **Correction du catalogue.** La trottinette électrique, qui ne tient pas dans un sac, devient une montre connectée (même tirage, rien d'autre ne bouge). Accord du pronom (« la glisser »).
 
+- **D-94. Le dossier criminel s'épaissit là où il était squelettique : l'enquête de personnalité et la synthèse.**
+  - **Mesure** (60 dossiers criminels, toutes pièces rendues) : médiane de 4 600 mots, mais quelques pièces essentielles sous 60 mots (enquête de personnalité 46, synthèse 55, auditions de témoins 43 à 53).
+  - **L'enquête de personnalité** devient un rapport. Elle est ordonnée par le juge d'instruction et obligatoire en matière criminelle (art. 81, al. 6, relu) ; pour un mineur, c'est un recueil de renseignements socio-éducatifs. Elle passe de 46 à environ 220 mots.
+    - Méthode : entretien, au parloir si la personne est détenue ; proche ; employeur ; casier.
+    - Contenu : renseignements d'origine, sans doublon ; enfance ; parcours scolaire et professionnel accordé au métier (diplôme pour un médecin ou un avocat ; profession libérale ou emploi salarié ; études en cours) ; santé ; perspectives d'hébergement et d'activité.
+    - L'enquêteur ne parle pas des faits.
+  - **La synthèse** : saisine, chronologie (faits, garde à vue, information), investigations conduites (les pièces du dossier, par cote), éléments recueillis (les phrases d'origine et leurs faits marqués), position du mis en cause. Elle passe de 55 à environ 190 mots.
+  - **Les auditions de témoins ne sont pas enrichies, à dessein.** Le catalogue mêle des témoins oculaires, auditifs (des voisins qui entendent) et de contexte (la secrétaire d'un cabinet, un collègue). Des questions d'observation (place, distance, description, durée) n'ont de sens que pour les premiers : elles doivent s'écrire contexte par contexte dans le catalogue des crimes. Chantier noté.
+  - **Défauts trouvés au passage, à corriger avec ce chantier.**
+    - La seconde audition (D-73) pose les mêmes questions d'observation (distance, éclairage, photographie) à tous les témoins, y compris de contexte.
+    - Certaines lignes du catalogue supposent le sexe ou la fonction du témoin (« Je suis la secrétaire » dit par un coiffeur).
+
