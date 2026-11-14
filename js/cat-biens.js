@@ -33,7 +33,7 @@
       let itt = 0;
       if (sc === "arrachage" && !agg.includes("violence0") && ch(r, 0.7)) itt = CAT.itt(r, 0, 0.85, 0.15, 20);
       const [objet, valeur] = {
-        magasin: pk(r, [["trois paires d'écouteurs sans fil", 540], ["des bouteilles de whisky", 160], ["des produits de beauté", 210], ["deux manettes de console", 140], ["une trottinette électrique", 480], ["des barquettes de viande", 85]]),
+        magasin: pk(r, [["trois paires d'écouteurs sans fil", 540], ["des bouteilles de whisky", 160], ["des produits de beauté", 210], ["deux manettes de console", 140], ["une montre connectée", 349], ["des barquettes de viande", 85]]),
         transport: pk(r, TELS), tire: pk(r, [["un portefeuille contenant 180 euros et des cartes", 260], ["un téléphone", 700], ["un sac à main", 650]]),
         arrachage: pk(r, TELS.concat(BIJOUX)), vehicule: pk(r, [["un scooter Yamaha TMax", 9000], ["un scooter Piaggio", 3200], ["un vélo électrique", 2100]]),
         vestiaire: pk(r, [["la caisse du soir, 640 euros en espèces", 640], ["du matériel de chantier", 2800], ["des téléphones de la boutique", 1900]]),

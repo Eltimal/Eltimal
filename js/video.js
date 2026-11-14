@@ -224,6 +224,68 @@
     },
   };
 
+  // Intérieur d'un magasin (lot 1 ter : vol en magasin). Repère : x à droite de l'image, z en s'éloignant, y vers le haut.
+  // Deux gondoles le long de z (allée centrale), rayonnage mural au fond, caisse à gauche devant, portique antivol entre
+  // la caisse et la sortie (à gauche, hors champ), porte du bureau de la sécurité à droite. Éclairage : néons, toujours.
+  DECORS.magasin = {
+    nom: "Magasin, surface de vente",
+    camera: { pos: [0.3, 3.1, -1.6], yaw: -0.05, pitch: 0.5, fov: 80 },
+    cameraSortie: { pos: [-1.0, 3.0, -0.7], yaw: 0.05, pitch: 0.86, fov: 74 },
+    zf: 11.2,
+    gondoles: [{ x0: -1.05, x1: -0.45, z0: 4.0, z1: 8.2 }, { x0: 1.35, x1: 1.95, z0: 4.0, z1: 8.2 }],
+    caisse: { x0: -2.75, x1: -1.85, z0: 2.4, z1: 3.5 },
+    portique: { z: 1.55, xs: [-1.85, -0.6] },
+    bureau: [4.6, 1.4],
+    sortie: [-5.5, 0.6],
+    prims(r) {
+      const P = [], box = (a, b, c, s, e) => P.push({ k: "box", a, b, m: { c, s: s || 0.3, e } });
+      const PROD = [[0.5, 0.06, 0.05], [0.06, 0.18, 0.45], [0.6, 0.5, 0.08], [0.08, 0.35, 0.12], [0.7, 0.7, 0.68], [0.04, 0.04, 0.05], [0.45, 0.2, 0.05], [0.3, 0.05, 0.3]];
+      for (const G of this.gondoles) {
+        box([G.x0, 0, G.z0], [G.x1, 1.75, G.z1], [0.55, 0.55, 0.53], 0.4);
+        // tablettes et produits sur les deux faces
+        for (const y of [0.35, 0.75, 1.15, 1.55]) for (const [xa, xb] of [[G.x0 - 0.32, G.x0], [G.x1, G.x1 + 0.32]]) {
+          box([xa, y - 0.03, G.z0], [xb, y, G.z1], [0.6, 0.6, 0.58], 0.5);
+          for (let z = G.z0 + 0.05; z < G.z1 - 0.3; z += 0.55 + r() * 0.3) {
+            const c = pick(r, PROD), l = 0.3 + r() * 0.25, hh = 0.18 + r() * 0.12;
+            box([xa + 0.03, y, z], [xb - 0.03, y + hh, z + l], c, 0.4);
+          }
+        }
+        box([G.x0 - 0.1, 1.9, (G.z0 + G.z1) / 2 - 0.6], [G.x1 + 0.1, 2.25, (G.z0 + G.z1) / 2 + 0.6], [0.65, 0.08, 0.06], 0.2); // panneau du rayon
+      }
+      // rayonnage mural du fond
+      for (const y of [0.4, 0.85, 1.3, 1.75]) {
+        box([-6, y - 0.03, this.zf - 0.45], [7, y, this.zf], [0.58, 0.58, 0.56], 0.5);
+        for (let x = -5.8; x < 6.8; x += 0.5 + r() * 0.3) box([x, y, this.zf - 0.4], [x + 0.3 + r() * 0.2, y + 0.2 + r() * 0.12, this.zf - 0.05], pick(r, PROD), 0.4);
+      }
+      // caisse : comptoir, tapis, écran
+      const C = this.caisse;
+      box([C.x0, 0, C.z0], [C.x1, 0.9, C.z1], [0.12, 0.12, 0.14], 0.5);
+      box([C.x1 - 0.05, 0.9, C.z0 + 0.1], [C.x1 + 0.35, 0.95, C.z1], [0.05, 0.05, 0.05], 0.2);
+      box([C.x0 + 0.2, 0.95, C.z0 + 0.4], [C.x0 + 0.5, 1.3, C.z0 + 0.45], [0.02, 0.02, 0.03], 0.6, [0.1, 0.14, 0.2]);
+      // portique antivol (deux panneaux)
+      for (const x of this.portique.xs) box([x - 0.05, 0, this.portique.z - 0.25], [x + 0.05, 1.55, this.portique.z + 0.25], [0.7, 0.72, 0.74], 0.7);
+      // porte du bureau de la sécurité
+      box([4.55, 0, 0.8], [4.65, 2.1, 2.0], [0.35, 0.36, 0.38], 0.4);
+      return P;
+    },
+    solY() { return 0; },
+    sol(x, z) {
+      const v = h2(Math.floor(x / 0.6), Math.floor(z / 0.6)), j = frac(x / 0.6) < 0.03 || frac(z / 0.6) < 0.03;
+      const k = (0.94 + 0.08 * v) * (j ? 0.8 : 1);
+      return { c: [0.62 * k, 0.6 * k, 0.56 * k], s: 0.7 };
+    },
+    facade(x, y) {
+      if (y > 2.4 && y < 2.9 && frac((x + 50) / 7) < 0.6) return { c: [0.65, 0.08, 0.06] }; // bandeau de l'enseigne
+      return { c: [0.7, 0.69, 0.66] };
+    },
+    ambiance() { return { amb: [0.1, 0.1, 0.105], sun: null }; },
+    lumieres() {
+      const L = [];
+      for (let x = -3; x <= 4; x += 3.5) for (let z = 1; z <= 10; z += 3) L.push({ p: [x, 3.2, z], c: [0.42, 0.42, 0.4], r: 3.2 });
+      return L;
+    },
+  };
+
   // ---------------------------------------------------------------- lancer de rayon du décor
   function hitBox(P, o, d) {
     let t0 = -Infinity, t1 = Infinity, ax = -1, sg = 0;
@@ -302,8 +364,9 @@
   function Eclairage(D, mode, cam) {
     const L = D.lumieres(mode);
     const ir = mode === "ir";
-    const amb = mode === "jour" ? [0.36, 0.37, 0.4] : ir ? [0.012, 0.012, 0.012] : [0.018, 0.02, 0.03];
-    const sun = mode === "jour" ? { d: norm([-0.4, 0.75, 0.5]), c: [0.55, 0.52, 0.46] } : null;
+    const AMB = D.ambiance ? D.ambiance(mode) : null;
+    const amb = AMB ? AMB.amb : mode === "jour" ? [0.36, 0.37, 0.4] : ir ? [0.012, 0.012, 0.012] : [0.018, 0.02, 0.03];
+    const sun = AMB ? AMB.sun : mode === "jour" ? { d: norm([-0.4, 0.75, 0.5]), c: [0.55, 0.52, 0.46] } : null;
     return function (p, n) {
       let r = amb[0], g = amb[1], b = amb[2];
       if (sun) { const k = n ? Math.max(0, dot(n, sun.d)) : 0.6; r += sun.c[0] * k; g += sun.c[1] * k; b += sun.c[2] * k; }
@@ -386,6 +449,11 @@
     cou(u) { return P({ lean: 0.08, sL: 0.95, eL: 2.35, aL: 0.55, sR: 0.95, eR: 2.35, aR: 0.55, head: 0.1 }); },
     montre(u, t) { return P({ sR: 1.45, eR: 0.05, aR: 0.35, head: 0.05, lean: -0.02 }); },
     sonne(u, t) { return P({ sR: 0.75, eR: 2.2, aR: 0.6, head: 0.05 }); },
+    // vol en magasin : la main va au rayon (b.cible), puis au sac ou à la poche (b.cible)
+    prend(u, t, b) { return P({ lean: 0.12, head: 0.15, sL: 0.1, eL: 0.2, ikR: b.cible }); },
+    glisse(u, t, b) { return P({ lean: 0.05, head: 0.25, ikR: b.cible }); },
+    regarde(u, t) { return P({ head: 0.05 + 0.1 * Math.sin(t * 2.2), lean: 0.02, hL: 0.03, hR: -0.03 }); },
+    interpelle(u, t, b) { return P({ lean: 0.06, sL: 0.3, eL: 0.6, aL: 0.2, ikR: b.cible }); },
   };
   V.GESTES = GESTES;
 
@@ -559,6 +627,106 @@
     },
   };
 
+  // ---------------------------------------------------------------- les faits : vol à l'étalage, passage en caisse, interpellation
+  // o : n (articles pris, 1 à 3), cache ("sac_dos" | "poche" | "sac"), caisse (paie un autre article), ecrans (l'agent était
+  //     aux écrans : il n'entre dans le champ qu'au portique), vueRayon (la caméra couvre le rayon ; sinon caisse et sortie),
+  //     auteur { g, tenue }, agent { g }, couleurArticle ; n : quatre articles au plus
+  FAITS.magasin = {
+    nom: "Vol en magasin",
+    decor: "magasin",
+    monter(r, o) {
+      const D = DECORS.magasin, G0 = D.gondoles[0], C = D.caisse, PQ = D.portique;
+      const n = Math.max(1, Math.min(4, o.n || 1)), cache = o.cache || "sac_dos", ecrans = o.ecrans !== false, caisse = !!o.caisse;
+      const oa = o.auteur || {};
+      const tenueA = oa.tenue ? Object.assign({}, oa.tenue) : tenue(r, { hauts: ["sweat", "doudoune", "blouson", "survet"], capuche: 0.3 });
+      if (cache === "sac_dos") tenueA.sac = "sac_dos";
+      const xA = 0.22, z0 = 5.8;
+      const A_ = { id: "A", role: "auteur", g: oa.g || "m", t0: 0, pos: [xA + 0.1, 9.4], cap: -Math.PI / 2, tenue: tenueA };
+      const capRayon = Math.PI; // face à la gondole de gauche
+      const prises = [];
+      A_.beats = [{ a: "marche", d: 1.6, to: [xA, z0] }, { a: "regarde", d: 2.2, face: capRayon }];
+      let t = 3.8;
+      for (let k = 0; k < n; k++) {
+        const z = z0 - 0.35 * k, cible = [G0.x1 + 0.3, [0.95, 1.35, 0.55][k % 3] + 0.12, z + 0.05];
+        if (k) { A_.beats.push({ a: "marche", d: 0.6, to: [xA, z], face: capRayon }); t += 0.6; }
+        A_.beats.push({ a: "prend", d: 1.0, face: capRayon, cible, fondu: 0.25 });
+        const tP = t + 0.75; t += 1.0;
+        // la cachette : derrière le dos (sac à dos), la poche du blouson, un sac de course tenu à gauche
+        // la gondole est vers -x : le dos est vers +x
+        const cc = cache === "sac_dos" ? [xA + 0.2, 1.15, z - 0.12] : cache === "poche" ? [xA - 0.13, 1.25, z + 0.06] : [xA - 0.04, 0.8, z - 0.32];
+        A_.beats.push({ a: "glisse", d: 1.1, face: capRayon + (cache === "sac_dos" ? 0.5 : 0), cible: cc, fondu: 0.25 });
+        const tG = t + 0.8; t += 1.1;
+        prises.push({ cible, tP, tG, cc });
+      }
+      A_.beats.push({ a: "regarde", d: 1.4, face: capRayon - 0.6 });
+      t += 1.4;
+      // vers la caisse, puis le portique
+      const xL = C.x1 + 0.55, zS = 3.7, dA = Math.hypot(xA - 0.55, z0 - zS) / 1.2;
+      A_.beats.push({ a: "marche", d: dA, to: [0.55, zS] });
+      A_.beats.push({ a: "marche", d: 1.6, to: [xL, zS] });
+      t += dA + 1.6;
+      if (caisse) { A_.beats.push({ a: "marche", d: 0.9, to: [xL, (C.z0 + C.z1) / 2] }, { a: "attend", d: 4, face: Math.PI }); t += 4.9; }
+      const zPq = PQ.z - 0.2, dPq = Math.hypot(0, (caisse ? (C.z0 + C.z1) / 2 : zS) - zPq) / 1.25;
+      A_.beats.push({ a: "marche", d: dPq, to: [(PQ.xs[0] + PQ.xs[1]) / 2, zPq] });
+      t += dPq;
+      const tPortique = t;
+      const zI = 0.75, xI = (PQ.xs[0] + PQ.xs[1]) / 2 - 0.55;
+      A_.beats.push({ a: "marche", d: 1.0, to: [xI, zI] });
+      t += 1.0;
+      const tArret = t;
+      // l'agent : sort du bureau (écrans) ou suit en salle, rejoint l'auteur juste après le portique
+      const G_ = { id: "G", role: "agent", g: (o.agent || {}).g || "m", tenue: { haut: "blouson", hautC: "noir", bas: "pantalon", basC: "noir", chauss: "noires", tete: null, teteC: "noir", sac: null, sacC: "noir" } };
+      const pG = [xI + 0.65, zI + 0.05];
+      if (ecrans) {
+        const dG = Math.hypot(D.bureau[0] - pG[0], D.bureau[1] - pG[1]) / 1.6;
+        G_.t0 = Math.max(0, tArret - dG - 0.3); G_.pos = D.bureau.slice(); G_.cap = Math.PI;
+        G_.beats = [{ a: "court", d: dG, to: pG }];
+      } else {
+        G_.t0 = 0; G_.pos = [2.9, 7.6]; G_.cap = -Math.PI / 2;
+        G_.beats = [{ a: "regarde", d: 5.2, face: Math.PI }, { a: "marche", d: Math.max(1, tArret - 0.3 - 5.2), to: pG }];
+      }
+      const epaule = [xI - 0.02, 1.4, zI - 0.1];
+      G_.beats.push({ a: "interpelle", d: 4.2, face: Math.PI, cible: epaule, fondu: 0.3 });
+      A_.beats.push({ a: "attend", d: 4.2, face: 0, poches: false });
+      // les deux s'éloignent vers le bureau de la sécurité
+      A_.beats.push({ a: "marche", d: 3.6, to: [D.bureau[0], D.bureau[1] - 0.25] });
+      G_.beats.push({ a: "marche", d: 3.6, to: [D.bureau[0] - 0.2, D.bureau[1] + 0.35] });
+      A_.sort = true; G_.sort = true;
+      const tFin = tArret + 4.2 + 3.6;
+      // la caissière, des clients
+      const K_ = { id: "K", role: "caissiere", g: "f", t0: 0, pos: [C.x0 - 0.35, (C.z0 + C.z1) / 2], cap: 0, tenue: tenue(r, { hauts: ["survet"], sac: null, couvre: 0 }), beats: [{ a: "attend", d: tFin + 4, face: 0 }] };
+      const P1 = { id: "P1", role: "passant", t0: 1, pos: [2.6, 3.6], cap: Math.PI / 2, tenue: tenue(r), beats: [{ a: "marche", d: 5, to: [2.6, 9.4] }, { a: "regarde", d: tFin, face: Math.PI }] };
+      const P2 = { id: "P2", role: "passant", t0: 6, pos: [3.4, 9.8], cap: -Math.PI / 2, tenue: tenue(r), beats: [{ a: "marche", d: 7, to: [3.4, 3.0] }, { a: "marche", d: 4, to: [6.5, 2.6] }], sort: true };
+      for (const a of [A_, G_, K_, P1, P2]) { a.peau = pick(r, PEAU); a.chev = pick(r, CHEV); a.sc = (1.62 + r() * 0.24) / 1.75; }
+      const acteurs = [A_, G_, K_, P1, P2];
+      const couleur = o.couleurArticle || pick(r, ["rouge", "blanc", "jaune", "marine", "noir"]);
+      // l'objet : en rayon, dans la main, puis caché (il ne se voit plus)
+      const objetAt = (tt, res) => {
+        const eA = res.A; if (!eA) return null;
+        for (const pr of prises) {
+          if (tt < pr.tP - 0.75) return null;
+          if (tt < pr.tP) return { pos: pr.cible, fw: [0, 0, 1] };
+          if (tt < pr.tG) return { pos: eA.j.haR, fw: eA.j.fw };
+        }
+        return null;
+      };
+      const vueRayon = o.vueRayon !== false;
+      const leA = (oa.g || "m") === "f" ? "une femme" : "un homme", IlA = (oa.g || "m") === "f" ? "Elle" : "Il";
+      const cacheTxt = { sac_dos: "son sac à dos", poche: "la poche intérieure de son blouson", sac: "un sac de course" }[cache];
+      const moments = [];
+      if (vueRayon) {
+        moments.push({ t: 2.2, cle: "rayon", txt: `${CR_cap(leA)} se tient devant le rayonnage de gauche de l'allée centrale et regarde autour ${(oa.g || "m") === "f" ? "d'elle" : "de lui"}.` });
+        prises.forEach((pr, k) => moments.push({ t: pr.tP, cle: "prise" + k, txt: `${IlA} prend un article en rayon${k ? ` (${["premier", "deuxième", "troisième", "quatrième"][k]} article)` : ""} et le glisse dans ${cacheTxt}.` }));
+      }
+      moments.push(caisse ? { t: tPortique - dPq - 2, cle: "caisse", txt: `${IlA} passe en caisse et présente un seul article ; ${cache === "poche" ? "sa veste reste fermée" : "son sac n'est pas ouvert"}.` } : { t: tPortique - dPq + 0.5, cle: "caisse", txt: `${IlA} longe les caisses sans s'arrêter.` });
+      moments.push({ t: tPortique, cle: "portique", txt: `${IlA} franchit le portique antivol en direction de la sortie.` });
+      moments.push({ t: tArret + 0.4, cle: "agent", txt: `Un agent de sécurité ${ecrans ? "sort du local de la sécurité, le" : "qui se tenait en salle le"} rejoint et lui pose la main sur l'épaule ; ils échangent quelques mots.` });
+      moments.push({ t: tArret + 4.6, cle: "bureau", txt: "Ils se dirigent ensemble vers le local de la sécurité et sortent du champ." });
+      return { acteurs, objet: { type: "article", couleur, tPrise: Infinity, tLache: Infinity }, objetAt, moments, duree: Math.ceil(tFin + 3), tG: prises[0].tP, prises, n, vueRayon };
+    },
+  };
+  const CR_cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+
   // ---------------------------------------------------------------- rendu des acteurs (capsules au tampon de profondeur)
   function capsule(F, cam, a, b, r, col) {
     const pa = cam.proj(a), pb = cam.proj(b);
@@ -650,9 +818,9 @@
 
   function dessinerObjet(S, F, o, ob) {
     const isIR = S.mode === "ir", cam = S.cam, L = S.lum(o.pos, null);
-    const c = ob.type === "sac" ? COUL[ob.couleur] : ob.type === "telephone" ? { c: [0.02, 0.02, 0.025], ir: 0.3 } : { c: [0.6, 0.45, 0.12], ir: 0.8 };
+    const c = ob.type === "sac" || ob.type === "article" ? COUL[ob.couleur] || COUL.rouge : ob.type === "telephone" ? { c: [0.02, 0.02, 0.025], ir: 0.3 } : { c: [0.6, 0.45, 0.12], ir: 0.8 };
     const col = couleur(c.c, c.ir, L, isIR);
-    const l = ob.type === "sac" ? 0.13 : ob.type === "telephone" ? 0.04 : 0.05, r = ob.type === "sac" ? 0.085 : ob.type === "telephone" ? 0.03 : 0.012;
+    const l = ob.type === "sac" ? 0.13 : ob.type === "telephone" ? 0.04 : ob.type === "article" ? 0.06 : 0.05, r = ob.type === "sac" ? 0.085 : ob.type === "telephone" ? 0.03 : ob.type === "article" ? 0.05 : 0.012;
     capsule(F, cam, sub(o.pos, mul(o.fw, l)), add(o.pos, mul(o.fw, l)), r, col);
     if (o.att) capsule(F, cam, o.att, add(o.pos, [0, 0.07, 0]), 0.012, col);
   }
@@ -689,7 +857,7 @@
     const graine = String(o.graine != null ? o.graine : "1");
     const r = rng("video:" + graine);
     const mode = o.mode || "ir";
-    const cam = Camera(D.camera);
+    const cam = Camera(o.vueRayon === false && D.cameraSortie ? D.cameraSortie : D.camera);
     const scn = F_.monter(rng("faits:" + (o.grainefaits || graine)), o);
     // les tenues peuvent varier seules, à faits identiques
     if (o.grainetenues) { const alt = F_.monter(rng("tenues:" + o.grainetenues), o); scn.acteurs.forEach((a, i) => { const b = alt.acteurs[i]; a.tenue = b.tenue; a.peau = b.peau; a.chev = b.chev; a.sc = b.sc; }); scn.objet.couleur = alt.objet.couleur; }
@@ -769,6 +937,11 @@
     const res = {};
     S._cible = null;
     const ordre = S.scn.acteurs, ob = S.scn.objet;
+    if (S.scn.objetAt) {
+      for (const A of ordre) { const e = etat(A, t, S); if (!e) { res[A.id] = null; continue; } e.j = squelette(e.pos, e.gy, e.cap, e.pose, A.sc); e.j.gy = e.gy; res[A.id] = e; }
+      res._objet = S.scn.objetAt(t, res);
+      return res;
+    }
     const V_ = ordre.find((a) => a.id === "V");
     // la victime d'abord : l'objet qu'elle porte sert de cible au geste
     for (const A of [V_].concat(ordre.filter((a) => a !== V_))) {

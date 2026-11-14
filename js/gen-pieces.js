@@ -605,6 +605,9 @@
         const M = SS.magasin;
         fact("G_agent_vu", { label: `L'agent de sécurité a vu la dissimulation ${M.ecrans ? "aux écrans de contrôle" : "en salle"}`, key: false });
         if (M.qteDit !== M.qte) fact("G_agent_compte", { label: `L'agent dit avoir vu prendre ${M.qteDit} articles ; l'état du magasin en compte ${M.qte}`, key: true, why: "Un témoin qui se trompe sur le nombre se trompe peut-être sur le reste : sa déclaration se discute, pièce contre pièce." });
+        if (M.video && M.vueRayon) fact("G_video_prise", { label: "Les images montrent la prise en rayon et la dissimulation", key: false });
+        if (M.video && M.vueRayon && M.qteDit !== M.qte) fact("G_video_compte", { label: `Les images montrent ${M.qte} article${M.qte > 1 ? "s" : ""} pris ; l'agent en déclare ${M.qteDit}`, key: true, why: "L'image confirme l'état du magasin et dément l'agent sur le nombre : sa déclaration sur le reste de la scène se discute aussi." });
+        if (M.video && !M.vueRayon) fact("G_video_rayon", { label: "La caméra ne filme pas le rayon : le geste de prise n'est vu que par l'agent", key: true, why: "Sans image du geste, la soustraction repose sur le seul témoignage de l'agent et sur la marchandise retrouvée : sa position, sa distance, ce qu'il a pu voir se discutent." });
         fact("G_etat_vente", M.vente ? { label: "La marchandise, récupérée intacte, est remise en vente", key: true, why: "Aucun préjudice matériel : cela pèse sur la peine et sur les intérêts civils." } : { label: "La marchandise n'est plus en état de vente", key: false });
       }
     }

@@ -374,3 +374,23 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
   - **Appel d'une ordonnance d'irresponsabilité.** Il est jugé selon les mêmes règles (706-128).
   - **Absence de l'avocat.** C'est une erreur datée : un avocat commis d'office représente la défense ; la partie civile n'est pas entendue.
 
+## Lot 1 bis : la vidéosurveillance du magasin (14 novembre 2026)
+
+- **D-93. Le vol en magasin est filmé par la caméra du magasin, jouée par le moteur ; la société porte plainte par son représentant.**
+  - **Le décor.** Un intérieur de magasin dans le moteur vidéo (`js/video.js`) : deux gondoles et une allée centrale, un rayonnage mural, la caisse et sa caissière, le portique antivol, la porte du local de la sécurité, un éclairage néon.
+  - **La chorégraphie.**
+    - L'auteur regarde autour de lui, prend les articles un par un (jusqu'à quatre) et les glisse dans son sac à dos, une poche ou un sac de course.
+    - Il passe en caisse en payant un autre article, ou longe les caisses sans s'arrêter, puis franchit le portique.
+    - L'agent, venu du local s'il était aux écrans ou qui le suivait en salle, le rejoint et lui pose la main sur l'épaule ; ils partent ensemble vers le local de la sécurité. Des clients circulent.
+  - **Ce que montre l'image.**
+    - Sept fois sur dix, la caméra couvre l'allée du rayon : on y compte autant de gestes de prise que d'articles pris. L'agent peut se tromper de bonne foi sur le nombre, l'image non : c'est un fait clé (« les images montrent N articles ; l'agent en déclare M »).
+    - Sinon, elle ne couvre que les caisses et la sortie : le geste n'est vu que par l'agent, autre fait clé.
+    - L'heure du portique à l'image est celle de la rétention.
+  - **Le procès-verbal d'exploitation** décrit le champ de la caméra, les moments horodatés, le nombre d'articles, la tenue et le visage, les interruptions de l'enregistrement. L'agent annonce la couverture de la caméra dans sa propre audition.
+  - **La plainte de la société.** Elle remplace l'audition générique de la victime, qui contredisait le dossier (« bien jamais récupéré », antivols retirés quand le portique avait sonné).
+    - Le directeur ou la directrice agit pour la société, en vertu d'une délégation de pouvoirs annexée. Il rapporte ce que l'agent lui a dit, dont il n'a pas été témoin.
+    - Il dit l'état de la marchandise et la couverture des caméras. La société se constitue partie civile pour la valeur si la marchandise est perdue ; sinon, elle se réserve de le faire.
+    - Ses droits lui sont notifiés (art. 10-2).
+    - Le doute sur l'identification passe par la plainte : l'agent a confié avoir perdu l'auteur de vue un instant, alors qu'il dit le contraire dans son audition.
+  - **Correction du catalogue.** La trottinette électrique, qui ne tient pas dans un sac, devient une montre connectée (même tirage, rien d'autre ne bouge). Accord du pronom (« la glisser »).
+

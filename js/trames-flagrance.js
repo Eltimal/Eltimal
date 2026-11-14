@@ -490,8 +490,28 @@
           jour: j(clos), heure: clos, redacteur: apj(0), visa: "Vu les articles 53, 73 et 21 du code de procédure pénale,", lieu: "Agissant en flagrant délit", objet: `OBJET : ${q0.label} — interpellation`,
           blocs, cloture: mention(`Dont procès-verbal, fait et clos au ${commLong} ${at(clos)}.`), signataires: [`${apj(0).signe}, agent de police judiciaire`, `${apj(1).signe}, agent de police judiciaire`], st: stA });
       });
-      // victime
-      if (S.victime) add("pv_victime", E.victime, PL ? "Plainte" : V.agent ? "Audition du fonctionnaire" : "Audition de la victime", () => {
+      // victime — lot 1 bis : la plainte de la société exploitant le magasin, par son représentant, accordée à la simulation
+      if (S.victime && S.magasin) add("pv_victime", E.victime, "Plainte de la société", () => {
+        const rr = CR.seeded(t.sig + ":g:vict"), M = S.magasin, G = M.agent;
+        const nbr = (x) => ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept"][x] || String(x);
+        const euros = (x) => `${x.toFixed(2).replace(".", ",")} €`;
+        const artDit = M.qteDit > 1 ? `${nbr(M.qteDit)} ${M.lib}` : t.f.objet;
+        const dirV = V.g === "f" ? "directrice" : "directeur";
+        const blocs = [
+          p(`Se présente au service la personne dénommée ci-dessus, ${dirV} du magasin ${M.enseigne}, agissant pour le compte de la société qui exploite le magasin, personne morale victime, en vertu de la délégation de pouvoirs qu'elle nous présente et dont copie est annexée au présent, qui déclare déposer plainte contre ${n(A)} et nous déclare :`),
+          decl({ t: `« Le ${DOCS.date(jf)}, vers ${hm(E.portique)}, notre agent de sécurité, ${G.g === "f" ? "Mme" : "M."} ${G.prenom} ${G.nom}, de la société ${G.societe}, a retenu ${A.g === "f" ? "une cliente" : "un client"} après le passage des caisses. D'après ce qu'${G.g === "f" ? "elle" : "il"} m'a rapporté, ${G.g === "f" ? "elle" : "il"} l'avait vu${e(A)}, ${M.ecrans ? "aux écrans de contrôle" : "en salle"}, prendre ${artDit} et ${M.qteDit > 1 ? "les" : /^une /.test(artDit) ? "la" : "le"} glisser dans ${M.sac}. Je n'étais pas présent${e(V)} au moment des faits. »`, f: "G_plainte" }),
+          dou("doute_ident") ? decl({ t: `« L'agent m'a dit ${G.g === "f" ? "qu'elle l'avait" : "qu'il l'avait"} perdu${e(A)} de vue un instant entre le rayon et les caisses ; il y avait beaucoup de monde à cette heure-là. »`, f: "G_doute_ident" }) : null,
+          decl({ t: `« La marchandise a été récupérée. ${M.vente ? "Elle est intacte et a été remise en rayon." : "Les emballages ont été ouverts et les antivols arrachés : elle n'est plus vendable."} J'ai établi l'état de la marchandise : ${M.qte > 1 ? `${nbr(M.qte)} articles à ${euros(M.pu)}` : `un article à ${euros(M.pu)}`}, soit ${euros(M.total)}. »`, f: "G_etat_vente" }),
+          titre("QUESTIONS ET RÉPONSES"),
+          q("Le magasin a-t-il conservé des images ?"), rep(M.video ? (M.vueRayon ? "Oui. L'agent vous a remis la séquence : la caméra filme l'allée, les caisses et la sortie." : "Oui, l'agent vous a remis la séquence, mais la caméra ne filme que les caisses et la sortie. Le rayon n'est pas couvert.") : "Non. Les caméras ne couvrent pas ce rayon."),
+          q("Connaissiez-vous la personne retenue ?"), rep(pk(rr, ["Non.", "Non, je ne l'avais jamais vue au magasin.", "De vue, peut-être ; c'est un quartier de passage."])),
+          q("La société entend-elle se constituer partie civile ?"), rep(M.vente ? "La marchandise est revenue en rayon. La société se réserve de se constituer partie civile, pour le temps passé par l'agent." : `Oui. La société se constitue partie civile pour la valeur de la marchandise, ${euros(M.total)}.`),
+          p("Informons la société, en la personne de son représentant, de ses droits (art. 10-2) : obtenir réparation de son préjudice, se constituer partie civile, être assistée d'un avocat."),
+        ];
+        return DOCS.pv({ cote: cote("pv_victime"), proc: t.proc, service, unite, titre: "Procès-verbal de plainte", qualite: "Représentant de la société plaignante", numPV: "00" + int(rr, 101, 899), jour: j(E.victime), heure: E.victime, redacteur: OPJ,
+          lieu: `Nous trouvant au ${commLong}`, identite: Object.assign({}, identite(V), { metier: `${dirV} du magasin ${M.enseigne}` }), blocs, cloture: DOCS.clotureAudition(ville, j(E.victimeFin), E.victimeFin, V.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
+      });
+      else if (S.victime) add("pv_victime", E.victime, PL ? "Plainte" : V.agent ? "Audition du fonctionnaire" : "Audition de la victime", () => {
         const rr = CR.seeded(t.sig + ":g:vict");
         const pl = (N.plainte || []).map((x) => sansITT(guill(x))).filter(Boolean).map((x) => (S.transport ? x.replace("dans la poche du manteau", `dans la poche ${S.transport.pocheV} de mon manteau`) : x));
         const conj = /^violences_conj/.test(t.inf);
@@ -546,12 +566,12 @@
           const rr = CR.seeded(t.sig + ":g:agent");
           const blocs = [
             decl(`« Je suis agent de sécurité pour la société ${G.societe}, affecté${e(ag)} au magasin ${M.enseigne} depuis ${pk(rr, ["deux ans", "huit mois", "un an et demi", "quatre ans"])}. ${M.ecrans ? "J'étais au poste de contrôle, devant les écrans." : "Je faisais ma ronde en salle."} »`),
-            decl({ t: `« Vers ${hm(E.repere)}, j'ai remarqué ${A.g === "f" ? "une femme" : "un homme"} ${M.rayon}. ${M.ecrans ? "Sur l'écran, je l'ai vu" : "Je l'ai vu, à quelques mètres,"} prendre ${artDit} et ${M.qteDit > 1 ? "les" : "le"} glisser dans ${M.sac}. Je ne l'ai plus quitté${e(A)} des yeux. »`, f: "G_agent_vu" }),
+            decl({ t: `« Vers ${hm(E.repere)}, j'ai remarqué ${A.g === "f" ? "une femme" : "un homme"} ${M.rayon}. ${M.ecrans ? "Sur l'écran, je l'ai vu" : "Je l'ai vu, à quelques mètres,"} prendre ${artDit} et ${M.qteDit > 1 ? "les" : /^une /.test(artDit) ? "la" : "le"} glisser dans ${M.sac}. Je ne l'ai plus quitté${e(A)} des yeux. »`, f: "G_agent_vu" }),
             decl(`« ${Maj(il(A))} est passé${e(A)} en caisse${M.caisse ? " et a payé un article sans rapport, sans présenter le reste" : " sans rien présenter"}. ${M.portique ? "Le portique a sonné." : "Le portique n'a pas sonné : les antivols avaient été retirés."} Je l'ai rattrapé${e(A)} juste après, à ${hm(E.portique + 1)}, et je lui ai demandé de me suivre au bureau de la sécurité.${(t.f.agg || []).includes("violence0") ? ` ${Maj(il(A))} m'a bousculé${e(ag)} pour forcer le passage, j'ai heurté le portique ; je n'ai pas été blessé${e(ag)}. Avec un collègue, nous l'avons retenu${e(A)}.` : ""} »`),
             decl(`« Je ne l'ai pas fouillé${e(A)} : ${il(A)} a sorti ${lui(A) === "elle" ? "elle-même" : "lui-même"} la marchandise${/poche/.test(M.sac) ? " de sa poche" : " de son sac"}. J'ai appelé la police à ${hm(E.appelMag)}. ${Maj(il(A))} est resté${e(A)} au bureau avec moi jusqu'à votre arrivée${(t.f.agg || []).includes("violence0") ? "" : pk(rr, [", calmement", ", en s'excusant", ", en répétant qu'" + il(A) + " allait payer", ""])}. »`),
             titre("QUESTIONS ET RÉPONSES"),
             q("Combien d'articles avez-vous vu prendre ?"), rep({ t: M.qteDit > 1 ? `${Maj(nb(M.qteDit))}, j'en suis sûr${e(ag)}.` : "Un seul.", f: M.qteDit !== M.qte ? "G_agent_compte" : undefined }),
-            q("Les images ont-elles été conservées ?"), rep(M.video ? "Oui. J'ai extrait la séquence sur une clé USB, je vous la remets." : "Les caméras ne couvrent pas ce rayon. Il n'y a que l'entrée."),
+            q("Les images ont-elles été conservées ?"), rep(M.video ? (M.vueRayon ? "Oui. J'ai extrait la séquence sur une clé USB, je vous la remets." : "Oui, j'ai extrait la séquence sur une clé USB, je vous la remets. Mais la caméra ne couvre que les caisses et la sortie : le rayon n'est pas filmé.") : "Les caméras ne couvrent pas ce rayon. Il n'y a que l'entrée."),
             q("Avez-vous quelque chose à ajouter ?"), rep(pk(rr, ["Non.", "Non, c'est tout.", "Le magasin va déposer plainte, le directeur est prévenu."])),
           ];
           return DOCS.pv({ cote: cote("pv_agent"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition de témoin", qualite: "Témoin (agent de sécurité)", numPV: "00" + int(rr, 101, 899), jour: j(E.agent), heure: E.agent, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
@@ -803,7 +823,36 @@
       }
       // lot 1 ter, pièces techniques : l'exploitation des images, horodatée sur l'enregistreur (dont l'horloge peut dériver,
       // de quelques minutes : décalage constaté et écrit, comme en vrai) ; la scène et l'identification du catalogue
-      if (has("video") && !S.arrachage && !k.VID) {
+      // lot 1 bis : le vol en magasin filmé par la caméra du magasin, joué par le moteur (js/video.js, faits « magasin ») ;
+      // l'image montre le nombre réel d'articles pris (l'agent peut se tromper) ou ne couvre que les caisses et la sortie
+      const VIDm = S.magasin && S.magasin.video && CR.video && CR.video.FAITS && CR.video.FAITS.magasin ? (() => {
+        const M = S.magasin;
+        const spec0 = { faits: "magasin", graine: t.sig, mode: "jour", cam: "CAM 02", n: Math.min(4, M.qte), cache: M.cache, caisse: !!M.caisse, ecrans: !!M.ecrans, vueRayon: !!M.vueRayon, auteur: { g: A.g, tenue: S.tenueA || (CR.SIM && CR.SIM.tenueAuteur ? CR.SIM.tenueAuteur(t) : null) || undefined }, agent: { g: M.agent.g }, date: DOCS.num(jf).replace(/\//g, "-") };
+        if (!spec0.auteur.tenue) delete spec0.auteur.tenue;
+        const X0 = CR.video.extrait(Object.assign({}, spec0, { heure: "00:00:00" }));
+        const tP = (X0.moments.find((m) => m.cle === "portique") || { t: 20 }).t;
+        const s0 = ((E.portique * 60 + int(CR.seeded(t.sig + ":mag:s"), 5, 50) - Math.round(tP)) % 86400 + 86400) % 86400, p2 = (x) => String(x).padStart(2, "0");
+        const spec = Object.assign(spec0, { heure: `${p2(Math.floor(s0 / 3600))}:${p2(Math.floor(s0 / 60) % 60)}:${p2(s0 % 60)}` });
+        return { spec, S: CR.video.extrait(spec) };
+      })() : null;
+      if (VIDm) {
+        const M = S.magasin, X = VIDm.S, lis = X.lisible();
+        const mExpl = PL && E.enquete ? E.enquete(1) : E.debut + 240;
+        const hsx = (h) => { const [hh, mm, ss] = h.split(" ")[1].split(":"); return `${+hh} h ${mm} min ${ss} s`; };
+        const nb = (x) => ["zéro", "un", "deux", "trois", "quatre"][x] || String(x);
+        add("pv_video", mExpl, "Exploitation vidéo", () => DOCS.pv({ cote: cote("pv_video"), proc: t.proc, service, unite, titre: "Procès-verbal d'exploitation des images de vidéosurveillance", jour: j(mExpl), heure: mExpl, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`, video: VIDm.spec,
+          blocs: [
+            p(`Procédons à l'exploitation de la séquence remise par l'agent de sécurité du magasin ${M.enseigne} sur clé USB, placée sous scellé, horodatage du ${DOCS.num(jf)}.`),
+            p(M.vueRayon ? "La caméra, fixée au plafond, filme en plongée l'allée centrale et ses deux gondoles, les caisses et le portique antivol ; l'image est en couleur, sous l'éclairage du magasin." : { t: "La caméra, fixée au plafond, filme les caisses et le portique antivol de la sortie. Le rayon n'est pas dans son champ : le geste de prise n'est pas filmé.", f: "G_video_rayon" }),
+            ...X.moments.map((m) => p(/^prise/.test(m.cle) ? { t: `${hsx(m.h)} — ${m.txt}`, f: "G_video_prise" } : `${hsx(m.h)} — ${m.txt}`)),
+            M.vueRayon ? p({ t: `Au total, l'individu prend ${nb(Math.min(4, M.qte))} article${M.qte > 1 ? "s" : ""} en rayon${M.qteDit !== M.qte ? ` ; nous n'en distinguons pas davantage` : ""}.`, f: M.qteDit !== M.qte ? "G_video_compte" : "G_video_prise" }) : null,
+            p(`L'individu porte ${lis.A.image.replace(/^(\S+)/, (w) => (/^(doudoune|veste)/.test(lis.A.image) ? "une " : "un ") + w)}.`),
+            p({ t: `La silhouette et les vêtements correspondent à ceux de ${n(A)} lors de l'intervention ; ${lis.A.visage === "traits du visage discernables" ? "les traits du visage sont discernables au passage du portique" : "les traits du visage ne sont pas discernables"}.`, f: "G_video" }),
+            X.sauts.length ? p(`L'enregistrement présente ${X.sauts.length === 1 ? "une interruption" : X.sauts.length + " interruptions"} : ${X.sauts.map(([a0, b0]) => `de ${hsx(X.horodatage(a0))} à ${hsx(X.horodatage(b0))}`).join(", ")}.`) : null,
+            p("Une planche de captures est jointe ; la séquence est gravée sur un disque placé sous scellé."),
+          ], cloture: mention("Dont procès-verbal."), st: stO }));
+      }
+      if (has("video") && !S.arrachage && !k.VID && !VIDm) {
         const rv = CR.seeded(t.sig + ":g:vid");
         const derive = ch(rv, 0.45) ? (ch(rv, 0.5) ? 1 : -1) * int(rv, 1, 6) : 0;
         const sec = int(rv, 3, 57);

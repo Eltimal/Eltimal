@@ -384,6 +384,10 @@
       portique: ch(r, 0.6), sac: pk(r, ["son sac à dos", "son sac à dos", "la poche intérieure de son blouson", "un sac de course"]),
       qteDit, vente: ch(r, 0.75), video: has("video"), caisse: ch(r, 0.4), // passé en caisse en payant un autre article
     };
+    // la caméra du magasin (js/video.js, faits « magasin ») : elle couvre l'allée du rayon, ou seulement les caisses et la
+    // sortie ; quatre articles au plus se suivent à l'image
+    M.vueRayon = M.video && qte <= 4 && CR.seeded(t.sig + ":mag:cam")() < 0.7;
+    M.cache = /sac à dos/.test(M.sac) ? "sac_dos" : /poche/.test(M.sac) ? "poche" : "sac";
     S.savoirs = Object.assign({}, S.savoirs, { agent: { vu: ecrans ? "aux écrans de contrôle" : "en salle, à quelques mètres", compte: qteDit, erreur: qteDit !== qte } });
     return M;
   }
