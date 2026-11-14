@@ -322,4 +322,77 @@
     }
     return r;
   };
+
+  // ================================================================ l'action civile renvoyée (art. 464 CPP)
+  // Après avoir statué sur l'action publique, le tribunal peut renvoyer à une date ultérieure pour statuer sur l'action civile,
+  // afin que la partie civile apporte les justificatifs de ses demandes ; il fixe la date ; à cette audience, le président
+  // siège seul, le ministère public n'est pas tenu d'être présent (relu le 13 novembre 2026). Le dossier reste ouvert :
+  // l'avocat réunit les justificatifs, plaide les postes qu'il demande ; le tribunal alloue selon les pièces (calcul du jeu,
+  // CR.PROC.calculerCivil). La décision chiffrée ouvre ensuite le recouvrement (CIVI ou SARVI).
+  const postesDe = (api) => ((api.def.penal && api.def.penal.chiffrage && api.def.penal.chiffrage.postes) || []).filter((po) => po.demande);
+  K.eligibleIC = (s, cs, outcome) => !!(cs && cs.camp === "pc" && outcome && outcome.type === "done" && cs.vars.civil && cs.vars.civil.renvoi && !cs.vars.ic && genT(s, cs));
+  K.ouvrirIC = function (s, cs, outcome) {
+    const api = CR.api(s, cs);
+    let jour = s.day + int(CR.seeded(cs.id + ":ic"), 35, 75);
+    while (CR.isOuvrable && !CR.isOuvrable(jour)) jour++;
+    cs.vars.ic = { outcome, jugement: cs.vars.jugementDay != null ? cs.vars.jugementDay : s.day, audience: jour, etat: "renvoi" };
+    api.hearing({ day: jour, min: 14 * 60, title: "Tribunal correctionnel — audience sur intérêts civils", where: "Tribunal judiciaire, chambre des intérêts civils", script: "ic", done: "apresIC", onMiss: "_icSansVous", duree: 30 });
+    api.mail({ from: "Greffe du tribunal correctionnel", subject: "Renvoi sur les intérêts civils", kind: "greffe", body: [[`Après avoir statué sur l'action publique, le tribunal a renvoyé l'examen de l'action civile de ${CR.clientName(cs)} à l'audience du ${CR.fmtDate(jour, "dow")}, 14 heures, pour permettre la production des justificatifs (art. 464 du code de procédure pénale).`]] });
+  };
+  const ancienClose3 = CR.closeCase;
+  CR.closeCase = function (s, cs, outcome) {
+    try { if (!K.off && cs && cs.status !== "closed" && K.eligibleIC(s, cs, outcome)) { K.ouvrirIC(s, cs, outcome); return; } } catch (err) { console.error(err); }
+    return ancienClose3.apply(this, arguments);
+  };
+  // les justificatifs du préjudice : la victime envoie ce qu'elle a (facture, certificat, attestation…)
+  const ancienTasks2 = PEN.tasks;
+  PEN.tasks = function (api, T) {
+    const r = ancienTasks2.apply(this, arguments);
+    const { s, cs } = api, ic = cs.vars.ic;
+    if (!ic || ic.etat !== "renvoi") return r;
+    if (!ic.justifs) T({ id: "ic_justifs", label: `Réunir les justificatifs du préjudice de ${CR.clientName(cs)}`, sub: `Pour l'audience sur intérêts civils du ${CR.fmtDate(ic.audience)} : factures, certificats, attestations (art. 464).`, kind: "meet", time: 30, urgent: true, run: () => {
+      CR.spend(s, 30, "meet"); ic.justifs = s.day; if (CR.updatedClient) CR.updatedClient(s, cs, 1);
+      const rj = CR.seeded(cs.id + ":ic:justifs");
+      const recus = postesDe(api).filter((po) => po.justif && rj() < 0.85);
+      for (const po of recus) for (const f of [].concat(po.justif)) CR.addNote(s, cs, { text: `Justificatif : ${po.label.toLowerCase()} (${CR.clientName(cs)}).`, fact: f, src: "client" });
+      api.mail({ from: CR.clientName(cs), subject: "Les justificatifs", kind: "email", body: [[recus.length ? `Maître, voici ce que j'ai retrouvé : ${recus.map((po) => po.label.toLowerCase()).join(" ; ")}.` : "Maître, je n'ai rien gardé. Je ne pensais pas qu'il faudrait des papiers."]] });
+      return null; } });
+    return r;
+  };
+  // les postes se plaident tous : une demande sans pièce se présente, le tribunal la réduit (CR.PROC.calculerCivil)
+  CR.AUDIENCES.ic = function (api) {
+    const postes = postesDe(api);
+    return {
+      title: "Audience sur intérêts civils", sub: "Le président siège seul (art. 464)", decor: { scene: "salle", juges: 1, sansParquet: true },
+      steps: [
+        { who: "president", t: `Le tribunal, statuant à juge unique, examine l'action civile de ${CR.clientName(api.cs)}, renvoyée par le jugement du ${CR.fmtDate(api.cs.vars.ic ? api.cs.vars.ic.jugement : api.s.day)}. Le ministère public n'est pas représenté. Maître, vos demandes ?` },
+        { plaidoirie: { role: "jld", titre: "Observations sur l'action civile", max: Math.min(4, postes.length + 1), args: postes.map((po) => ({ id: "ic_" + po.id, label: `${po.label} — ${CR.money(po.demande)}`, say: `${po.label} : ${CR.money(po.demande)}${po.justif && [].concat(po.justif).some((f) => CR.hasFact(api.cs, f)) ? ", justificatif à l'appui" : ""}.`, cards: [] })).concat([{ id: "ic_475", label: "Les frais d'avocat (art. 475-1)", say: "Je sollicite une somme au titre des frais exposés par la partie civile.", cards: ["CPP_475-1"] }]) } },
+        { who: "adverse", t: "La défense conteste l'évaluation : ce qui n'est pas justifié ne peut être alloué." },
+        { do: (a, st) => a.run("icDecider", { played: st.played }) },
+      ],
+    };
+  };
+  H.icDecider = (api, { played } = {}) => {
+    const { s, cs } = api, ic = cs.vars.ic;
+    if (!ic || ic.etat === "fini") return [];
+    const pl = played || new Set();
+    const demandes = postesDe(api).filter((po) => pl.has("arg:ic_" + po.id));
+    const juge = api.profil ? api.profil("president") : null;
+    const civil = CR.PROC.calculerCivil(api, demandes, { juge: juge || { severite: 0.5 }, played: pl });
+    civil.art475 = pl.has("arg:ic_475") ? Math.round(1200 * (0.55 + (0.5 - ((juge && juge.severite) || 0.5)) * 0.2) / 50) * 50 : 0;
+    cs.vars.civil = civil; ic.etat = "fini"; ic.decision = s.day; cs.vars.jugementDay = s.day; // la décision sur l'action civile, point de départ du recouvrement
+    const tot = civil.total + civil.art475;
+    const txt = !demandes.length ? "Faute de demande chiffrée, le tribunal déboute la partie civile." : `Le tribunal condamne le prévenu à payer à ${CR.clientName(cs)} ${CR.money(civil.total)}${civil.art475 ? `, et ${CR.money(civil.art475)} au titre de l'article 475-1` : ""}.${civil.lignes.some((l) => !l.justifie) ? " Les postes sans justificatif sont réduits." : ""}`;
+    api.mail({ from: "Greffe du tribunal correctionnel", subject: "Jugement sur intérêts civils", kind: "greffe", body: [[txt]] });
+    const o = demandes.length && civil.total > 0 ? { type: "indemnise", detail: CR.money(tot), indemnisation: civil.total } : { type: "deboute", detail: "aucune demande chiffrée sur intérêts civils" };
+    CR.closeCase(s, cs, o);
+    return [{ who: "president", t: txt }];
+  };
+  H.apresIC = (api) => { const { s, cs } = api; if (cs.vars.ic && cs.vars.ic.etat !== "fini") CR.updatedClient && CR.updatedClient(s, cs, 1); };
+  H._icSansVous = (api) => {
+    const { s, cs } = api;
+    if (!cs.vars.ic || cs.vars.ic.etat === "fini") return;
+    CR.erreur && CR.erreur(s, cs, { id: "ic_absent", texte: "Vous n'étiez pas à l'audience sur intérêts civils.", sanction: "Aucune demande n'a été soutenue : le tribunal n'a rien alloué.", regul: "Aucune pour cette audience." });
+    H.icDecider(api, { played: new Set() });
+  };
 })();

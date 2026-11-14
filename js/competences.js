@@ -21,7 +21,7 @@
     [/^canal_|^citation_courte|^projet_|^consignation|^constitution_doyen|^cass_greffe/, "ecrits"],
     [/^appel_|^op_tardive|^appel_ordo/, "recours"], [/^dml_/, "detention"], [/^gav_absent|^audition_seul/, "gav"],
     [/^ci_absent|^proces_absent|^absent|^incompetence/, "audience"], [/^vie_|^promesse|^presse|^deleg_/, "deonto"],
-    [/^prescrit/, "lecture"], [/^ipc_absent/, "instruction"], [/^jap_/, "ap"],
+    [/^prescrit/, "lecture"], [/^ipc_absent/, "instruction"], [/^jap_/, "ap"], [/^ic_|^civi_|^sarvi_/, "victimes"],
   ];
   const t = (s, cs) => { const p = CR.GEN && CR.GEN.paramsOf ? CR.GEN.paramsOf(s, cs.id) : null; return (p && p.t) || {}; };
   const drafted = (cs, k) => !!(cs.drafted && cs.drafted[k] && cs.drafted[k].length);

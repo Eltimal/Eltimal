@@ -109,6 +109,7 @@
     const pres = CR.acteur(cs.actors.president) || CR.acteur(cs.actors.jld) || CR.acteur(cs.actors.ji);
     const jures = decor.jures || 0;
     const looks = { president: decor.judge || (pres ? CR.px.acteurLook(pres) : null), parquet: A("parquet"), greffier: CR.px.lookFrom("greffiere" + cs.id, { g: "f", age: 44 }), client: CR.px.clientLook(CR.client(cs), cs.def), you: CR.youLook(s), adverse: A("adverse"), jures: decor.jureLooks || null };
+    if (decor.sansParquet) delete looks.parquet; // audience où le ministère public n'est pas représenté (intérêts civils, art. 464)
     Object.keys(looks).forEach((k) => { if (looks[k] == null) delete looks[k]; });
     const opts = { looks, camp: cs.camp === "pc" ? "pc" : "defense", box: !!decor.box, jures, juges: decor.juges || (name === "ccd" || (name === "assises" && /criminelle/i.test(t)) ? 5 : name === "cabinet_ji" ? 1 : 3), rouge: name === "assises" && jures > 0, adverse: !!cs.actors.adverse, victime: !!decor.victime };
     opts.sig = CR.dec.sigOf(opts);

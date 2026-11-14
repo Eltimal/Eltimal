@@ -265,3 +265,14 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
     - Au premier acte ouvert en mode libre, le calcul du fonds commun des clauses remplaçait la partie du joueur par une partie de travail (`CR.newGame` la plaçait dans `CR.store.s`). Il en écrasait aussi les affaires générées de même numéro.
     - Un passage noté, surligné ou relevé n'était pas marqué dans les pièces composées par le moteur : leurs heures portent des espaces insécables, et la comparaison des textes échouait.
     - Le fonds commun des clauses ne voyait que les modèles des affaires écrites : il est désormais nourri d'affaires générées de chaque genre (bonne option la plus longue : 18 % des blancs).
+
+## Lot 8 : fin (14 novembre 2026)
+
+- **D-85. L'action civile renvoyée se plaide à son audience (art. 464 CPP, relu).**
+  - Quand le tribunal renvoie l'action civile (faute de demande chiffrée), le dossier ne se clôt plus. Une audience est fixée, de cinq à onze semaines plus tard, où le président siège seul, sans le ministère public : banc à un juge, siège du parquet vide.
+  - L'avocat réunit auprès de la victime les justificatifs des postes de préjudice (elle en retrouve la plupart), puis plaide chaque poste qu'il demande.
+  - Un poste sans pièce se présente quand même, et le tribunal le réduit (calcul existant, `CR.PROC.calculerCivil`). Les frais d'avocat (art. 475-1) supposent le texte enregistré dans le dossier.
+  - La décision chiffrée ouvre le recouvrement (D-81). Sans demande, la partie civile est déboutée. L'absence de l'avocat est une erreur datée, rattachée à la compétence « Victimes », comme la forclusion devant la CIVI ou le SARVI.
+- **D-86. La requête en exclusion du bulletin n° 2 après jugement attend une vérification.**
+  - L'article 775-1 renvoie aux règles des articles 702-1 et 703 (relus) : requête au procureur, qui saisit la juridiction ; décision en chambre du conseil.
+  - L'article 702-1 impose un délai de six mois pour le relèvement des interdictions. Qu'il s'applique ou non à l'exclusion du bulletin n° 2 demande une jurisprudence que la session ne peut pas lire. La requête n'est pas codée.
