@@ -106,11 +106,41 @@
     const mineur = t.V && t.V.age != null && t.V.age < 18;
     return !!(I.deces || (itt != null && itt >= 30) || sexuel || ((conj || mineur) && itt != null && itt > 0));
   };
+  // Article 706-14 (relu sur le texte intégral) : victime d'un vol, d'une escroquerie, d'un abus de confiance, d'une
+  // extorsion, d'une destruction ou dégradation de son bien, d'un abus de faiblesse ou d'une atteinte à un système de
+  // données — ou d'une atteinte à la personne ayant entraîné une ITT, hors du champ de la réparation intégrale (dernier
+  // alinéa) — qui ne peut obtenir de réparation effective, se trouve de ce fait dans une situation matérielle ou
+  // psychologique grave et dont les ressources sont sous le plafond de l'aide juridictionnelle partielle : indemnité de la
+  // CIVI, au plus le triple du plafond mensuel. Plafonds 2026 (circulaire NOR JUST2601659C, revenu fiscal de référence
+  // annuel, selon le nombre de personnes du foyer) : 19 433, 21 765, 24 097, 25 570, 27 044 euros.
+  // Le SARVI n'est ouvert qu'à la victime qui ne peut être indemnisée au titre des articles 706-3 ou 706-14 (706-15-1).
+  K.PLAFOND_AJP = { annee: 2026, src: "circulaire NOR JUST2601659C", foyer: [19433, 21765, 24097, 25570, 27044] };
+  K.ART14_BIENS = ["vol", "cambriolage", "escroquerie", "abus_confiance", "extorsion", "degradations", "incendie", "abus_faiblesse", "acces_frauduleux", "vol_arme", "incendie_criminel"];
+  K.ART14_PERSONNES = ["personnes", "crim_personnes", "crim_sexuel"];
+  K.plafond14 = (foyer) => { const P = K.PLAFOND_AJP.foyer; const pl = P[Math.min(P.length, Math.max(1, foyer)) - 1]; return { ressources: pl, indemnite: 3 * Math.floor(pl / 12) }; };
+  K.art14 = function (s, cs, montant) {
+    const t = genT(s, cs); if (!t || !t.V || t.V.morale) return { ok: false, champ: false, motif: "la victime n'est pas une personne physique" };
+    const I = (CR.CAT && CR.CAT.INF[t.inf]) || {};
+    const itt = t.quoi === "itt" && t.f2 ? t.f2.itt : t.f && t.f.itt;
+    const biens = K.ART14_BIENS.includes(t.inf);
+    const personne = !biens && K.ART14_PERSONNES.includes(I.fam) && itt != null && itt > 0;
+    if (K.civiEligible(s, cs) || !(biens || personne)) return { ok: false, champ: false, motif: K.civiEligible(s, cs) ? "réparation intégrale (art. 706-3)" : "infraction hors de la liste de l'article 706-14" };
+    const foyer = 1 + (t.V.enfants > 0 ? t.V.enfants : 0);
+    const pl = K.plafond14(foyer);
+    const annuel = Math.round((t.V.revenu || 0) * 12);
+    // situation grave (appréciée par la commission ; règle du jeu) : un préjudice d'au moins un mois de revenus, ou une
+    // atteinte qui ébranle (domicile cambriolé, extorsion, abus de faiblesse, vol avec arme, atteinte à la personne)
+    const grave = personne || ["cambriolage", "extorsion", "abus_faiblesse", "vol_arme"].includes(t.inf) || montant >= Math.max(300, t.V.revenu || 0);
+    const sous = annuel <= pl.ressources;
+    return { ok: sous && grave, champ: true, foyer, annuel, plafond: pl.ressources, max: pl.indemnite, grave, sous, personne,
+      motif: !sous ? `ressources de ${CR.money(annuel)} par an, au-dessus du plafond de ${CR.money(pl.ressources)} (aide juridictionnelle partielle, foyer de ${foyer} personne${foyer > 1 ? "s" : ""})` : !grave ? "le préjudice ne met pas la victime dans une situation matérielle ou psychologique grave" : `indemnité plafonnée à ${CR.money(pl.indemnite)} (triple du plafond mensuel)` };
+  };
   K.eligibleVictime = (s, cs, outcome) => !!(cs && cs.camp === "pc" && outcome && outcome.type === "indemnise" && genT(s, cs) && !cs.vars.recouv && !(cs.proc && cs.proc.appel));
   K.ouvrirRecouvrement = function (s, cs, outcome) {
     const api = CR.api(s, cs), jug = cs.vars.jugementDay != null ? cs.vars.jugementDay : s.day;
     const civi = K.civiEligible(s, cs);
     const R0 = (cs.vars.recouv = { outcome, montant: outcome.indemnisation || 0, jugement: jug, definitive: jug + 20, civi, etat: "attente" });
+    if (!civi) R0.art14 = K.art14(s, cs, R0.montant);
     api.mail({ from: "Greffe du tribunal correctionnel", subject: "Information de la partie civile", kind: "greffe", body: [[`La juridiction a alloué des dommages et intérêts à ${CR.clientName(cs)}. Elle l'informe de la possibilité de saisir la commission d'indemnisation des victimes d'infractions ou le fonds de garantie d'une demande d'aide au recouvrement (art. 706-15 du code de procédure pénale).`]] });
     api.at(R0.definitive + 60, "_recouvEcheance", {}, 10 * 60);
     api.at(R0.definitive + 366, "_recouvForclusion", {}, 9 * 60);
@@ -139,7 +169,10 @@
   H._recouvForclusion = (api) => {
     const { s, cs } = api, R0 = cs.vars.recouv;
     if (!R0 || R0.etat !== "attente") return;
-    CR.erreur && CR.erreur(s, cs, { id: R0.civi ? "civi_forclos" : "sarvi_forclos", texte: R0.civi ? "La commission d'indemnisation n'a pas été saisie dans l'année de la décision définitive." : "Le fonds de garantie n'a pas été saisi dans l'année de la décision définitive.", sanction: "La demande est forclose : la victime n'a reçu que ce que le condamné a bien voulu payer.", regul: R0.civi ? "La commission peut relever de la forclusion pour un motif légitime (art. 706-5)." : "Le fonds peut relever de la forclusion pour un motif légitime (art. 706-15-2)." });
+    // la commission a déclaré la demande irrecevable : le délai du SARVI court de sa notification (art. 706-5, dernier alinéa)
+    if (R0.sarviDepuis != null && s.day < R0.sarviDepuis + 365) { api.at(R0.sarviDepuis + 366, "_recouvForclusion", {}, 9 * 60); return; }
+    const commission = R0.civi || (R0.art14 && R0.art14.ok && !R0.rejet14);
+    CR.erreur && CR.erreur(s, cs, { id: commission ? "civi_forclos" : "sarvi_forclos", texte: commission ? "La commission d'indemnisation n'a pas été saisie dans l'année de la décision définitive." : "Le fonds de garantie n'a pas été saisi dans l'année de la décision définitive.", sanction: "La demande est forclose : la victime n'a reçu que ce que le condamné a bien voulu payer.", regul: commission ? "La commission peut relever de la forclusion pour un motif légitime (art. 706-5)." : "Le fonds peut relever de la forclusion pour un motif légitime (art. 706-15-2)." });
     K.cloreVictime(s, cs, "aucun recours exercé dans le délai");
   };
   K.saisirCivi = function (api) {
@@ -165,7 +198,7 @@
     } else {
       R0.etat = "instruction";
       // la commission alloue la réparation intégrale, au plus ce que le préjudice justifie (le jugement le chiffre)
-      api.at(s.day + int(CR.seeded(cs.id + ":civi:instr"), 90, 150), "_civiFin", { montant: R0.montant, voie: "décision de la commission" }, 10 * 60);
+      api.at(s.day + int(CR.seeded(cs.id + ":civi:instr"), 90, 150), "_civiFin", { montant: R0.montantCivi != null ? R0.montantCivi : R0.montant, voie: "décision de la commission" }, 10 * 60);
     }
   };
   H._civiFin = (api, { montant, voie }) => {
@@ -175,11 +208,48 @@
     api.mail({ from: "Fonds de garantie des victimes", subject: "Paiement de l'indemnité", kind: "courrier", body: [[`Le fonds verse à ${CR.clientName(cs)} la somme de ${CR.money(montant)} (${voie}). Il se retourne contre le condamné pour le remboursement.`]] });
     K.cloreVictime(s, cs, `indemnisée par la CIVI (${voie}, ${CR.money(montant)})`);
   };
+  // CIVI au titre de l'article 706-14 : même procédure (706-5-1 : offre du fonds sous deux mois), indemnité plafonnée ;
+  // une victime qui ne remplit pas les conditions voit sa demande rejetée, motifs à l'appui, et garde le SARVI
+  K.saisirCivi14 = function (api) {
+    const { s, cs } = api, R0 = cs.vars.recouv;
+    R0.etat = "civi14"; R0.civiDepot = s.day; R0.art14 = K.art14(s, cs, R0.montant);
+    if (CR.updatedClient) CR.updatedClient(s, cs, 1);
+    api.mail({ from: "Commission d'indemnisation des victimes d'infractions", subject: "Requête enregistrée (article 706-14)", kind: "greffe", body: [["Votre requête, présentée au titre de l'article 706-14 du code de procédure pénale avec les justificatifs de ressources et de la situation de la victime, est enregistrée et transmise au fonds de garantie (art. 706-5-1)."]] });
+    api.at(s.day + int(CR.seeded(cs.id + ":civi14"), 40, 58), "_civi14Reponse", {}, 11 * 60);
+  };
+  H._civi14Reponse = (api) => {
+    const { s, cs } = api, R0 = cs.vars.recouv;
+    if (!R0 || R0.etat !== "civi14") return;
+    const a = R0.art14 || {};
+    if (!a.ok) {
+      R0.etat = "attente"; R0.rejet14 = s.day; R0.sarviDepuis = s.day;
+      api.mail({ from: "Commission d'indemnisation des victimes d'infractions", subject: "Demande rejetée", kind: "courrier", important: true, body: [[`La commission rejette la demande de ${CR.clientName(cs)} présentée au titre de l'article 706-14 : ${a.motif}.`], ["La victime peut encore demander l'aide au recouvrement du fonds de garantie ; le délai d'un an court de la notification de la présente décision (art. 706-5, dernier alinéa, et 706-15-2)."]] });
+      return;
+    }
+    R0.plafond14 = a.max;
+    const base = Math.min(R0.montant, a.max);
+    const k = 0.85 + CR.seeded(cs.id + ":civi14:offre")() * 0.15;
+    R0.offre = Math.min(base, Math.round((base * k) / 50) * 50); R0.etat = "offre"; R0.montantCivi = base;
+    api.mail({ from: "Fonds de garantie des victimes", subject: "Offre d'indemnisation (article 706-14)", kind: "courrier", important: true, body: [[`Le fonds présente à ${CR.clientName(cs)} une offre d'indemnisation de ${CR.money(R0.offre)}, pour un préjudice fixé par le tribunal à ${CR.money(R0.montant)}.`], [R0.montant > a.max ? `L'indemnité ne peut dépasser ${CR.money(a.max)} : le triple du plafond mensuel de ressources de l'aide juridictionnelle partielle (art. 706-14, al. 2).` : "Le préjudice reste sous le plafond de l'article 706-14."], ["En cas d'acceptation, le constat d'accord est transmis au président de la commission pour homologation. En cas de refus, l'instruction de la demande se poursuit devant la commission."]] });
+  };
   K.saisirSarvi = function (api) {
     const { s, cs } = api, R0 = cs.vars.recouv;
+    // l'aide au recouvrement est fermée à la victime indemnisable au titre de l'article 706-14 (art. 706-15-1)
+    if (R0.art14 && R0.art14.ok && !R0.rejet14) {
+      R0.sarviRefus = s.day;
+      if (CR.updatedClient) CR.updatedClient(s, cs, 1);
+      api.at(s.day + int(CR.seeded(cs.id + ":sarvi:refus"), 20, 35), "_sarviRefus", {}, 11 * 60);
+      return;
+    }
     R0.etat = "sarvi"; R0.sarviDepot = s.day;
     if (CR.updatedClient) CR.updatedClient(s, cs, 1); // l'avocat tient son client informé
     api.at(s.day + int(CR.seeded(cs.id + ":sarvi"), 30, 60), "_sarviReponse", {}, 11 * 60);
+  };
+  H._sarviRefus = (api) => {
+    const { s, cs } = api, R0 = cs.vars.recouv;
+    if (!R0 || R0.etat !== "attente") return;
+    CR.erreur && CR.erreur(s, cs, { id: "sarvi_706_14", texte: "L'aide au recouvrement a été demandée pour une victime indemnisable par la commission au titre de l'article 706-14.", sanction: "Le fonds refuse : le temps passe, et la demande à la commission reste à faire.", regul: "Saisir la commission d'indemnisation dans l'année de la décision définitive (art. 706-5)." });
+    api.mail({ from: "Service d'aide au recouvrement des victimes d'infractions", subject: "Demande irrecevable", kind: "courrier", important: true, body: [[`La demande d'aide au recouvrement de ${CR.clientName(cs)} est irrecevable : la victime d'une ${R0.art14.personne ? "atteinte à la personne ayant entraîné une incapacité de travail" : "atteinte à ses biens"} dont les ressources sont sous le plafond peut être indemnisée par la commission d'indemnisation au titre de l'article 706-14 (art. 706-15-1).`]] });
   };
   H._sarviReponse = (api) => {
     const { s, cs } = api, R0 = cs.vars.recouv;
@@ -196,7 +266,9 @@
     if (R0 && R0.etat !== "fini") {
       const avant = s.day <= R0.definitive + 365;
       if (R0.civi && R0.etat === "attente" && avant) T({ id: "civi", label: "Saisir la commission d'indemnisation des victimes", sub: "Requête au greffe de la CIVI, pièces à l'appui : le fonds de garantie fera une offre sous deux mois (art. 706-3 et 706-5-1).", kind: "admin", time: 60, run: () => { CR.spend(s, 60, "admin"); K.saisirCivi(api); return null; } });
-      if (!R0.civi && R0.etat === "attente" && R0.impaye != null && avant) T({ id: "sarvi", label: "Demander l'aide au recouvrement (SARVI)", sub: "Le condamné n'a pas payé dans les deux mois : demande au fonds de garantie, dans l'année de la décision définitive (art. 706-15-2).", kind: "admin", time: 30, run: () => { CR.spend(s, 30, "admin"); K.saisirSarvi(api); return null; } });
+      if (!R0.civi && R0.art14 && R0.art14.champ && !R0.rejet14 && R0.etat === "attente" && R0.impaye != null && avant) T({ id: "civi14", label: "Saisir la commission d'indemnisation (article 706-14)", sub: "Le condamné ne paie pas : la victime aux ressources modestes, mise par l'infraction dans une situation grave, peut être indemnisée dans la limite du triple du plafond mensuel de l'aide juridictionnelle partielle. Justificatifs de ressources à joindre.", kind: "admin", time: 60, run: () => { CR.spend(s, 60, "admin"); K.saisirCivi14(api); return null; } });
+      const avantSarvi = avant || (R0.sarviDepuis != null && s.day <= R0.sarviDepuis + 365);
+      if (!R0.civi && R0.etat === "attente" && R0.impaye != null && avantSarvi && !(R0.sarviRefus != null && !R0.rejet14)) T({ id: "sarvi", label: "Demander l'aide au recouvrement (SARVI)", sub: "Le condamné n'a pas payé dans les deux mois : demande au fonds de garantie, dans l'année de la décision définitive (art. 706-15-2).", kind: "admin", time: 30, run: () => { CR.spend(s, 30, "admin"); K.saisirSarvi(api); return null; } });
       if (R0.etat === "offre") {
         T({ id: "civi_accepter", label: `Accepter l'offre du fonds de garantie (${CR.money(R0.offre)})`, sub: "Le constat d'accord part en homologation : paiement rapide.", kind: "admin", time: 15, run: () => { CR.spend(s, 15, "admin"); K.repondreOffre(api, true); return null; } });
         T({ id: "civi_refuser", label: "Refuser l'offre et poursuivre devant la commission", sub: `Le tribunal a fixé le préjudice à ${CR.money(R0.montant)} ; l'instruction prendra plusieurs mois.`, kind: "admin", time: 20, run: () => { CR.spend(s, 20, "admin"); K.repondreOffre(api, false); return null; } });

@@ -41,8 +41,8 @@ for (const [id, ...noms] of CODES) {
     const num = (/num="([^"]+)"/.exec(m[2]) || [])[1];
     if (!num) continue;
     const k = num.trim();
-    const alineas = [...m[3].matchAll(/<p>([\s\S]*?)<\/p>/g)].map((p) => net(p[1])).filter(Boolean);
-    if (!alineas.length) { const t = net(m[3]); if (t) alineas.push(t); }
+    // alinéas : les paragraphes balisés, et le texte écrit hors de toute balise <p> (souvent le premier alinéa)
+    const alineas = m[3].split(/<\/?p>/).map(net).filter(Boolean);
     if (!alineas.length || arts[k] || !haut.ok) continue;
     arts[k] = alineas; n++; octets += alineas.join(" ").length;
     haut.a.push(k);

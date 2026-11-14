@@ -25,6 +25,10 @@ const { boot, sleep, texts } = require("./harness");
     const sans = fiches.filter((e) => !CR.article(e.id).officiel);
     ok(!sans.length, `${id} : fiches sans texte officiel`, sans.map((e) => e.id).join(","));
   }
+  // le texte écrit hors des balises de paragraphe n'est pas perdu (souvent le premier alinéa)
+  const r151 = CR.integralDe("CPP").arts["706-15-1"];
+  ok(r151 && r151.length === 2 && /^Toute personne physique/.test(r151[0]), "premier alinéa de l'art. 706-15-1 perdu", JSON.stringify(r151));
+  ok(/^L'acquisition, la vente/.test((CR.integralDe("CP").arts["222-57"] || [""])[0]), "premier alinéa de l'art. 222-57 CP perdu");
   // un article hors fiches : lisible, jamais une carte
   const a = CR.article("CPP_706-73");
   ok(a && a.officiel && !a.lib && /crimes et des délits suivants/.test(a.alineas.join(" ")) && /code de procédure pénale/.test(a.cite), "CPP 706-73 hors fiches mal lu", JSON.stringify(a).slice(0, 200));
