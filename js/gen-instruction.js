@@ -480,6 +480,88 @@
       const titre = prolong ? (dec === "dp" ? "Ordonnance de prolongation de la détention provisoire" : "Ordonnance de mise en liberté sous contrôle judiciaire") : dec === "dp" ? "Ordonnance de placement en détention provisoire" : dec === "arse" ? "Ordonnance de placement sous assignation à résidence avec surveillance électronique" : "Ordonnance de placement sous contrôle judiciaire";
       return { title: titre, kind: "greffe", entete: [`${jld.nom}, juge des libertés et de la détention`, "Tribunal judiciaire", `Information n° ${t.ninfo}`], paras: P };
     };
+    // Ordonnance de règlement (relue sur le texte intégral) : identité complète et qualification, motifs précis sur les
+    // charges, au regard des réquisitions et des observations de l'article 175, éléments à charge et à décharge (184) ;
+    // examen des charges et qualification (176) ; non-lieu (177 : fin de la détention et du contrôle judiciaire) ; renvoi
+    // devant le tribunal (179 : fin de la détention sauf ordonnance distincte motivée par les 2°, 4°, 5° et 6° de l'article
+    // 144) ; mise en accusation (181 : exposé et qualification des faits ; le mandat de dépôt conserve sa force) ;
+    // irresponsabilité pénale (706-120, dernier alinéa : charges suffisantes constatées ; 706-121 : fin de la détention ;
+    // l'hospitalisation et les mesures de sûreté relèvent de la chambre de l'instruction ou de la juridiction de jugement,
+    // 706-135 et 706-136 : le juge d'instruction ne les ordonne pas) ; appel : parquet (185), personne mise en examen (186 : mise en accusation ; 186-3 : renvoi
+    // correctionnel de faits criminels), partie civile (186, 186-3), dans les dix jours.
+    const elide = (x) => (/^[aeiouyéèêàâîôûœh]/i.test(String(x)) ? "d'" : "de ") + x;
+    const ordoReglement = (xx) => {
+      const cs = xx.cs, R0 = cs.vars.reglement || {};
+      const qq = R0.qual === "q2" && t.q2 ? t.q2 : q;
+      const visa = (c) => (CR.TRIB && CR.TRIB.visa ? CR.TRIB.visa(c) : c);
+      const jF = /^Mme\b/.test(jiNom);
+      const det = cs.vars.dpAuReglement || cs.proc.detention.statut === "dp", cj = ["cj", "arse"].includes(cs.proc.detention.statut);
+      const lib = { nonlieu: "Ordonnance de non-lieu", irresp: "Ordonnance d'irresponsabilité pénale pour cause de trouble mental", oma: "Ordonnance de mise en accusation", ortc: t.mineur ? "Ordonnance de renvoi devant le tribunal pour enfants" : R0.qual === "q2" ? "Ordonnance de requalification et de renvoi devant le tribunal correctionnel" : "Ordonnance de renvoi devant le tribunal correctionnel" }[R0.type] || "Ordonnance de règlement";
+      const P = [], p = (x) => P.push([x]);
+      p(`Nous, ${jiNom}, juge d'instruction au tribunal judiciaire${t.mineur ? `, chargé${jF ? "e" : ""} spécialement des affaires concernant les mineurs` : ""},`);
+      p(`Vu l'information suivie contre ${A.nom.toUpperCase()} ${A.prenom}, né${e(A)} ${A.naissance || "à une date non précisée"}, ${A.heberg ? `demeurant ${A.adresse}` : "sans domicile fixe"}, ${A.metier || "sans profession"}, ${det ? `détenu${e(A)}` : cj ? `placé${e(A)} sous ${cs.proc.detention.statut === "arse" ? "assignation à résidence avec surveillance électronique" : "contrôle judiciaire"}` : "libre"}, mis${e(A)} en examen le ${D(t.d.mex)} du chef ${elide(q.label)} ;`);
+      p(`Vu l'avis de fin d'information du ${D(cs.vars.avis175Day != null ? cs.vars.avis175Day : R0.day)} (art. 175) et le réquisitoire définitif du procureur de la République ;`);
+      p(R0.obs ? `Vu les observations adressées pour ${nomA} par Me ${xx.s.player.prenom} ${xx.s.player.nom} dans le délai de l'article 175 ;` : "Aucune observation n'ayant été adressée par les parties dans le délai de l'article 175 ;");
+      p(`EXPOSÉ. Le ${D(t.d.faits)}, ${N.lieu ? `${N.lieu}, ` : ""}des faits qualifiés ${elide(q.label)} ont été commis. L'information a été ouverte le ${D(t.d.ri)}.`);
+      p(`MOTIFS. Il appartient au juge d'instruction d'examiner s'il existe contre la personne mise en examen des charges constitutives d'infraction et d'en déterminer la qualification juridique (art. 176), en précisant les éléments à charge et à décharge (art. 184).`);
+      p(`Éléments à charge : ${(R0.charges || []).length ? R0.charges.map((x) => x.charAt(0).toLowerCase() + x.slice(1)).join(" ; ") : "aucun élément régulier ne subsiste au dossier"}.${R0.annules ? " Les actes annulés par la chambre de l'instruction sont retirés du dossier." : ""}`);
+      p(`Éléments à décharge : ${(R0.decharges || []).length ? R0.decharges.map((x) => x.charAt(0).toLowerCase() + x.slice(1)).join(" ; ") : "la défense n'en a pas fait valoir qui ébranle l'accusation"}.`);
+      const fin = [];
+      if (R0.type === "nonlieu") {
+        p(`Il résulte de ce qui précède qu'il n'existe pas de charges suffisantes contre ${nomA} d'avoir commis les faits (art. 177).`);
+        fin.push(`Disons n'y avoir lieu à suivre contre ${nomA} ;`, det ? `Ordonnons sa mise en liberté s'${GEN2.PR.il(A)} n'est détenu${e(A)} pour autre cause (art. 177) ;` : cj ? "Disons que la présente ordonnance met fin au contrôle judiciaire (art. 177) ;" : null, "Ordonnons la restitution des objets placés sous main de justice qui ne constituent ni l'instrument ni le produit de l'infraction (art. 177).");
+      } else if (R0.type === "irresp") {
+        p(`Il existe contre ${nomA} des charges suffisantes d'avoir commis les faits qui lui sont reprochés. Il résulte toutefois des expertises psychiatriques qu'${GEN2.PR.il(A)} était atteint${e(A)}, au moment des faits, d'un trouble psychique ayant aboli son discernement ou le contrôle de ses actes (art. 122-1, al. 1 du code pénal).`);
+        fin.push(`Disons qu'il existe des charges suffisantes établissant que ${nomA} a commis les faits qui lui sont reprochés (art. 706-120, dernier alinéa) ;`, `Déclarons ${nomA} pénalement irresponsable pour cause de trouble mental ;`, det || cj ? `Disons que la présente ordonnance met fin à ${det ? "la détention provisoire" : "au contrôle judiciaire"} (art. 706-121) ;` : null);
+      } else {
+        p(`Il existe contre ${nomA} des charges suffisantes d'avoir commis les faits, qualifiés ${elide(qq.label)}, prévus et réprimés par ${visa(qq.court)}${R0.qual === "q2" ? ", les faits devant recevoir cette qualification plutôt que celle retenue à la mise en examen" : ""} (art. 176 et 184).`);
+        if (R0.type === "oma") fin.push(`Ordonnons la mise en accusation ${elide(nomA)} devant ${jurDe(R0.jur)} du chef ${elide(qq.label)}, faits prévus et réprimés par ${visa(qq.court)} (art. 181) ;`, det ? `Disons que le mandat de dépôt conserve sa force exécutoire et que l'accusé${e(A)} restera détenu${e(A)} jusqu'à son jugement (art. 181) ;` : cj ? "Disons que le contrôle judiciaire continue à produire ses effets (art. 181) ;" : null);
+        else fin.push(`Ordonnons le renvoi ${elide(nomA)} devant ${jurDe(R0.jur)} du chef ${elide(qq.label)}, faits prévus et réprimés par ${visa(qq.court)} (art. 179) ;`, det ? "Disons que la présente ordonnance met fin à la détention provisoire ; par ordonnance distincte spécialement motivée au regard des 2°, 4°, 5° et 6° de l'article 144, le prévenu est maintenu en détention jusqu'à sa comparution (art. 179) ;" : cj ? "Disons que la présente ordonnance met fin au contrôle judiciaire, sauf ordonnance distincte de maintien (art. 179) ;" : null);
+      }
+      p("PAR CES MOTIFS");
+      for (const x of fin.filter(Boolean)) p(x);
+      const appel = R0.type === "oma" ? "La personne mise en examen peut interjeter appel de la présente ordonnance (art. 186), la partie civile en ce qu'elle fait grief à ses intérêts civils (art. 186)" : R0.type === "ortc" ? "La personne mise en examen et la partie civile ne peuvent en interjeter appel que si elles estiment que les faits renvoyés constituent un crime (art. 186-3)" : R0.type === "nonlieu" ? "La partie civile peut interjeter appel de la présente ordonnance (art. 186)" : "La partie civile peut interjeter appel de la présente ordonnance en ce qu'elle fait grief à ses intérêts civils (art. 186)";
+      p(`${appel}, dans les dix jours de sa notification ; le procureur de la République dans le même délai (art. 185).`);
+      p(`Fait en notre cabinet, le ${D(R0.day != null ? R0.day : xx.s.day)}. ${jF ? "La juge" : "Le juge"} d'instruction ; le greffier.`);
+      return { title: lib, kind: "greffe", entete: [`Cabinet de ${jiNom}, juge d'instruction`, "Tribunal judiciaire", `Information n° ${t.ninfo}`], paras: P };
+    };
+    // Arrêt de la chambre de l'instruction (relu) : président de chambre et deux conseillers (191) ; réquisitoire du procureur
+    // général (194) ; avis aux parties de la date d'audience (197) ; mémoires (198) ; chambre du conseil, ou audience
+    // publique pour un majeur en matière de détention (199) ; rapport du conseiller, le procureur général et les avocats
+    // entendus (199) ; délibéré hors leur présence (200) ; nullités (206) ; pourvoi dans les dix jours francs (568), la
+    // chambre criminelle statuant dans les trois mois en matière de détention (567-2), restreint contre un renvoi en
+    // correctionnelle (574).
+    const arretChins = (xx) => {
+      const cs = xx.cs, M = cs.vars.arretChinsMeta || { kind: "reglement" }, lignes = cs.vars.arretChins || ["La chambre de l'instruction confirme l'ordonnance entreprise."];
+      const avocat = `Me ${xx.s.player.prenom} ${xx.s.player.nom}`;
+      const libO = { nonlieu: "non-lieu", irresp: "irresponsabilité pénale pour cause de trouble mental", oma: "mise en accusation", ortc: "renvoi devant la juridiction de jugement" };
+      const P = [], p = (x) => P.push([x]);
+      const publique = M.kind === "dp" && !t.mineur;
+      p(`La chambre de l'instruction de la ${TJ.ca.replace(/^Cour/, "cour")}, composée de son président de chambre et de deux conseillers (art. 191), en présence de l'avocat général, assistée du greffier, ${publique ? "statuant en audience publique, la personne mise en examen étant majeure (art. 199, al. 2)" : "statuant en chambre du conseil (art. 199)"}, a rendu le ${D(M.day != null ? M.day : xx.s.day)} l'arrêt suivant.`);
+      if (M.kind === "nullite") p(`Saisie par requête motivée présentée pour ${D0 ? nomA : nom(C)} aux fins d'annulation d'actes de la procédure, déclarée au greffe de la chambre de l'instruction (art. 173).`);
+      else if (M.kind === "dp") p(`Saisie de l'appel interjeté par ${nomA}${M.appelDay != null ? ` le ${D(M.appelDay)}` : ""} contre l'ordonnance de placement en détention provisoire rendue le ${D(M.ordoDay != null ? M.ordoDay : t.d.mex)} par le juge des libertés et de la détention (art. 186).`);
+      else p(`Saisie de l'appel interjeté par ${M.appelant === "parquet" ? "le procureur de la République (art. 185)" : M.appelant === "mex" ? `${nomA} (art. 186${M.ordo === "ortc" ? " et 186-3" : ""})` : `la partie civile (art. 186${M.ordo === "ortc" ? " et 186-3" : ""})`}${M.appelDay != null ? ` le ${D(M.appelDay)}` : ""} contre l'ordonnance de ${libO[M.ordo] || "règlement"} rendue${M.ordoDay != null ? ` le ${D(M.ordoDay)}` : ""} par ${jiNom}, juge d'instruction.`);
+      p(`Vu le réquisitoire du procureur général (art. 194) ; les parties et leurs avocats ayant été avisés de la date de l'audience (art. 197)${M.memoire ? ` ; vu le mémoire déposé pour ${D0 ? nomA : nom(C)} et visé par le greffier (art. 198)` : ""}.`);
+      p(`DÉBATS. Le conseiller rapporteur a été entendu en son rapport ; le procureur général a été entendu en ses réquisitions, ${M.sansAvocat ? "l'avocat de la partie appelante, régulièrement avisé, n'ayant pas comparu" : `puis ${avocat} en ses observations`} (art. 199). La chambre a délibéré hors la présence du procureur général, des parties, de leurs avocats et du greffier (art. 200).`);
+      p("MOTIFS");
+      if (M.kind === "nullite") {
+        p("Sur la recevabilité. La requête, motivée et déclarée au greffe, est recevable dans les limites des moyens qu'elle énonce (art. 173 et 174).");
+        for (const m of M.moyens || []) p(m.decision === "irrecevable" ? `Sur le moyen tiré de ${m.label.toLowerCase()}. ${CR.cap(m.motif || "Le moyen est irrecevable").replace(/\.?$/, ".")}` : m.decision === "annule" ? `Sur le moyen tiré de ${m.label.toLowerCase()}. L'irrégularité est établie et a porté atteinte aux intérêts de la partie qu'elle concerne (art. 171 et 802). ${CR.cap(m.motif || "").replace(/\.?$/, ".")}` : `Sur le moyen tiré de ${m.label.toLowerCase()}. ${CR.cap(m.motif || "Le moyen n'est pas fondé").replace(/\.?$/, ".")}`);
+        if ((M.moyens || []).some((m) => m.decision === "annule")) p("Après annulation, la chambre renvoie le dossier au juge d'instruction saisi, afin de poursuivre l'information (art. 206).");
+      } else if (M.kind === "dp") {
+        p(M.infirme ? `Les garanties de représentation produites devant la chambre permettent d'atteindre les objectifs de l'article 144 sans détention provisoire ; la détention n'en est plus l'unique moyen (art. 144 et 137-3).` : "La détention provisoire demeure l'unique moyen d'atteindre les objectifs de l'article 144 retenus par le premier juge, au vu des éléments précis et circonstanciés de la procédure ; les obligations du contrôle judiciaire et de l'assignation à résidence avec surveillance électronique sont insuffisantes (art. 144 et 137-3).");
+      } else {
+        const R0 = cs.vars.reglement || {};
+        if (!M.infirme) p(`C'est par des motifs pertinents, que la chambre adopte, que le juge d'instruction a rendu une ordonnance de ${libO[M.ordo] || "règlement"} : l'information n'appelle pas d'autre appréciation des charges (art. 176 et 184).`);
+        else p(`Contrairement à ce qu'a retenu le juge d'instruction, ${R0.type === "nonlieu" ? `il n'existe pas de charges suffisantes contre ${nomA} d'avoir commis les faits (art. 177)` : R0.type === "oma" ? `il existe contre ${nomA} des charges suffisantes d'avoir commis le crime ${elide((R0.qual === "q2" && t.q2 ? t.q2 : q).label)} (art. 181)` : `les faits reçoivent la qualification de ${(R0.qual === "q2" && t.q2 ? t.q2 : q).label}, qui relève de la juridiction correctionnelle (art. 179)`}.`);
+      }
+      p("PAR CES MOTIFS");
+      const disp = lignes.filter((l) => !/statuant sur la requête en nullité/.test(l)).map((l) => l.replace(/^La chambre de l'instruction /, "").replace(/^./, (c) => c.toUpperCase()));
+      p(`La chambre de l'instruction, après en avoir délibéré conformément à la loi : ${M.kind === "nullite" ? "reçoit la requête" : "reçoit l'appel"} ; ${disp.map((l) => l.replace(/^./, (c) => c.toLowerCase()).replace(/\.$/, "")).join(" ; ")}.`);
+      p(`Voies de recours : pourvoi en cassation dans les dix jours francs du prononcé (art. 568)${M.kind === "dp" ? " ; la chambre criminelle statue dans les trois mois de la réception du dossier, faute de quoi la personne est mise d'office en liberté (art. 567-2)" : ""}${M.kind === "reglement" && (cs.vars.reglement || {}).type === "ortc" ? " ; l'arrêt de renvoi devant la juridiction correctionnelle n'est susceptible de pourvoi que s'il statue sur la compétence ou présente des dispositions définitives que le tribunal n'a pas le pouvoir de modifier (art. 574)" : ""}.`);
+      p("Lecture de l'arrêt a été donnée par le président ou l'un des conseillers (art. 199).");
+      return { title: "Arrêt de la chambre de l'instruction", kind: "greffe", entete: [`${TJ.ca} · chambre de l'instruction`, `Arrêt du ${D(M.day != null ? M.day : xx.s.day)}`, `Information n° ${t.ninfo}`], paras: P };
+    };
     const flowDocs = {
       pv_ipc_live: (xx) => ({ title: "Procès-verbal d'interrogatoire de première comparution", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Le ${D(t.d.mex)}, comparaît ${nomA}, assisté${e(A)} de Me ${xx.s.player.prenom} ${xx.s.player.nom}.`], [`Faits notifiés : ${q.label}. Droit de se taire rappelé.`], [{ t: xx.cs.vars.ipcChoix === "silence" ? "La personne déclare : « Je ne souhaite pas m'exprimer aujourd'hui. »" : `La personne déclare : « ${N.version[t.stance]} »`, f: "X_ipc" }], [xx.cs.vars.statut === "ta" ? `Disons que ${nomA} sera entendu${e(A)} en qualité de témoin assisté (art. 113-1).` : `Mettons ${nomA} en examen du chef de ${q.label} (art. 80-1).`]] }),
       pv_interro: (xx) => ({ title: "Procès-verbal d'interrogatoire", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Interrogatoire de ${nomA}${D0 ? `, assisté${e(A)} de Me ${xx.s.player.nom}` : ""}.`], ...(N.interro.length ? N.interro : [{ q: "Maintenez-vous vos déclarations ?", a: { nie: "Oui. Je n'ai rien fait.", minimise: "Oui, pour l'essentiel.", reconnait: "Oui. Je reconnais les faits." } }]).map((qq) => [`Question : ${qq.q} — Réponse : ${qq.a[t.stance]}`]), ...CR.CONF ? interroJoue(xx) : []] }),
@@ -487,20 +569,8 @@
       contre_expertise: (xx) => ({ title: "Rapport de contre-expertise", kind: "courrier", entete: ["Collège d'experts désigné par le juge d'instruction", `Information n° ${t.ninfo}`], paras: [[`Mission : ${xx.cs.vars.contreObjet || "examen des conclusions de la première expertise"}.`], [{ t: xx.cs.vars.contreResultat || "Les contre-experts confirment les conclusions initiales.", f: "K_contre" }]] }),
       reconstitution: () => ({ title: "Procès-verbal de reconstitution", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Transport sur les lieux ${N.lieu}, en présence des parties et de leurs avocats.`], [{ t: enjeux[0] && enjeux[0].fort ? `La reconstitution rend plausible la version de la défense sur un point essentiel : ${enjeux[0].label.toLowerCase()}.` : "La reconstitution ne remet pas en cause les constatations initiales.", f: "K_reconst" }]] }),
       avis175: () => ({ title: "Avis de fin d'information (art. 175)", kind: "greffe", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [["L'information paraissant terminée, avis en est donné aux parties et à leurs avocats."], [{ t: `Délai pour présenter des observations, des demandes d'actes ou des requêtes en nullité : ${t.detenu || t.dpRequise ? "un mois" : "trois mois"} (art. 175).`, f: "K_avis175" }]] }),
-      ordo_reglement: (xx) => {
-        const R0 = xx.cs.vars.reglement || {};
-        const lib = { nonlieu: "Ordonnance de non-lieu", irresp: "Ordonnance d'irresponsabilité pénale pour cause de trouble mental", oma: "Ordonnance de mise en accusation", ortc: t.mineur ? "Ordonnance de renvoi devant le tribunal pour enfants" : "Ordonnance de requalification et de renvoi devant le tribunal correctionnel" }[R0.type] || "Ordonnance de règlement";
-        const qq = R0.qual === "q2" && t.q2 ? t.q2 : q;
-        return { title: lib, kind: "greffe", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [
-          ["Vu le réquisitoire définitif du procureur de la République et les observations des parties (art. 175) ;"],
-          R0.type === "nonlieu" ? [{ t: `Attendu qu'il ne résulte pas de l'information de charges suffisantes contre ${nomA} d'avoir commis les faits ; disons n'y avoir lieu à suivre (art. 177).`, f: "K_reglement" }]
-            : R0.type === "irresp" ? [{ t: `Attendu qu'il résulte des expertises que ${nomA} était atteint${e(A)}, au moment des faits, d'un trouble psychique ayant aboli son discernement ; déclarons ${nomA} pénalement irresponsable (art. 122-1 et 706-120) ; ordonnons son admission en soins psychiatriques sans consentement et lui interdisons d'entrer en contact avec ${V ? "les proches de la victime" : "les parties"}.`, f: "K_reglement" }]
-              : [{ t: `Attendu qu'il résulte de l'information des charges suffisantes contre ${nomA} d'avoir commis ${qq.label} (${qq.court}) ; ${R0.type === "oma" ? `ordonnons sa mise en accusation devant ${jurDe(R0.jur)} (art. 181)` : `ordonnons son renvoi devant ${jurDe(R0.jur)} (art. 179)`}${R0.qual === "q2" ? ", les faits étant requalifiés" : ""}.`, f: "K_reglement" }],
-          (xx.cs.proc.detention.statut === "dp" && ["oma", "ortc"].includes(R0.type)) ? ["Disons que la détention provisoire se poursuivra jusqu'à la comparution (art. 181 et 179)."] : null,
-          ["Appel possible dans les dix jours de la notification (art. 186 et 186-3)."],
-        ].filter(Boolean) };
-      },
-      arret_chins: (xx) => ({ title: "Arrêt de la chambre de l'instruction", kind: "greffe", entete: [`${TJ.ca} · chambre de l'instruction`, `Information n° ${t.ninfo}`], paras: (xx.cs.vars.arretChins || ["La chambre de l'instruction confirme l'ordonnance entreprise."]).map((l) => [l]) }),
+      ordo_reglement: (xx) => ordoReglement(xx),
+      arret_chins: (xx) => arretChins(xx),
       ordo_dp_live: (xx) => ordoJLD(xx, false),
       ordo_prolong: (xx) => ordoJLD(xx, true),
       verdict: (xx) => ({ title: xx.cs.vars.verdictTitre || "Décision", kind: "greffe", entete: [titreJur(xx.cs.vars.jurProces || t.jur), "Décision rendue en premier ressort"], paras: [[{ t: xx.cs.vars.verdictTexte || "Décision rendue.", f: "K_verdict" }], ["Appel possible dans les dix jours du prononcé."]] }),
@@ -982,6 +1052,7 @@
       const res = CR.PROC.statuerNullites(api, CR.PROFILS.formaliste);
       const lignes = res.map((m) => { const an = CR.PROC.anomalie(cs, m.flag); const ir = an ? CR.IRREG[an.irreg] : null; return m.decision === "annule" ? `Annule : ${ir ? ir.label.toLowerCase() : "l'acte visé"} ; ${ir ? ir.effet.toLowerCase() : ""}.` : m.decision === "irrecevable" ? `Déclare irrecevable le moyen : ${m.motif}.` : `Rejette le moyen tiré de ${ir ? ir.label.toLowerCase() : "l'irrégularité invoquée"}.`; });
       cs.vars.arretChins = ["La chambre de l'instruction, statuant sur la requête en nullité :"].concat(lignes);
+      cs.vars.arretChinsMeta = { kind: "nullite", day: s.day, moyens: res.map((m) => { const an = CR.PROC.anomalie(cs, m.flag); const ir = an ? CR.IRREG[an.irreg] : null; return { decision: m.decision, label: ir ? ir.label : "l'irrégularité invoquée", motif: String(m.motifDecision || m.motif || "").replace(/Le tribunal/g, "La chambre").replace(/le tribunal/g, "la chambre"), jp: m.jp || null }; }) };
       api.doc("arret_chins", flowTitles.arret_chins);
       api.mail({ from: "Greffe de la chambre de l'instruction", subject: "Arrêt sur la requête en nullité", kind: "greffe", important: true, body: cs.vars.arretChins.map((l) => [l]) });
     };
@@ -1003,9 +1074,10 @@
       const obs = cs.vars.obs175 && cs.vars.obs175.day <= plan.obsLimite ? cs.vars.obs175 : { v: null, points: [] };
       const spec = chargesSpec(api, { instruction: true });
       let charge = 0;
-      for (const [k, pc] of Object.entries(spec.pieces)) if (pc.sens === "charge" && !CR.PROC.annule(cs, k)) charge += pc.force;
+      const chargesL = [], dechargesL = [];
+      for (const [k, pc] of Object.entries(spec.pieces)) if (pc.sens === "charge" && !CR.PROC.annule(cs, k)) { charge += pc.force; chargesL.push(pc.label); }
       let decharge = 0;
-      for (const en of enjeux) if (en.effet === "acquit" && (obs.points.includes(en.id) || (en.fort && R.chance(s, 0.25)))) decharge += en.fort || (cs.vars.renfort && cs.vars.renfort[en.id]) ? 0.32 : 0.06;
+      for (const en of enjeux) if (en.effet === "acquit" && (obs.points.includes(en.id) || (en.fort && R.chance(s, 0.25)))) { decharge += en.fort || (cs.vars.renfort && cs.vars.renfort[en.id]) ? 0.32 : 0.06; dechargesL.push(en.label); }
       let type, qual = "q", jur = t.jur;
       const irresp = t.f.psy === "aboli" || (cs.vars.renfort && cs.vars.renfort.aboli);
       if (irresp && (D0 ? true : R.chance(s, 0.8))) type = "irresp";
@@ -1022,7 +1094,7 @@
         jur = CAT.juridictionCrime(qq, t.ageFaits);
         if (qq.nature !== "crime") type = "ortc";
       }
-      cs.vars.reglement = { type, qual, jur, day: s.day };
+      cs.vars.reglement = { type, qual, jur, day: s.day, charges: chargesL, decharges: dechargesL, obs: !!obs.v, annules: (cs.proc.annules || []).length };
       cs.vars.dpAuReglement = cs.proc.detention.statut === "dp";
       CR.PROC.stade(api, "reglement", { irresp: "Ordonnance d'irresponsabilité pénale pour cause de trouble mental.", nonlieu: "Ordonnance de non-lieu.", oma: `Ordonnance de mise en accusation devant ${CAT.JUR_LABEL[jur]}.`, ortc: `Ordonnance de renvoi devant ${CAT.JUR_LABEL[jur]}.` }[type]);
       api.doc("ordo_reglement", flowTitles.ordo_reglement);
@@ -1080,12 +1152,13 @@
       if (!recap && cs.vars.appelForme) { cs.vars.appelForme.motif = false; CR.erreur(s, cs, { id: "memoire_recap", texte: "Le mémoire ne récapitule pas les moyens de la déclaration d'appel.", sanction: "Les moyens non repris dans le dernier mémoire sont réputés abandonnés (art. 198).", regul: "Déposer, dans le délai, un mémoire récapitulatif." }); }
       CR.PROC.event(api, "Mémoire déposé devant la chambre de l'instruction (art. 198).");
     };
-    O._chinsSansVous = function (api) { api.run("chinsDecider", { played: new Set() }); api.run("apresChins", {}); };
+    O._chinsSansVous = function (api) { api.cs.vars.chinsSansAvocat = true; api.run("chinsDecider", { played: new Set() }); api.run("apresChins", {}); };
     O.chinsDecider = function (api, { played }) {
       const { s, cs } = api;
       const ap = cs.vars.appelForme || {};
       const pl = played || new Set();
       let lignes = [];
+      const ordoAvant = (cs.vars.reglement || {}).type;
       if (ap.type === "dp") {
         const M = cs.vars.memoire && cs.vars.memoire.recevable ? cs.vars.memoire : null; // le mémoire plaide même sans l'avocat
         const g = ["K_attest", "K_promesse", "G_heberg", "G_emploi"].filter((f0) => CR.hasFact(cs, f0) || pl.has(f0)).length * 0.6 + (pl.has("arg:garanties") || (M && M.points.includes("garanties")) ? 0.5 : 0);
@@ -1107,6 +1180,8 @@
         if (en && infirme) cs.vars.renfort = Object.assign(cs.vars.renfort || {}, {});
       }
       cs.vars.arretChins = lignes;
+      const R1 = cs.vars.reglement || {};
+      cs.vars.arretChinsMeta = { kind: ap.type === "dp" ? "dp" : "reglement", day: s.day, ordo: ap.type === "dp" ? "dp" : ordoAvant, ordoDay: ap.type === "dp" ? cs.vars.jldDay : R1.day, appelant: ap.parquet ? "parquet" : D0 ? "mex" : "pc", appelDay: ap.day, memoire: !!(cs.vars.memoire && cs.vars.memoire.recevable), infirme: !/confirme/.test(lignes[0] || ""), apres: R1.type, sansAvocat: !!cs.vars.chinsSansAvocat };
       api.doc("arret_chins", flowTitles.arret_chins);
       return lignes.map((l) => ({ who: "president", t: l }));
     };

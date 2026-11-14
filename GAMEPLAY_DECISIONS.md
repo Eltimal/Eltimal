@@ -338,3 +338,18 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
     - Motifs sans « toutefois » quand la défense n'a rien soutenu, chaque preuve introduite par « de ».
   - **Restent courts** : l'arrêt de la chambre de l'instruction et les ordonnances de règlement.
 
+- **D-91. Ordonnance de règlement et arrêt de la chambre de l'instruction au format réel ; correction de l'irresponsabilité pénale.**
+  - **Ordonnance de règlement.**
+    - Identité complète (né le, à, domicile, profession), qualification, et motifs précis sur les charges au regard des réquisitions et des observations de l'article 175. Éléments à charge et à décharge retenus au moment de la décision (art. 184 ; examen des charges, 176).
+    - Non-lieu : fin de la détention et du contrôle judiciaire, restitution des objets (177).
+    - Renvoi devant le tribunal : fin de la détention, sauf ordonnance distincte motivée par les 2°, 4°, 5° et 6° de l'article 144 (179).
+    - Mise en accusation : exposé et qualification des faits ; le mandat de dépôt conserve sa force (181).
+    - Appel dans les dix jours : parquet (185) ; personne mise en examen contre la mise en accusation (186) ; contre un renvoi en correctionnelle, seulement si les faits sont criminels (186-3) ; partie civile (186).
+  - **Correction de droit.** L'ordonnance d'irresponsabilité du juge d'instruction lui faisait ordonner l'admission en soins psychiatriques et une interdiction de contact. Or ces mesures ne relèvent que de la chambre de l'instruction ou de la juridiction de jugement (art. 706-135 et 706-136). L'ordonnance constate désormais les charges suffisantes et l'irresponsabilité (706-120, dernier alinéa), puis met fin à la détention ou au contrôle judiciaire (706-121).
+  - **Arrêt de la chambre de l'instruction**, sur une requête en nullité, l'appel d'une détention ou l'appel d'un règlement.
+    - Président de chambre et deux conseillers (191) ; réquisitoire du procureur général (194) ; avis de la date d'audience (197) ; mémoire visé (198).
+    - Chambre du conseil ; audience publique pour un majeur en matière de détention (199). Rapport, puis le procureur général et les avocats (199) ; délibéré hors leur présence (200).
+    - Motifs moyen par moyen pour les nullités : grief (171, 802), renvoi au juge après annulation (206). Motifs tirés des articles 144 et 137-3 pour la détention.
+    - Pourvoi dans les dix jours francs (568). En matière de détention, la chambre criminelle statue dans les trois mois (567-2). Contre un renvoi en correctionnelle, pourvoi restreint (574).
+  - **Non codé (à faire).** La transmission du dossier à la chambre de l'instruction, à la demande d'une partie, pour qu'elle statue elle-même sur l'irresponsabilité en audience publique (706-120, al. 1 ; 706-122 ; 706-125).
+
