@@ -22,7 +22,7 @@ Mesure du 13 novembre : un dossier criminel généré comptait 14 pièces et env
 
 ## Lot 8 — après le jugement
 
-Fait : l'aménagement de la peine devant le juge de l'application des peines (`apres.js`, `tjap`, D-79, D-80). Règles relues pour la suite (D-79) : exclusion du bulletin n° 2 (art. 775-1 CPP, à plaider au jugement ou sur requête), CIVI (706-3, 706-5) et SARVI (706-15-1, 706-15-2) pour les dossiers de victimes. Fait aussi : le recouvrement de la victime (CIVI, SARVI, D-81, `tvictimes`). Exclusion du bulletin n° 2 au jugement faite (D-82, `tb2`) ; action civile renvoyée jouée (D-85, `tic`). Reste : la requête en exclusion après jugement (D-86, en attente d'une jurisprudence), le volet civil (renvoi sur les intérêts civils, assignation), l'article 706-14.
+Fait : l'aménagement de la peine devant le juge de l'application des peines (`apres.js`, `tjap`, D-79, D-80). Règles relues pour la suite (D-79) : exclusion du bulletin n° 2 (art. 775-1 CPP, à plaider au jugement ou sur requête), CIVI (706-3, 706-5) et SARVI (706-15-1, 706-15-2) pour les dossiers de victimes. Fait aussi : le recouvrement de la victime (CIVI, SARVI, D-81, `tvictimes`). Exclusion du bulletin n° 2 au jugement faite (D-82, `tb2`) ; action civile renvoyée jouée (D-85, `tic`). Reste : la requête en exclusion après jugement (D-86, en attente d'une jurisprudence), l'assignation devant le juge civil (procédure civile et RPVA : un module entier, à cadrer), l'article 706-14 (plafond de l'aide juridictionnelle partielle à relire).
 
 ## Lot 10 — abandonné
 
