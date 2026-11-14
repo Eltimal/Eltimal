@@ -1,15 +1,14 @@
 const { boot, sleep, texts, findBtn, click } = require("./harness");
 const P = require("./play");
+// une partie de carrière prête pour les tests ; les arrivées tirées au sort sont retirées (les tests ouvrent eux-mêmes leurs
+// affaires générées). « target » ne sert plus : il n'y a plus d'affaire écrite à faire venir.
 async function career(target, seed = 7) {
   const env = boot();
   const { w, CR, doc } = env;
   await sleep(150);
   CR.store.s = CR.newGame({ prenom: "Camille", nom: "Durand", mode: "carriere", seed });
   const s = CR.store.s; s.settings.textSpeed = 60; s.settings.coach = false; s.settings.saisie = "liste"; s.cash = 200000;
-  // Vivier : on retire toutes les arrivées tirées au sort et on fait venir l'affaire visée, à sa date
-  // tirée pour cette graine (conditions levées, canal d'origine : appel ou demande de rendez-vous).
   s.pending = s.pending.filter((e) => e.type !== "lead");
-  if (CR.CASES[target] && CR.vivierForce) CR.vivierForce(s, target);
   CR.store.bump(); await sleep(50);
   return Object.assign(env, { s });
 }

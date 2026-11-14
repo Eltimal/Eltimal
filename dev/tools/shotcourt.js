@@ -1,12 +1,12 @@
 // (JURES=9 : neuf jurés aux assises)
-// Capture d'une audience dans l'interface : node tools/shotcourt.js <LxH> <affaire> <décor> <minute> <attente ms> [délibéré 0|1]
-// ex. node tools/shotcourt.js 1440x900 a02_sac salle 1290 4000   (prérequis : node tools/shot.js pour régénérer preview/)
+// Capture d'une audience dans l'interface : node tools/shotcourt.js <LxH> <genre> <décor> <minute> <attente ms> [délibéré 0|1]
+// <genre> : genre de l'affaire générée (ci, copj, op, pc…) ; ex. node tools/shotcourt.js 1440x900 ci salle 1290 4000   (prérequis : node tools/shot.js pour régénérer preview/)
 const fs = require("fs"), path = require("path");
 const { chromium } = require("playwright");
 const SP = __dirname;
 (async () => {
   const [w, h] = (process.argv[2] || "1440x900").split("x").map(Number);
-  const caseId = process.argv[3] || "a02_sac", scene = process.argv[4] || "salle", minute = +(process.argv[5] || 1290), wait = +(process.argv[6] || 4000), del = process.argv[7] === "1";
+  const caseId = process.argv[3] || "ci", scene = process.argv[4] || "salle", minute = +(process.argv[5] || 1290), wait = +(process.argv[6] || 4000), del = process.argv[7] === "1";
   const browser = await chromium.launch({ executablePath: process.env.CHROME, args: ["--allow-file-access-from-files", "--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
   const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: process.env.DPR ? +process.env.DPR : 1 });
   const errs = []; page.on("pageerror", (e) => errs.push(String(e))); page.on("console", (m) => { if (m.type() === "error" && !/ERR_TUNNEL/.test(m.text())) errs.push(m.text()); });
@@ -16,7 +16,7 @@ const SP = __dirname;
     const CR = window.CR, UI = CR.UI, html = UI.html;
     const s = (CR.store.s = CR.newGame({ prenom: "Camille", nom: "Durand", mode: "carriere", seed: 7 }));
     s.settings.coach = false; s.min = minute;
-    const cs = CR.openCase(s, caseId);
+    const cs = CR.GEN.open(s, caseId, {}); // une affaire générée du genre demandé
     const steps = [
       { who: "huissier", t: "Affaire suivante, numéro douze du rôle." },
       { who: "president", t: "Monsieur, levez-vous. Vous êtes poursuivi pour vol à l'arraché, rue de la Chapelle, le 3 au soir. Reconnaissez-vous les faits ?" },

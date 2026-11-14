@@ -64,7 +64,8 @@ const check = (label, ok, info) => { if (!ok) fails++; console.log((ok ? "ok   "
   // ---------------------------------------------------------------- D. Acte : un article faux fait tomber le point, un voisin le garde
   const s = CR.newGame({ prenom: "Camille", nom: "Durand", mode: "carriere", seed: 7 });
   CR.store.s = s; s.settings.coach = false; s.settings.textSpeed = 60; s.settings.saisie = "assiste";
-  const cs = CR.openCase(s, "a11_president");
+  require("./fixture-cite")(CR); // affaire d'essai : la plainte au parquet et ses citations
+  const cs = CR.openCase(s, "test_cite");
   cs.status = "active"; cs.engaged = s.day;
   const tpl = CR.getTpl(s, cs, "plainte_parquet");
   const specs = CR.tplCites(tpl);
@@ -114,21 +115,21 @@ const check = (label, ok, info) => { if (!ok) fails++; console.log((ok ? "ok   "
   check("l'acte écrit montre l'article tapé", JSON.stringify(rd.paras).includes("art. 113-2-1 du code pénal"));
 
   // ---------------------------------------------------------------- F. Textes par dossier
-  const other = CR.openCase(s, "a06_messages"); other.status = "active";
+  const other = CR.openCase(s, "test_cite_autre"); other.status = "active";
   check("un texte lu ailleurs n'est pas dans ce dossier", !CR.inHand(s, other, "CP_113-2-1") && CR.inHand(s, cs, "CP_113-2-1"));
   CR.pinText(s, other, "CPP_475-1");
   check("enregistré dans un dossier : il y est", CR.inHand(s, other, "CPP_475-1") && CR.pinnedTexts(s, other).includes("CPP_475-1"));
   CR.unpinText(s, other, "CPP_475-1");
   check("retiré : il n'y est plus", !CR.inHand(s, other, "CPP_475-1"));
-  const legacy = JSON.parse(CR.serialize(s)); delete legacy.cases.a06_messages.textesParDossier; legacy.researched.push("CP_222-17");
+  const legacy = JSON.parse(CR.serialize(s)); delete legacy.cases.test_cite_autre.textesParDossier; legacy.researched.push("CP_222-17");
   const sl = CR.deserialize(legacy);
-  check("ancienne sauvegarde : tous les textes lus restent disponibles", CR.inHand(sl, sl.cases.a06_messages, "CP_222-17") && !sl.cases.a06_messages.textesParDossier);
+  check("ancienne sauvegarde : tous les textes lus restent disponibles", CR.inHand(sl, sl.cases.test_cite_autre, "CP_222-17") && !sl.cases.test_cite_autre.textesParDossier);
   check("ancienne sauvegarde lisible : révision vide créée", Array.isArray(sl.revision));
 
   // ---------------------------------------------------------------- G. Bloc-notes dans le dossier
   CR.UI._setScene(null); CR.store.bump(); await sleep(40);
   await click(w, [...doc.querySelectorAll(".rail-btn")].find((x) => texts(x).startsWith("Dossiers")));
-  await click(w, [...doc.querySelectorAll(".case-card")].find((x) => /Rhône Usinage/.test(texts(x))));
+  await click(w, [...doc.querySelectorAll(".case-card")].find((x) => /Garnier|plainte au parquet/.test(texts(x))));
   await click(w, [...doc.querySelectorAll(".tab")].find((x) => /^Bloc-notes/.test(texts(x))));
   await click(w, findBtn(doc, /Écrire une note/));
   const ta = doc.querySelector(".nform textarea");

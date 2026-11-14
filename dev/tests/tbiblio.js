@@ -78,7 +78,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
 
   // 7. Interface : partie, bibliothèque, plan, article, notes, index, recueil
   await click(w, findBtn(doc, "Nouvelle partie"));
-  await click(w, findBtn(doc, /^Tutoriel/));
+  await click(w, findBtn(doc, /^Carrière — à votre compte/));
   await sleep(150);
   const s = CR.store.s;
   s.settings.bibliMode = "liste"; // ce test vise le mode liste ; les codes reliés ont tests/tlivre.js
@@ -131,9 +131,9 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
   const s2 = CR.store.s;
   s2.settings.coach = false;
   s2.pending = s2.pending.filter((e) => e.type !== "lead");
-  CR.vivierForce(s2, "a05_placement");
-  for (let d = 0; d < 150 && !s2.cases.a05_placement; d++) { while (!s2.cases.a05_placement && s2.min < 19 * 60) CR.spend(s2, 10, "admin"); if (!s2.cases.a05_placement) CR.endDay(s2); }
-  const cs = s2.cases.a05_placement;
+  // une affaire générée de comparution immédiate (il n'y a plus d'affaire écrite)
+  let cs = null; for (let i = 0; i < 20 && !cs; i++) { try { cs = CR.GEN.open(s2, "ci", {}); } catch (e) { cs = null; } }
+  if (cs) cs.status = "active";
   if (cs) {
     const s = s2;
     CR.pinText(s, cs, "JP_CRIM_2024_03_06");
@@ -143,7 +143,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
     ok(CR.jpAppui(s, cs, "gav_avis_parquet_tardif") && CR.jpAppui(s, cs, "gav_avis_parquet_tardif").id === "JP_CRIM_2024_03_06", "appui d'une nullité");
     ok(!CR.jpAppui(s, cs, "gav_audition_sans_avocat"), "un arrêt dépassé n'appuie rien");
     CR.unpinText(s, cs, "JP_CRIM_2010_10_19");
-  } else fails.push("affaire a05 jamais arrivée");
+  } else fails.push("aucune affaire générée ouverte");
   // 10. Le lien du dossier vers le code annoté vise une grande division, jamais un article
   const f = CR.planFocus({ issues: [{ text: "placé en garde à vue à 23 h 40", ref: { titre: "Procès-verbal de notification" } }] });
   ok(CR.planNode(f) && CR.planNode(f).t === "Titre II", "lien vers le titre des enquêtes");

@@ -1,6 +1,6 @@
 // Vidéosurveillance (js/video.js) : déterminisme, mêmes faits avec d'autres tenues, sac suivi de la victime à l'auteur,
 // acteurs dans le champ au moment du geste, images sautées, ce que l'image permet, incrustation, temps de rendu.
-// Puis dans le jeu (jsdom) : constat de l'affaire n° 2 calé sur le texte, arrachages générés (procès-verbal, tenue de l'interpellation).
+// Puis dans le jeu (jsdom) : arrachages générés (procès-verbal, tenue de l'interpellation).
 // node tests/tvideo.js ; « échecs: 0 » attendu.
 const path = require("path");
 require(path.join(__dirname, "../../js/video.js"));
@@ -99,19 +99,11 @@ for (const g of ["1", "2", "3"]) {
   ok(ms < 150, "rendu trop lent");
 }
 
-// 9. dans le jeu : affaire n° 2 (constat de la caméra du métro) et arrachages générés
+// 9. dans le jeu : les arrachages générés
 (async () => {
   const { boot, sleep } = require("./harness");
   const env = boot(); const { CR } = env; await sleep(100);
   const txt = (r) => r.paras.map((p) => p.map((x) => (typeof x === "string" ? x : x.t)).join(""));
-  {
-    const s = CR.newGame({ prenom: "A", nom: "B", mode: "carriere", seed: 3 }); CR.store.s = s;
-    const cs = CR.openCase(s, "a02_sac"), r = CR.renderDoc(s, cs, { key: "enq_metro", vars: {} });
-    ok(r.video && r.video.faits === "arrache", "a02 : le constat n'a pas de vidéo");
-    const X = CR.video.extrait(r.video), heures = X.moments.map((m) => m.h.split(" ")[1]), lignes = txt(r).join(" ");
-    for (const h of ["12:50:34", "12:50:35", "12:50:37", "12:50:52"]) ok(heures.includes(h) && lignes.includes(h), `a02 : ${h} absent de la vidéo ou du constat`);
-    ok(X.mode === "jour" && X.scn.fuite === "gauche" && X.scn.violence, "a02 : réglages de la vidéo");
-  }
   const G = CR.GEN2; let vus = 0, doute = 0;
   for (let i = 0; i < 3000 && vus < 12; i++) for (const genre of ["ci", "gav"]) {
     const t = G.tirer("tvid" + i, genre, { day: 30, inf: "vol" });

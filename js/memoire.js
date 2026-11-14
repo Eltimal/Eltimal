@@ -15,7 +15,7 @@
   MEM.de = function (s, id) { s.memo = s.memo || {}; return (s.memo[id] = s.memo[id] || { n: 0, estime: 0, dernier: null, faits: [] }); };
   MEM.lire = (s, id) => (s && s.memo && s.memo[id]) || null;
   MEM.noter = function (s, id, d, r) {
-    if (!s || !id || s.mode === "tutoriel") return;
+    if (!s || !id) return;
     const m = MEM.de(s, id);
     m.estime = borne(m.estime + (d || 0), -10, 10);
     if (r) { m.faits.unshift({ day: s.day, d: d || 0, r }); if (m.faits.length > 6) m.faits.length = 6; }
@@ -32,7 +32,7 @@
   const advDe = (s, cs) => { const p = (s.generated || []).find((x) => x.id === cs.id); const v = p && p.t && p.t.vie; return v && v.adv && cs.vars && cs.vars.vieAdverse != null ? v.adv.id : null; };
 
   MEM.apresAudience = function (s, cs, h, res) {
-    if (!s || s.mode === "tutoriel" || !res) return;
+    if (!s || !res) return;
     const P = MEM.presents(cs, h), pl = res.plaidoirie || null, cred = res.cred || 0;
     if (P.juge) {
       const m = MEM.de(s, P.juge);
@@ -63,7 +63,7 @@
   // L'ouverture de l'audience suivante : des étapes de script (une phrase, un crédit de départ)
   const nomCourt = (a) => (a ? a.nom : "");
   MEM.ouverture = function (s, cs, h) {
-    if (!s || s.mode === "tutoriel" || !h) return [];
+    if (!s || !h) return [];
     const P = MEM.presents(cs, h), out = [], moi = `Maître ${s.player.nom}`;
     const mj = MEM.lire(s, P.juge), aj = P.juge && CR.acteur(P.juge);
     if (mj && mj.n >= 1 && aj) {

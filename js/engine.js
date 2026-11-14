@@ -98,15 +98,7 @@
       lastDayStats: null,
     };
     CR.store.s = s;
-    // Carrière : vivier d'affaires tirées au sort à partir de la graine (systems.js, CR.initVivier).
-    // Tutoriel : calendrier fixe, inchangé.
-    const vivier = s.mode === "carriere" && CR.initVivier ? CR.initVivier(s) : null;
-    for (const def of Object.values(CR.CASES)) {
-      if (def.mode && def.mode !== s.mode) continue;
-      if (!def.mode && s.mode !== "carriere") continue;
-      if (vivier && vivier.has(def.id)) continue;
-      if (def.arrive && def.arrive.day != null) CR.schedule(s, { day: def.arrive.day, min: def.arrive.min, type: "lead", key: def.id, prio: def.arrive.prio || 0 });
-    }
+    // les affaires naissent du générateur (generator.js : permanences, appels, confrères) ; il n'y a plus d'affaire écrite
     if (s.mode === "carriere") {
       if (CR.initCohort) CR.initCohort(s);
       if (CR.initWorld) CR.initWorld(s);
@@ -673,28 +665,11 @@
   CR.caseDay = (s, cs, k) => { const def = CR.caseDef(cs); return (cs.vars.base != null ? cs.vars.base : cs.opened) + ((def.dates && def.dates[k]) || 0); };
 
   // ------------------------------------------------------------------ Nouveaux dossiers et appels entrants
-  // Arrivée d'une affaire. Un événement du vivier (data.vivier) passe d'abord par CR.vivierCheck
-  // (conditions de déclenchement, canal) ; les canaux « recommandation », « confrère » et « mail »
-  // envoient d'abord un message, puis le client se manifeste un peu plus tard (data.annonce).
-  // Un événement sans data (ancienne sauvegarde, tutoriel) suit le chemin d'origine.
+  // Arrivée d'une affaire (générée) : le client se manifeste par le moyen que dit sa définition.
   CR.EV.lead = (s, e, ctx) => {
     const def = CR.CASES[e.key];
-    if (!def) return;
+    if (!def) return; // affaire disparue (ancienne sauvegarde) : rien
     const d = e.data || {};
-    if (d.vivier && s.cases[def.id]) return;
-    if (d.vivier && !d.annonce && CR.vivierCheck) {
-      const r = CR.vivierCheck(s, def, e);
-      if (!r.go) return;
-      d.canal = r.canal;
-      d.via = r.via || null;
-      if (r.annonce) {
-        CR.vivierAnnonce(s, def, d);
-        let nd = s.day, nm = s.min + R.int(s, 25, 70);
-        if (nm > 18 * 60 + 30) { nd = CR.nextBusinessDay(s.day); nm = 9 * 60 + 30 + R.int(s, 0, 90); }
-        CR.schedule(s, Object.assign({}, e, { id: CR.uid("e"), day: nd, min: nm, data: Object.assign({}, d, { annonce: true }) }));
-        return;
-      }
-    }
     if (def.arrive && def.arrive.cond && !def.arrive.cond(s)) {
       CR.schedule(s, Object.assign({}, e, { id: CR.uid("e"), day: s.day + 5 }));
       return;
@@ -704,8 +679,7 @@
     const c = CR.client(cs);
     const how = (def.arrive && def.arrive.how) || "appel";
     cs.leadDay = s.day;
-    const canal = d.vivier ? d.canal : null;
-    if (d.vivier && CR.vivierArrivee) CR.vivierArrivee(s, cs, d);
+    const canal = d.canal || null;
     if (def.on && def.on.arrive) { CR.runHook(s, cs, "arrive", { _ctx: ctx }); return; }
     const caller = def.caller || `${c.prenom} ${c.nom}`;
     const viaPhrase = d.via ? (d.via.type === "confrere" ? `${d.via.nom} m'a donné vos coordonnées.` : `C'est ${d.via.nom} qui m'a conseillé de m'adresser à vous.`) : null;
@@ -758,6 +732,16 @@
     s.workCase = null;
     s.revision = s.revision || [];
     if (CR.restoreGenerated) CR.restoreGenerated(s);
+    // le tutoriel et les affaires écrites ont été retirés du jeu : une partie qui en dépend ne peut plus être reprise
+    const perdus = Object.values(s.cases || {}).filter((cs) => cs && !CR.CASES[cs.def]);
+    if (s.mode === "tutoriel" || perdus.length) {
+      const e = new Error(s.mode === "tutoriel" ? "Cette partie est un tutoriel : le tutoriel a été retiré du jeu. Commencez une nouvelle partie." : "Cette partie contient une affaire écrite, retirée du jeu depuis : elle ne peut plus être reprise. Commencez une nouvelle partie.");
+      e.perime = true;
+      throw e;
+    }
+    // l'ancien vivier d'affaires écrites gardait le chevauchement d'audiences de la partie
+    if (s.vivier) { if (s.vivier.chevauchement && !s.chevauchement) s.chevauchement = s.vivier.chevauchement; delete s.vivier; }
+    s.pending = (s.pending || []).filter((e) => !(e.type === "lead" && !CR.CASES[e.key]));
     return s;
   };
   CR.saveMeta = (s) => ({

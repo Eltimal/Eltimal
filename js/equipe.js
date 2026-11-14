@@ -1202,7 +1202,7 @@
   const chev0 = CR.chevauchementTasks;
   CR.chevauchementTasks = function (s, cs, T) {
     chev0(s, cs, T);
-    const ch = s.vivier && s.vivier.chevauchement;
+    const ch = s.chevauchement;
     if (!ch || ch.solution || !s.staff) return;
     for (const h of cs.hearings) {
       if (!h.conflit || h.attended || h.missed || h.canceled || h.day < s.day || h.substitue) continue;

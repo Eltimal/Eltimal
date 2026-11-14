@@ -4,7 +4,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
   await sleep(300);
   console.log("title:", texts(doc.querySelector("h1") || doc.body).slice(0, 60));
   await click(w, findBtn(doc, "Nouvelle partie"));
-  await click(w, findBtn(doc, /^Tutoriel/));
+  await click(w, findBtn(doc, /^Carrière — à votre compte/));
   await sleep(200);
   const s = CR.store.s;
   console.log("mode", s.mode, "day", s.day, "min", s.min, "inbox", s.inbox.length, "pending", s.pending.map(e=>e.type+":"+e.key+"@"+e.day+"/"+e.min).join(","));

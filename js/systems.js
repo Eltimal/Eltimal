@@ -240,11 +240,11 @@
     cs.hearings.push(hr);
     if (!h.noCall) CR.schedule(s, { day: hr.day, min: hr.min + 25, type: "courtCall", caseId: cs.id, data: { hid: hr.id } });
     CR.schedule(s, { day: hr.day + 1, type: "courtCheck", caseId: cs.id, data: { hid: hr.id }, prio: -1 });
-    if (s.vivier && s.mode === "carriere") CR.noteChevauchement(s, cs, hr);
+    if (s.mode === "carriere") CR.noteChevauchement(s, cs, hr);
     return hr;
   };
 
-  // Chevauchements (parties lancées avec le vivier) : un seul par partie, que le joueur règle par un renvoi
+  // Chevauchements (parties de carrière) : un seul par partie, que le joueur règle par un renvoi
   // ou une substitution ; les suivants sont arrangés d'office avec le greffe (affaire retenue en fin de rôle).
   const HDUR = (h) => h.duree || (["assises", "ccd"].includes(h.juridiction) ? 300 : 90);
   CR.hearingClash = function (s, cs, h) {
@@ -261,8 +261,8 @@
   CR.noteChevauchement = function (s, cs, hr) {
     const clash = CR.hearingClash(s, cs, hr);
     if (!clash) return;
-    if (!s.vivier.chevauchement) {
-      s.vivier.chevauchement = { day: hr.day, a: { caseId: cs.id, hid: hr.id }, b: { caseId: clash.cs.id, hid: clash.h.id }, solution: null };
+    if (!s.chevauchement) {
+      s.chevauchement = { day: hr.day, a: { caseId: cs.id, hid: hr.id }, b: { caseId: clash.cs.id, hid: clash.h.id }, solution: null };
       hr.conflit = { caseId: clash.cs.id, hid: clash.h.id };
       clash.h.conflit = { caseId: cs.id, hid: hr.id };
       return;
@@ -275,13 +275,13 @@
     return !!(a && a.hid === h.id && ["tc", "chapp"].includes(a.juridiction) && ["convocation", "ordonnance", "appel", "opposition"].includes(a.mode) && !(cs.proc.detention && cs.proc.detention.statut === "dp"));
   };
   const finChevauchement = (CR.finChevauchement = (s, solution) => {
-    const ch = s.vivier && s.vivier.chevauchement;
+    const ch = s.chevauchement;
     if (!ch) return;
     ch.solution = solution;
     for (const k of ["a", "b"]) { const c = s.cases[ch[k].caseId]; const h = c && CR.hearingById(c, ch[k].hid); if (h) h.conflit = null; }
   });
   CR.chevauchementTasks = function (s, cs, T) {
-    const ch = s.vivier && s.vivier.chevauchement;
+    const ch = s.chevauchement;
     if (!ch || ch.solution) return;
     for (const h of cs.hearings) {
       if (!h.conflit || h.attended || h.missed || h.canceled || h.day < s.day) continue;
@@ -381,7 +381,6 @@
     s.duty.push({ day, type, signed: s.day });
     s.duty.sort((a, b) => a.day - b.day);
     if (CR.planDuty) CR.planDuty(s, day, type);
-    if (CR.vivierOnDuty) CR.vivierOnDuty(s, day, type);
     return true;
   };
   CR.dutyOn = (s, day) => s.duty.filter((d) => d.day === day);
@@ -390,6 +389,13 @@
     if (!CR.GEN || !CR.GEN.lead) return;
     // Phase 2 : cinq à quinze affaires criminelles par année de carrière, au milieu des délits
     if (CR.GEN2 && CR.GEN2.infoDue && CR.GEN2.infoDue(s, d)) { CR.GEN.lead(s, d, "info"); return; }
+    // l'ouverture de la carrière : une petite affaire dans les premiers jours ouvrables, si rien n'est encore venu (le rôle
+    // que tenait l'affaire écrite d'ouverture, retirée avec les autres le 14 novembre 2026)
+    if (!s.flags.premiereAffaire && CR.isBusinessDay(d) && d >= 1) {
+      const r0 = CR.seeded("ouverture:" + s.seed);
+      if (s.order.length) s.flags.premiereAffaire = true;
+      else if (d >= 3 || r0() < 0.45) { s.flags.premiereAffaire = true; CR.GEN.lead(s, d, ["copj", "op", "al"][Math.floor(r0() * 3)]); return; }
+    }
     // Moteur génératif : les nouveaux clients viennent surtout du générateur (convocations, auditions libres, victimes, ordonnances)
     let p = (0.16 + s.reps.clients * 0.003) * (CR.CAR ? CR.CAR.apport(s) : 1);
     if (!CR.isBusinessDay(s.day)) p *= 0.3;
@@ -473,248 +479,6 @@
     try { CR.GEN.lead(s, { day: s.day }, CR.GEN2 ? CR.GEN2.leadKind(s) : undefined); } catch (e) { console.error(e); }
     s.reseau = s.reseau || {};
     s.reseau[d.id] = Math.min(100, CR.relation(s, d.id) + 2);
-  };
-
-  // =================================================================== VIVIER D'AFFAIRES (feuille de route, n° 5)
-  // Chaque affaire écrite a une fenêtre d'arrivée (jours de partie), des jours possibles, des conditions de
-  // déclenchement et des canaux. CR.initVivier tire, à partir de la graine, les affaires présentes, leur ordre
-  // et leurs dates. Le jour venu, CR.vivierCheck vérifie les conditions : non remplies, l'affaire est reportée
-  // de quelques jours, puis abandonnée pour cette partie (elle pourra venir dans une autre).
-  // Les délais internes des affaires partent tous du jour d'arrivée réel (cs.vars.base) ; les contraintes ok()
-  // et les fenêtres courtes gardent vrais les jours de la semaine et les mois que citent les textes.
-  const BIZ = (d) => CR.isBusinessDay(d);
-  CR.VIVIER = [
-    { id: "a02", ids: ["a02_sac"], fen: [1, 30], poids: "petite", ouverture: true, h: [10 * 60, 16 * 60 + 30], canaux: { permanence: 1 },
-      ok: (d) => CR.dow(d) >= 1 && CR.dow(d) <= 4 && BIZ(d + 1), note: "Désignation par la permanence ; comparution immédiate le lendemain, jour ouvré. Un jour de permanence signé l'attire." },
-    { id: "a03", ids: ["a03_crpc"], fen: [1, 40], poids: "petite", ouverture: true, h: [9 * 60 + 30, 17 * 60], canaux: { appel: 3, mail: 1, recommandation: 2, confrere: 1 } },
-    { id: "a04", ids: ["a04_voisin"], fen: [3, 50], poids: "petite", ouverture: true, h: [9 * 60 + 5, 18 * 60], canaux: { rdv: 3, appel: 1, recommandation: 2, confrere: 1 } },
-    { id: "a05", ids: ["a05_placement"], fen: [10, 26], strict: true, poids: "petite", h: [9 * 60 + 5, 18 * 60], canaux: { rdv: 3, appel: 1, recommandation: 2, confrere: 1 }, cond: [{ rep: ["clients", 13] }, { spec: "pc" }, { reseau: 1 }], note: "Fenêtre stricte : les virements datent de juillet et août 2026." },
-    { id: "a06", ids: ["a06_messages"], fen: [3, 55], poids: "petite", ouverture: true, h: [9 * 60 + 30, 17 * 60], canaux: { appel: 3, mail: 1, recommandation: 2, confrere: 1 } },
-    { id: "a07", ids: ["a07_perquisition"], fen: [14, 80], poids: "grosse", h: [9 * 60 + 10, 11 * 60 + 30], canaux: { appel: 3, recommandation: 2, confrere: 1 }, cond: [{ rep: ["confreres", 13] }, { spec: "defense" }, { reseau: 1 }],
-      ok: (d) => CR.dow(d) >= 2 && CR.dow(d) <= 5, note: "Interpellation la veille au matin, interrogatoire l'après-midi : appel le matin d'un jour ouvré." },
-    { id: "a08", ids: ["a08_cycliste"], fen: [14, 85], poids: "grosse", h: [9 * 60 + 5, 18 * 60 + 30], canaux: { rdv: 3, appel: 1, recommandation: 2, confrere: 1 }, cond: [{ spec: "pc" }, { rep: ["clients", 18] }, { reseau: 1 }] },
-    { id: "a09", ids: ["a09_malik", "a09_hugo"], fen: [21, 100], poids: "grosse", h: [10 * 60, 11 * 60 + 30], canaux: { appel: 3, rdv: 3, mail: 1, recommandation: 2, confrere: 1 }, cond: [{ spec: "defense" }, { rep: ["siege", 22] }, { reseau: 1 }], note: "Les deux parties vous contactent le même jour : conflit d'intérêts." },
-    { id: "a10", ids: ["a10_vendredi"], fen: [18, 100], poids: "petite", h: [9 * 60 + 5, 10 * 60 + 30], canaux: { rdv: 3, appel: 1, recommandation: 2 },
-      ok: (d) => CR.dow(d) === 4 && BIZ(d - 6), note: "Jugement un vendredi ouvré, rendez-vous le jeudi suivant ; pas de confrère (Me Pernot est l'ancien avocat)." },
-    { id: "a11", ids: ["a11_president"], fen: [25, 110], poids: "grosse", h: [9 * 60 + 5, 11 * 60 + 30], canaux: { appel: 1 }, cond: [{ rep: ["clients", 18] }, { spec: "pc" }, { rep: ["confreres", 20] }],
-      ok: (d) => CR.dow(d) === 3 && BIZ(d - 2), note: "Virement le lundi, appel le mercredi ; c'est l'assureur qui donne votre nom." },
-    { id: "a12", ids: ["a12_bijouterie"], fen: [66, 88], strict: true, poids: "grosse", h: [9 * 60 + 30, 17 * 60], canaux: { appel: 3, mail: 1, recommandation: 2, confrere: 1 }, cond: [{ spec: "defense", n: 2 }, { rep: ["siege", 28] }, { reseau: 1 }], note: "Fenêtre stricte : faits et écrou en février 2026." },
-  ];
-  CR.vivierEntry = (key) => CR.VIVIER.find((e) => e.id === key || e.ids.includes(key)) || null;
-  const rdvType = (def) => !!(def.arrive && ["rdv", "courrier"].includes(def.arrive.how));
-  const canalParDefaut = (def, entry) => (entry.canaux.permanence ? "permanence" : rdvType(def) ? "rdv" : "appel");
-  const semaine = (d) => Math.floor(d / 7);
-  const jourValide = (entry, d) => BIZ(d) && (!entry.ok || entry.ok(d));
-  // Plafond : pas plus de deux grosses affaires qui démarrent la même semaine
-  const plafondOk = (s, entry, d) => {
-    if (entry.poids !== "grosse") return true;
-    let n = 0;
-    for (const e of CR.VIVIER) {
-      const p = s.vivier.plan[e.id];
-      if (e === entry || e.poids !== "grosse" || p == null) continue;
-      if (Math.abs(p - d) < 3) return false;
-      if (semaine(p) === semaine(d)) n++;
-    }
-    return n < 2;
-  };
-  const jourPris = (s, entry, d) => CR.VIVIER.some((e) => e !== entry && s.vivier.plan[e.id] === d);
-  // Un jour d'arrivée valide dans [from, to] ; uniforme sur la plage, ou parmi les premiers jours possibles
-  CR.vivierJour = function (s, entry, from, to, rng, uniforme) {
-    const ok = [], tous = [];
-    for (let d = from; d <= to; d++) {
-      if (!jourValide(entry, d) || !plafondOk(s, entry, d)) continue;
-      tous.push(d);
-      if (!jourPris(s, entry, d)) ok.push(d);
-    }
-    const l = ok.length ? ok : tous;
-    if (!l.length) return null;
-    const pool = uniforme ? l : l.slice(0, 5);
-    return pool[Math.floor(rng() * pool.length)];
-  };
-  const planifier = (s, entry, day, rng, data) => {
-    const m0 = entry.h[0] + Math.round(rng() * (entry.h[1] - entry.h[0]) / 5) * 5;
-    entry.ids.forEach((id, i) => {
-      if (!CR.CASES[id]) return;
-      const min = i === 0 ? m0 : Math.min(18 * 60, m0 + 30 + Math.round(rng() * 12) * 5);
-      CR.schedule(s, { day, min, type: "lead", key: id, data: Object.assign({ vivier: 1 }, data || {}) });
-    });
-    s.vivier.plan[entry.id] = day;
-  };
-
-  CR.VIVIER_ABSENCE = 0.55; // probabilité qu'une affaire écrite (hors ouverture) manque à une partie
-  CR.initVivier = function (s) {
-    const rng = CR.seeded("vivier:" + s.seed);
-    const entries = CR.VIVIER.filter((e) => e.ids.every((id) => CR.CASES[id] && !CR.CASES[id].mode));
-    const viv = (s.vivier = { v: 1, plan: {}, absents: [], manques: [], arrived: {}, ok: {}, chevauchement: null, ordre: [] });
-    const melange = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-    // l'ouverture de la carrière : une petite affaire dans la première semaine
-    const ouvertures = entries.filter((e) => e.ouverture);
-    const op = ouvertures[Math.floor(rng() * ouvertures.length)];
-    let d0 = CR.vivierJour(s, op, Math.max(1, op.fen[0]), 4, rng, true);
-    if (d0 == null) d0 = CR.vivierJour(s, op, op.fen[0], op.fen[1], rng, true);
-    planifier(s, op, d0, rng);
-    // une partie ne contient qu'une partie des affaires écrites : elles restent des événements rares, le générateur fait le reste
-    const autres = [];
-    for (const e of melange(entries.filter((x) => x !== op))) {
-      if (rng() < CR.VIVIER_ABSENCE) viv.absents.push(e.id); else autres.push(e);
-    }
-    // les grosses d'abord (plafond par semaine), puis les petites ; chacune à une date tirée dans sa fenêtre
-    for (const e of autres.filter((x) => x.poids === "grosse").concat(autres.filter((x) => x.poids !== "grosse"))) {
-      const d = CR.vivierJour(s, e, Math.max(e.fen[0], d0 + 1), e.fen[1], rng, true);
-      if (d == null) { viv.absents.push(e.id); continue; }
-      planifier(s, e, d, rng);
-    }
-    viv.ordre = Object.keys(viv.plan).sort((a, b) => viv.plan[a] - viv.plan[b]);
-    return new Set(entries.flatMap((e) => e.ids));
-  };
-
-  // Dossiers déjà traités par camp (spécialité) ; anciens clients satisfaits et confrères (réseau)
-  CR.vivierTraites = (s) => {
-    const t = { defense: 0, pc: 0, total: 0 };
-    for (const id of s.order) {
-      const c = s.cases[id];
-      if (!c) continue;
-      if (!(c.status === "active" || (c.status === "closed" && c.outcome && !["lost-lead", "declined", "transferred"].includes(c.outcome.type)))) continue;
-      t[c.camp === "pc" ? "pc" : "defense"]++;
-      t.total++;
-    }
-    return t;
-  };
-  const BONNES_ISSUES = ["relaxe", "acquittement", "non_lieu", "classement", "alternative", "requalification_favorable", "indemnise", "crpc", "reformation"];
-  CR.vivierRecommandeurs = (s, exclus) => s.order.map((id) => s.cases[id]).filter((c) => c && c.status === "closed" && c.outcome && BONNES_ISSUES.includes(c.outcome.type) && c.trust >= 50 && !(exclus || []).includes(c.id));
-  const CONFRERES = [
-    { id: "mehdi", nom: "Me Mehdi Belkacem", min: 12 },
-    { id: "av_tessier", nom: "Me Chloé Tessier", min: 16 },
-    { id: "mentor", nom: "Me Hélène Varenne", min: 18 },
-    { id: "av_villeneuve", nom: "Me Arnaud de Villeneuve", min: 30 },
-  ];
-  CR.vivierConfreres = (s, def) => { const pris = Object.values(def.actors || {}); return CONFRERES.filter((c) => s.reps.confreres >= c.min && !pris.includes(c.id)); };
-  const reseau = (s, def, entry) => CR.vivierRecommandeurs(s, entry.ids).length > 0 || s.reps.confreres >= 20;
-  const conditions = (s, def, entry) => {
-    if (!entry.cond) return { ok: true, reseauSeul: false };
-    const t = CR.vivierTraites(s);
-    let ok = false, autre = false;
-    for (const c of entry.cond) {
-      if (c.rep && s.reps[c.rep[0]] >= c.rep[1]) ok = autre = true;
-      if (c.spec && t[c.spec] >= (c.n || 1)) ok = autre = true;
-      if (c.reseau && reseau(s, def, entry)) ok = true;
-    }
-    return { ok, reseauSeul: ok && !autre };
-  };
-  const choisirCanal = (s, def, entry, rng, reseauSeul) => {
-    const w = entry.canaux;
-    const reco = w.recommandation ? CR.vivierRecommandeurs(s, entry.ids) : [];
-    const conf = w.confrere ? CR.vivierConfreres(s, def) : [];
-    const opts = [];
-    if (w.permanence) opts.push(["permanence", 1]);
-    if (!reseauSeul) {
-      if (rdvType(def)) { opts.push(["rdv", w.rdv || 3]); if (w.appel) opts.push(["appel", w.appel]); }
-      else { if (w.appel) opts.push(["appel", w.appel]); if (w.mail) opts.push(["mail", w.mail]); }
-    }
-    if (reco.length) opts.push(["recommandation", w.recommandation]);
-    if (conf.length && (!reseauSeul || s.reps.confreres >= 20)) opts.push(["confrere", w.confrere]);
-    if (!opts.length) opts.push([canalParDefaut(def, entry), 1]);
-    let x = rng() * opts.reduce((a, o) => a + o[1], 0), canal = opts[0][0];
-    for (const [k, p] of opts) { if (x < p) { canal = k; break; } x -= p; }
-    let via = null;
-    if (canal === "recommandation") { const c = reco[Math.floor(rng() * reco.length)]; via = { type: "client", nom: CR.clientName(c), caseId: c.id }; }
-    if (canal === "confrere") { const c = conf[Math.floor(rng() * conf.length)]; via = { type: "confrere", nom: c.nom, id: c.id }; }
-    return { canal, via };
-  };
-  const reporter = (s, entry) => {
-    const viv = s.vivier;
-    CR.unschedule(s, (x) => x.type === "lead" && x.data && x.data.vivier && entry.ids.includes(x.key));
-    viv.plan[entry.id] = null;
-    const rng = CR.seeded(`report:${s.seed}:${entry.id}:${s.day}`);
-    const d = CR.vivierJour(s, entry, s.day + 3 + Math.floor(rng() * 5), entry.fen[1] + (entry.strict ? 0 : 21), rng, false);
-    if (d == null) { if (!viv.manques.includes(entry.id)) viv.manques.push(entry.id); return; }
-    viv.reports = viv.reports || {};
-    viv.reports[entry.id] = (viv.reports[entry.id] || 0) + 1;
-    planifier(s, entry, d, rng);
-  };
-  // Appelé quand un événement du vivier arrive à échéance (CR.EV.lead)
-  CR.vivierCheck = function (s, def, e) {
-    const viv = s.vivier;
-    const entry = CR.vivierEntry(def.id);
-    const d = e.data || {};
-    if (!viv || !entry) return { go: true, canal: d.canal || null };
-    if (d.force) return { go: true, canal: d.canal || canalParDefaut(def, entry) };
-    let ok = viv.ok[entry.id];
-    if (!ok || ok.day !== s.day) {
-      const c = conditions(s, def, entry);
-      if (!c.ok) { reporter(s, entry); return { go: false }; }
-      ok = viv.ok[entry.id] = { day: s.day, reseauSeul: c.reseauSeul };
-    }
-    const ch = d.permanence ? { canal: "permanence", via: null } : choisirCanal(s, def, entry, CR.seeded(`canal:${s.seed}:${def.id}:${s.day}`), ok.reseauSeul);
-    return { go: true, canal: ch.canal, via: ch.via, annonce: ch.canal === "recommandation" || ch.canal === "confrere" };
-  };
-  // Le message qui précède le premier contact : SMS d'un ancien client, courriel d'un confrère
-  CR.vivierAnnonce = function (s, def, d) {
-    const c = def.client || {};
-    const client = `${c.prenom || ""} ${c.nom || ""}`.trim();
-    const qui = (def.caller || client).split(",")[0];
-    const rng = CR.seeded(`annonce:${s.seed}:${def.id}`);
-    if (d.canal === "recommandation") {
-      const prenom = d.via.nom.split(" ")[0];
-      CR.mail(s, { from: d.via.nom, subject: "Je vous envoie quelqu'un", kind: "sms",
-        body: [[`Maître, c'est ${prenom}. Je me suis permis de donner votre numéro à ${qui}, qui a besoin d'un avocat. Je lui ai dit qu'avec vous, on est écouté.`]] });
-    } else if (d.canal === "confrere") {
-      const raisons = def.camp === "pc"
-        ? ["mon cabinet ne fait que de la défense", "mon agenda des prochaines semaines ne me permet pas de le suivre correctement"]
-        : ["je défends déjà une autre personne dans une procédure voisine", "mon agenda des prochaines semaines ne me permet pas de le suivre correctement"];
-      const raison = d.via.id === "mentor" ? "je ne prends plus de nouveaux dossiers, et celui-ci vous fera progresser" : raisons[Math.floor(rng() * raisons.length)];
-      CR.mail(s, { from: d.via.nom, subject: `Un dossier pour vous — ${client}`, kind: "email",
-        body: [["Mon cher confrère,"], [`Je ne peux pas me charger du dossier de ${client} : ${raison}. ${qui === client ? "Je lui ai donné" : `J'ai donné à ${qui}`} vos coordonnées ; on devrait vous contacter aujourd'hui.`], ["Bien confraternellement,"], [d.via.nom]] });
-    }
-  };
-  // À l'ouverture du dossier : la manière dont l'affaire est arrivée, dans la chronologie
-  CR.vivierArrivee = function (s, cs, d) {
-    if (!s.vivier) return;
-    s.vivier.arrived[cs.id] = s.day;
-    const def = CR.caseDef(cs);
-    cs.vars.arrivee = { canal: d.canal || null, via: d.via ? d.via.nom : null };
-    const texte = {
-      permanence: CR.dutyOn(s, s.day).some((x) => x.type === "gav_jour") ? "Désigné pendant votre permanence de garde à vue." : "Désigné par la permanence pénale de l'Ordre : les confrères inscrits ce jour-là étaient tous pris.",
-      appel: rdvType(def) ? "Demande de rendez-vous laissée sur votre répondeur." : "Premier contact par téléphone.",
-      mail: "Premier contact par courriel : demande à être rappelé.",
-      rdv: "Demande de rendez-vous par courriel.",
-      recommandation: d.via ? `Recommandé par ${d.via.nom}, un ancien client.` : "Recommandé par un ancien client.",
-      confrere: d.via ? `Dossier transmis par ${d.via.nom}.` : "Dossier transmis par un confrère.",
-    }[d.canal];
-    if (texte) CR.timeline(s, cs, texte);
-  };
-  // Permanence de garde à vue signée : la désignation de l'affaire de permanence (a02) peut tomber ce jour-là
-  CR.vivierOnDuty = function (s, day, type) {
-    const viv = s.vivier;
-    if (!viv || type !== "gav_jour") return;
-    const entry = CR.VIVIER.find((e) => e.canaux.permanence);
-    if (!entry || viv.absents.includes(entry.id) || viv.manques.includes(entry.id) || entry.ids.some((id) => s.cases[id])) return;
-    const ev = s.pending.find((e) => e.type === "lead" && entry.ids.includes(e.key) && e.data && e.data.vivier);
-    if (!ev || day >= ev.day || day < s.day || day > entry.fen[1] + 21 || !jourValide(entry, day)) return;
-    if (day === s.day && s.min > 15 * 60) return;
-    const rng = CR.seeded(`duty:${s.seed}:${day}`);
-    ev.day = day;
-    ev.min = day === s.day ? s.min + 60 : 10 * 60 + Math.round(rng() * 72) * 5;
-    ev.data = Object.assign({}, ev.data, { permanence: true });
-    viv.plan[entry.id] = day;
-  };
-  // Tests et outils : faire venir une affaire (conditions levées, canal d'origine)
-  CR.vivierForce = function (s, id, opts = {}) {
-    const def = CR.CASES[id];
-    const entry = CR.vivierEntry(id);
-    if (!def || !entry || !s.vivier) return null;
-    CR.unschedule(s, (e) => e.type === "lead" && e.key === id);
-    const rng = CR.seeded(`force:${s.seed}:${id}`);
-    let day = opts.day;
-    if (day == null) {
-      const p = s.vivier.plan[entry.id];
-      day = p != null && p > s.day ? p : CR.vivierJour(s, entry, Math.max(entry.fen[0], s.day + 1), entry.fen[1] + (entry.strict ? 0 : 30), rng, false);
-    }
-    const i = Math.max(0, entry.ids.indexOf(id));
-    const min = opts.min != null ? opts.min : Math.min(18 * 60, entry.h[0] + i * 50);
-    s.vivier.absents = s.vivier.absents.filter((x) => x !== entry.id);
-    s.vivier.plan[entry.id] = day;
-    return CR.schedule(s, { day, min, type: "lead", key: id, data: { vivier: 1, force: 1, canal: opts.canal || canalParDefaut(def, entry) } });
   };
 
   // =================================================================== PERSONNEL

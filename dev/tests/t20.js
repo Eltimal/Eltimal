@@ -6,7 +6,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
   const art = CR.UI.ICON_ART, bad = Object.entries(art).filter(([, r]) => r.length !== 8 || r.some((l) => l.length !== 8)).map(([k]) => k);
   console.log("icônes:", Object.keys(art).length, "mal formées:", bad.length ? bad.join(" ") : "aucune");
   await click(w, findBtn(doc, "Nouvelle partie"));
-  await click(w, findBtn(doc, /^Carrière/) || findBtn(doc, /^Tutoriel/));
+  await click(w, findBtn(doc, /^Carrière/));
   await sleep(250);
   const s = CR.store.s; s.settings.coach = false; CR.store.bump(); await sleep(60);
   const hots = [...doc.querySelectorAll(".pano-hot")].map((b) => b.getAttribute("aria-label"));

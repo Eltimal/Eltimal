@@ -16,7 +16,8 @@ const SP = __dirname;
     const txt = (el) => (el.textContent || "").replace(/\s+/g, " ").trim();
     const s = (CR.store.s = CR.newGame({ prenom: "Camille", nom: "Durand", mode: "carriere", seed: 7 }));
     s.settings.coach = false; s.min = 135; s.at = "commissariat";
-    const cs = CR.openCase(s, "a02_sac");
+    // une garde à vue générée que la simulation sait jouer (il n'y a plus d'affaire écrite)
+    let cs = null; for (let i = 0; i < 30 && !cs; i++) { try { const c = CR.GEN.open(s, "gav", {}); const p = CR.GEN.paramsOf(s, c.id); if (p && p.t && CR.SIM.supporte(p.t)) { c.status = "active"; cs = c; } } catch (e) { /* tirage suivant */ } }
     document.getElementById("app").style.display = "none";
     const root = document.createElement("div"); root.className = "game"; document.body.append(root);
     ReactDOM.render(html`<${UI.GavScene} s=${s} cs=${cs} onDone=${() => {}} />`, root);

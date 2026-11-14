@@ -16,11 +16,24 @@
     if (fonds) return fonds;
     fonds = {};
     if (!CR.CASES || !CR.newGame || !CR.getTpl0) return fonds;
+    // une partie de travail, le temps de lire les modèles d'actes : CR.newGame la place dans CR.store.s ; la partie du joueur
+    // est remise en place à la fin (sinon, au premier acte ouvert en mode libre, la partie en cours était remplacée)
+    const partieDuJoueur = CR.store && CR.store.s;
+    try { return construire(); } finally { if (CR.store) CR.store.s = partieDuJoueur; }
+  };
+  function construire() {
     let s0;
     try { s0 = CR.newGame({ prenom: "Fonds", nom: "Commun", mode: "carriere", seed: 99 }); s0.settings.saisie = "liste"; } catch (e) { return fonds; }
-    for (const id of Object.keys(CR.CASES)) {
-      let cs; try { cs = CR.openCase(s0, id); } catch (e) { continue; }
-      const keys = new Set([...Object.keys(CR.SHARED_TPL || {}), ...Object.keys(CR.CASES[id].tpls || {})]);
+    // les affaires du fonds : celles déjà définies, et des affaires générées de chaque genre (il n'y a plus d'affaire écrite)
+    const dossiers = [];
+    for (const id of Object.keys(CR.CASES)) { try { dossiers.push(CR.openCase(s0, id)); } catch (e) { /* définition incomplète */ } }
+    // numérotées à part (g_<genre>_<n> se compte par partie : elles écraseraient les affaires du joueur), retirées ensuite
+    const deTravail = [];
+    s0.genCount = 1e6;
+    if (CR.GEN && CR.GEN.open) for (const g of ["gav", "ci", "copj", "op", "pc", "info", "al"]) for (let i = 0; i < 3; i++) { try { const c = CR.GEN.open(s0, g, {}); if (c) { dossiers.push(c); deTravail.push(c.def); } } catch (e) { /* genre indisponible */ } }
+    for (const cs of dossiers) {
+      if (!cs || !CR.CASES[cs.def]) continue;
+      const keys = new Set([...Object.keys(CR.SHARED_TPL || {}), ...Object.keys(CR.CASES[cs.def].tpls || {})]);
       for (const k of keys) {
         let t; try { t = CR.getTpl0(s0, cs, k); } catch (e) { continue; }
         for (const sl of Object.values((t && t.slots) || {})) {
@@ -30,6 +43,7 @@
         }
       }
     }
+    for (const id of deTravail) delete CR.CASES[id];
     return fonds;
   };
   // la clause voisine : la bonne formule, faussée sur ce qui fait sa justesse (un numéro d'article, un délai, une

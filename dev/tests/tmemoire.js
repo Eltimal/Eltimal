@@ -3,7 +3,7 @@ const { sleep, texts, findBtn, click } = require("./harness");
 const P = require("./play"); const U = require("./util");
 let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("ÉCHEC", m); } };
 (async () => {
-  const env = await U.career("a02_sac", 7); const { w, doc, CR, s, errors } = env; const MEM = CR.MEM;
+  const env = await U.career(null, 7); const { w, doc, CR, s, errors } = env; const MEM = CR.MEM;
   s.pending = s.pending.filter((e) => e.type !== "lead"); CR.GEN2.DIR.off = true;
   const ouvrir = () => { const c = CR.GEN.open(s, "copj", { min: s.min }); c.status = "open"; const h = CR.scheduleHearing(s, c, { script: "tc", title: "Tribunal correctionnel", where: "palais", day: s.day + 1, min: 13 * 60 + 30 }); return [c, h]; };
   const [c1, h1] = ouvrir();
@@ -51,7 +51,6 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("ÉCHEC", m
   CR.store.bump(); await sleep(60); await click(w, P.rail(doc, "Cabinet")); await click(w, [...doc.querySelectorAll(".tab")].find((x) => /Réputation/.test(texts(x)))); await sleep(40);
   ok(doc.querySelectorAll(".memo-list li").length >= 3 && /Retient que/.test(texts(doc.querySelector(".memo-list"))), "« Ceux qui vous connaissent » : " + doc.querySelectorAll(".memo-list li").length);
   const s2 = JSON.parse(JSON.stringify(s)); ok(s2.memo[pr].n === s.memo[pr].n, "la mémoire survit à la sauvegarde");
-  const t = CR.newGame({ prenom: "A", nom: "B", mode: "tutoriel", seed: 1 }); MEM.noter(t, pr, -3, "x"); ok(!t.memo, "rien n'est retenu pendant le tutoriel");
   console.log("président :", CR.acteur(pr).nom, JSON.stringify(s.memo[pr].faits.map((f) => f.r).slice(0, 3)));
   console.log("échecs:", fails); console.log("errors:", errors.length ? errors.slice(0, 4).join("\n---\n") : "none");
   process.exit(0);

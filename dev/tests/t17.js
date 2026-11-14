@@ -4,7 +4,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
   const { w, CR, doc, errors } = boot();
   await sleep(200);
   await click(w, findBtn(doc, "Nouvelle partie"));
-  await click(w, findBtn(doc, /^Carrière/) || findBtn(doc, /^Tutoriel/));
+  await click(w, findBtn(doc, /^Carrière/));
   await sleep(200);
   const s = CR.store.s;
   s.settings.coach = false; s.settings.saisie = "liste";

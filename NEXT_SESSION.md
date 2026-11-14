@@ -24,6 +24,10 @@ Mesure du 13 novembre : un dossier criminel généré comptait 14 pièces et env
 
 Fait : l'aménagement de la peine devant le juge de l'application des peines (`apres.js`, `tjap`, D-79, D-80). Règles relues pour la suite (D-79) : exclusion du bulletin n° 2 (art. 775-1 CPP, à plaider au jugement ou sur requête), CIVI (706-3, 706-5) et SARVI (706-15-1, 706-15-2) pour les dossiers de victimes. Fait aussi : le recouvrement de la victime (CIVI, SARVI, D-81, `tvictimes`). Exclusion du bulletin n° 2 au jugement faite (D-82, `tb2`). Reste : sa requête après jugement, le volet civil (renvoi sur les intérêts civils, assignation), l'article 706-14.
 
+## Lot 10 — abandonné
+
+Le 14 novembre 2026, à la demande de Kevin : les affaires écrites et le tutoriel sont retirés du jeu (D-84). Toutes les affaires viennent du générateur ; ne rien réintroduire qui en dépende.
+
 ## Contrôle d'ensemble
 
 Compris dans `node tools/batterie.js complete` (boucles 7, 9, 5 : la boucle principale en mode libre, de bout en bout).

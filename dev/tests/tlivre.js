@@ -58,7 +58,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
 
   // 3. Interface
   await click(w, findBtn(doc, "Nouvelle partie"));
-  await click(w, findBtn(doc, /^Tutoriel/));
+  await click(w, findBtn(doc, /^Carrière — à votre compte/));
   await sleep(150);
   const s = CR.store.s;
   await click(w, [...doc.querySelectorAll(".rail-btn")].find((x) => texts(x).startsWith("Bibliothèque")));

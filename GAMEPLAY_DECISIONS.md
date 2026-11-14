@@ -249,3 +249,19 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
   - **Ordre de travail.** D'abord les articles que le jeu cite (garde à vue, nullités, détention, peines, comparution immédiate, recours), puis le reste des codes du jeu : code pénal, code de procédure pénale, code de la route, CJPM.
   - **Usage en jeu.** La note citée à l'audience ou dans un acte reste la carte « jurisprudence » actuelle, avec le même contrôle de la référence.
   - **Blocage externe.** La lecture des données ouvertes (echanges.dila.gouv.fr) a été refusée par le contrôle de sécurité de la session, bien que l'hôte ait été ajouté au réseau de l'environnement. Il faut l'accord de Kevin pour la lecture automatique de ces données, ou des sources fournies.
+
+## Lot 10 abandonné (14 novembre 2026, à la demande de Kevin)
+
+- **D-84. Les affaires écrites et le tutoriel sont retirés du jeu.**
+  - **Supprimés.**
+    - Le code : les douze affaires et le tutoriel (`js/cases/`), leurs pièces (`js/pieces.js`) et le vivier qui les tirait au sort dans une carrière (`systems.js`).
+    - L'écran : le bouton du tutoriel, sa fenêtre de fin, la mention « tutoriel » des sauvegardes, les conditions propres au tutoriel (mémoire des magistrats, carrière).
+    - Les tests : ceux des affaires écrites (`t2` à `t14`), `tvivier` et l'outil `dbg.js`.
+  - **Toutes les affaires viennent du générateur.** Une petite affaire (convocation, ordonnance pénale ou audition libre) ouvre la carrière dans les premiers jours ouvrables. Elle reprend le rôle de l'ancienne affaire d'ouverture : premier contact entre le 1er et le 3e jour, sur huit parties mesurées.
+  - **Sauvegardes.** Une partie tutoriel, ou qui contient une affaire écrite, est refusée avec un message clair (« Commencez une nouvelle partie »). Les autres se lisent comme avant, et leur chevauchement d'audiences est repris (`s.chevauchement`).
+  - **Gardé.** Le mécanisme générique de l'enquête de la défense (`dossier.js`, onglet Enquête) reste, sans contenu : seules les affaires écrites en fournissaient.
+  - **Tests portés sur des affaires générées** : facturation (`tbill`), citations (`tcite`, avec une affaire d'essai qui reprend la plainte de l'ancienne affaire n° 11), dossier à fouiller (`tdossier`), bibliothèque, mémoire, vidéo, clauses (`tclauses`, `tplcheck`), cas pratiques, cassation, plaidoirie, captures.
+  - **Trois défauts trouvés et corrigés en chemin.**
+    - Au premier acte ouvert en mode libre, le calcul du fonds commun des clauses remplaçait la partie du joueur par une partie de travail (`CR.newGame` la plaçait dans `CR.store.s`). Il en écrasait aussi les affaires générées de même numéro.
+    - Un passage noté, surligné ou relevé n'était pas marqué dans les pièces composées par le moteur : leurs heures portent des espaces insécables, et la comparaison des textes échouait.
+    - Le fonds commun des clauses ne voyait que les modèles des affaires écrites : il est désormais nourri d'affaires générées de chaque genre (bonne option la plus longue : 18 % des blancs).

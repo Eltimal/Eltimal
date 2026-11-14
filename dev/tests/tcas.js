@@ -3,7 +3,7 @@ const { sleep, texts, findBtn, click } = require("./harness");
 const P = require("./play"); const U = require("./util");
 let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("ÉCHEC", m); } };
 (async () => {
-  const env = await U.career("a02_sac", 7); const { w, doc, CR, s, errors } = env;
+  const env = await U.career(null, 7); const { w, doc, CR, s, errors } = env;
   s.pending = s.pending.filter((e) => e.type !== "lead"); CR.GEN2.DIR.off = true;
   let nq = 0, sans = 0;
   for (const k of ["copj", "gav", "pc", "ci", "al", "op", "copj", "pc"]) {

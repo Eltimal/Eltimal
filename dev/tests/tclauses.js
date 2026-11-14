@@ -8,8 +8,9 @@ const { boot } = require("./harness");
   ok(libs.length >= 5, "fonds commun trop pauvre", libs.length);
   const s = CR.newGame({ prenom: "A", nom: "B", mode: "carriere", seed: 3 }); s.settings.saisie = "assiste";
   let enrichis = 0, blancs = 0, premierLong = 0, n = 0;
-  for (const id of Object.keys(CR.CASES)) {
-    let cs; try { cs = CR.openCase(s, id); } catch (e) { continue; }
+  const ouverts = []; for (const g of ["gav", "ci", "copj", "op", "pc", "info", "al"]) for (let i = 0; i < 4; i++) { try { const c = CR.GEN.open(s, g, {}); if (c) ouverts.push(c); } catch (e) { /* genre indisponible */ } } // affaires générées de chaque genre (il n'y a plus d'affaire écrite)
+  for (const cs of ouverts) {
+    const id = cs.def;
     cs.proc.audience = cs.proc.audience || { day: s.day + 30, juridiction: "tc", convocDay: s.day };
     for (const k of new Set([...Object.keys(CR.SHARED_TPL), ...Object.keys(CR.CASES[id].tpls || {})])) {
       let t, t0, t2; try { t = CR.getTpl(s, cs, k); t2 = CR.getTpl(s, cs, k); t0 = CR.getTpl0(s, cs, k); } catch (e) { continue; }
@@ -31,7 +32,7 @@ const { boot } = require("./harness");
   const cs = Object.values(s.cases)[0];
   console.log(`fonds : ${libs.length} intitulés · blancs enrichis : ${enrichis}/${blancs} · bonne option la plus longue : ${Math.round(premierLong / Math.max(1, n) * 100)} %`);
   s.settings.saisie = "liste";
-  const csL = CR.openCase(s, Object.keys(CR.CASES)[1]);
+  const csL = ouverts[1];
   let tL; try { tL = CR.getTpl(s, csL, Object.keys(CR.SHARED_TPL)[0]); } catch (e) { tL = null; }
   ok(!tL || Object.values(tL.slots || {}).every((sl) => !(sl.options || []).some((o) => o.fonds)), "le mode liste reçoit des clauses du fonds");
   if (errors.length) { echecs++; console.log("  ✗ erreurs : " + errors.slice(0, 2).join(" | ")); }

@@ -267,7 +267,7 @@
     const [confirme, setConfirme] = useState(null);
     const [inst, setInst] = useState(false);
     const bump = () => CR.store.bump();
-    if (!CAR.actif(s)) return html`<p className="empty">La carrière commence après le tutoriel.</p>`;
+    if (!CAR.actif(s)) return html`<p className="empty">La carrière ne se suit pas dans une affaire jouée par son code.</p>`;
     const c = CAR.etat(s), m = CAR.mesure(s), G = CAR.GRADES[c.grade], suivant = CAR.GRADES[c.grade + 1];
     const need = suivant ? CAR.manque(s, c.grade + 1) : [];
     return html`<div className="carriere">

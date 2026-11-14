@@ -102,9 +102,11 @@
   UI.Paper = ({ doc, cs, interactive, onSeg, kind, compact }) => {
     if (!doc) return null;
     const caption = doc.caption;
-    const noted = cs ? new Set(cs.notes.map((n) => n.text)) : new Set();
-    const flagged = cs ? new Set(cs.issues.map((n) => n.text)) : new Set();
-    const surl = cs ? new Set((cs.surl || []).map((h) => h.t)) : new Set();
+    // les heures des pièces composées portent des espaces insécables : on compare les textes, espaces normalisés
+    const ns = (x) => String(x || "").replace(/\s+/g, " ").trim();
+    const noted = cs ? new Set(cs.notes.map((n) => ns(n.text))) : new Set();
+    const flagged = cs ? new Set(cs.issues.map((n) => ns(n.text))) : new Set();
+    const surl = cs ? new Set((cs.surl || []).map((h) => ns(h.t))) : new Set();
     const k = doc.kind || kind;
     // dossier de travail (lot 2) : les annotations du joueur sur cette pièce, en couleur, au caractère près
     const ans = interactive && cs && CR.TRAV && doc.ref ? CR.TRAV.annotsDe(cs, doc.ref) : [];
@@ -130,7 +132,7 @@
       const t = typeof seg === "string" ? seg : seg.t;
       if (!t) return null;
       if (!interactive) return html`<span key=${j}>${inner || t}</span>`;
-      const tt = t.trim();
+      const tt = ns(t);
       return html`<span key=${j} data-p=${i} data-s=${j} className=${UI.cx("seg", noted.has(tt) && "seg-noted", surl.has(tt) && "seg-surl", flagged.has(tt) && "seg-flagged")} onClick=${(e) => onSeg && onSeg(seg, e)} tabIndex="0" onKeyDown=${(e) => { if (e.key === "Enter") onSeg && onSeg(seg, e); }}>${inner || (i != null && decoupe(t, i, j)) || t}</span>`;
     };
     // notes en marge, sous le paragraphe où commence l'annotation

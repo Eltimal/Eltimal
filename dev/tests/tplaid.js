@@ -28,7 +28,7 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("ÉCHEC", m
   ok(PL.repliqueFin(cs, R, "abandon").delta > 0 && PL.repliqueFin(cs, R, "maintien").delta < 0 && PL.repliqueFin(cs, R, "rien").delta === 0, "abandonner, maintenir, se taire");
   cs.vars.plaidNotes = [{ kind: "good", text: "x" }]; ok(PL.debrief({}, cs).some((d) => d.text === "x"), "notes reprises au débrief");
   // --- dans l'interface : une affaire générée où le client est convoqué, jouée jusqu'à la plaidoirie
-  const env = await U.career("a02_sac", 7); const { w, doc, s, errors } = env;
+  const env = await U.career(null, 7); const { w, doc, s, errors } = env;
   s.pending = s.pending.filter((e) => e.type !== "lead"); if (env.CR.GEN2.DIR) env.CR.GEN2.DIR.off = true;
   let c2 = null, h = null; const vu = { ton: false, plan: false, replique: false, plaide: false };
   { const c = env.CR.GEN.open(s, "copj", { min: s.min }); c.status = "open"; c2 = c; h = env.CR.scheduleHearing(s, c, { script: "tc", title: "Tribunal correctionnel", where: "palais", day: s.day + 1, min: 13 * 60 + 30 }); }

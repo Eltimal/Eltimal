@@ -7,7 +7,7 @@
    - une difficulté qui suit la carrière (ancienneté, réputation) et qui alterne : pas trois affaires de même niveau d'affilée ;
    - à score égal, la candidate tirée la première, pour garder les fréquences réalistes du catalogue.
    Il diversifie aussi le genre des nouveaux clients (GEN2.leadKind). Le choix reste porté par le code d'affaire (sa graine) :
-   une affaire choisie se rejoue à l'identique par son code. Hors carrière (code, tutoriel), rien ne change. */
+   une affaire choisie se rejoue à l'identique par son code. Hors carrière (affaire jouée par son code), rien ne change. */
 (function () {
   const CR = window.CR;
   const GEN2 = CR.GEN2;

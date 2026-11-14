@@ -250,7 +250,6 @@
     }
     const isModalScene = scene && MODAL_SCENES.includes(scene.type);
     const fullScene = scene && !isModalScene && sceneEl;
-    const tutoFin = s.mode === "tutoriel" && s.flags.tutoFini && !s.flags.tutoFiniVu && !scene && !pendingDeb;
     const affFin = CR.GEN2.VIE && CR.GEN2.VIE.affaireFinie(s) && !s.flags.affaireFinieVu && !scene && !pendingDeb;
     // refonte : hors scène, le lieu où l'on est remplit l'écran ; au cabinet, les objets du bureau mènent aux rubriques,
     // et les autres rubriques s'ouvrent en feuille par-dessus (.hub-sheet)
@@ -317,7 +316,6 @@
         <p>Vous avez dormi${s.lastDayStats ? html` et récupéré ${Math.round(s.lastDayStats.rec)} points d'énergie` : ""}. Le café est chaud, il est temps d'y aller.</p>
       </${UI.Modal}>`}
       ${pendingDeb && !modal && html`<${UI.DebriefModal} s=${s} cs=${pendingDeb} onClose=${() => { pendingDeb.debrief.seen = true; s.pendingDebrief.shift(); CR.autosave(); bump(); }} />`}
-      ${tutoFin && !modal && html`<${TutoFin} s=${s} />`}
       ${affFin && !modal && html`<${AffaireFin} s=${s} />`}
       <div className="toasts" aria-live="polite">${toasts.map((t) => html`<div key=${t.id} className=${cx("toast", "t-" + t.kind)}>${t.text}</div>`)}</div>
     </div>`;
@@ -331,21 +329,6 @@
     return html`<${UI.Modal} title="Affaire terminée" onClose=${close} footer=${html`<${Btn} onClick=${close}>Rester</${Btn}><${Btn} onClick=${rejouer}>Rejouer ce code</${Btn}><${Btn} kind="primary" onClick=${titre}>Écran titre</${Btn}>`}>
       <p>L'affaire est close ; sa fiche de révision est dans le classeur. Vous pouvez la rejouer à l'identique, ou partager son code.</p>
       <p><${UI.CodeAffaire} code=${s.affaire && s.affaire.code} /></p>
-    </${UI.Modal}>`;
-  }
-
-  // =================================================================== Fin du tutoriel
-  function TutoFin({ s }) {
-    const close = () => { s.flags.tutoFiniVu = true; bump(); };
-    const carriere = () => {
-      const p = s.player;
-      CR.store.s = CR.newGame({ prenom: p.prenom, nom: p.nom, cabinet: p.cabinet, look: p.look, mode: "carriere" });
-      CR.autosave();
-      bump();
-    };
-    return html`<${UI.Modal} title="Tutoriel terminé" onClose=${close} footer=${html`<${Btn} onClick=${close}>Rester dans le tutoriel</${Btn}><${Btn} kind="primary" onClick=${carriere}>Ouvrir son cabinet</${Btn}>`}>
-      <p>Vous avez vu la même bagarre des deux côtés de la barre : la victime qui demande réparation, le prévenu qui se défend. Les fiches de révision des deux chapitres sont dans votre classeur.</p>
-      <p>La carrière commence le lundi 2 novembre 2026, avec un prêt, un bureau en sous-location dans le 17e et un téléphone qui va sonner. Personne ne vous rappellera aucun délai.</p>
     </${UI.Modal}>`;
   }
 
@@ -384,7 +367,7 @@
         </div>
         <div>
           <h3>Charger</h3>
-          ${saves == null ? html`<p className="muted small">Chargement…</p>` : saves.length === 0 ? html`<${Empty}>Aucune partie enregistrée.</${Empty}>` : html`<ul className="save-list">${saves.map((x) => html`<li key=${x.slot}><div><strong>${x.slot === "auto" ? "Sauvegarde automatique" : "Emplacement " + x.slot}</strong><span className="small muted">${x.meta.nom} · ${x.meta.date} · ${CR.money(x.meta.cash)}${x.meta.mode === "tutoriel" ? " · tutoriel" : ""}</span></div><${Btn} small onClick=${async () => { const st = await Saves.load(x.slot); if (st) { CR.store.s = st; bump(); onClose(); } }}>Charger</${Btn}></li>`)}</ul>`}
+          ${saves == null ? html`<p className="muted small">Chargement…</p>` : saves.length === 0 ? html`<${Empty}>Aucune partie enregistrée.</${Empty}>` : html`<ul className="save-list">${saves.map((x) => html`<li key=${x.slot}><div><strong>${x.slot === "auto" ? "Sauvegarde automatique" : "Emplacement " + x.slot}</strong><span className="small muted">${x.meta.nom} · ${x.meta.date} · ${CR.money(x.meta.cash)}</span></div><${Btn} small onClick=${async () => { let st = null; try { st = await Saves.load(x.slot); } catch (e) { window.alert(e.perime ? e.message : "Cette sauvegarde ne peut pas être lue."); } if (st) { CR.store.s = st; bump(); onClose(); } }}>Charger</${Btn}></li>`)}</ul>`}
           <h3>Carrière</h3>
           ${s.mode === "carriere" && (!confirmRetire ? html`<${Btn} onClick=${() => setConfirmRetire(true)}>Quitter la profession</${Btn}>` : html`<${Btn} kind="danger" onClick=${() => { CR.endGame(s, "retraite", "Vous avez rendu votre robe, à votre heure."); bump(); onClose(); }}>Confirmer : rendre la robe</${Btn}>`)}
           ${!confirmQuit ? html`<${Btn} kind="ghost" onClick=${() => setConfirmQuit(true)}>Retour à l'écran titre</${Btn}>` : html`<${Btn} kind="danger" onClick=${() => { CR.autosave(); CR.store.s = null; bump(); }}>Quitter (partie enregistrée)</${Btn}>`}
@@ -472,7 +455,7 @@
       const f = e.target.files && e.target.files[0];
       if (!f) return;
       const rd = new FileReader();
-      rd.onload = () => { try { CR.store.s = CR.deserialize(rd.result); bump(); } catch (err) { console.warn(err); alertMsg("Ce fichier n'est pas une sauvegarde de La Permanence."); } };
+      rd.onload = () => { try { CR.store.s = CR.deserialize(rd.result); bump(); } catch (err) { console.warn(err); alertMsg(err && err.perime ? err.message : "Ce fichier n'est pas une sauvegarde de La Permanence."); } };
       rd.readAsText(f);
     };
     const [err, alertMsg] = useState("");
@@ -494,7 +477,7 @@
           ${mode === "menu" && html`<div className="ts-menu-wrap">
             <p className="ts-sub">Vous venez de prêter serment. Un prêt, un bureau en sous-location dans le 17e, et un téléphone qui sonnera à deux heures du matin. Chaque délai est réel ; personne ne vous en rappellera aucun.</p>
             <nav className="ts-menu" aria-label="Menu principal">
-              ${auto && html`<button type="button" className="ts-btn ts-primary" onClick=${async () => { const st = await Saves.load("auto"); if (st) { CR.store.s = st; bump(); } }}>Reprendre<small>${auto.meta.nom} · ${auto.meta.date}${auto.meta.mode === "tutoriel" ? " · tutoriel" : ""}</small></button>`}
+              ${auto && html`<button type="button" className="ts-btn ts-primary" onClick=${async () => { try { const st = await Saves.load("auto"); if (st) { CR.store.s = st; bump(); } } catch (e) { alertMsg(e.perime ? e.message : "Cette sauvegarde ne peut pas être lue."); } }}>Reprendre<small>${auto.meta.nom} · ${auto.meta.date}</small></button>`}
               <button type="button" className=${cx("ts-btn", !auto && "ts-primary")} onClick=${() => setMode("new")}>Nouvelle partie</button>
               <button type="button" className="ts-btn" onClick=${() => setMode("code")}>Jouer une affaire par son code</button>
               ${others.length > 0 && html`<button type="button" className="ts-btn" onClick=${() => setMode("load")}>Charger une partie</button>`}
@@ -512,7 +495,7 @@
           </div>`}
           ${mode === "load" && html`<div className="ts-box">
             <p className="ts-box-title">Charger une partie</p>
-            <ul className="save-list">${others.map((x) => html`<li key=${x.slot}><div><strong>Emplacement ${x.slot}</strong><span className="small muted">${x.meta.nom} · ${x.meta.date}</span></div><${Btn} small onClick=${async () => { const st = await Saves.load(x.slot); if (st) { CR.store.s = st; bump(); } }}>Charger</${Btn}></li>`)}</ul>
+            <ul className="save-list">${others.map((x) => html`<li key=${x.slot}><div><strong>Emplacement ${x.slot}</strong><span className="small muted">${x.meta.nom} · ${x.meta.date}</span></div><${Btn} small onClick=${async () => { let st = null; try { st = await Saves.load(x.slot); } catch (e) { alertMsg(e.perime ? e.message : "Cette sauvegarde ne peut pas être lue."); } if (st) { CR.store.s = st; bump(); } }}>Charger</${Btn}></li>`)}</ul>
             <button type="button" className="ts-btn ts-btn-sm" onClick=${() => setMode("menu")}>Retour</button>
           </div>`}
           ${mode === "new" && html`<div className="ts-box">
@@ -529,7 +512,6 @@
               </div>
             </div>
             <div className="mode-pick">
-              <button className="decide-opt" onClick=${() => start("tutoriel")}><strong>Tutoriel : la bagarre devant le bar</strong><span className="small muted">Une même affaire jouée deux fois : d'abord pour la victime, Lucas, puis pour l'auteur, Thomas. Me Varenne explique l'interface et chaque étape, jamais la réponse. Environ une heure.</span></button>
               <button className="decide-opt" onClick=${() => start("carriere")}><strong>Carrière — à votre compte</strong><span className="small muted">Lundi 2 novembre 2026. 6 200 € sur le compte professionnel, un prêt d'installation de 15 000 €, un découvert de 5 000 €. Les permanences de l'Ordre, les commissions d'office, puis vos propres clients.</span></button>
               <button className="decide-opt" onClick=${() => start("carriere", "collab")}><strong>Carrière — collaborateur dans un cabinet</strong><span className="small muted">Même date. Ni prêt ni loyer : une rétrocession d'honoraires de 3 700 € par mois, le minimum de l'Ordre. En échange, les dossiers du cabinet prennent vos matinées, et il vous reste moins d'énergie pour vos clients personnels. Un début plus calme ; vous pourrez vous installer ou vous associer.</span></button>
             </div>

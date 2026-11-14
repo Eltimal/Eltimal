@@ -4,7 +4,7 @@ const { sleep, texts, findBtn, click } = require("./harness");
 const U = require("./util");
 let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("ÉCHEC", m); } };
 (async () => {
-  const env = await U.career("a02_sac", 7); const { w, doc, CR, s, errors } = env; const CASS = CR.CASS;
+  const env = await U.career(null, 7); const { w, doc, CR, s, errors } = env; const CASS = CR.CASS;
   s.pending = s.pending.filter((e) => e.type !== "lead"); CR.GEN2.DIR.off = true;
   ok(CR.ACTES.pourvoi && /10 jours francs/.test(CR.ACTES.pourvoi.delai), "fiche d'acte « pourvoi » : dix jours francs");
   // une affaire jugée en appel, condamnation

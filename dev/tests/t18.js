@@ -25,7 +25,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
   console.log("lieux:", places.length, "décors distincts:", Object.keys(used).length, "partagés:", shared.length ? JSON.stringify(shared) : "aucun");
   // le bandeau suit le lieu dans l'interface
   await click(w, findBtn(doc, "Nouvelle partie"));
-  await click(w, findBtn(doc, /^Carrière/) || findBtn(doc, /^Tutoriel/));
+  await click(w, findBtn(doc, /^Carrière/));
   await sleep(200);
   const s = CR.store.s;
   const seen = [];
