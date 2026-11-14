@@ -131,6 +131,20 @@
     const T20 = M.personne(r, { pf: 0.5, minAge: 20, maxAge: 70, casier: 0, lieu: LX.F.id, milieu: LX.milT });
     for (const Tx of [T0, T20]) if ([A, V, P].some((y) => y && y.prenom === Tx.prenom)) Tx.prenom = pk(r, (Tx.g === "f" ? M.PF : M.PM).filter((z) => ![A, V, P].some((y) => y && y.prenom === z)));
     const T = { prenom: T0.prenom, nom: T0.nom, g: T0.g, age: T0.age, metier: T0.metier, adresse: T0.adresse };
+    // le témoin dont les propos supposent une fonction, un sexe ou un âge (D-95) : la fiche le dit, sans nouveau tirage
+    const FICHE_T = {
+      "viol/autorite": { g: "f", metier: "secrétaire médicale" },
+      "viol/vulnerable": { metier: (g) => (g === "f" ? "aide-soignante du foyer" : "aide-soignant du foyer") },
+      "vol_arme/pharmacie": { metier: (g) => (g === "f" ? "préparatrice en pharmacie" : "préparateur en pharmacie") },
+      "agression_sexuelle/travail": { metier: (g) => (g === "f" ? "collègue de la victime" : "collègue de la victime") },
+      "tentative_meurtre/couple_strangulation": { age: [18, 23], metier: (g) => (g === "f" ? "étudiante, fille du couple" : "étudiant, fils du couple") },
+    }[`${inf}/${f.ctx}`];
+    if (FICHE_T) {
+      const hsh = [...(T0.nom + T0.prenom)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+      if (FICHE_T.g && FICHE_T.g !== T.g) { T.g = FICHE_T.g; const L0 = (T.g === "f" ? M.PF : M.PM).filter((z) => ![A, V, P].some((y) => y && y.prenom === z)); T.prenom = L0[hsh % L0.length]; }
+      if (FICHE_T.age) T.age = FICHE_T.age[0] + (hsh % (FICHE_T.age[1] - FICHE_T.age[0] + 1));
+      if (FICHE_T.metier) T.metier = typeof FICHE_T.metier === "function" ? FICHE_T.metier(T.g) : FICHE_T.metier;
+    }
     const T2 = { prenom: T20.prenom, nom: T20.nom === T0.nom ? pk(r, M.NOMS) : T20.nom, g: T20.g, age: T20.age, metier: T20.metier, adresse: T20.adresse };
     const C2 = pers.C2 ? M.personne(r, { g: "m", minAge: Math.max(16, A.age - 5), maxAge: A.age + 8, lieu: LX.A.id, milieu: LX.milA }) : null;
     const ageFaits = A.age;

@@ -42,6 +42,9 @@ const { boot } = require("./harness");
     for (const k of ["pv_transport", "inventaire_scelles", "pv_voisinage", "pv_autopsie", "commission_rogatoire", "pv_retour_cr", "pv_reaudition"]) if (PZ.docs[k]) { const x = txt(rend(PZ, k, t)); ok(!/undefined|NaN|\$\{|\[object/.test(x), `${tag}/${k} : texte incomplet`, (x.match(/.{40}(undefined|NaN).{20}/) || [""])[0]); }
     // l'enquête de personnalité en rapport (art. 81, al. 6) ; la synthèse développée, ses pièces citées par leur cote
     if (PZ.docs.personnalite) { const x = txt(rend(PZ, "personnalite", t)); ok(/art\. 81, al\. 6|socio-éducatifs/.test(x) && /PARCOURS SCOLAIRE ET PROFESSIONNEL/.test(x) && /PERSPECTIVES/.test(x) && !(/médecin|avocat|ingénieur/.test(t.A.metier || "") && /abandonnées|arrêtée à seize ans|CAP obtenu/.test(x)) && !/undefined|NaN/.test(x), `${tag} : enquête de personnalité incomplète ou incohérente avec le métier`, x.slice(0, 400)); }
+    // la seconde audition d'observation n'est faite qu'au témoin oculaire (D-95)
+    if (PZ.docs.pv_reaudition) ok(CR.CRIMD.typeTemoin(t) === "oculaire", `${tag} : seconde audition d'observation pour un témoin ${CR.CRIMD.typeTemoin(t) || "non classé"}`);
+    if (`${t.inf}/${t.f.ctx}` === "viol/autorite" && t.T) ok(t.T.g === "f" && /secrétaire/.test(t.T.metier), `${tag} : la secrétaire du cabinet n'est pas une secrétaire`, JSON.stringify(t.T));
     if (PZ.docs.pv_synthese) { const x = txt(rend(PZ, "pv_synthese", t)); ok(/CHRONOLOGIE/.test(x) && /INVESTIGATIONS CONDUITES/.test(x) && /\(D\d+\)/.test(x) && !/undefined|NaN/.test(x), `${tag} : synthèse sans chronologie ni investigations`, x.slice(0, 400)); }
     if (PZ.docs.inventaire_scelles) {
       const T1 = txt(rend(PZ, "pv_transport", t)), T2 = txt(rend(PZ, "inventaire_scelles", t));

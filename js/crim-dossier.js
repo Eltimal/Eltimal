@@ -32,9 +32,27 @@
 
   // ce que sait le témoin principal (seconde audition, confrontation) : un seul tirage pour toutes les pièces et scènes.
   // null s'il n'y a pas de témoin, s'il a moins de seize ans, ou si l'affaire suit le récit procédural (victime mineure)
+  // Les témoins du catalogue (cx.temoin des fiches criminelles) sont de trois natures : oculaires (ils ont vu la scène ou
+  // l'auteur), auditifs (des voisins qui entendent), de contexte (une confidente, une collègue, la secrétaire du cabinet).
+  // Distance, éclairage et reconnaissance n'ont de sens que pour les premiers : la seconde audition d'observation et la
+  // confrontation sur l'identification leur sont réservées (D-95). Classement relu contexte par contexte.
+  K.TEMOIN_TYPE = {
+    "meurtre/couple": "auditif", "meurtre/rixe": "oculaire", "meurtre/reglement": "oculaire", "meurtre/voisinage": "auditif", "meurtre/argent": "oculaire",
+    "meurtre/ld_contestee": "oculaire", "meurtre/psy": "contexte", "meurtre/chantier": "oculaire",
+    "assassinat/guet_apens": "oculaire", "assassinat/couple_premedite": "oculaire", "assassinat/vengeance": "oculaire", "assassinat/psy_premedite": "auditif",
+    "tentative_meurtre/rixe_couteau": "oculaire", "tentative_meurtre/couple_strangulation": "auditif", "tentative_meurtre/vehicule": "oculaire",
+    "tentative_meurtre/voisin_fusil": "oculaire", "tentative_meurtre/psy_metro": "oculaire",
+    "vmsi/coup_poing": "oculaire", "vmsi/couple": "auditif", "vmsi/bebe_secoue": "contexte", "vmsi/interpellation": "oculaire", "vmsi/vulnerable": "auditif", "vmsi/lycee": "contexte",
+    "viol/conjugal": "contexte", "viol/soiree": "contexte", "viol/autorite": "contexte", "viol/vulnerable": "contexte",
+    "agression_sexuelle/transports": "oculaire", "agression_sexuelle/travail": "contexte", "agression_sexuelle/boite": "oculaire",
+    "vol_arme/pharmacie": "oculaire", "sequestration/conjugale": "contexte", "incendie_criminel/squat": "oculaire", "incendie_criminel/bailleur": "contexte",
+  };
+  K.typeTemoin = (t) => (t && t.f ? K.TEMOIN_TYPE[`${t.inf}/${t.f.ctx}`] || null : null);
   K.temoin = function (t, N) {
     const T = t && t.T;
     if (!T || N.procedural || (T.age || 30) < 16) return null;
+    // seulement le témoin oculaire, et seulement s'il a parlé le jour des faits
+    if (K.typeTemoin(t) !== "oculaire" || !([].concat(N.temoins || []).find((x) => x.qui === "T") || { lines: [] }).lines.length) return null;
     const rt = CR.seeded(t.sig + ":reaud");
     const h0 = ((t.d.h % 1440) + 1440) % 1440;
     const jR = t.d.faits + int(rt, 3, 12), mR = 10 * 60 + int(rt, 0, 300);
@@ -257,6 +275,41 @@
       const ennemis = pk(rp, ["Non. Personne.", "Des histoires d'argent, peut-être. Je ne sais pas avec qui.", "Je savais qu'il y avait des tensions avec lui."]);
       fact("G_dernier_signe", { label: `Dernier signe de vie de la victime : ${moyen} à ${hm(hDer)}`, key: false });
       docs.pv_proche = (x) => { const o = vieux(x); const P = (o.paras || []).slice(); const fin = P.length && /Lecture faite|clos/.test(JSON.stringify(P[P.length - 1])) ? P.pop() : null; return Object.assign({}, o, { paras: P.concat([["QUESTIONS ET RÉPONSES"], [`Question : Quand avez-vous eu des nouvelles de ${V.prenom} pour la dernière fois ?`], [{ t: `Réponse : Le soir même. ${CR.cap(moyen)} à ${hm(hDer)}. ${humeur}`, f: "G_dernier_signe" }], ["Question : Lui connaissiez-vous des ennemis, des dettes, des menaces ?"], [`Réponse : ${ennemis}`]], fin ? [fin] : []) }); };
+    }
+
+    // 9 bis. la première audition du témoin principal, complétée selon sa nature (D-95) : oculaire (l'heure, celle que la
+    // seconde audition corrige parfois ; sa place ; la description ; la durée ; ce qu'il a fait ; s'il reconnaîtrait
+    // l'auteur), auditif (l'heure, d'où, s'il a vu quelqu'un), de contexte (depuis quand il connaît les personnes, qu'il
+    // n'a pas assisté aux faits). Distance et éclairage restent pour la seconde audition. Tirages hors du rendu.
+    const typeT = K.typeTemoin(t);
+    if (docs.pv_temoin && T && typeT && !proc) {
+      const vieux = docs.pv_temoin, rt = CR.seeded(t.sig + ":temoin1"), eT = T.g === "f" ? "e" : "";
+      const premiere = (([].concat(N.temoins || []).find((x) => x.qui === "T") || { lines: [] }).lines || []).join(" ");
+      const connaitA = A && premiere.includes(A.prenom), connaitV = V && premiere.includes(V.prenom);
+      const rue = /rue|boulevard|avenue|trottoir|pied d|devant|voie publique|contrôle routier|sortie du métro|place /.test(lieu) && !/pharmacie|café|boîte|bar |rame|cabinet|appartement|domicile|chantier|hall|immeuble/.test(lieu);
+      let Q;
+      if (typeT === "oculaire") {
+        const age = Math.max(16, A.age + int(rt, -6, 6));
+        const desc = `${A.g === "f" ? "Une femme" : "Un homme"} d'une ${age < 25 ? "vingtaine" : age < 35 ? "trentaine" : age < 45 ? "quarantaine" : "cinquantaine"} d'années, ${pk(rt, ["de corpulence moyenne", "plutôt mince", "assez costaud", "grand, mince"])}, ${pk(rt, ["habillé de sombre", "en survêtement", "avec une veste foncée", "avec un sweat à capuche"]).replace(/^habillé/, "habillé" + (A.g === "f" ? "e" : ""))}.${W && W.loin ? " Je l'ai vu de loin." : ""}`;
+        Q = [["À quelle heure les faits se sont-ils produits ?", `Vers ${hm(W ? W.hAvant : h0)}.`],
+          ["Où vous trouviez-vous ?", rue ? pk(rt, ["Sur le trottoir d'en face.", "À ma fenêtre, au deuxième étage.", "À l'arrêt de bus, juste à côté."]) : pk(rt, ["Sur place, à quelques mètres.", "Pas loin, je voyais toute la scène.", "Juste à côté."])],
+          [connaitA ? `Pouvez-vous décrire ce que portait ${A.prenom} ?` : "Pouvez-vous décrire la personne que vous avez vue ?", connaitA ? `${pk(rt, ["Une veste foncée, je crois.", "Un survêtement.", "Je n'ai pas fait attention à ses vêtements."])} Je le connais, je n'ai pas eu besoin de le regarder longtemps.`.replace("Je le connais", A.g === "f" ? "Je la connais" : "Je le connais") : desc],
+          ["Combien de temps la scène a-t-elle duré ?", pk(rt, ["Quelques secondes. Tout est allé très vite.", "Une minute, peut-être moins.", "Deux ou trois minutes, je dirais."])],
+          ["Qu'avez-vous fait ensuite ?", pk(rt, [`Je suis resté${eT} sur place jusqu'à l'arrivée de la police.`, `Je me suis approché${eT} de la victime ; d'autres personnes sont arrivées.`, `J'ai eu peur, je suis resté${eT} à l'écart, puis je suis revenu${eT} quand la police est arrivée.`])],
+          ["Connaissiez-vous les personnes en cause ?", connaitA || connaitV ? "Oui, comme je vous l'ai dit." : pk(rt, ["Non, ni l'un ni l'autre.", "Non."])],
+          ["Pourriez-vous reconnaître l'auteur ?", connaitA ? "Je le connais." .replace("le connais", A.g === "f" ? "la connais" : "le connais") : W && W.hesite ? "Je pense, oui." : W && W.silhouette ? "Oui, à sa silhouette surtout." : "Oui, je crois."]];
+      } else if (typeT === "auditif") {
+        Q = [["À quelle heure avez-vous entendu ces bruits ?", `Vers ${hm(h0 + int(rt, -10, 10))}, je crois.`],
+          ["D'où les avez-vous entendus ?", pk(rt, ["De chez moi : l'appartement est juste à côté.", "De l'étage du dessus.", "Du palier, en rentrant chez moi."])],
+          ["Avez-vous vu quelqu'un ?", pk(rt, ["Non. Je n'ai rien vu, j'ai seulement entendu.", `Non. Quand je suis sorti${eT} sur le palier, il n'y avait plus personne.`])],
+          ["Connaissez-vous les personnes en cause ?", "De vue : ce sont des voisins."],
+          ["Avez-vous quelque chose à ajouter ?", pk(rt, ["Non.", "Je regrette de ne pas avoir appelé plus tôt.", "Non, c'est tout."])]];
+      } else {
+        Q = [["Depuis quand connaissez-vous les personnes en cause ?", pk(rt, ["Depuis plusieurs années.", "Depuis un an environ.", "Depuis longtemps."])],
+          ["Avez-vous assisté aux faits eux-mêmes ?", "Non. Je rapporte ce que j'ai vu et entendu, avant et après."],
+          ["Avez-vous quelque chose à ajouter ?", pk(rt, ["Non.", "J'aurais dû en parler plus tôt.", "Non, je suis à votre disposition."])]];
+      }
+      docs.pv_temoin = (x) => { const o = vieux(x); const P = (o.paras || []).slice(); const fin = P.length && /Lecture faite|clos/.test(JSON.stringify(P[P.length - 1])) ? P.pop() : null; return Object.assign({}, o, { paras: P.concat([["QUESTIONS ET RÉPONSES"]], ...Q.map(([q0, a0]) => [[`Question : ${q0}`], [`Réponse : ${a0}`]]), fin ? [fin] : []) }); };
     }
 
     // 9 ter. l'enquête de personnalité (art. 81, al. 6, du code de procédure pénale : obligatoire en matière criminelle),

@@ -406,3 +406,14 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
     - La seconde audition (D-73) pose les mêmes questions d'observation (distance, éclairage, photographie) à tous les témoins, y compris de contexte.
     - Certaines lignes du catalogue supposent le sexe ou la fonction du témoin (« Je suis la secrétaire » dit par un coiffeur).
 
+- **D-95. Chaque témoin criminel a sa nature : oculaire, auditif, de contexte.**
+  - **Classement.** Les 34 contextes du catalogue des crimes dont le témoin parle sont classés à la main (`CR.CRIMD.TEMOIN_TYPE`) : 18 oculaires, 7 auditifs, 9 de contexte.
+  - **Ce qui en dépend.**
+    - Seul le témoin oculaire, et s'il a parlé le jour des faits, a une seconde audition d'observation (heure corrigée, distance, éclairage, photographie) et une confrontation sur l'identification, avec leurs faits (`G_temoin_varie`, `G_temoin_nuit`, `G_temoin_hesite`). Avant, la secrétaire d'un cabinet ou une confidente était interrogée sur la distance et l'éclairage.
+    - La première audition est complétée selon la nature du témoin :
+      - oculaire : l'heure (celle que la seconde audition corrige parfois), sa place, la description de l'auteur (ou de ce qu'il portait, s'il le connaît, ce que ses propres mots disent), la durée, ce qu'il a fait, s'il le reconnaîtrait ;
+      - auditif : l'heure, d'où, s'il a vu quelqu'un ;
+      - de contexte : depuis quand il connaît les personnes, et qu'il n'a pas assisté aux faits.
+  - **L'identité du témoin suit ses propos**, sans nouveau tirage : secrétaire médicale (une femme), aide-soignant du foyer, préparateur en pharmacie, collègue de la victime, enfant majeur du couple.
+  - **Les phrases du moyen tiré du consentement** sont écrites pour la collègue de travail, la secrétaire du cabinet (à la sortie de la consultation, de jour) et le couple (les messages du lendemain). Avant, toutes recevaient la phrase d'une soirée (« À 2 h 14, elle m'a envoyé un message »).
+

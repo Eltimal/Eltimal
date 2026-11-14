@@ -127,6 +127,8 @@
         imposees: () => ["abus_autorite"],
         heures: [[9 * 60, 19 * 60]],
         preuves: { temoin: 0.7, expertise: 0.9, ecrits: 0.4 },
+        // consentement : ce que voit la secrétaire du cabinet, à la sortie de la consultation (D-95)
+        et: { consentement: () => ({ piece: "temoin", fort: "« Ce jour-là, la patiente est ressortie normalement ; elle a pris son rendez-vous suivant au secrétariat. »", faible: "« Ce jour-là, elle est sortie du cabinet en pleurs, sans prendre de rendez-vous. Elle m'a dit : “il n'avait pas le droit”. »" }) },
         enjeux: { geste_medical: 0.7, consentement: 0.2 },
         tirer: (r) => ({ autresPlaignantes: int(r, 0, 5), metier: pk(r, ["médecin généraliste", "kinésithérapeute", "gynécologue", "ostéopathe"]) }),
         mobiles: ["Une consultation pour des douleurs lombaires.", "Un suivi régulier depuis des années.", "Une consultation pour un certificat de sport."],
@@ -252,6 +254,8 @@
         imposees: () => ["abus_autorite"],
         heures: [[9 * 60, 20 * 60]],
         preuves: { temoin: 0.7, ecrits: 0.8 },
+        // consentement : ce que voit et sait une collègue, au bureau (D-95)
+        et: { consentement: () => ({ piece: "temoin", fort: "« Ils s'entendaient bien, ils déjeunaient souvent ensemble. Elle ne m'a jamais parlé de gestes déplacés. »", faible: "« Elle m'a montré le message qu'elle lui avait écrit après : “arrête de me toucher, je te l'ai déjà dit”. »" }) },
         enjeux: { consentement: 0.5 },
         mobiles: ["Un entretien d'évaluation.", "Une réunion tardive.", "Un séminaire d'entreprise."],
         resume: (X) => `${X.n(X.V)} dénonce des attouchements imposés par son supérieur, ${X.n(X.A)}, dans son bureau ; d'autres salariées témoignent.`,
@@ -306,6 +310,8 @@
         imposees: (r) => [ch(r, 0.3) ? "ex_conjoint" : "conjoint"],
         heures: [[20 * 60, 23 * 60 + 50]],
         preuves: { temoin: 0.5, ecrits: 0.7 },
+        // consentement : pas de témoin de soirée dans un couple ; les messages du lendemain (D-95)
+        et: { consentement: () => ({ piece: "ecrits", fort: "Les messages échangés le lendemain sont affectueux et portent sur la vie du couple ; aucune allusion aux faits.", faible: "Le lendemain, elle écrit : « je t'avais dit non, tu n'as pas arrêté »." }) },
         enjeux: { consentement: 0.6 },
         mobiles: ["Une dispute au moment de la séparation.", "Une soirée alcoolisée.", "{VIl} avait refusé de dormir dans la même chambre."],
         resume: (X) => `${X.n(X.V)} dénonce des attouchements imposés par son conjoint, ${X.n(X.A)}, malgré son refus.`,
