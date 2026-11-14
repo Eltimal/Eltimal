@@ -229,6 +229,11 @@ const ok = (c, m, k) => { if (c) return; fails++; const key = k || m; const n = 
           ok(h, `${cs.id} : appel formé sans audience devant la cour`, "2b:h");
           try { const a = def.audiences.vie_appel(api); ok(a.steps.length > 4, `${cs.id} : audience d'appel vide`, "2b:aud"); cs.vars.vieArgAppel = 2; def.on._vieApresAppel(api); fait.cour++; } catch (e) { ok(false, `${cs.id} : cour d'appel : ${e.stack.split("\n").slice(0, 3).join(" | ")}`, "2b:cour"); }
           ok(cs.status === "closed", `${cs.id} : dossier ouvert après l'arrêt`, "2b:clos");
+          // l'arrêt écrit : composition (art. 510), débats (513), saisine (509, 515), pourvoi (568)
+          const AR = CR.hasDoc(cs, "_arretAppel") && CR.SHARED_DOCS._arretAppel({ s, cs });
+          const TX = AR ? AR.paras.map((x) => x.join("")).join("\n") : "";
+          if (process.env.VOIR && fait.cour === 1) console.log(TX);
+          ok(/, et de deux conseillers \(art\. 510/.test(TX) && /art\. 513/.test(TX) && /art\. 515/.test(TX) && /dix jours francs .+ \(art\. 568/.test(TX) && /reçoit l'appel du ministère public/.test(TX), `${cs.id} : arrêt de la cour d'appel absent ou incomplet`, TX.slice(0, 600) || "2b:arret");
         } else ok(cs.status === "closed", `${cs.id} : jugement définitif mais dossier ouvert`, "2b:def");
         fait.appel++;
       }

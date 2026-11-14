@@ -168,7 +168,9 @@
     CR.PROC.event(api, `Jugement : ${d.coupable ? "culpabilité" + (qualif ? ` (${qualif.court || qualif.label})` : "") + (peine ? `, ${peine.texte.toLowerCase()}` : "") : "relaxe"}.`);
     cs.vars.debriefJugement = debrief;
     const disp = [];
-    if (d.coupable) disp.push(`Déclare ${o.prevenuNom} coupable${qualif ? " " + de(qualif.label) : ""} ; ${peine.texte.replace(/^./, (c) => c.toLowerCase())}`);
+    // « le condamne à » : la peine principale suit la déclaration de culpabilité
+    const condamne = (t) => { const x = t.replace(/^./, (c) => c.toLowerCase()); return /^\d/.test(x) ? "le condamne à " + x : /^réclusion criminelle à perpétuité/.test(x) ? "le condamne à la " + x : x; };
+    if (d.coupable) disp.push(`Déclare ${o.prevenuNom} coupable${qualif ? " " + de(qualif.label) : ""} ; ${condamne(peine.texte)}`);
     else disp.push(`Relaxe ${o.prevenuNom}`);
     if (cs.vars.b2Exclu && d.coupable) disp.push("dit que la condamnation ne sera pas mentionnée au bulletin n° 2 du casier judiciaire (art. 775-1 CPP)");
     if (civil && !civil.renvoi) disp.push(`condamne ${o.prevenuNom} à payer à ${o.pcNom} la somme de ${CR.money(civil.total + (civil.art475 || 0))}`);

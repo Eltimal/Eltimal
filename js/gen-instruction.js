@@ -433,8 +433,54 @@
       }
       return out;
     };
+    // Ordonnances du juge des libertés et de la détention (relues sur le texte intégral) : statue par ordonnance motivée
+    // (137-3) après un débat contradictoire — le ministère public, puis la personne et son avocat ; en audience publique pour
+    // un majeur, de cabinet pour un mineur (145) ; détention : unique moyen d'atteindre un objectif de l'article 144, tiré
+    // d'éléments précis du dossier, et insuffisance du contrôle judiciaire et de l'ARSE (137-3) ; obligations du contrôle
+    // judiciaire (138) ; durée (145-1, 145-2) ; copie intégrale contre émargement (137-3) ; appel dans les dix jours (186),
+    // référé-liberté si l'appel est formé au plus tard le lendemain (187-1). Le 7° (ordre public) n'existe pas en matière correctionnelle.
+    const ordoJLD = (xx, prolong) => {
+      const cs = xx.cs, dec = prolong ? cs.vars.prolongDecision : cs.vars.jldDecision;
+      const jF = /^Mme\b/.test(jld.nom), avocat = cs.vars.jldSansAvocat && !prolong ? "l'avocat de permanence" : `Me ${xx.s.player.prenom} ${xx.s.player.nom}`;
+      const visaQ = CR.TRIB && CR.TRIB.visa ? CR.TRIB.visa(q.court) : q.court;
+      const C144 = [];
+      if (V && !decede) C144.push(["2°", `empêcher une pression sur la victime et sur sa famille${t.T ? ", ainsi que sur le témoin dont les déclarations fondent les charges" : ""} : la victime est identifiée et ${nomA} connaît son entourage`]);
+      else if (t.T) C144.push(["2°", "empêcher une pression sur le témoin dont les déclarations fondent les charges, qui n'a pas encore été confronté"]);
+      if (t.co) C144.push(["3°", "empêcher une concertation frauduleuse avec les coauteurs ou complices, qui n'ont pas tous été entendus"]);
+      if (!A.heberg || !A.emploi) C144.push(["5°", `garantir le maintien de ${nomA} à la disposition de la justice : ${!A.heberg ? "il n'est justifié d'aucun domicile stable" : "il n'est justifié d'aucune activité régulière"}`]);
+      if (A.casier) C144.push(["6°", `prévenir le renouvellement de l'infraction : ${nomA} a déjà été condamné${e(A)}`]);
+      if (crime) C144.push(["7°", `mettre fin au trouble exceptionnel et persistant à l'ordre public provoqué par la gravité des faits, ${q.label}, et les circonstances de leur commission`]);
+      if (!C144.length) C144.push(["1°", "conserver les preuves et les indices matériels nécessaires à la manifestation de la vérité, les expertises n'étant pas déposées"]);
+      const P = [];
+      P.push([`Nous, ${jld.nom}, juge des libertés et de la détention${t.mineur ? " chargé" + (jF ? "e" : "") + " spécialement des affaires concernant les mineurs" : ""} au tribunal judiciaire,`]);
+      P.push([`Vu les articles 137 à 137-4, 138, 143-1 à 145${prolong ? (crime ? ", 145-2" : ", 145-1") : ""} et 186 du code de procédure pénale${t.mineur ? ", et les dispositions du code de la justice pénale des mineurs" : ""} ;`]);
+      P.push([`Vu l'information suivie au cabinet de ${jiNom}, juge d'instruction, contre ${nomA}, mis${e(A)} en examen le ${D(t.d.mex)} du chef de ${q.label}, faits prévus et réprimés par ${visaQ} ;`]);
+      P.push([prolong ? `Vu l'ordonnance de placement en détention provisoire du ${D(cs.vars.jldDay != null ? cs.vars.jldDay : t.d.mex)}, l'ordonnance du juge d'instruction nous saisissant aux fins de prolongation et les réquisitions du procureur de la République ;` : `Vu l'ordonnance du juge d'instruction nous saisissant aux fins de placement en détention provisoire et les réquisitions du procureur de la République ;`]);
+      P.push([`Après débat contradictoire tenu ${t.mineur ? "en audience de cabinet, la personne mise en examen étant mineure" : "en audience publique"} le ${D(prolong ? xx.s.day : cs.vars.jldDay != null ? cs.vars.jldDay : xx.s.day)}${prolong ? ", la personne détenue ayant été avisée et l'avocat convoqué (art. 114 et 145-1 ou 145-2)" : ""}${cs.vars.debatDiffere && !prolong ? ", à l'issue du délai accordé pour préparer la défense (art. 145)" : ""}, au cours duquel nous avons entendu le ministère public en ses réquisitions, puis ${nomA} en ses observations et ${avocat} en sa plaidoirie (art. 145) ;`]);
+      if (dec === "dp") {
+        P.push(["Attendu qu'il résulte des éléments précis et circonstanciés de la procédure que la détention provisoire constitue l'unique moyen de parvenir aux objectifs suivants (art. 144) :"]);
+        for (const [n, x] of C144) P.push([`— ${x} (${n}) ;`]);
+        const insuff = [];
+        if (C144.some(([n]) => n === "2°" || n === "3°")) insuff.push("l'interdiction d'entrer en contact avec les personnes désignées (art. 138, 9°) ne peut être contrôlée à ce stade de l'information");
+        if (C144.some(([n]) => n === "5°")) insuff.push("l'obligation de résider et l'assignation à résidence supposent un domicile et des garanties de représentation dont il n'est pas justifié");
+        if (C144.some(([n]) => n === "6°" || n === "7°")) insuff.push("les obligations du contrôle judiciaire et de l'assignation à résidence avec surveillance électronique ne répondent pas à la gravité des faits et au risque de renouvellement");
+        if (!insuff.length) insuff.push("aucune obligation du contrôle judiciaire ni de l'assignation à résidence avec surveillance électronique ne garantit la conservation des preuves");
+        P.push([`Attendu que ces objectifs ne sauraient être atteints en cas de placement sous contrôle judiciaire ou d'assignation à résidence avec surveillance électronique : ${insuff.join(" ; ")} (art. 137-3) ;`]);
+        P.push(["PAR CES MOTIFS"]);
+        P.push([prolong ? `Prolongeons la détention provisoire de ${nomA} pour une durée de ${CAT.dpMax(q, t.ageFaits, t.bo).pas >= 180 ? "six mois" : "quatre mois"} (art. ${crime ? "145-2" : "145-1"}${t.mineur ? " et dispositions du code de la justice pénale des mineurs" : ""}).` : `Ordonnons le placement en détention provisoire de ${nomA} ; disons qu'${GEN2.PR.il(A)} sera conduit${e(A)} ${(() => { const L = def.proc && def.proc.etab && CR.PLACES && CR.PLACES[def.proc.etab]; return L ? (/^Maison/.test(L.nom) ? "à la " : "au ") + L.nom.charAt(0).toLowerCase() + L.nom.slice(1) : "à la maison d'arrêt"; })()} ; la détention ne pourra excéder ${t.mineur ? "six mois" : crime ? "un an" : "quatre mois"}, sauf prolongation (art. ${crime ? "145-2" : "145-1"}).`]);
+      } else {
+        P.push([`Attendu que ${nomA} justifie ${A.heberg ? `d'un hébergement, ${A.adresse}` : "d'un hébergement chez un proche"}${A.emploi ? " et d'une activité" : ""} ; que les objectifs de l'article 144 peuvent être atteints par les obligations ci-dessous, sans détention provisoire (art. 137) ;`]);
+        P.push(["PAR CES MOTIFS"]);
+        P.push([prolong ? `Disons n'y avoir lieu à prolongation de la détention provisoire ; ordonnons la mise en liberté de ${nomA}` : `Disons n'y avoir lieu à placement en détention provisoire ;`]);
+        P.push([dec === "arse" ? `Plaçons ${nomA} sous assignation à résidence avec surveillance électronique (art. 142-5) à ${A.heberg ? A.adresse : "l'adresse déclarée"}, avec interdiction d'entrer en contact avec ${V ? "la victime et les témoins" : "les autres personnes mises en cause"}.` : `Plaçons ${nomA} sous contrôle judiciaire, avec les obligations suivantes (art. 138) : ne s'absenter de son domicile, ${A.heberg ? A.adresse : "à l'adresse déclarée"}, qu'aux conditions fixées (2°) ; se présenter une fois par semaine au commissariat de son domicile (5°) ; s'abstenir de recevoir ou de rencontrer ${V ? "la victime et les témoins" : "les autres personnes mises en cause"} et d'entrer en relation avec eux de quelque façon que ce soit (9°).`]);
+      }
+      P.push([`Notifions la présente ordonnance à ${nomA}, qui en reçoit copie intégrale contre émargement au dossier de la procédure (art. 137-3).`]);
+      P.push([`Avis est donné que la présente ordonnance peut être frappée d'appel devant la chambre de l'instruction dans les dix jours de sa notification (art. 186)${dec === "dp" && !prolong ? ` ; si l'appel est formé au plus tard le jour suivant, l'examen immédiat peut en être demandé au président de la chambre de l'instruction, qui statue au plus tard le troisième jour ouvrable (art. 187-1)` : ""}.`]);
+      P.push([`Fait en notre cabinet, le ${D(prolong ? xx.s.day : cs.vars.jldDay != null ? cs.vars.jldDay : xx.s.day)}. ${jF ? "La juge" : "Le juge"} des libertés et de la détention ; le greffier.`]);
+      const titre = prolong ? (dec === "dp" ? "Ordonnance de prolongation de la détention provisoire" : "Ordonnance de mise en liberté sous contrôle judiciaire") : dec === "dp" ? "Ordonnance de placement en détention provisoire" : dec === "arse" ? "Ordonnance de placement sous assignation à résidence avec surveillance électronique" : "Ordonnance de placement sous contrôle judiciaire";
+      return { title: titre, kind: "greffe", entete: [`${jld.nom}, juge des libertés et de la détention`, "Tribunal judiciaire", `Information n° ${t.ninfo}`], paras: P };
+    };
     const flowDocs = {
-      ordo_dp_live: (xx) => ({ title: xx.cs.vars.jldDecision === "dp" ? "Ordonnance de placement en détention provisoire" : "Ordonnance de placement sous contrôle judiciaire", kind: "greffe", entete: [`${jld.nom}, juge des libertés et de la détention`, `Information n° ${t.ninfo}`], paras: [[xx.cs.vars.jldDecision === "dp" ? `Ordonnons le placement en détention provisoire de ${nomA} (art. 144 et 145) ; la détention ne pourra excéder ${t.mineur ? "six mois" : crime ? "un an" : "quatre mois"}, sauf prolongation.` : `Disons n'y avoir lieu à détention provisoire ; plaçons ${nomA} sous ${xx.cs.vars.jldDecision === "arse" ? "assignation à résidence avec surveillance électronique" : "contrôle judiciaire"} : obligation de résider ${A.adresse}, interdiction d'entrer en contact avec ${V ? "la victime et les témoins" : "les autres mis en examen"}, pointage hebdomadaire au commissariat.`]] }),
       pv_ipc_live: (xx) => ({ title: "Procès-verbal d'interrogatoire de première comparution", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Le ${D(t.d.mex)}, comparaît ${nomA}, assisté${e(A)} de Me ${xx.s.player.prenom} ${xx.s.player.nom}.`], [`Faits notifiés : ${q.label}. Droit de se taire rappelé.`], [{ t: xx.cs.vars.ipcChoix === "silence" ? "La personne déclare : « Je ne souhaite pas m'exprimer aujourd'hui. »" : `La personne déclare : « ${N.version[t.stance]} »`, f: "X_ipc" }], [xx.cs.vars.statut === "ta" ? `Disons que ${nomA} sera entendu${e(A)} en qualité de témoin assisté (art. 113-1).` : `Mettons ${nomA} en examen du chef de ${q.label} (art. 80-1).`]] }),
       pv_interro: (xx) => ({ title: "Procès-verbal d'interrogatoire", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Interrogatoire de ${nomA}${D0 ? `, assisté${e(A)} de Me ${xx.s.player.nom}` : ""}.`], ...(N.interro.length ? N.interro : [{ q: "Maintenez-vous vos déclarations ?", a: { nie: "Oui. Je n'ai rien fait.", minimise: "Oui, pour l'essentiel.", reconnait: "Oui. Je reconnais les faits." } }]).map((qq) => [`Question : ${qq.q} — Réponse : ${qq.a[t.stance]}`]), ...CR.CONF ? interroJoue(xx) : []] }),
       pv_confront: (xx) => CR.CONF.pv(xx.cs, { jiNom, ninfo: t.ninfo, nomA, eA: e(A), avocat: `${xx.s.player.prenom} ${xx.s.player.nom}`, nomT: nom(t.T), premiere: (CR.CRIMD && CR.CRIMD.temoin(t, N) || {}).premiere, version: N.version[t.stance] }),
@@ -455,7 +501,8 @@
         ].filter(Boolean) };
       },
       arret_chins: (xx) => ({ title: "Arrêt de la chambre de l'instruction", kind: "greffe", entete: [`${TJ.ca} · chambre de l'instruction`, `Information n° ${t.ninfo}`], paras: (xx.cs.vars.arretChins || ["La chambre de l'instruction confirme l'ordonnance entreprise."]).map((l) => [l]) }),
-      ordo_prolong: (xx) => ({ title: "Ordonnance sur la prolongation de la détention provisoire", kind: "greffe", entete: [`${jld.nom}, juge des libertés et de la détention`, `Information n° ${t.ninfo}`], paras: [[xx.cs.vars.prolongDecision === "dp" ? `Prolongeons la détention provisoire de ${nomA} pour une durée de ${CAT.dpMax(q, t.ageFaits, t.bo).pas >= 180 ? "six mois" : "quatre mois"} (art. 145-2${t.mineur ? " et dispositions du CJPM" : ""}).` : `Disons n'y avoir lieu à prolongation ; ordonnons la mise en liberté de ${nomA} sous ${xx.cs.vars.prolongDecision === "arse" ? "assignation à résidence avec surveillance électronique" : "contrôle judiciaire"}.`]] }),
+      ordo_dp_live: (xx) => ordoJLD(xx, false),
+      ordo_prolong: (xx) => ordoJLD(xx, true),
       verdict: (xx) => ({ title: xx.cs.vars.verdictTitre || "Décision", kind: "greffe", entete: [titreJur(xx.cs.vars.jurProces || t.jur), "Décision rendue en premier ressort"], paras: [[{ t: xx.cs.vars.verdictTexte || "Décision rendue.", f: "K_verdict" }], ["Appel possible dans les dix jours du prononcé."]] }),
     };
     const flowTitles = { ordo_dp_live: "Ordonnance du juge des libertés", pv_ipc_live: "Interrogatoire de première comparution", pv_interro: "Interrogatoire au fond", pv_confront: "Confrontation", contre_expertise: "Contre-expertise", reconstitution: "Reconstitution", avis175: "Avis de fin d'information", ordo_reglement: "Ordonnance de règlement", arret_chins: "Arrêt de la chambre de l'instruction", ordo_prolong: "Ordonnance sur la prolongation", verdict: "La décision" };
@@ -814,7 +861,7 @@
       } else if (cs.proc.detention.statut !== "cj") CR.PROC.detention(api, "cj", {});
       if (cs.vars.ipcFait && cs.vars.statut === "mex") api.doc("personnalite", docTitles.personnalite);
     };
-    O._jldSansVous = function (api) { api.run("jldDecider", { played: new Set() }); api.run("apresJLD", {}); };
+    O._jldSansVous = function (api) { api.cs.vars.jldSansAvocat = true; api.run("jldDecider", { played: new Set() }); api.run("apresJLD", {}); };
     O.jldDecider = function (api, { played }) {
       const { s, cs } = api;
       const g = ["K_attest", "K_promesse", "G_heberg", "G_emploi"].filter((f0) => CR.hasFact(cs, f0) || (played && played.has(f0))).length * 0.6 + (played && played.has("arg:garanties") ? 0.6 : 0) + (played && played.has("arg:cj") ? 0.4 : 0);
@@ -1146,10 +1193,10 @@
       const requis = Object.assign({}, cs.vars.requis && cs.vars.requis.ferme ? cs.vars.requis : req, { complementaires: req.complementaires });
       const perso = ["K_attest", "K_promesse", "G_heberg", "G_emploi"].filter((f0) => CR.hasFact(cs, f0) || played.has(f0)).length * 0.6 + (st && st.dernierMot === "regrets" ? 1 : 0) + (t.stance === "reconnait" ? 1 : 0) + (played.has("arg:personnalite") ? 0.5 : 0);
       const dec = PEN.juger(api, {
-        st: { played, angle: st && st.angle, dernierMot: st && st.dernierMot }, juridiction: jur,
+        st: { played, angle: st && st.angle, dernierMot: st && st.dernierMot }, juridiction: jur, jurLabel: titreJur(jur), enAppel, mineur: !!t.mineur, detenu: cs.proc.detention.statut === "dp",
         titre: { tc: "Jugement correctionnel", tpe: "Jugement du tribunal pour enfants" }[jur] || (enAppel ? "Arrêt de la cour d'assises statuant en appel" : `Arrêt — ${titreJur(jur)}`),
         prevenuNom: nomA, pcNom: t.camp === "pc" ? nom(C) : P ? nom(P) : V ? nomV : "", pcF: (t.camp === "pc" ? C : P || V || {}).g === "f",
-        spec, qualif: () => ({ id: qq.id, label: qq.label, court: qq.court, encourue: { prison: encAlt, amende: qq.amende || 0 }, favorable: obtient, requis: Object.assign({}, requis, { ferme: Math.min(requis.ferme || 0, encAlt) }), motif: obtient ? `La cour requalifie : ${qq.label} (${qq.court}). ${CAT.ENJEUX[requalifEnjeu] ? CAT.ENJEUX[requalifEnjeu].label + "." : ""}` : altere && qq.nature === "crime" ? "Le discernement de l'accusé était altéré au moment des faits : la peine encourue est réduite du tiers (art. 122-1, al. 2)." : "Les débats ont établi les faits et l'intention." }),
+        spec, qualif: () => ({ id: qq.id, label: qq.label, court: qq.court, aggs: qq.aggs || [], recidive: !!(qq.recid || /récidive légale/.test(qq.label)), encourue: { prison: encAlt, amende: qq.amende || 0 }, favorable: obtient, requis: Object.assign({}, requis, { ferme: Math.min(requis.ferme || 0, encAlt) }), motif: obtient ? `La cour requalifie : ${qq.label} (${qq.court}). ${CAT.ENJEUX[requalifEnjeu] ? CAT.ENJEUX[requalifEnjeu].label + "." : ""}` : altere && qq.nature === "crime" ? "Le discernement de l'accusé était altéré au moment des faits : la peine encourue est réduite du tiers (art. 122-1, al. 2)." : "Les débats ont établi les faits et l'intention." }),
         personnalite: Math.round(perso), detenu: cs.proc.detention.statut === "dp",
         civil: t.camp === "pc" ? { postes: postes.filter((po) => ((cs.vars.chiffrage && cs.vars.chiffrage.postes) || postes.map((z) => z.id)).includes(po.id)), art475: decede ? 3000 : 1800 } : (V ? { postes: postes.map((po) => Object.assign({}, po, { justif: null })), art475: 1500 } : null),
       });

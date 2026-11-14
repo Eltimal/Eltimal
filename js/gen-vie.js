@@ -212,7 +212,7 @@
       };
     }
     on._vieApresAppel = (api) => VIE.apresAppel(api, t);
-    on._vieAppelSansVous = (api) => { CR.erreur(api.s, api.cs, { id: "vie_appel_absent", texte: "Vous n'étiez pas à l'audience de la cour d'appel.", sanction: "La cour a statué sur l'appel du parquet sans entendre la défense.", regul: "Aucune." }); api.cs.vars.vieArret = "infirme"; VIE.apresAppel(api, t); };
+    on._vieAppelSansVous = (api) => { api.cs.vars.vieAppelAbsent = true; CR.erreur(api.s, api.cs, { id: "vie_appel_absent", texte: "Vous n'étiez pas à l'audience de la cour d'appel.", sanction: "La cour a statué sur l'appel du parquet sans entendre la défense.", regul: "Aucune." }); api.cs.vars.vieArret = "infirme"; VIE.apresAppel(api, t); };
     on._vieApresCRPC = (api) => { const P0 = api.cs.vars.vieProp; CR.closeCase(api.s, api.cs, { type: "condamnation", detail: `CRPC homologuée : ${P0 ? P0.texte : "peine acceptée"}` }); };
     on._vieCRPCSansVous = (api) => { CR.erreur(api.s, api.cs, { id: "vie_crpc_absent", texte: "Vous n'étiez pas à l'audience d'homologation.", sanction: "L'avocat est obligatoire en CRPC (art. 495-8) : l'homologation a été reportée, puis refusée.", regul: "Aucune." }); CR.closeCase(api.s, api.cs, { type: "condamnation", detail: "jugé après l'échec de la CRPC" }); };
 
@@ -455,7 +455,7 @@
         const pr = CR.profil(t.parquet) || {};
         const p = Math.min(0.9, 0.55 + (pr.appel || 0.2));
         if (R.chance(s, p)) {
-          A0.etat = "appel";
+          A0.etat = "appel"; A0.appelDay = s.day;
           let day = CR.rollForward(s.day + R.int(s, 35, 70));
           while (!CR.isBusinessDay(day)) day++;
           api.mail({ from: TJ.parquet, subject: `Appel du ministère public — ${CR.clientName(cs)}`, kind: "greffe", important: true, body: [[`Le procureur de la République a interjeté appel du jugement du ${D(A0.day)} (art. 497 CPP). L'affaire sera appelée devant la chambre des appels correctionnels de la ${TJ.ca.replace(/^Cour/, "cour")} le ${D(day)}.`]] });
@@ -633,8 +633,51 @@
       } },
     ] };
   };
+  // L'arrêt écrit (relu sur le texte intégral) : chambre composée d'un président de chambre et de deux conseillers (510),
+  // rapport d'un conseiller et interrogatoire du prévenu, l'appelant expose ses motifs, le prévenu ou son avocat parlent les
+  // derniers (513) ; dévolution par l'acte d'appel et la qualité de l'appelant (509) ; sur l'appel du ministère public, la
+  // cour confirme ou infirme dans un sens favorable ou défavorable au prévenu (515) ; pourvoi dans les dix jours francs (568).
+  VIE.arret = function (api, t) {
+    const { s, cs } = api;
+    const A0 = cs.vars.vieAppel || {}, TJ = M.lieuxDe(t).TJ, C = t[t.client] || t.A, G = PR.gram(C);
+    const dec = (A0.res && A0.res.decision) || {};
+    const pres = (CR.acteur(cs.actors && cs.actors.president) || {}).nom || "";
+    const fem = /^Mme\b/.test(pres), confirme = cs.vars.vieArret === "confirme";
+    const nomC = `${C.prenom} ${C.nom}`;
+    cs.vars.arretAppel = {
+      day: s.day, ca: TJ.ca, tc: TJ.tc || "tribunal correctionnel", jug: A0.day, appel: A0.appelDay, confirme, nom: nomC, e: G.e || "",
+      pres: pres ? `${pres}, ${fem ? "présidente" : "président"} de chambre` : "son président de chambre",
+      premier: dec.coupable ? `déclaré ${nomC} coupable et prononcé : ${(dec.peine && dec.peine.texte ? dec.peine.texte : "une peine").replace(/^./, (c) => c.toLowerCase())}` : `relaxé ${nomC}`,
+      dispositif: cs.vars.vieArretTexte || (confirme ? "La cour confirme le jugement en toutes ses dispositions." : "La cour infirme le jugement."),
+      persos: ["G_attest", "G_attest_emploi", "G_heberg", "G_emploi", "G_indemn"].filter((f) => CR.hasFact(cs, f)).length,
+      absent: !!cs.vars.vieAppelAbsent,
+    };
+    CR.fileDoc(s, cs, { key: "_arretAppel", title: `Arrêt de la chambre des appels correctionnels du ${D(s.day)}`, dir: "in" });
+  };
+  CR.SHARED_DOCS = CR.SHARED_DOCS || {};
+  CR.SHARED_DOCS._arretAppel = function (x) {
+    const R0 = x.cs.vars.arretAppel;
+    if (!R0) return { title: "Arrêt", paras: [["(décision indisponible)"]] };
+    const P = [], p = (t0) => P.push([t0]), e = R0.e;
+    p(`À l'audience publique du ${D(R0.day).toUpperCase()}, la chambre des appels correctionnels de la ${R0.ca.replace(/^Cour/, "cour")}, composée de ${R0.pres}, et de deux conseillers (art. 510 du code de procédure pénale), en présence de l'avocat général, assistée du greffier, a rendu l'arrêt suivant.`);
+    p(`Sur l'appel interjeté${R0.appel != null ? ` le ${D(R0.appel)}` : ""} par le procureur de la République contre le jugement rendu le ${D(R0.jug)} par le ${R0.tc.replace(/^Tribunal/, "tribunal")}, qui a ${R0.premier}.`);
+    p(`ENTRE : le ministère public, appelant. ET : ${R0.nom}, prévenu${e}, intimé${e}, comparant${e}${R0.absent ? "" : ", assisté" + e + " de son avocat"}.`);
+    p(`DÉBATS. Un conseiller a fait le rapport ; ${R0.nom} a été interrogé${e} (art. 513). Le ministère public, appelant, a exposé les motifs de son appel et pris ses réquisitions ; ${R0.absent ? "l'avocat du prévenu, régulièrement avisé, n'a pas comparu" : "l'avocat du prévenu a plaidé"}, ${R0.nom} ayant eu la parole en dernier (art. 513, dernier alinéa).`);
+    p("MOTIFS");
+    p("Sur la recevabilité. L'appel du ministère public, interjeté dans les formes et délais de la loi (art. 498 et 502), est recevable.");
+    p("Sur l'étendue de la saisine. La cour est saisie dans les limites de l'acte d'appel et de la qualité de l'appelant (art. 509). Sur l'appel du ministère public, elle peut confirmer le jugement ou l'infirmer, en tout ou en partie, dans un sens favorable ou défavorable au prévenu (art. 515).");
+    p(R0.confirme
+      ? `Sur le fond. Les premiers juges ont fait une exacte appréciation des faits et de la personnalité de ${R0.nom}${R0.persos ? ", dont les garanties d'insertion produites devant la cour confirment la situation" : ""}. Le ministère public n'apporte devant la cour aucun élément nouveau de nature à justifier une aggravation. Le jugement sera confirmé (art. 132-1 du code pénal).`
+      : `Sur le fond. Au regard de la gravité des faits et de la personnalité de ${R0.nom} telles qu'elles résultent du dossier et des débats, ${/relax/.test(R0.premier) ? "les éléments de la procédure établissent l'infraction : la relaxe ne peut être maintenue" : "la peine prononcée par les premiers juges n'y répond pas"}${R0.absent ? " ; aucune observation n'a été présentée pour la défense" : ""} (art. 132-1 du code pénal). Le jugement sera infirmé.`);
+    p("PAR CES MOTIFS");
+    p("La cour, statuant publiquement et contradictoirement : reçoit l'appel du ministère public ; " + R0.dispositif.replace(/^La cour /, "").replace(/^./, (c) => c.toLowerCase()));
+    p("Voies de recours : pourvoi en cassation dans les dix jours francs qui suivent le prononcé de l'arrêt (art. 568 du code de procédure pénale).");
+    p(`Et le présent arrêt a été signé par ${/présidente/.test(R0.pres) ? "la présidente" : "le président"} et le greffier.`);
+    return { title: `Arrêt de la chambre des appels correctionnels — ${D(R0.day)}`, kind: "greffe", entete: [`${R0.ca} · chambre des appels correctionnels`, `Arrêt du ${D(R0.day)}`, "Copie délivrée à l'avocat"], paras: P };
+  };
   VIE.apresAppel = function (api, t) {
     const { s, cs } = api;
+    try { VIE.arret(api, t); } catch (err) { console.error(err); }
     const A0 = cs.vars.vieAppel || {};
     const base = CR.PEN.issue(api, (A0.res && A0.res.decision) || {});
     if (cs.vars.vieArret === "confirme") CR.closeCase(s, cs, Object.assign({}, base, { detail: `${base.detail ? base.detail + " — " : ""}confirmé en appel` }));

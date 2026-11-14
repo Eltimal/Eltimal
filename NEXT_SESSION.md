@@ -32,6 +32,10 @@ Fait : l'aménagement de la peine devant le juge de l'application des peines (`a
 
 Texte intégral fait (D-87, `tintegral`) : `js/codes/*.js`, générés par `node dev/tools/codes.js <dossier des XML>` (téléchargement en tête du script, codes.droit.org). Après une nouvelle version, relancer le script, puis `tbiblio`, `tlivre`, `tintegral` et `CHROME=… node tools/livremesure.js` (0 débordement attendu ; régler `CR.LIVRE_METRIQUES` sinon). Reste la jurisprudence sous les articles (D-83) : bloquée sans l'accord de Kevin pour lire echanges.dila.gouv.fr. Réduction à faire (D-89) : publier `js/codes/` dans un paquet de mise à jour à part, comme `js/sons/`, en gardant les codes dans le paquet léger pour les enveloppes actuelles.
 
+## Décisions écrites
+
+Fait le 14 novembre (D-90, `tarrets`, `tjld`, `tp3`) : arrêts criminels de toutes les formations, jugement du tribunal pour enfants, ordonnances du juge des libertés, arrêt de la chambre des appels correctionnels. Restent l'arrêt de la chambre de l'instruction (`arret_chins`) et les ordonnances de règlement (`ordo_reglement`), dans `gen-instruction.js`.
+
 ## Lot 10 — abandonné
 
 Le 14 novembre 2026, à la demande de Kevin : les affaires écrites et le tutoriel sont retirés du jeu (D-84). Toutes les affaires viennent du générateur ; ne rien réintroduire qui en dépende.

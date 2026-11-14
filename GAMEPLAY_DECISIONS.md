@@ -310,3 +310,31 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
   - Quand une réduction est possible sans rien retirer au jeu, elle se fait : format plus compact, compression, paquet publié à part, chargement à la demande.
   - Appliqué au texte intégral (D-87) : les quatre codes restent en entier, toutes parties comprises. Réduction à faire : publier `js/codes/` dans un paquet de mise à jour à part, comme `js/sons/` (`electron/paquet-jeu.js`, `electron/maj.js`). Elle ne profitera qu'à une enveloppe Mac reconstruite ; les enveloppes actuelles doivent continuer de recevoir les codes dans le paquet léger.
 
+## Décisions écrites au format réel (14 novembre 2026)
+
+- **D-90. Les arrêts et les ordonnances suivent la trame des vraies décisions.** Règles relues sur le texte intégral.
+  - **Cour d'assises.** La cour comprend le président et deux assesseurs, et le jury : six jurés en premier ressort, neuf en appel (art. 240, 243, 248, 296).
+    - Une question sur le fait principal, une question par circonstance aggravante (art. 349). La récidive n'est pas soumise au vote.
+    - Réponse « oui » à la majorité de sept voix au moins, huit en appel (art. 359). Peine à la majorité absolue, le maximum à la majorité qualifiée (art. 362).
+    - Feuille de questions signée par la présidence et le premier juré (art. 364). Feuille de motivation : les principaux éléments à charge, puis ceux du choix de la peine (art. 365-1).
+    - Lecture des textes de loi (art. 366). Action civile jugée sans le jury (art. 371).
+  - **Autres formations criminelles.**
+    - Cour spécialement composée : quatre assesseurs, six en appel, sans jury (art. 698-6).
+    - Cour criminelle départementale : président et quatre assesseurs, sans jury, décisions à la majorité (art. 380-17, 380-19). Son appel va devant la cour d'assises (art. 380-21).
+    - Cour d'assises des mineurs : assesseurs juges des enfants (CJPM, art. L231-10, L531-2-1), publicité restreinte (L513-2).
+  - **Voies de recours.** Appel dans les dix jours (art. 380-9), déclaré au greffe (380-12), devant une cour désignée par le premier président (380-1, 380-14). Après un acquittement, seuls le procureur général et la partie civile, pour ses intérêts civils, font appel (380-2). En appel : pourvoi dans les dix jours francs (art. 568).
+  - **Tribunal pour enfants.** Juge des enfants et deux assesseurs (CJPM, art. L231-4) ; débats à publicité restreinte, jugement rendu en audience publique (L513-2) ; appel devant la chambre spéciale des mineurs (L531-1).
+  - **Ordonnances du juge des libertés et de la détention.**
+    - Visas. Débat contradictoire : le ministère public, puis la personne et son avocat ; en audience publique pour un majeur, de cabinet pour un mineur (art. 145).
+    - Objectifs de l'article 144 tirés d'éléments du dossier : pression sur la victime ou le témoin, concertation, représentation, renouvellement, ordre public. L'ordre public n'est retenu qu'en matière criminelle (144, 7°).
+    - Insuffisance du contrôle judiciaire et du bracelet électronique (art. 137-3). Obligations du contrôle judiciaire (art. 138 : 2°, 5°, 9°). Durée (145-1, 145-2).
+    - Copie intégrale contre émargement (137-3). Appel dans les dix jours (186). Examen immédiat de l'appel s'il est formé au plus tard le lendemain (187-1).
+  - **Chambre des appels correctionnels.** Président de chambre et deux conseillers (art. 510). Rapport, interrogatoire, le prévenu parle le dernier (513). Saisine par l'acte d'appel et la qualité de l'appelant (509). Sur l'appel du parquet, la cour confirme ou infirme dans les deux sens (515). Pourvoi dans les dix jours francs (568).
+  - **Rédaction commune.**
+    - Visas en toutes lettres (« les articles 221-1 et 221-4 du code pénal »).
+    - Présidente ou président selon la personne.
+    - « Le condamne à » au dispositif.
+    - La victime n'est nommée partie civile que si elle s'est constituée.
+    - Motifs sans « toutefois » quand la défense n'a rien soutenu, chaque preuve introduite par « de ».
+  - **Restent courts** : l'arrêt de la chambre de l'instruction et les ordonnances de règlement.
+

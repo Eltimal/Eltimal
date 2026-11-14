@@ -140,7 +140,7 @@
       let txt = "";
       if (el.ecartees.length) txt += `Les actes annulés, ${liste(el.ecartees.map((k) => LIB[k] || k))}, sont retirés du dossier et ne peuvent fonder la décision. `;
       if (moyens.length) txt += `La défense soutient ${liste(moyens)}. `;
-      if (el.etabli) txt += el.preuves.length ? `Il résulte toutefois ${el.id === "intention" ? "des circonstances mêmes de l'action, et de" : "de"} ${liste(el.preuves.map(cite))}, ${moyens.length ? "que cet argument ne suffit pas à faire naître un doute" : "que cet élément est établi"}${el.id === "auteur" ? ` à l'égard de ${nom}` : ""}.` : "Cet élément résulte des circonstances de l'action.";
+      if (el.etabli) txt += el.preuves.length ? `Il résulte${moyens.length ? " toutefois" : ""} ${el.id === "intention" ? "des circonstances mêmes de l'action et " : ""}${liste(el.preuves.map((k) => "de " + cite(k)))}, ${moyens.length ? "que cet argument ne suffit pas à faire naître un doute" : "que cet élément est établi"}${el.id === "auteur" ? ` à l'égard de ${nom}` : ""}.` : "Cet élément résulte des circonstances de l'action.";
       else txt += el.preuves.length ? `Or ${liste(el.preuves.map(cite))} ne ${el.preuves.length > 1 ? "suffisent" : "suffit"} pas, à ${el.preuves.length > 1 ? "eux" : "lui"} seul${el.preuves.length > 1 ? "s" : ""}, à l'établir avec la certitude qu'exige la loi pénale ; le doute doit profiter au prévenu.` : "Aucune pièce régulière du dossier ne permet de l'établir ; le doute doit profiter au prévenu.";
       out.push({ titre, t: txt.trim(), etabli: el.etabli });
       if (!el.etabli) break; // le tribunal s'arrête au premier élément manquant
@@ -190,11 +190,27 @@
 
   // ------------------------------------------------------------------ Le jugement écrit (trame : dev/ref/trames-pieces.md)
   const MAJ = (x) => String(x || "").toUpperCase();
+  // « art. 221-1 et 221-4 CP » → « les articles 221-1 et 221-4 du code pénal »
+  const CODES_NOM = { CP: "du code pénal", CPP: "du code de procédure pénale", "C. route": "du code de la route", CR: "du code de la route", CSP: "du code de la santé publique", CJPM: "du code de la justice pénale des mineurs", "C. com.": "du code de commerce", CGI: "du code général des impôts", CSI: "du code de la sécurité intérieure" };
+  T.visa = function (court) {
+    const x = String(court || "").trim();
+    // « art. 221-1 et 221-4 CP et 132-8 CP » : un seul code ; « art. 224-1, al. 3 CP »
+    const m = /^art\.\s+(.+?)\s+(CP|CPP|C\. route|CSP|CJPM|C\. com\.|CGI|CSI)((?:\s+et\s+[\d-]+(?:,\s*al\.\s*\d+)?\s+\2)*)$/.exec(x);
+    if (!m) return x;
+    const nums = (m[1] + (m[3] ? m[3].split(new RegExp("\\s+" + m[2].replace(/\./g, "\\.") + "(?=\\s|$)")).join("") : "")).replace(/\s+/g, " ").trim();
+    const items = nums.split(/\s+et\s+/).map((n) => n.replace(/,\s*al\.\s*(\d+)/, ", alinéa $1"));
+    const liste0 = items.length > 1 ? items.slice(0, -1).join(", ") + " et " + items[items.length - 1] : items[0];
+    return `${items.length > 1 ? "les articles" : "l'article"} ${liste0} ${CODES_NOM[m[2]]}`;
+  };
+  const de = (x) => (/^[aeiouyéèêàâîôûœ]/i.test(x) || /^h(?!arc|ar|ai|on|au)/i.test(x) ? "d'" : "de ") + x;
+  T.presidence = (nom) => (nom ? `${nom}, ${/^Mme\b/.test(nom) ? "présidente" : "président"}` : null);
+  // la victime n'est partie civile que constituée
+  T.pcConstituee = (J) => !!J.pc && !((J.dec && J.dec.questions) || []).some((q) => /civile/.test(q.q) && /Aucune constitution/.test(q.r || ""));
   T.notifier = function (api, o, dec, M) {
     const { s, cs } = api;
     const t = genT(s, cs);
     const jour = CR.addBusinessDays(s.day, 1 + (CR.hash(cs.id + ":notif") % 3));
-    cs.vars.jugementEcrit = { day: s.day, min: s.min, titre: o.titre || "Jugement correctionnel", juridiction: o.juridiction || "tc", motifs: M, dec, prevenu: o.prevenuNom || "", pc: o.pcNom || "", qualif: dec.qualif ? { label: dec.qualif.label, court: dec.qualif.court || dec.qualif.art || "" } : null, prevention: (cs.proc && cs.proc.prevention) || (t && CR.CAT && CR.CAT.INF[t.inf] ? CR.CAT.INF[t.inf].nom : ""), coupable: dec.coupable, notifie: jour, president: (CR.acteur(cs.actors && cs.actors.president) || {}).nom || "", parquet: (CR.acteur(cs.actors && cs.actors.parquet) || {}).nom || "", inf: t && t.inf };
+    cs.vars.jugementEcrit = { day: s.day, min: s.min, titre: o.titre || "Jugement correctionnel", juridiction: o.juridiction || "tc", motifs: M, dec, prevenu: o.prevenuNom || "", pc: o.pcNom || "", qualif: dec.qualif ? { label: dec.qualif.label, court: dec.qualif.court || dec.qualif.art || "", aggs: dec.qualif.aggs || [] } : null, prevention: (cs.proc && cs.proc.prevention) || (t && CR.CAT && CR.CAT.INF[t.inf] ? CR.CAT.INF[t.inf].nom : ""), coupable: dec.coupable, notifie: jour, jurLabel: o.jurLabel || null, enAppel: !!o.enAppel, mineur: !!o.mineur, detenu: !!o.detenu, pcF: !!o.pcF, president: (CR.acteur(cs.actors && cs.actors.president) || {}).nom || "", parquet: (CR.acteur(cs.actors && cs.actors.parquet) || {}).nom || "", inf: t && t.inf };
     CR.schedule(s, { day: jour, min: 10 * 60 + (CR.hash(cs.id) % 300), type: "fn", key: "jugementEcrit", data: { caseId: cs.id } });
   };
   CR.GLOBAL_FN = CR.GLOBAL_FN || {};
@@ -206,17 +222,90 @@
     CR.mail(s, { from: "Greffe correctionnel", subject: `Copie du jugement — ${J.prevenu}`, kind: "greffe", caseId: cs.id, body: [[`Maître, vous trouverez au dossier la copie du jugement rendu le ${CR.fmtDate(J.day, "long")}. Le délai d'appel court depuis son prononcé, la décision étant contradictoire (art. 498 du code de procédure pénale).`]] });
   };
   CR.SHARED_DOCS = CR.SHARED_DOCS || {};
+  // Arrêts criminels (relus sur le texte intégral) : cour d'assises (art. 240, 243, 248 : président et deux assesseurs ;
+  // art. 296 : six jurés en premier ressort, neuf en appel), spécialement composée (698-6 : quatre assesseurs, six en
+  // appel, sans jury), cour criminelle départementale (380-17 : président et quatre assesseurs ; 380-19 : sans jury,
+  // décisions à la majorité), cour d'assises des mineurs (CJPM L231-10, L531-2-1 ; publicité restreinte L513-2).
+  // Réponses aux questions (349, 359 : sept voix au moins, huit en appel), peine (362), feuille de motivation (365-1),
+  // lecture des textes (366), action civile sans le jury (371), voies de recours (380-1, 380-2, 380-9, 380-14, 380-21, 568).
+  T.CRIMINELLES = ["assises", "assises_appel", "assises_spe", "assises_mineurs", "ccd"];
+  T.compositionCrim = function (J) {
+    const type = J.juridiction, appel = !!J.enAppel || type === "assises_appel";
+    const pres = T.presidence(J.president) || "son président";
+    if (type === "assises_spe") return { label: J.jurLabel || "Cour d'assises spécialement composée", jury: 0, cour: `${pres}, et de ${appel ? "six" : "quatre"} assesseurs (art. 698-6), sans jury`, maj: "à la majorité" };
+    if (type === "ccd" && !appel) return { label: J.jurLabel || "Cour criminelle départementale", jury: 0, cour: `${pres}, et de quatre assesseurs (art. 380-17), sans jury (art. 380-19)`, maj: "à la majorité", ccd: true };
+    const mineurs = type === "assises_mineurs";
+    const label = appel && type === "ccd" ? "Cour d'assises statuant en appel d'une décision de la cour criminelle départementale" : J.jurLabel || (mineurs ? "Cour d'assises des mineurs" : "Cour d'assises");
+    return { label, jury: appel ? 9 : 6, cour: `${pres}, et de deux assesseurs${mineurs ? ", juges des enfants (art. L. 231-10 du code de la justice pénale des mineurs)" : " (art. 243 et 248)"}, et du jury de jugement de ${appel ? "neuf" : "six"} jurés (art. 296)`, maj: `à la majorité de ${appel ? "huit" : "sept"} voix au moins`, mineurs };
+  };
+  T.arretCriminel = function (x, J) {
+    const C = T.compositionCrim(J), appel = !!J.enAppel || J.juridiction === "assises_appel";
+    const fem = /^Mme|Madame/.test(J.prevenu) || !!J.accuseeF, e = fem ? "e" : "";
+    const pc = T.pcConstituee(J) ? J.pc : null;
+    const pr = /^Mme\b/.test(J.president || "") ? "la présidente" : "le président", Pr = pr.charAt(0).toUpperCase() + pr.slice(1);
+    const P = [];
+    const p = (t) => P.push([t]);
+    const questions = (J.dec && J.dec.questions) || [];
+    const dispositif = (J.dec && J.dec.dispositif) || "";
+    const peine = (J.dec && J.dec.peine) || {};
+    p(`À l'audience publique du ${MAJ(CR.fmtDate(J.day, "long"))}, la ${C.label.replace(/^Cour/, "cour")}, statuant ${appel ? "en appel" : "en premier ressort"}, composée de ${C.cour}, en présence de ${J.parquet ? J.parquet + ", avocat général" : "l'avocat général"}, assistée du greffier, a rendu l'arrêt suivant.`);
+    p("ENTRE : le ministère public, poursuivant" + (pc ? ` ; ${pc}, partie civile` : "") + ".");
+    p(`ET : ${J.prevenu}, accusé${e}, ${J.detenu ? "détenu" + e + ", " : ""}comparant${e}, assisté${e} de son avocat.`);
+    if (J.prevention) p(`Accusé${e} d'avoir commis : ${MAJ(J.prevention)}${J.qualif && J.qualif.court ? `, faits prévus et réprimés par ${T.visa(J.qualif.court)}` : ""}.`);
+    if (C.mineurs) p("Les débats ont eu lieu en présence des seules personnes admises par l'article L. 513-2 du code de la justice pénale des mineurs ; l'arrêt est rendu en audience publique, en présence de l'accusé" + e + ".");
+    p(`DÉBATS. ${Pr} a procédé à l'interrogatoire de l'accusé${e} ; les témoins et les experts ont été entendus ; ${pc ? "l'avocat de la partie civile a été entendu ; " : ""}l'avocat général a pris ses réquisitions ; la défense a plaidé, l'accusé${e} ayant eu la parole en dernier. ${Pr} a déclaré les débats terminés (art. 347) ; ${C.jury ? "la cour et le jury se sont retirés" : "la cour s'est retirée"} pour délibérer.`);
+    p("RÉPONSES AUX QUESTIONS");
+    const cul = questions.find((q) => q.q === "Sur la culpabilité");
+    // une question sur le fait principal, une par circonstance aggravante (art. 349) ; la récidive n'est pas soumise au vote
+    const AGG = (CR.CAT && CR.CAT.AGG) || {};
+    const aggs = ((J.qualif && J.qualif.aggs) || []).filter((a) => AGG[a]);
+    let base = J.qualif && J.qualif.label ? J.qualif.label : (J.prevention || "les faits").toLowerCase();
+    for (const a of aggs) base = base.replace(", " + AGG[a].label, "");
+    base = base.replace(/, en état de récidive légale/, "");
+    const oui = J.coupable ? `Oui, ${C.maj}.` : "Non.";
+    p(`Question n° 1 : l'accusé${e} est-${fem ? "elle" : "il"} coupable ${de(base)} ? — ${oui}`);
+    aggs.forEach((a, i) => {
+      const prev = AGG[a].prev || "";
+      const q = /^avec cette circonstance que les faits ont été commis /.test(prev) ? `les faits ont-ils été commis ${prev.replace(/^avec cette circonstance que les faits ont été commis /, "")} ?` : /^avec cette circonstance qu/.test(prev) ? `les faits ont-ils été commis avec cette circonstance ${prev.replace(/^avec cette circonstance /, "")} ?` : `les faits ont-ils été commis avec cette circonstance : ${AGG[a].label} ?`;
+      p(`Question n° ${i + 2} : ${q} — ${J.coupable ? `Oui, ${C.maj}.` : "Sans objet."}`);
+    });
+    for (const q of questions.filter((q) => /nullité|recevabilité|prescription/i.test(q.q))) p(`${q.q}. ${q.motif || ""} ${q.r}`.trim());
+    if (J.coupable) p(`Sur la peine, ${C.jury ? "la cour et le jury ont" : "la cour a"} délibéré ; le vote a eu lieu au scrutin secret ; la décision est prise à la majorité absolue des votants${peine.perpetuite ? `, le maximum de la peine encourue l'ayant été ${C.maj}` : ""} (art. 362).`);
+    p(C.jury ? `La feuille de questions a été signée par ${pr} et par le premier juré désigné par le sort (art. 364).` : `La feuille de questions a été signée par ${pr} (art. 364).`);
+    p("FEUILLE DE MOTIVATION (art. 365-1)");
+    p(J.coupable ? "Sur la culpabilité, les principaux éléments à charge qui ont convaincu la cour, exposés au cours de la délibération :" : "Les principaux éléments qui ont conduit la cour à ne pas retenir la culpabilité :");
+    for (const m of J.motifs || []) p(`— ${m.titre}. ${m.t}`);
+    if (cul && cul.r) p(cul.r + (J.qualif && J.coupable ? ` Les faits sont retenus sous la qualification de ${J.qualif.label}.` : ""));
+    const pq = questions.find((q) => /peine/i.test(q.q));
+    if (J.coupable && pq) p(`Sur la peine, les principaux éléments qui ont convaincu la cour. ${pq.motif ? pq.motif + " " : ""}${pq.r || ""}`.trim());
+    const civ = questions.filter((q) => /civil|dommages|préjudice/i.test(q.q));
+    if (civ.length) { p("SUR L'ACTION CIVILE — la cour statuant sans l'assistance du jury (art. 371)"); for (const q of civ) p(`${q.motif ? q.motif + " " : ""}${q.r}`); }
+    for (const q of questions.filter((q) => q !== cul && q !== pq && !civ.includes(q) && !/nullité|recevabilité|prescription/i.test(q.q))) p(`${q.q.toUpperCase()}. ${q.motif ? q.motif + " " : ""}${q.r}`);
+    p("PAR CES MOTIFS");
+    p(`La cour, après lecture faite à l'audience par ${pr} des textes de loi dont il est fait application (art. 366), statuant publiquement ${appel ? "en appel" : "en premier ressort"} et contradictoirement :`);
+    p(dispositif);
+    if (J.coupable) p(`${Pr} a donné à l'accusé${e}` + " l'avertissement prévu par la loi. La présente décision est assujettie au droit fixe de procédure prévu par l'article 1018 A du code général des impôts.");
+    p(appel ? "Voies de recours : pourvoi en cassation dans les dix jours francs qui suivent le prononcé (art. 568 du code de procédure pénale)."
+      : J.coupable ? `Voies de recours : appel dans le délai de dix jours à compter du prononcé (art. 380-9), par déclaration au greffe de la cour qui a rendu la décision (art. 380-12) ; l'appel est examiné par ${C.ccd ? "la cour d'assises (art. 380-21)" : "une autre cour d'assises, ou la même autrement composée,"} désignée par le premier président de la cour d'appel (art. 380-1 et 380-14).`
+        : `Voies de recours : le procureur général peut faire appel de l'arrêt d'acquittement dans les dix jours du prononcé ; la partie civile, quant à ses seuls intérêts civils (art. 380-2 et 380-9).`);
+    p(`Et le présent arrêt a été signé par ${pr} et le greffier.`);
+    return { title: `${J.titre} — ${CR.fmtDate(J.day, "long")}`, kind: "greffe", entete: [C.label, `Arrêt du ${CR.fmtDate(J.day, "long")}`, appel ? "Statuant en appel" : "Statuant en premier ressort", "Copie délivrée à l'avocat"], paras: P };
+  };
   CR.SHARED_DOCS._jugement = function (x) {
     const J = x.cs.vars.jugementEcrit;
     if (!J) return { title: "Jugement", paras: [["(décision indisponible)"]] };
-    const jur = (CR.PROC.JURIDICTIONS[J.juridiction] || {}).label || "Tribunal correctionnel";
+    if (T.CRIMINELLES.includes(J.juridiction) || (J.enAppel && J.juridiction !== "tpe" && J.juridiction !== "tc")) return T.arretCriminel(x, J);
+    const tpe = J.juridiction === "tpe";
+    const pr = /^Mme\b/.test(J.president || "") ? "la présidente" : "le président", Pr = pr.charAt(0).toUpperCase() + pr.slice(1);
+    const jur = J.jurLabel || (CR.PROC.JURIDICTIONS[J.juridiction] || {}).label || (tpe ? "Tribunal pour enfants" : "Tribunal correctionnel");
     const P = [];
     const p = (t) => P.push([t]);
-    p(`À l'audience publique du ${MAJ(CR.fmtDate(J.day, "long"))}, le ${jur.replace(/^Tribunal/, "tribunal")}, composé de ${J.president ? J.president + ", président" : "son président"}, assisté du greffier, en présence de ${J.parquet ? J.parquet + ", substitut du procureur de la République" : "du ministère public"}, a rendu le jugement suivant.`);
-    p("ENTRE : Monsieur le procureur de la République près ce tribunal, demandeur et poursuivant" + (J.pc ? ` ; ${J.pc}, partie civile` : "") + ".");
+    p(`À l'audience publique du ${MAJ(CR.fmtDate(J.day, "long"))}, le ${jur.replace(/^Tribunal/, "tribunal")}, composé de ${J.president ? (tpe ? `${J.president}, juge des enfants, ${/^Mme\b/.test(J.president) ? "présidente" : "président"}, et de deux assesseurs (art. L. 231-4 du code de la justice pénale des mineurs)` : T.presidence(J.president)) : "son président"}, assisté du greffier, en présence de ${J.parquet ? J.parquet + ", substitut du procureur de la République" : "du ministère public"}, a rendu le jugement suivant.`);
+    p("ENTRE : Monsieur le procureur de la République près ce tribunal, demandeur et poursuivant" + (T.pcConstituee(J) ? ` ; ${J.pc}, partie civile` : "") + ".");
     p(`ET : ${J.prevenu}, prévenu${/^Mme|Madame/.test(J.prevenu) ? "e" : ""}, comparant, assisté de son avocat.`);
-    if (J.prevention) p(`Prévenu${/^Mme|Madame/.test(J.prevenu) ? "e" : ""} du chef de : ${MAJ(J.prevention)}${J.qualif && J.qualif.court ? `, faits prévus et réprimés par ${J.qualif.court}` : ""}.`);
-    p("DÉBATS. Le président a constaté l'identité du prévenu, donné connaissance de l'acte qui a saisi le tribunal et informé le prévenu de son droit, au cours des débats, de faire des déclarations, de répondre aux questions ou de se taire. Il a été procédé à l'instruction de l'affaire et à l'interrogatoire du prévenu. Le ministère public a été entendu en ses réquisitions, l'avocat du prévenu en sa plaidoirie ; le prévenu a eu la parole en dernier. Le greffier a tenu note du déroulement des débats.");
+    if (J.prevention) p(`Prévenu${/^Mme|Madame/.test(J.prevenu) ? "e" : ""} du chef de : ${MAJ(J.prevention)}${J.qualif && J.qualif.court ? `, faits prévus et réprimés par ${T.visa(J.qualif.court)}` : ""}.`);
+    if (tpe) p("Les débats ont eu lieu en présence des seules personnes admises par l'article L. 513-2 du code de la justice pénale des mineurs ; le jugement est rendu en audience publique, en présence du mineur.");
+    p(`DÉBATS. ${Pr} a constaté l'identité du prévenu, donné connaissance de l'acte qui a saisi le tribunal et informé le prévenu de son droit, au cours des débats, de faire des déclarations, de répondre aux questions ou de se taire. Il a été procédé à l'instruction de l'affaire et à l'interrogatoire du prévenu. Le ministère public a été entendu en ses réquisitions, l'avocat du prévenu en sa plaidoirie ; le prévenu a eu la parole en dernier. Le greffier a tenu note du déroulement des débats.`);
     p("Le tribunal, après en avoir délibéré, a statué en ces termes :");
     p("MOTIFS — SUR L'ACTION PUBLIQUE");
     J.questions = (J.dec && J.dec.questions) || J.questions || []; J.dispositif = (J.dec && J.dec.dispositif) || J.dispositif || "";
@@ -229,9 +318,9 @@
     p("PAR CES MOTIFS");
     p(`Le tribunal, statuant publiquement, en premier ressort et contradictoirement à l'égard de ${J.prevenu} :`);
     p(J.dispositif);
-    if (J.coupable) p("Le président a donné au condamné l'avertissement prévu par la loi. La présente décision est assujettie au droit fixe de procédure prévu par l'article 1018 A du code général des impôts, diminué de 20 % s'il est payé dans le délai d'un mois.");
-    p("Voies de recours : appel dans le délai de dix jours à compter du prononcé, par déclaration au greffe de la juridiction (art. 498 et 502 du code de procédure pénale).");
-    p("Et le présent jugement a été signé par le président et le greffier.");
+    if (J.coupable) p(`${Pr} a donné au condamné l'avertissement prévu par la loi. La présente décision est assujettie au droit fixe de procédure prévu par l'article 1018 A du code général des impôts, diminué de 20 % s'il est payé dans le délai d'un mois.`);
+    p(`Voies de recours : appel dans le délai de dix jours à compter du prononcé, par déclaration au greffe de la juridiction (art. 498 et 502 du code de procédure pénale)${tpe ? ", devant la chambre spéciale des mineurs de la cour d'appel (art. L. 531-1 du code de la justice pénale des mineurs)" : ""}.`);
+    p(`Et le présent jugement a été signé par ${pr} et le greffier.`);
     return { title: `${J.titre} — ${CR.fmtDate(J.day, "long")}`, kind: "greffe", entete: [jur, `Jugement du ${CR.fmtDate(J.day, "long")}`, "Copie délivrée à l'avocat"], paras: P };
   };
 })();
