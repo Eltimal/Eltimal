@@ -368,7 +368,7 @@ const REVELE = /irrégularit|aucune autorisation|aucune ordonnance|nullit|ne men
   const CAT = CR.CAT;
   const sc = { inf: {}, ctx: {}, jur: {}, camp: {}, entree: {}, issue: {}, irr: {}, mineur: 0, proc: 0, rec: 0, requalif: 0, joues: 0, huis: 0, jury: 0, reglement: {}, appel: 0, mois: [] };
   const exC = [];
-  const FLOW = ["ordo_dp_live", "pv_ipc_live", "pv_interro", "contre_expertise", "reconstitution", "avis175", "ordo_reglement", "arret_chins", "ordo_prolong", "verdict"];
+  const FLOW = ["ordo_dp_live", "pv_ipc_live", "pv_interro", "contre_expertise", "reconstitution", "avis175", "ordo_reglement", "arret_chins", "ordo_prolong", "verdict", "ordo_transmission", "arret_irresp"];
   const jurAttendue = (q, age) => {
     if (q.nature !== "crime") return age < 18 ? "tpe" : "tc";
     if (age < 16) return "tpe";
@@ -415,7 +415,7 @@ const REVELE = /irrégularit|aucune autorisation|aucune ordonnance|nullit|ne men
       CR.runHook(s, cs, h.done, { decision: dec, played: [...played] });
       return;
     }
-    const dk = { ipc: "ipcDecider", ipc_convoc: "ipcDecider", jld: "jldDecider", prolong: "prolongDecider", chins: "chinsDecider" }[h.script];
+    const dk = { ipc: "ipcDecider", ipc_convoc: "ipcDecider", jld: "jldDecider", prolong: "prolongDecider", chins: "chinsDecider", chins_irresp: "irrespDecider" }[h.script];
     if (dk) CR.runHook(s, cs, dk, { played });
     if (h.done) CR.runHook(s, cs, h.done, { played: [...played] });
   };
@@ -458,8 +458,8 @@ const REVELE = /irrégularit|aucune autorisation|aucune ordonnance|nullit|ne men
       sc.reglement[R0.type] = (sc.reglement[R0.type] || 0) + 1;
       ok(cs.vars.avis175Day != null && R0.day - cs.vars.avis175Day >= ((t.detenu || t.dpRequise) ? 30 : 90), `${cs.id} : règlement ${R0.day - cs.vars.avis175Day} jours après l'avis`, "175");
       const qq = R0.qual === "q2" && t.q2 ? t.q2 : t.q;
-      ok(R0.type === "nonlieu" || R0.type === "irresp" || R0.jur === jurAttendue(Object.assign({ stups: CAT.INF[t.inf].fam === "crim_stups" }, qq), t.ageFaits), `${cs.id} : renvoi devant ${R0.jur} pour ${qq.label}`, "renvoi");
-      ok((R0.type === "oma") === (qq.nature === "crime") || ["nonlieu", "irresp"].includes(R0.type), `${cs.id} : ordonnance ${R0.type} pour un ${qq.nature}`, "omaortc");
+      ok(R0.type === "nonlieu" || R0.type === "irresp" || R0.type === "transmission" || R0.jur === jurAttendue(Object.assign({ stups: CAT.INF[t.inf].fam === "crim_stups" }, qq), t.ageFaits), `${cs.id} : renvoi devant ${R0.jur} pour ${qq.label}`, "renvoi");
+      ok((R0.type === "oma") === (qq.nature === "crime") || ["nonlieu", "irresp", "transmission"].includes(R0.type), `${cs.id} : ordonnance ${R0.type} pour un ${qq.nature}`, "omaortc");
       const a = cs.hearings.find((h) => h.script === "proces");
       if (a && cs.vars.dpAuReglement) ok(a.day - R0.day <= 365, `${cs.id} : accusé détenu jugé ${a.day - R0.day} jours après l'ordonnance`, "181");
       if (a) ok(cs.proc.audience && CR.PROC.JURIDICTIONS[cs.vars.jurProces], `${cs.id} : juridiction de jugement inconnue ${cs.vars.jurProces}`, "jurproc");

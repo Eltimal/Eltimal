@@ -562,7 +562,51 @@
       p("Lecture de l'arrêt a été donnée par le président ou l'un des conseillers (art. 199).");
       return { title: "Arrêt de la chambre de l'instruction", kind: "greffe", entete: [`${TJ.ca} · chambre de l'instruction`, `Arrêt du ${D(M.day != null ? M.day : xx.s.day)}`, `Information n° ${t.ninfo}`], paras: P };
     };
+    const ordoTransmission = (xx) => {
+      const cs = xx.cs, R0 = cs.vars.reglement || {};
+      const jF = /^Mme\b/.test(jiNom);
+      const P = [];
+      P.push([`Nous, ${jiNom}, juge d'instruction au tribunal judiciaire,`]);
+      P.push([`Vu l'information suivie contre ${nomA}, mis${e(A)} en examen le ${D(t.d.mex)} du chef ${(/^[aeiouyéèêh]/i.test(q.label) ? "d'" : "de ") + q.label} ;`]);
+      P.push([`Vu l'avis de fin d'information (art. 175), le réquisitoire définitif et les expertises psychiatriques versées au dossier ;`]);
+      P.push([R0.parquet ? "Vu la demande du procureur de la République tendant à la transmission du dossier à la chambre de l'instruction ;" : `Vu la demande présentée par Me ${xx.s.player.prenom} ${xx.s.player.nom} pour ${D0 ? nomA : nom(C)} tendant à la transmission du dossier à la chambre de l'instruction ;`]);
+      P.push([`Attendu qu'il existe contre ${nomA} des charges suffisantes d'avoir commis les faits qui lui sont reprochés ; qu'il résulte des expertises qu'il y a des raisons plausibles d'appliquer le premier alinéa de l'article 122-1 du code pénal ;`]);
+      P.push(["PAR CES MOTIFS"]);
+      P.push(["Ordonnons que le dossier de la procédure soit transmis par le procureur de la République au procureur général aux fins de saisine de la chambre de l'instruction (art. 706-120, al. 1) ;"]);
+      if (cs.vars.dpAuReglement) P.push([`Disons que la présente ordonnance ne met pas fin à la détention provisoire, qui se poursuit jusqu'à l'audience de la chambre de l'instruction ; celle-ci doit statuer dans un délai de ${crime ? "six" : "quatre"} mois (art. 706-121).`]);
+      P.push([`Fait en notre cabinet, le ${D(R0.day != null ? R0.day : xx.s.day)}. ${jF ? "La juge" : "Le juge"} d'instruction ; le greffier.`]);
+      return { title: "Ordonnance de transmission de pièces à la chambre de l'instruction", kind: "greffe", entete: [`Cabinet de ${jiNom}, juge d'instruction`, "Tribunal judiciaire", `Information n° ${t.ninfo}`], paras: P };
+    };
+    const arretIrresp = (xx) => {
+      const cs = xx.cs, I0 = Object.assign({ issue: "irresp", mesures: [], saisine: "transmission" }, cs.vars.irresp || {});
+      const P = [], p = (x) => P.push([x]);
+      const avocat = `Me ${xx.s.player.prenom} ${xx.s.player.nom}`;
+      const visaQ = CR.TRIB && CR.TRIB.visa ? CR.TRIB.visa(q.court) : q.court;
+      p(`La chambre de l'instruction de la ${TJ.ca.replace(/^Cour/, "cour")}, composée de son président de chambre et de deux conseillers (art. 191), en présence de l'avocat général, assistée du greffier, statuant en audience publique (art. 706-122), a rendu le ${D(I0.day != null ? I0.day : xx.s.day)} l'arrêt suivant.`);
+      p(I0.saisine === "appel" ? `Saisie de l'appel interjeté contre l'ordonnance d'irresponsabilité pénale pour cause de trouble mental rendue par ${jiNom}, juge d'instruction, et statuant selon les articles 706-122 à 706-127 (art. 706-128).` : `Saisie par l'ordonnance de transmission de pièces rendue par ${jiNom}, juge d'instruction (art. 706-120, al. 1), dans l'information suivie contre ${nomA} du chef ${(/^[aeiouyéèêh]/i.test(q.label) ? "d'" : "de ") + q.label}, faits prévus et réprimés par ${visaQ}.`);
+      p(`DÉBATS. ${I0.comparution ? `${nomA} a comparu ; ${GEN2.PR.il(A)} a été informé${e(A)} de son droit de se taire et interrogé par le président (art. 706-122).` : `${nomA}, dont l'état ne permettait pas la comparution, a été représenté${e(A)} par son avocat (art. 706-122).`} Les experts psychiatres ont été entendus (art. 706-122 et 168).${I0.pc ? " La partie civile a été entendue." : ""} ${I0.pc ? "L'avocat de la partie civile a été entendu ; l" : "L"}e ministère public a pris ses réquisitions ; ${I0.sansAvocat && D0 ? "un avocat commis d'office a présenté les observations de la défense" : D0 ? `${avocat} a présenté les observations de la défense` : "l'avocat de la personne mise en examen a présenté ses observations"}, la défense ayant eu la parole en dernier (art. 706-122).`);
+      p("MOTIFS");
+      if (I0.issue === "nonlieu") p(`Les éléments de l'information ne caractérisent pas de charges suffisantes contre ${nomA} d'avoir commis les faits qui lui sont reprochés (art. 706-123).`);
+      else {
+        p(`Sur les charges. Il résulte de l'information et des débats des charges suffisantes contre ${nomA} d'avoir commis les faits qualifiés ${(/^[aeiouyéèêh]/i.test(q.label) ? "d'" : "de ") + q.label}.`);
+        p(I0.issue === "renvoi" ? "Sur le discernement. Les experts entendus ne concluent pas à l'abolition du discernement au moment des faits : le premier alinéa de l'article 122-1 du code pénal n'est pas applicable (art. 706-124)." : `Sur le discernement. Il résulte des expertises et de l'audition des experts que ${nomA} était atteint${e(A)}, au moment des faits, d'un trouble psychique ou neuropsychique ayant aboli son discernement ou le contrôle de ses actes (art. 122-1, al. 1 du code pénal).`);
+        if (I0.issue === "irresp" && I0.soins) p("Sur les soins. Il est établi par une expertise psychiatrique figurant au dossier que les troubles mentaux de la personne nécessitent des soins et compromettent la sûreté des personnes (art. 706-135).");
+        if (I0.issue === "irresp" && I0.mesures.length) p(`Sur les mesures de sûreté. Au vu des expertises psychiatriques, et sans faire obstacle aux soins, il y a lieu de prononcer : ${I0.mesures.join(" ; ")}, pour une durée de ${I0.duree} (art. 706-136).`);
+        if (I0.issue === "irresp" && I0.civil) p(`Sur les intérêts civils. La personne qui a causé un dommage à autrui sous l'empire d'un trouble mental n'en est pas moins obligée à réparation ; la partie civile l'ayant demandé, la chambre statue sur la responsabilité civile et les dommages et intérêts (art. 706-125, 3°).`);
+      }
+      p("PAR CES MOTIFS");
+      if (I0.issue === "nonlieu") p(`La chambre de l'instruction déclare qu'il n'y a lieu à suivre contre ${nomA} (art. 706-123) ; ordonne la mise en liberté s'${GEN2.PR.il(A)} n'est détenu${e(A)} pour autre cause et la mainlevée du contrôle judiciaire.`);
+      else if (I0.issue === "renvoi") p(`La chambre de l'instruction ordonne le renvoi de ${nomA} devant ${jurDe(t.jur)} (art. 706-124).`);
+      else {
+        p(`La chambre de l'instruction : 1° déclare qu'il existe des charges suffisantes contre ${nomA} d'avoir commis les faits qui lui sont reprochés ; 2° ${GEN2.PR.gram(A).le} déclare pénalement irresponsable en raison d'un trouble psychique ou neuropsychique ayant aboli son discernement au moment des faits (art. 706-125)${I0.civil ? ` ; 3° ${GEN2.PR.gram(A).le} déclare civilement responsable et ${GEN2.PR.gram(A).le} condamne à payer à ${nom(C) && t.camp === "pc" ? nom(C) : "la partie civile"} la somme de ${CR.money(I0.civil)} à titre de dommages et intérêts` : ""}${I0.mesures.length ? ` ; ${I0.civil ? "4°" : "3°"} prononce pour une durée de ${I0.duree} les mesures de sûreté suivantes : ${I0.mesures.join(" ; ")}` : ""}${I0.soins ? " ; ordonne son admission en soins psychiatriques sous la forme d'une hospitalisation complète, le préfet de police étant immédiatement avisé (art. 706-135)" : ""} ;`);
+        p("Dit que le présent arrêt met fin à la détention provisoire ou au contrôle judiciaire (art. 706-126).");
+      }
+      p(`Voies de recours : pourvoi en cassation dans les dix jours francs du prononcé (art. ${I0.issue === "irresp" ? "706-126 et " : ""}568).`);
+      return { title: I0.issue === "irresp" ? "Arrêt de déclaration d'irresponsabilité pénale pour cause de trouble mental" : "Arrêt de la chambre de l'instruction", kind: "greffe", entete: [`${TJ.ca} · chambre de l'instruction`, `Audience publique du ${D(I0.day != null ? I0.day : xx.s.day)}`, `Information n° ${t.ninfo}`], paras: P };
+    };
     const flowDocs = {
+      ordo_transmission: (xx) => ordoTransmission(xx),
+      arret_irresp: (xx) => arretIrresp(xx),
       pv_ipc_live: (xx) => ({ title: "Procès-verbal d'interrogatoire de première comparution", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Le ${D(t.d.mex)}, comparaît ${nomA}, assisté${e(A)} de Me ${xx.s.player.prenom} ${xx.s.player.nom}.`], [`Faits notifiés : ${q.label}. Droit de se taire rappelé.`], [{ t: xx.cs.vars.ipcChoix === "silence" ? "La personne déclare : « Je ne souhaite pas m'exprimer aujourd'hui. »" : `La personne déclare : « ${N.version[t.stance]} »`, f: "X_ipc" }], [xx.cs.vars.statut === "ta" ? `Disons que ${nomA} sera entendu${e(A)} en qualité de témoin assisté (art. 113-1).` : `Mettons ${nomA} en examen du chef de ${q.label} (art. 80-1).`]] }),
       pv_interro: (xx) => ({ title: "Procès-verbal d'interrogatoire", kind: "pv", entete: [`Cabinet de ${jiNom}, juge d'instruction`, `Information n° ${t.ninfo}`], paras: [[`Interrogatoire de ${nomA}${D0 ? `, assisté${e(A)} de Me ${xx.s.player.nom}` : ""}.`], ...(N.interro.length ? N.interro : [{ q: "Maintenez-vous vos déclarations ?", a: { nie: "Oui. Je n'ai rien fait.", minimise: "Oui, pour l'essentiel.", reconnait: "Oui. Je reconnais les faits." } }]).map((qq) => [`Question : ${qq.q} — Réponse : ${qq.a[t.stance]}`]), ...CR.CONF ? interroJoue(xx) : []] }),
       pv_confront: (xx) => CR.CONF.pv(xx.cs, { jiNom, ninfo: t.ninfo, nomA, eA: e(A), avocat: `${xx.s.player.prenom} ${xx.s.player.nom}`, nomT: nom(t.T), premiere: (CR.CRIMD && CR.CRIMD.temoin(t, N) || {}).premiere, version: N.version[t.stance] }),
@@ -575,7 +619,7 @@
       ordo_prolong: (xx) => ordoJLD(xx, true),
       verdict: (xx) => ({ title: xx.cs.vars.verdictTitre || "Décision", kind: "greffe", entete: [titreJur(xx.cs.vars.jurProces || t.jur), "Décision rendue en premier ressort"], paras: [[{ t: xx.cs.vars.verdictTexte || "Décision rendue.", f: "K_verdict" }], ["Appel possible dans les dix jours du prononcé."]] }),
     };
-    const flowTitles = { ordo_dp_live: "Ordonnance du juge des libertés", pv_ipc_live: "Interrogatoire de première comparution", pv_interro: "Interrogatoire au fond", pv_confront: "Confrontation", contre_expertise: "Contre-expertise", reconstitution: "Reconstitution", avis175: "Avis de fin d'information", ordo_reglement: "Ordonnance de règlement", arret_chins: "Arrêt de la chambre de l'instruction", ordo_prolong: "Ordonnance sur la prolongation", verdict: "La décision" };
+    const flowTitles = { ordo_transmission: "Ordonnance de transmission de pièces", arret_irresp: "Arrêt de la chambre de l'instruction sur l'irresponsabilité", ordo_dp_live: "Ordonnance du juge des libertés", pv_ipc_live: "Interrogatoire de première comparution", pv_interro: "Interrogatoire au fond", pv_confront: "Confrontation", contre_expertise: "Contre-expertise", reconstitution: "Reconstitution", avis175: "Avis de fin d'information", ordo_reglement: "Ordonnance de règlement", arret_chins: "Arrêt de la chambre de l'instruction", ordo_prolong: "Ordonnance sur la prolongation", verdict: "La décision" };
     const docs = Object.assign({}, PZ.docs, flowDocs);
     const docTitles = Object.assign({}, PZ.titres, flowTitles);
     facts.K_contre = { label: "Les conclusions de la contre-expertise", key: true };
@@ -823,6 +867,9 @@
       ]);
       // observations de l'article 175
       if (V0.avis175Day != null && !V0.reglement && !CR.drafted(cs, "observations_175") && (D0 ? V0.statut === "mex" : pr.pcConstituee)) T({ id: "obs175", label: "Rédiger les observations de l'article 175", sub: `Avant le ${CR.fmtDate(plan.obsLimite, "dowshort")}. Ce que vous demandez au juge, et pourquoi.`, kind: "draft", time: 90, urgent: s.day >= plan.obsLimite - 7, run: () => ({ scene: "draft", tpl: "observations_175" }) });
+      // lot 7 : l'irresponsabilité jugée par la chambre de l'instruction, à la demande d'une partie (art. 706-120, al. 1)
+      const aboliConnu = t.f.psy === "aboli" || (V0.renfort && V0.renfort.aboli);
+      if (V0.avis175Day != null && !V0.reglement && aboliConnu && V0.demande706120 == null && (D0 ? V0.statut === "mex" : pr.pcConstituee)) T({ id: "demande706120", label: "Demander que la chambre de l'instruction statue sur l'irresponsabilité", sub: "Article 706-120 : les expertises concluent à l'abolition du discernement. Sur demande d'une partie, le juge transmet le dossier ; la chambre statue en audience publique, entend les experts, la partie civile, et peut statuer sur les intérêts civils.", kind: "admin", time: 20, run: () => { CR.spend(s, 20, "admin"); V0.demande706120 = s.day; CR.PROC.event(api, "Demande de transmission du dossier à la chambre de l'instruction (art. 706-120)."); api.mail({ from: `Cabinet de ${jiNom}`, subject: "Demande enregistrée (art. 706-120)", kind: "greffe", body: [["Votre demande de transmission du dossier à la chambre de l'instruction, aux fins de statuer sur l'application de l'article 122-1, alinéa 1, du code pénal, est versée au dossier. Il y sera statué au règlement."]] }); return null; } });
       // appels d'ordonnances
       const ap = V0.appelOuvert;
       if (ap && !CR.drafted(cs, "appel_ordo") && s.day <= ap.jusque + 3) T({ id: "appel_ordo", label: `Faire appel : ${ap.label}`, sub: "Déclaration au greffe, dans les dix jours. Comptez vous-même.", kind: "draft", time: 20, run: () => { V0.appelOrdoType = ap.type; return { scene: "draft", tpl: "appel_ordo" }; } });
@@ -1094,6 +1141,17 @@
         jur = CAT.juridictionCrime(qq, t.ageFaits);
         if (qq.nature !== "crime") type = "ortc";
       }
+      // le parquet le demande aussi, pour un crime qui a coûté la vie (règle du jeu) ; sinon, une partie (art. 706-120, al. 1)
+      const parquet706 = type === "irresp" && crime && decede && CR.seeded(cs.id + ":706-120")() < 0.5;
+      if (type === "irresp" && (cs.vars.demande706120 != null || parquet706)) {
+        cs.vars.reglement = { type: "transmission", qual, jur, day: s.day, charges: chargesL, decharges: dechargesL, obs: !!obs.v, annules: (cs.proc.annules || []).length, parquet: parquet706 && cs.vars.demande706120 == null };
+        cs.vars.dpAuReglement = cs.proc.detention.statut === "dp";
+        CR.PROC.stade(api, "reglement", "Ordonnance de transmission de pièces à la chambre de l'instruction (art. 706-120).");
+        api.doc("ordo_transmission", flowTitles.ordo_transmission);
+        api.mail({ from: `Cabinet de ${jiNom}`, subject: "Ordonnance de transmission de pièces (art. 706-120)", kind: "greffe", important: true, body: [[`Le dossier est transmis au procureur général aux fins de saisine de la chambre de l'instruction, qui statuera en audience publique sur l'application de l'article 122-1, alinéa 1, du code pénal.${cs.proc.detention.statut === "dp" ? " La détention provisoire se poursuit jusqu'à l'audience (art. 706-121)." : ""}`]] });
+        api.run("_audienceIrresp", {});
+        return;
+      }
       cs.vars.reglement = { type, qual, jur, day: s.day, charges: chargesL, decharges: dechargesL, obs: !!obs.v, annules: (cs.proc.annules || []).length };
       cs.vars.dpAuReglement = cs.proc.detention.statut === "dp";
       CR.PROC.stade(api, "reglement", { irresp: "Ordonnance d'irresponsabilité pénale pour cause de trouble mental.", nonlieu: "Ordonnance de non-lieu.", oma: `Ordonnance de mise en accusation devant ${CAT.JUR_LABEL[jur]}.`, ortc: `Ordonnance de renvoi devant ${CAT.JUR_LABEL[jur]}.` }[type]);
@@ -1131,7 +1189,78 @@
       cs.vars.appelOuvert = null;
       api.cancel("_finAppelOrdo");
       CR.PROC.event(api, `Appel de ${ap.label} devant la chambre de l'instruction (art. 186).`);
+      // l'appel d'une ordonnance d'irresponsabilité se juge selon les règles des articles 706-122 à 706-127 (art. 706-128)
+      if (ap.type === "irresp") { cs.vars.irrespSaisine = "appel"; api.run("_audienceIrresp", {}); return; }
       api.hearing({ day: CR.rollForward(s.day + (ap.type === "dp" ? 8 : R.int(s, 25, 40))), min: 14 * 60, title: "Chambre de l'instruction — audience", where: `${TJ.ca}, ${TJ.caSub}`, lieu: TJ.caLieu, script: "chins", done: "apresChins", onMiss: "_chinsSansVous", duree: 45 });
+    };
+    // L'audience d'irresponsabilité (relue sur le texte intégral) : chambre de l'instruction en audience publique (706-122) ;
+    // comparution de la personne si son état le permet, experts entendus, partie civile entendue ; puis l'avocat de la partie
+    // civile, les réquisitions, la défense, qui parle la dernière. Décision : non-lieu (706-123), renvoi devant la juridiction
+    // de jugement (706-124) ou arrêt de déclaration d'irresponsabilité pénale (706-125 : charges suffisantes, irresponsabilité,
+    // responsabilité civile et dommages-intérêts si la partie civile le demande, mesures de sûreté de l'article 706-136,
+    // admission en soins de l'article 706-135) ; fin de la détention (706-126) ; pourvoi (706-126, 568). Si la personne est
+    // détenue, la chambre statue dans les six mois en matière criminelle, quatre en matière correctionnelle (706-121).
+    O._audienceIrresp = function (api) {
+      const { s, cs } = api;
+      if (cs.hearings.some((h) => h.script === "chins_irresp" && !h.canceled)) return;
+      cs.vars.irrespSaisine = cs.vars.irrespSaisine || "transmission";
+      cs.vars.irrespComparution = CR.seeded(cs.id + ":706-122")() < 0.6;
+      const day = CR.rollForward(s.day + R.int(s, 40, 75));
+      api.hearing({ day, min: 14 * 60, title: "Chambre de l'instruction — audience sur l'irresponsabilité pénale", where: `${TJ.ca}, ${TJ.caSub}`, lieu: TJ.caLieu, script: "chins_irresp", done: "apresIrresp", onMiss: "_irrespSansVous", duree: 120 });
+      api.mail({ from: "Parquet général", subject: "Avis d'audience (art. 197 et 706-122)", kind: "greffe", important: true, body: [[`L'affaire ${nomA} sera appelée devant la chambre de l'instruction, en audience publique, le ${D(day)} à 14 heures : la chambre statuera sur l'existence de charges suffisantes et sur l'application de l'article 122-1, alinéa 1, du code pénal. Les experts seront entendus (art. 706-122).`]] });
+    };
+    O._irrespSansVous = function (api) {
+      api.cs.vars.irrespSansAvocat = true;
+      CR.erreur(api.s, api.cs, { id: "irresp_absent", texte: "Vous n'étiez pas à l'audience de la chambre de l'instruction sur l'irresponsabilité.", sanction: D0 ? "Un avocat commis d'office a représenté votre client, sans connaître le dossier (art. 706-122)." : "La partie civile n'a pas été entendue et ses demandes civiles n'ont pas été présentées.", regul: "Aucune." });
+      api.run("irrespDecider", { played: new Set() });
+      api.run("apresIrresp", {});
+    };
+    O.irrespDecider = function (api, { played }) {
+      const { s, cs } = api;
+      const pl = played || new Set();
+      const R0 = cs.vars.reglement || {};
+      const spec = chargesSpec(api, { instruction: true });
+      let charge = 0;
+      for (const [k, pc] of Object.entries(spec.pieces)) if (pc.sens === "charge" && !CR.PROC.annule(cs, k)) charge += pc.force;
+      let decharge = 0;
+      for (const en of enjeux) if (en.effet === "acquit" && en.id !== "aboli" && en.id !== "altere" && (pl.has("arg:" + en.id) || pl.has("E_" + en.id)) && (en.fort || (cs.vars.renfort && cs.vars.renfort[en.id]))) decharge += 0.32;
+      const aboli = t.f.psy === "aboli" || (cs.vars.renfort && cs.vars.renfort.aboli);
+      const issue = charge - decharge < 0.32 ? "nonlieu" : aboli ? "irresp" : "renvoi";
+      const I0 = { issue, day: s.day, saisine: cs.vars.irrespSaisine || "transmission", comparution: !!cs.vars.irrespComparution, sansAvocat: !!cs.vars.irrespSansAvocat, mesures: [], soins: false, civil: null, pc: t.camp === "pc" || !!V };
+      if (issue === "irresp") {
+        const victimeVivante = V && !decede;
+        const demandeMesures = !D0 || pl.has("arg:mesures");
+        const contreMesures = D0 && pl.has("arg:soins_suffisent");
+        if ((victimeVivante || P) && (demandeMesures || CR.seeded(cs.id + ":706-136")() < 0.6) && !(contreMesures && CR.seeded(cs.id + ":706-136b")() < 0.5)) I0.mesures.push(`interdiction d'entrer en relation avec ${victimeVivante ? "la victime" : "la famille de la victime"} (706-136, 1°)`);
+        if (I.fam === "crim_personnes" || /arme/.test(q.label)) I0.mesures.push("interdiction de détenir ou de porter une arme (706-136, 3°)");
+        I0.duree = crime ? "quinze ans" : "cinq ans";
+        I0.soins = crime && !(contreMesures && CR.seeded(cs.id + ":706-135")() < 0.6);
+        // la partie civile demande que la chambre statue sur la responsabilité civile (art. 414-3 du code civil)
+        if (t.camp === "pc" && (pl.has("arg:civil") || pl.has("arg:charges"))) {
+          const tot = postes.reduce((n, po) => n + (po.justif && po.justif.some((f) => CR.hasFact(cs, f)) ? po.base : Math.round(po.base * 0.5)), 0);
+          I0.civil = Math.max(1000, Math.round(tot / 100) * 100);
+        }
+      }
+      cs.vars.irresp = I0;
+      api.doc("arret_irresp", flowTitles.arret_irresp);
+      CR.PROC.event(api, { nonlieu: "Arrêt de la chambre de l'instruction : non-lieu (art. 706-123).", renvoi: "Arrêt de la chambre de l'instruction : renvoi devant la juridiction de jugement (art. 706-124).", irresp: "Arrêt de déclaration d'irresponsabilité pénale pour cause de trouble mental (art. 706-125)." }[issue]);
+      return [{ who: "president", t: issue === "nonlieu" ? `La chambre dit n'y avoir lieu à suivre : il n'existe pas de charges suffisantes contre ${nomA} (article 706-123).` : issue === "renvoi" ? `La chambre dit qu'il existe des charges suffisantes et que le premier alinéa de l'article 122-1 n'est pas applicable : ${nomA} est renvoyé${e(A)} devant la juridiction de jugement (article 706-124).` : `La chambre déclare qu'il existe des charges suffisantes contre ${nomA} d'avoir commis les faits, et ${GEN2.PR.gram(A).le} déclare pénalement irresponsable pour cause de trouble mental.${I0.soins ? " Elle ordonne son admission en soins psychiatriques sous la forme d'une hospitalisation complète." : ""}${I0.mesures.length ? ` Mesures de sûreté pour ${I0.duree} : ${I0.mesures.map((m) => m.replace(/ \(706-136, \d°\)/, "")).join(" ; ")}.` : ""}${I0.civil ? ` Sur les intérêts civils, ${nomA} est condamné${e(A)} à verser ${CR.money(I0.civil)} à la partie civile.` : ""}` }];
+    };
+    O.apresIrresp = function (api) {
+      const { s, cs } = api;
+      if (!cs.vars.irresp) api.run("irrespDecider", { played: new Set() });
+      const I0 = cs.vars.irresp; if (!I0) return;
+      const R0 = cs.vars.reglement || (cs.vars.reglement = { qual: "q", jur: t.jur, day: s.day });
+      cs.vars.appelForme = null;
+      if (I0.issue === "renvoi") {
+        R0.type = q.nature === "crime" ? "oma" : "ortc"; R0.qual = "q"; R0.jur = t.jur;
+        api.run("_fixerProces", {});
+        return;
+      }
+      if (cs.proc.detention.statut !== "libre") CR.PROC.detention(api, "libre", {});
+      if (cs.aj) api.aj(crime ? "instruction_crim" : "instruction");
+      const det = I0.issue === "irresp" ? `irresponsabilité pénale déclarée par la chambre de l'instruction${I0.civil ? ` ; ${CR.money(I0.civil)} alloués à la partie civile` : ""}` : "non-lieu de la chambre de l'instruction";
+      CR.closeCase(s, cs, D0 ? { type: "non_lieu", detail: det } : I0.civil ? { type: "indemnise", detail: det, indemnisation: I0.civil } : { type: "deboute", detail: det });
     };
     O.filed_memoire_chins = function (api, { res, depot }) {
       const { s, cs } = api;
@@ -1474,6 +1603,36 @@
           ] : [{ id: "peur", label: "La crainte de la victime", say: "La victime craint pour sa sécurité ; la partie civile s'associe aux réquisitions.", cards: ["X_victime"] }] } },
           { do: (a, st) => a.run("prolongDecider", { played: st.played }) },
         ],
+      };
+    };
+    AU.chins_irresp = function (api) {
+      const { cs } = api;
+      const comparait = !!cs.vars.irrespComparution;
+      const psyConclu = (cs.vars.renfort && cs.vars.renfort.aboli) ? "Le collège d'experts confirme l'abolition du discernement au moment des faits." : t.f.psy === "aboli" ? "Au moment des faits, la personne présentait un épisode délirant aigu ; son discernement était aboli au sens de l'article 122-1, alinéa 1." : "Le discernement était altéré, non aboli : la personne percevait la portée de ses actes.";
+      const argsD = [
+        { id: "aboli", label: "L'abolition du discernement est établie", say: "Les experts sont unanimes : au moment des faits, le discernement était aboli. L'article 122-1 s'applique.", cards: ["CP_122-1"] },
+        { id: "soins_suffisent", label: "Les soins en cours suffisent", say: "Un suivi est en place ; une hospitalisation complète ou des interdictions n'apportent rien et ne doivent pas faire obstacle aux soins (art. 706-136).", cards: notesPerso },
+      ].concat(enjeux.filter((en) => en.effet === "acquit" && !["aboli", "altere"].includes(en.id)).slice(0, 2).map((en) => ({ id: en.id, label: en.label, say: en.arg, cards: ["E_" + en.id] })));
+      const argsPC = [
+        { id: "charges", label: "Les charges sont établies", say: `La chambre doit dire que ${nomA} a commis les faits : c'est ce que la famille attend (art. 706-125, 1°).`, cards: [] },
+        { id: "civil", label: "Statuer sur la responsabilité civile", say: "La partie civile demande à la chambre de statuer sur la responsabilité civile et les dommages et intérêts (art. 706-125, 3°, et art. 414-3 du code civil).", cards: [] },
+        { id: "mesures", label: "Des mesures de sûreté", say: "Une interdiction d'entrer en relation avec la victime et sa famille, pour la durée la plus longue (art. 706-136, 1°).", cards: [] },
+      ];
+      return {
+        title: "Chambre de l'instruction — audience publique", sub: `${TJ.ca} · irresponsabilité pénale (art. 706-122)`, decor: { scene: "salle" },
+        steps: [
+          { who: "president", t: `La chambre examine, en audience publique, s'il existe des charges suffisantes contre ${nomA} et si le premier alinéa de l'article 122-1 du code pénal est applicable.` },
+          comparait ? { who: "president", t: `${Mme(A)} ${A.nom}, vous avez le droit de vous taire. Voulez-vous nous dire quelque chose des faits ?` } : { who: "president", t: `L'état de ${nomA} ne permet pas sa comparution ; ${GEN2.PR.il(A)} est représenté${e(A)} par son avocat.` },
+          comparait ? { who: "client", t: D0 ? "Je ne sais pas… J'entendais des voix. Je ne me souviens pas de tout." : "…" } : null,
+          { who: "temoin", name: "L'expert psychiatre", t: psyConclu },
+          V && !decede ? { who: "president", t: "La partie civile souhaite-t-elle être entendue ?" } : null,
+          t.camp === "pc" ? { who: "president", t: "La parole est à l'avocat de la partie civile." } : null,
+          t.camp === "pc" ? { plaidoirie: { role: "pc", max: 3, args: argsPC } } : (V || P) ? { who: "adverse", t: "La famille demande que la chambre dise que les faits ont été commis, et qu'elle protège la victime." } : null,
+          { who: "parquet", t: t.f.psy === "aboli" ? "Les charges sont suffisantes ; les expertises concordent sur l'abolition. Je requiers une déclaration d'irresponsabilité, l'hospitalisation complète et des mesures de sûreté." : "Les charges sont suffisantes et le discernement n'était qu'altéré : je requiers le renvoi devant la juridiction de jugement." },
+          { who: "president", t: "La parole est à la défense, qui aura la parole en dernier." },
+          D0 ? { plaidoirie: { role: "defense", max: 3, args: argsD } } : { who: "adverse", t: "La défense ne conteste pas les expertises. Elle demande à la chambre de ne prononcer que les mesures nécessaires." },
+          { do: (a, st) => a.run("irrespDecider", { played: st.played }) },
+        ].filter(Boolean),
       };
     };
     AU.chins = function (api) {

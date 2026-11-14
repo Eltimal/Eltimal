@@ -353,3 +353,24 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
     - Pourvoi dans les dix jours francs (568). En matière de détention, la chambre criminelle statue dans les trois mois (567-2). Contre un renvoi en correctionnelle, pourvoi restreint (574).
   - **Non codé (à faire).** La transmission du dossier à la chambre de l'instruction, à la demande d'une partie, pour qu'elle statue elle-même sur l'irresponsabilité en audience publique (706-120, al. 1 ; 706-122 ; 706-125).
 
+- **D-92. L'irresponsabilité pénale se juge aussi devant la chambre de l'instruction (art. 706-120 à 706-128, relus).**
+  - **La demande.** Quand les expertises concluent à l'abolition du discernement, l'avocat, de la défense comme de la partie civile, peut demander après l'avis de fin d'information que la chambre de l'instruction statue (706-120, al. 1).
+    - Règle du jeu : le parquet le demande aussi, une fois sur deux, pour un crime qui a coûté la vie.
+    - Sans demande, le juge rend son ordonnance d'irresponsabilité (D-91).
+  - **L'ordonnance de transmission de pièces.** La détention continue jusqu'à l'audience ; la chambre doit statuer dans les six mois en matière criminelle, quatre en matière correctionnelle (706-121).
+  - **L'audience publique (706-122).**
+    - La personne comparaît si son état le permet ; règle du jeu : six fois sur dix. Sinon, son avocat la représente.
+    - Les experts sont entendus (706-122, 168), puis la partie civile.
+    - Ordre de parole : l'avocat de la partie civile, le ministère public, puis la défense, qui parle la dernière.
+    - Plaidoiries jouées. Défense : abolition établie, soins en cours suffisants, moyens sur les charges. Partie civile : charges établies, intérêts civils, mesures de sûreté.
+  - **Trois issues.**
+    - Non-lieu, faute de charges suffisantes (706-123).
+    - Renvoi devant la juridiction de jugement si l'abolition n'est pas retenue (706-124) : le procès est fixé.
+    - Arrêt de déclaration d'irresponsabilité pénale (706-125) : charges suffisantes, irresponsabilité, et responsabilité civile avec dommages-intérêts si la partie civile le demande (3°). Les dommages-intérêts ouvrent le recouvrement du lot 8.
+  - **Mesures de l'arrêt d'irresponsabilité.**
+    - Mesures de sûreté (706-136) : interdiction d'entrer en relation avec la victime ou sa famille, interdiction de détenir une arme. Durée choisie par le jeu dans les plafonds légaux : quinze ans pour un crime (plafond vingt), cinq ans pour un délit (plafond dix).
+    - Admission en soins psychiatriques en hospitalisation complète (706-135). Règle du jeu : pour un crime, sauf si la défense plaide que les soins en cours suffisent.
+    - Fin de la détention (706-126) ; pourvoi (706-126, 568).
+  - **Appel d'une ordonnance d'irresponsabilité.** Il est jugé selon les mêmes règles (706-128).
+  - **Absence de l'avocat.** C'est une erreur datée : un avocat commis d'office représente la défense ; la partie civile n'est pas entendue.
+

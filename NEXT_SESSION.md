@@ -34,7 +34,7 @@ Texte intégral fait (D-87, `tintegral`) : `js/codes/*.js`, générés par `node
 
 ## Décisions écrites
 
-Fait le 14 novembre (D-90, `tarrets`, `tjld`, `tp3`) : arrêts criminels de toutes les formations, jugement du tribunal pour enfants, ordonnances du juge des libertés, arrêt de la chambre des appels correctionnels. Ordonnance de règlement et arrêt de la chambre de l'instruction faits aussi (D-91, `tchins`), avec la correction de l'ordonnance d'irresponsabilité. Reste : l'audience de la chambre de l'instruction sur l'irresponsabilité, demandée par une partie (706-120, al. 1 ; 706-122).
+Fait le 14 novembre (D-90, `tarrets`, `tjld`, `tp3`) : arrêts criminels de toutes les formations, jugement du tribunal pour enfants, ordonnances du juge des libertés, arrêt de la chambre des appels correctionnels. Ordonnance de règlement et arrêt de la chambre de l'instruction faits aussi (D-91, `tchins`), avec la correction de l'ordonnance d'irresponsabilité. Audience de la chambre de l'instruction sur l'irresponsabilité faite aussi (D-92, `tirresp`).
 
 ## Lot 10 — abandonné
 
