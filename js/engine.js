@@ -141,6 +141,13 @@
       if (!CR.isBusinessDay(s.day)) r *= 1.2;
       drain += r * Math.min(5, to - m);
     }
+    // M12 : passé 23 h 30 l'horloge ne va pas plus loin, mais le travail demandé se paie quand même — en énergie (tarif
+    // de nuit) et en sommeil perdu (s.veille, déduit de la récupération de la nuit). Travailler « hors du temps » n'existe plus.
+    const hors = kind === "idle" ? 0 : Math.max(0, from + total - HARD_STOP);
+    if (hors > 0) {
+      drain += (DRAIN[kind] || 0.1) * 2.4 * (CR.isBusinessDay(s.day) ? 1 : 1.2) * hors;
+      s.veille = (s.veille || 0) + hors;
+    }
     s.min = to;
     if (s.night && s.min >= DAY_START) { s.night = false; s.nightRec = 0; }
     if (kind !== "idle") s.workedToday += to - from;
@@ -181,6 +188,8 @@
     const bedtime = s.min;
     let rec = bedtime <= 20 * 60 ? 46 : bedtime <= 21 * 60 + 30 ? 42 : bedtime <= 22 * 60 + 30 ? 36 : 28;
     if (s.workedToday < 20) rec += !CR.isBusinessDay(s.day) ? 22 : 10;
+    // chaque heure de travail volée à la nuit (M12) coûte dix points de récupération, jusqu'à ne presque plus dormir
+    if (s.veille) rec = Math.max(6, rec - (s.veille / 60) * 10);
     return rec;
   };
   CR.endDay = function (s) {
@@ -192,6 +201,7 @@
     s.min = DAY_START;
     s.at = "cabinet";
     s.workedToday = 0;
+    s.veille = 0;
     s.night = false;
     if (s.burnout && s.day >= s.burnout.until) { s.burnout = null; s.energy = Math.max(s.energy, 70); CR.log(s, "Retour au cabinet après l'arrêt forcé.", "info"); }
     // un appel de nuit (permanence de garde à vue) réveille le joueur
@@ -245,6 +255,15 @@
       if (CR.ymd(s.day).d === 1) break;
     }
     return n;
+  };
+  // Ce que la fin immédiate de la journée ferait manquer (M8) : audiences non tenues, permanences, échéances de l'agenda
+  CR.resteAujourdhui = function (s) {
+    const out = [];
+    if (s.night) return out;
+    for (const { c, h } of (CR.hearingsToday ? CR.hearingsToday(s) : [])) out.push(`${h.title}, à ${CR.fmtTime(h.min)} — ${CR.caseTitle(s, c)} : vous y seriez absent.`);
+    for (const d of (CR.dutyOn ? CR.dutyOn(s, s.day) : [])) if (s.pending.some((e) => e.type === "fn" && e.key === "dutyCall" && e.day === s.day && e.min != null && e.min >= s.min)) { out.push(`${CR.DUTY_LABEL[d.type]} : la permanence ne pourrait pas vous joindre.`); break; }
+    for (const a of s.agenda.filter((x) => x.day === s.day && (x.min == null || x.min >= s.min))) out.push(`À l'agenda${a.min != null ? ", " + CR.fmtTime(a.min) : ""} : ${a.title}.`);
+    return out;
   };
   CR.pendingToday = (s) => s.pending.some((e) => e.day === s.day && e.min != null && (e.type === "lead" || e.type === "ringcase"));
 
@@ -311,6 +330,8 @@
   // kinds : greffe, courrier, email, sms, presse, ordre, note, pv
   CR.mail = function (s, item) {
     const m = Object.assign({ id: CR.uid("m"), day: s.day, min: s.min, read: false, kind: "email" }, item);
+    // tout message a un objet (sortie 1.0, M7) : une clé mal écrite se voit dans les tests au lieu d'afficher « undefined »
+    if (typeof m.subject !== "string" || !m.subject) { console.error("Message sans objet", m.from, Object.keys(item || {}).join(",")); m.subject = typeof m.subj === "string" && m.subj ? m.subj : "(sans objet)"; }
     s.inbox.unshift(m);
     if (s.inbox.length > 250) s.inbox.length = 250;
     return m;
@@ -508,26 +529,21 @@
     s.carpaBy[caseId] = (s.carpaBy[caseId] || 0) - amount;
     CR.ledgerAdd(s, { label, amount: -amount, acct: "carpa", caseId, improper: !proper });
   };
-  CR.carpaToOperating = function (s, caseId, amount, label) {
-    const avail = Math.max(0, s.earnedBy[caseId] || 0);
-    const proper = amount <= avail + 0.5;
-    CR.carpaWithdraw(s, caseId, amount, label, proper);
-    s.cash += amount;
-    CR.ledgerAdd(s, { label, amount, acct: "op", caseId });
-    if (proper) s.earnedBy[caseId] = avail - amount;
-    else CR.detournement(s, caseId, amount - avail);
-    CR.settleDecouvert(s);
-    return proper;
-  };
-  CR.detournement = function (s, caseId, amount) {
+  // Maniement de fonds hors CARPA (M11) : des fonds reçus pour le compte d'un client et passés par le compte professionnel.
+  // Le joueur peut désormais le faire (premier versement à la victime, flow-penal.js) : c'est plus rapide, et c'est une
+  // faute. Le contrôle de la CARPA ou la réclamation du confrère adverse vient plus tard ; le tirage ne touche pas au
+  // hasard de la partie (CR.seeded), pour ne pas déplacer les affaires à venir.
+  CR.detournement = function (s, caseId, amount, o = {}) {
     s.flags.detourne = (s.flags.detourne || 0) + amount;
-    CR.log(s, `Vous avez fait passer ${CR.money(amount)} de fonds clients sur votre compte professionnel.`, "bad", caseId);
-    CR.schedule(s, { day: s.day + R.int(s, 25, 70), type: "fn", key: "carpaControle", data: { caseId, amount } });
+    const r = CR.seeded("carpa:" + s.seed + ":" + caseId + ":" + s.day);
+    CR.log(s, `${CR.money(amount)} de fonds d'un client sont passés par votre compte professionnel, et non par la CARPA.`, "bad", caseId);
+    CR.schedule(s, { day: s.day + 25 + Math.floor(r() * 46), type: "fn", key: "carpaControle", data: { caseId, amount, sev: o.sev || 10, p: r(), texte: o.texte || null } });
   };
   CR.GLOBAL_FN.carpaControle = (s, d) => {
     if (!s.flags.detourne) return;
     const short = s.carpa < 0 || Object.values(s.carpaBy).some((x) => x < -1);
-    if (R.chance(s, short ? 0.85 : 0.25) && CR.plainteBatonnier) CR.plainteBatonnier(s, s.cases[d.caseId] || null, "carpa", 10, "Le contrôle de la CARPA relève un maniement de fonds clients sans justification : des sommes destinées à un client ont transité vers votre compte professionnel.");
+    const tirage = d.p != null ? d.p : R.next(s);
+    if (tirage < (short ? 0.85 : 0.5) && CR.plainteBatonnier) CR.plainteBatonnier(s, s.cases[d.caseId] || null, "carpa", d.sev || 10, d.texte || "Le contrôle de la CARPA relève un maniement de fonds clients sans justification : des sommes destinées à un client ont transité vers votre compte professionnel.");
   };
 
   CR.monthly = function (s, d) {
@@ -669,6 +685,7 @@
   CR.EV.lead = (s, e, ctx) => {
     const def = CR.CASES[e.key];
     if (!def) return; // affaire disparue (ancienne sauvegarde) : rien
+    if (CR.suspendu && CR.suspendu(s)) return; // interdit d'exercer : le client s'adresse ailleurs (M6)
     const d = e.data || {};
     if (def.arrive && def.arrive.cond && !def.arrive.cond(s)) {
       CR.schedule(s, Object.assign({}, e, { id: CR.uid("e"), day: s.day + 5 }));

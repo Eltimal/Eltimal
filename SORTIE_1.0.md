@@ -52,3 +52,16 @@ Restes de la phase 1, hors de portée de cette session : générer la paire de c
 `MAJ_SIGNATURE` (à faire par le propriétaire du dépôt : `node electron/cles-maj.js`) ; créer la branche `main` ; signature
 et notarisation Apple (phase 7).
 
+### Phase 2 — majeurs M6 à M12 (14 novembre 2026)
+
+| Anomalie | Modification | Fichiers | Test |
+|---|---|---|---|
+| M6 | Interdiction temporaire : `CR.suspendu` lu partout — aucun client n'arrive, permanences rayées et inscriptions refusées, contacts transmis, bandeau au bureau, courrier de fin, collaboration rompue. | `js/systems.js`, `js/engine.js`, `js/generator.js`, `js/ui-desk.js` | `tmajeurs` |
+| M7 | `subj` → `subject` (5 courriels) ; `CR.mail` signale tout message sans objet (erreur visible par la batterie) et rattrape l'ancienne clé. | `js/carriere.js`, `js/cassation.js`, `js/engine.js` | `tmajeurs`, `tcarriere`, `tcassation` |
+| M8 | « Avancer » demande confirmation s'il reste une audience, une permanence ou une échéance de l'agenda ce jour-là (`CR.resteAujourdhui`). | `js/engine.js`, `js/main.js` | `tmajeurs` |
+| M9 | Rétrocession au prorata des jours ouvrés travaillés (les jours d'arrêt sont retenus) ; avertissement puis rupture du contrat après des mois d'arrêt ; rupture immédiate en cas d'interdiction. Décision : la rétrocession reste la contrepartie du travail du cabinet, abstrait en énergie (matinées) — ce n'est pas un revenu sans activité ; ce qui manquait, c'était qu'elle cesse quand ce travail n'est pas fait. | `js/carriere.js` | `tmajeurs` |
+| M10 | L'honoraire de résultat entre dans le prix perçu par le client (40 % de son montant, `CR.FEE_ESPERE`, la même part que l'honoraire attendu par le cabinet) et dans le rapport au prix juste. | `js/systems.js` | `tmajeurs` |
+| M11 | La CARPA sert : le premier versement à la victime est un vrai mouvement de fonds (dépôt, cinq jours ouvrés de bonne fin, versement contre reçu ; trop tard = fonds restitués, pas de reçu). L'autre chemin existe (compte du cabinet, reçu immédiat) : maniement hors CARPA, erreur au débrief, contrôle une fois sur deux, réclamation au bâtonnier. `carpaToOperating`, jamais appelée, est retirée : aucun parcours ne prélève d'honoraires sur des fonds de clients. | `js/flow-penal.js`, `js/gen-tribunal.js`, `js/engine.js` | `tmajeurs` |
+| M12 | Passé 23 h 30, le travail demandé se paie en énergie (tarif de nuit) et en sommeil perdu (`s.veille`, déduit de la récupération). | `js/engine.js` | `tmajeurs` |
+| (découvert) | L'audience commençait derrière l'animation de trajet, qui recouvrait aussi le bouton de pause : elle attend maintenant la fin du trajet. | `js/ui-court.js`, `js/ui-moments.js` | `tnavigateur` |
+

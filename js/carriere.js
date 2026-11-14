@@ -132,7 +132,7 @@
       CR.log(s, `Carrière : vous êtes désormais « ${titre} ». ${G.gain}`, "good");
       CR.toast(s, `Nouveau grade : ${titre}`, "good");
       CR.mail(s, {
-        from: c.collab ? c.collab.patron : "Me Varenne", subj: `${titre}`, kind: "email",
+        from: c.collab ? c.collab.patron : "Me Varenne", subject: `${titre}`, kind: "email",
         body: para(c.collab ? "Cher confrère," : "Mon cher confrère,",
           c.grade === 1 ? "Trois dossiers menés au bout : vous n'êtes plus tout à fait un débutant. C'est le moment de vous demander ce que vous voulez plaider dans dix ans. Regardez l'onglet Carrière de votre cabinet : vous pouvez y choisir une spécialité."
             : c.grade === 2 ? "On commence à me parler de vous au vestiaire, et pas pour s'en plaindre. Vos clients le sentent aussi : vous pouvez demander davantage."
@@ -152,7 +152,7 @@
     const qui = c.collab ? c.collab.patron : "Me Solène Kerbrat";
     c.offre = { day: s.day, until: s.day + 45, apport: CAR.APPORT, qui };
     CR.mail(s, {
-      from: qui, subj: "Une proposition d'association", kind: "email", important: true,
+      from: qui, subject: "Une proposition d'association", kind: "email", important: true,
       body: para("Cher confrère,",
         c.collab ? "Vos dossiers personnels pèsent désormais autant que ceux que je vous confie. Je ne veux pas vous voir partir : je vous propose de devenir mon associé."
           : "Nous nous croisons depuis des mois à la 23e chambre, et je sous-loue deux bureaux dont un reste vide. Je vous propose de nous associer : locaux et abonnements partagés, dossiers adressés de l'un à l'autre quand l'agenda déborde.",
@@ -199,7 +199,7 @@
     s.cash = 2500; s.decouvert.limit = 2000;
     s.player.cabinet = c.collab.cabinet;
     CR.mail(s, {
-      from: c.collab.patron, subj: "Bienvenue au cabinet", kind: "email",
+      from: c.collab.patron, subject: "Bienvenue au cabinet", kind: "email",
       body: para("Cher confrère,",
         `Votre contrat de collaboration libérale est signé. La rétrocession d'honoraires est de ${CR.money(CAR.RETRO[0])} hors taxes par mois la première année, le minimum fixé par l'Ordre, et de ${CR.money(CAR.RETRO[1])} ensuite.`,
         "Mes dossiers vous prendront vos matinées. Le reste du temps est à vous : le contrat vous garantit de pouvoir développer votre clientèle personnelle, et je vous y encourage. Inscrivez-vous aux permanences.",
@@ -223,6 +223,30 @@
     return true;
   };
 
+  // M9 : le contrat de collaboration n'est pas acquis. Des arrêts répétés font réagir le cabinet (un avertissement, puis la
+  // rupture avec le délai de prévenance) ; une interdiction d'exercer y met fin sur-le-champ. Le collaborateur remercié se
+  // retrouve à son compte, sans prêt d'installation : un bureau à payer, et plus de rétrocession.
+  CAR.absencesCollab = function (s, n) {
+    const cb = s.car && s.car.collab;
+    if (!cb) return;
+    cb.moisArret = (cb.moisArret || 0) + 1;
+    if (cb.moisArret === 2) CR.mail(s, { from: cb.patron, subject: "Vos absences", kind: "email", important: true, body: para("Cher confrère,", "Deux mois de suite, des matinées entières de mes dossiers n'ont pas été tenues. Je comprends la fatigue ; le cabinet, lui, ne peut pas s'organiser ainsi.", "Ménagez-vous, ou nous devrons en reparler.") });
+    if (cb.moisArret >= 4) CAR.finCollab(s, "absences");
+  };
+  CAR.finCollab = function (s, motif) {
+    const c = CAR.etat(s);
+    if (!c.collab) return false;
+    const ancien = c.collab;
+    c.collab = null; c.installe = s.day; c.remercie = { day: s.day, motif };
+    s.fixed.loyer = 850; s.fixed.logiciels = 140; s.decouvert.limit = 5000;
+    s.player.cabinet = `Cabinet ${s.player.nom}`;
+    CR.mail(s, { from: ancien.patron, subject: "Fin de votre contrat de collaboration", kind: "courrier", important: true, body: para("Cher confrère,",
+      motif === "interdiction" ? "L'interdiction d'exercer prononcée contre vous met fin à notre collaboration : je ne peux pas vous confier de dossiers, et le contrat ne peut plus s'exécuter." : "Vos arrêts répétés ne permettent plus au cabinet de compter sur vous. Je mets fin à votre contrat de collaboration, dans le respect du délai de prévenance.",
+      "La rétrocession cesse avec le contrat. Je vous souhaite de retrouver votre équilibre.") });
+    CR.log(s, `${ancien.cabinet} met fin à votre collaboration : plus de rétrocession. Vous voilà à votre compte, avec un bureau à payer.`, "bad");
+    return true;
+  };
+
   // ------------------------------------------------------------ branchements sur le déroulé de la partie
   const cc = CR.closeCase;
   CR.closeCase = function (s, cs, outcome) {
@@ -242,8 +266,15 @@
     const r = mo.apply(this, arguments);
     try {
       if (CAR.actif(s)) {
-        const m = CAR.retro(s);
-        if (m) { s.cash += m; CR.ledgerAdd(s, { day: d, label: `Rétrocession d'honoraires — ${s.car.collab.cabinet}`, amount: m, acct: "op" }); if (CR.settleDecouvert) CR.settleDecouvert(s); }
+        // M9 : la rétrocession paie le travail fait pour le cabinet. Les jours ouvrés d'arrêt (épuisement) ne sont pas
+        // travaillés : ils sont retenus au prorata. Pas de travail, pas de rétrocession.
+        const cb = s.car && s.car.collab;
+        const faits = cb ? cb.jours || 0 : 0, manques = cb ? cb.absences || 0 : 0;
+        const part = faits + manques > 0 ? faits / (faits + manques) : 1;
+        const m = Math.round(CAR.retro(s) * part);
+        if (cb) { cb.jours = 0; cb.absences = 0; }
+        if (m) { s.cash += m; CR.ledgerAdd(s, { day: d, label: `Rétrocession d'honoraires — ${s.car.collab.cabinet}${part < 1 ? ` (${manques} jour${manques > 1 ? "s" : ""} d'arrêt retenu${manques > 1 ? "s" : ""})` : ""}`, amount: m, acct: "op" }); if (CR.settleDecouvert) CR.settleDecouvert(s); }
+        if (cb && part < 1) CAR.absencesCollab(s, manques);
         CAR.verifier(s);
       }
     } catch (e) { console.error(e); }
@@ -252,9 +283,14 @@
   const ed = CR.endDay;
   CR.endDay = function (s) {
     const r = ed.apply(this, arguments);
-    if (CAR.actif(s) && s.car && s.car.collab && !s.gameOver && !s.burnout && !s.night && CR.isBusinessDay(s.day)) {
-      s.energy = Math.max(25, s.energy - CAR.DRAIN);
-      if (s.lastDayStats) s.lastDayStats.cabinet = CAR.DRAIN;
+    if (CAR.actif(s) && s.car && s.car.collab && !s.gameOver && !s.night && CR.isBusinessDay(s.day)) {
+      const cb = s.car.collab;
+      if (s.burnout) cb.absences = (cb.absences || 0) + 1; // en arrêt : la matinée du cabinet n'est pas faite
+      else {
+        cb.jours = (cb.jours || 0) + 1;
+        s.energy = Math.max(25, s.energy - CAR.DRAIN);
+        if (s.lastDayStats) s.lastDayStats.cabinet = CAR.DRAIN;
+      }
     }
     return r;
   };

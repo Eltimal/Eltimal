@@ -167,7 +167,7 @@
     }
   };
   CR.GLOBAL_FN.dutyCall = function (s, d) {
-    if (s.burnout || s.gameOver) return;
+    if (s.burnout || s.gameOver || (CR.suspendu && CR.suspendu(s))) return;
     if (d.day != null && s.day !== d.day) {
       CR.log(s, "Pendant votre permanence, la permanence pénale de l'Ordre n'a pas pu vous joindre : un confrère a été désigné à votre place.", "bad");
       CR.rep(s, "confreres", -1, "permanence manquée");

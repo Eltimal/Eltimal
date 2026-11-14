@@ -85,7 +85,7 @@
   const persoItems = (x, cs) => [
     { id: "employeur", label: "Obtenir une attestation de l'employeur", sub: "Contrat, fiches de paie, attestation.", fact: "G_attest_emploi", text: `Attestation de l'employeur : ${x.A.metier}, en poste.`, time: 15, cond: () => x.A.emploi },
     { id: "heberg", label: "Obtenir une attestation d'hébergement", sub: "Un justificatif de domicile.", fact: "G_attest", text: `Attestation d'hébergement et justificatif de domicile (${x.A.adresse}).`, time: 15 },
-    { id: "indemn", label: "Proposer à la victime un premier versement", sub: "Un geste d'indemnisation, avant l'audience, par la CARPA.", fact: "G_indemn", text: "Un premier versement à la victime, avant l'audience, justifié par un reçu.", time: 20, cond: () => !!x.V && x.vt === "personne" },
+    CR.PEN.indemnItem(() => !!x.V && x.vt === "personne"),
   ];
 
   // =================================================================== CLIENT CONVOQUÉ DEVANT LE TRIBUNAL

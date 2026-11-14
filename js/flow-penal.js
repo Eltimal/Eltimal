@@ -473,7 +473,9 @@
     for (const it of items || []) {
       if (it.cond && !it.cond(api)) continue;
       const done = CR.hasFact(cs, it.fact);
-      T({ id: "perso_" + it.id, label: done ? `${it.label} (fait)` : it.label, sub: done ? it.text : it.sub, kind: it.kind || "call", time: it.time || 20, enabled: !done, run: () => {
+      const enCours = it.enCours ? it.enCours(api) : null;
+      T({ id: "perso_" + it.id, label: done ? `${it.label} (fait)` : enCours ? `${it.label} (en cours)` : it.label, sub: done ? it.text : enCours || it.sub, kind: it.kind || "call", time: it.time || 20, enabled: !done && !enCours, run: () => {
+        if (it.run) return it.run(api);
         CR.spend(s, it.time || 20, it.kind === "meet" ? "meet" : "call");
         if (it.fail && it.fail(api)) { CR.toast(s, it.failText || "Personne ne répond.", "warn"); return null; }
         api.note(it.text, it.fact, "doc");
@@ -481,6 +483,71 @@
         return null;
       } });
     }
+  };
+  // ------------------------------------------------------------------ Premier versement à la victime (sortie 1.0, M11)
+  // Les fonds du client pour la victime passent par la CARPA : dépôt, délai de bonne fin, puis versement contre reçu — la
+  // pièce n'entre au dossier qu'à ce moment-là, il faut donc s'y prendre avant l'audience. L'autre chemin existe, comme en
+  // vrai : recevoir la somme sur le compte du cabinet et payer le jour même. Le reçu est là tout de suite ; c'est un
+  // maniement de fonds hors CARPA, que le contrôle de la caisse ou le confrère adverse peut relever plus tard.
+  const INDEMN_TEXTE = "Un premier versement à la victime, avant l'audience, justifié par un reçu.";
+  PEN.indemnMontant = (api) => { const w = (api.def.profile && api.def.profile.wealth) || 1; return [150, 200, 400, 800, 1500, 3000][Math.max(0, Math.min(5, w))]; };
+  PEN.indemnItem = (cond) => ({ id: "indemn", label: "Proposer à la victime un premier versement", sub: "Un geste d'indemnisation, avant l'audience : les fonds du client passent par la CARPA.", fact: "G_indemn", text: INDEMN_TEXTE, time: 20, cond,
+    enCours: (api) => { const v = api.cs.vars.indemn; return v && v.voie === "carpa" && !v.verse && !v.rendu ? `${CR.money(v.montant)} déposés à la CARPA le ${CR.fmtDate(v.depot, "long")} ; versement à la victime le ${CR.fmtDate(v.echeance, "long")}, à la bonne fin de l'encaissement.` : null; },
+    run: () => ({ scene: "decide", key: "_indemnChoix" }) });
+  H._indemnChoix = (api) => {
+    const m = PEN.indemnMontant(api), j = CR.addBusinessDays(api.s.day, 5);
+    return {
+      title: "Premier versement à la victime",
+      text: [`${CR.clientName(api.cs)} peut réunir ${CR.money(m)} pour la victime avant l'audience. Un versement justifié par un reçu compte dans le débat sur la peine.`, "Comment la somme parvient-elle à la victime ?"],
+      options: [
+        { t: "Par la CARPA", sub: `Le client remet un chèque à l'ordre de la CARPA. À la bonne fin de l'encaissement, le ${CR.fmtDate(j, "dow")}, la somme est versée au conseil de la victime, qui en donne reçu.`, hook: "_indemnCarpa" },
+        { t: "Par le compte du cabinet, aujourd'hui", sub: "Le client vous vire la somme, vous réglez la victime dans la journée : le reçu est au dossier ce soir.", hook: "_indemnDirect" },
+        { t: "Y renoncer pour l'instant", hook: "_indemnAnnule" },
+      ],
+    };
+  };
+  H._indemnAnnule = () => null;
+  H._indemnCarpa = (api) => {
+    const { s, cs } = api, m = PEN.indemnMontant(api);
+    CR.spend(s, 20, "call");
+    const echeance = CR.addBusinessDays(s.day, 5);
+    cs.vars.indemn = { montant: m, voie: "carpa", depot: s.day, echeance };
+    CR.carpaDeposit(s, cs.id, m, `Fonds du client pour la victime — ${CR.clientName(cs)}`);
+    api.at(echeance, "_indemnVerse", {}, 10 * 60, { always: true });
+    api.tl(`${CR.money(m)} déposés à la CARPA pour la victime ; versement à la bonne fin, le ${CR.fmtDate(echeance, "long")}.`);
+    CR.bon(s, cs, { id: "indemn_carpa", texte: "Les fonds du client pour la victime sont passés par la CARPA." });
+    CR.toast(s, `Fonds déposés à la CARPA. Versement à la victime le ${CR.fmtDate(echeance, "dowshort")}.`, "info");
+    return null;
+  };
+  H._indemnVerse = (api) => {
+    const { s, cs } = api, v = cs.vars.indemn;
+    if (!v || v.voie !== "carpa" || v.verse || v.rendu) return;
+    const aud = cs.proc && cs.proc.audience;
+    // l'audience est passée ou le dossier est clos : la somme n'a plus d'objet devant le tribunal, elle revient au client
+    if (cs.status === "closed" || !aud || aud.day < s.day) {
+      v.rendu = s.day;
+      CR.carpaWithdraw(s, cs.id, v.montant, `Restitution au client — ${CR.clientName(cs)}`);
+      CR.mail(s, { from: "CARPA de Paris", subject: `Fonds restitués — ${CR.clientName(cs)}`, kind: "courrier", caseId: cs.id, body: [[`L'encaissement est arrivé à bonne fin après l'audience : la somme de ${CR.money(v.montant)} est restituée à ${CR.clientName(cs)}.`]] });
+      CR.erreur(s, cs, { id: "indemn_tard", texte: "Le versement à la victime a été engagé trop tard : la CARPA n'avait pas encaissé les fonds le jour de l'audience.", sanction: "Aucun reçu au dossier : le geste d'indemnisation n'a pas compté.", regul: "S'y prendre une semaine au moins avant l'audience." });
+      return;
+    }
+    v.verse = s.day;
+    CR.carpaWithdraw(s, cs.id, v.montant, `Versement à la victime — ${CR.clientName(cs)}`);
+    api.note(INDEMN_TEXTE, "G_indemn", "doc");
+    CR.mail(s, { from: "CARPA de Paris", subject: `Versement effectué — ${CR.clientName(cs)}`, kind: "courrier", caseId: cs.id, body: [[`La somme de ${CR.money(v.montant)}, déposée pour le compte de ${CR.clientName(cs)}, a été versée au conseil de la victime, qui en a donné reçu. Le reçu est joint à votre dossier.`]] });
+    api.tl(`${CR.money(v.montant)} versés à la victime par la CARPA ; reçu au dossier.`);
+  };
+  H._indemnDirect = (api) => {
+    const { s, cs } = api, m = PEN.indemnMontant(api);
+    CR.spend(s, 20, "call");
+    cs.vars.indemn = { montant: m, voie: "cabinet", depot: s.day, verse: s.day };
+    CR.payIn(s, m, `Fonds du client pour la victime (reçus hors CARPA) — ${CR.clientName(cs)}`, cs.id);
+    CR.payOut(s, m, `Versement à la victime — ${CR.clientName(cs)}`, cs.id);
+    api.note(INDEMN_TEXTE, "G_indemn", "doc");
+    api.tl(`${CR.money(m)} reçus du client sur le compte du cabinet et versés à la victime ; reçu au dossier.`);
+    CR.erreur(s, cs, { id: "hors_carpa", texte: "Des fonds reçus pour le compte d'un client sont passés par le compte professionnel.", sanction: "Maniement de fonds hors CARPA : une faute disciplinaire, même sans un euro détourné.", regul: "Aucune : les fonds de tiers passent par la CARPA (loi du 31 décembre 1971, art. 53, 9°)." });
+    CR.detournement(s, cs.id, m, { sev: 5, texte: `Le contrôle de la CARPA relève que des fonds remis par ${CR.clientName(cs)} pour indemniser la victime ont été reçus et reversés par votre compte professionnel, sans passer par la caisse.` });
+    return null;
   };
   PEN.persoCount = (api, ids) => ids.filter((id) => CR.hasFact(api.cs, id)).length;
 

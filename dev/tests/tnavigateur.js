@@ -65,7 +65,7 @@ const ok = (c, k, d) => { if (!c) { echecs++; console.log("  ✗ " + k + (d !== 
   });
   await p.evaluate(async () => { await window.CR.autosave(); });
   const aud = () => p.evaluate(() => { const CR = window.CR, s = CR.store.s, cs = s.cases[window.__cid], h = cs && cs.hearings[0]; return { min: s.min, statut: cs && cs.status, attended: h && h.attended, missed: h && h.missed, issue: cs && cs.outcome && cs.outcome.type, scene: !!document.querySelector(".scene-host"), menu: !!document.querySelector(".menu-grid") }; });
-  const allerAudience = async () => { await p.evaluate(() => [...document.querySelectorAll(".rail-btn")].find((x) => /Bureau/.test(x.textContent)).click()); await p.click("text=Y aller"); await p.waitForTimeout(500); const tr = await p.$(".modal .decide-opt"); if (tr) await tr.click(); await p.waitForSelector(".court-scene, .aud-scene, .scene-host canvas", { timeout: 15000 }); await p.waitForTimeout(700); };
+  const allerAudience = async () => { await p.evaluate(() => [...document.querySelectorAll(".rail-btn")].find((x) => /Bureau/.test(x.textContent)).click()); await p.click("text=Y aller"); await p.waitForTimeout(500); const tr = await p.$(".modal .decide-opt"); if (tr) await tr.click(); await p.waitForSelector(".court-scene, .aud-scene, .scene-host canvas", { timeout: 15000 }); await p.waitForSelector(".travel-fx", { state: "detached", timeout: 20000 }); await p.waitForTimeout(700); };
   await allerAudience();
   ok((await aud()).attended === true && (await aud()).scene, "l'audience n'a pas commencé", await aud());
   // M5 : le bouton de pause est atteignable à la souris (rien ne le recouvre), Échap ouvre le menu, l'audience se suspend

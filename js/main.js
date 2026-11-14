@@ -370,7 +370,11 @@
       dormir: () => { CR.endDay(s); CR.autosave(); setScene(null); bump(); setUi(Object.assign({}, ui, { panel: "bureau", caseId: null })); setModal(s.night || s.gameOver ? null : { type: "matin" }); },
       endDayNow: () => { CR.endDay(s); CR.autosave(); setModal(null); setScene(null); bump(); setUi(Object.assign({}, ui, { panel: "bureau", caseId: null })); },
       backToBed: () => { const got = CR.backToBed(s); CR.toast(s, `Vous vous recouchez. Vous récupérez ${Math.round(got || 0)} points d'énergie avant le réveil.`, "info"); CR.autosave(); bump(); },
-      skip: () => { const n = CR.skipAhead(s); CR.autosave(); CR.toast(s, n > 1 ? `${n} jours ont passé.` : "Une journée a passé.", "info"); bump(); setUi(Object.assign({}, ui, { panel: "bureau", caseId: null })); },
+      // M8 : « Avancer » ne saute plus sans le dire une audience, une permanence ou une échéance du jour
+      skip: (force) => {
+        const reste = CR.resteAujourdhui(s);
+        if (!force && reste.length) { setModal({ type: "confirmSkip", reste }); return; }
+        const n = CR.skipAhead(s); CR.autosave(); CR.toast(s, n > 1 ? `${n} jours ont passé.` : "Une journée a passé.", "info"); bump(); setUi(Object.assign({}, ui, { panel: "bureau", caseId: null })); },
     };
     const answer = (yes) => {
       const r = s.ring;
@@ -460,6 +464,10 @@
       ${modal && modal.type === "travel" && html`<${UI.TravelDialog} s=${s} to=${modal.to} then=${modal.then} onClose=${() => setModal(null)} onGo=${(mode) => { const m = modal; setModal(null); const prevWork = s.workCase; if (m.cs) s.workCase = m.cs.id; CR.travel(s, m.to, mode); s.workCase = prevWork; if (m.cs && m.t) doRun(m.cs, m.t); bump(); }} />`}
       ${modal && modal.type === "menu" && html`<${MenuModal} s=${s} enScene=${!!fullScene} onClose=${() => setModal(null)} />`}
       ${modal && modal.type === "wait" && html`<${UI.Modal} title=${`${modal.pl.nom} : fermé`} onClose=${() => setModal(null)} footer=${html`<${Btn} onClick=${() => setModal(null)}>Faire autre chose</${Btn}><${Btn} kind="primary" onClick=${() => { const m = modal; setModal(null); CR.spend(s, m.until - s.min, "idle", { fixed: true }); doRun(m.cs, m.t); bump(); }}>Attendre jusqu'à ${CR.fmtTime(modal.until)}</${Btn}>`}><p>Il est ${CR.fmtTime(s.min)}. ${CR.HORAIRES[modal.pl.horaires].label}.</p><p className="small muted">Attendre sur un banc du hall coûte peu d'énergie, mais le temps passe pour tous vos dossiers.</p></${UI.Modal}>`}
+      ${modal && modal.type === "confirmSkip" && html`<${UI.Modal} title="Avancer maintenant ?" onClose=${() => setModal(null)} footer=${html`<${Btn} onClick=${() => setModal(null)}>Rester</${Btn}><${Btn} kind="danger" onClick=${() => { setModal(null); go.skip(true); }}>Avancer quand même</${Btn}>`}>
+        <p>Il est ${CR.fmtTime(s.min)}. « Avancer » termine la journée tout de suite. Vous laisseriez passer :</p>
+        <ul className="log-list">${modal.reste.map((x, i) => html`<li key=${i}>${x}</li>`)}</ul>
+      </${UI.Modal}>`}
       ${modal && modal.type === "confirmEnd" && html`<${UI.Modal} title="Rentrer si tôt ?" onClose=${() => setModal(null)} footer=${html`<${Btn} onClick=${() => setModal(null)}>Rester</${Btn}><${Btn} kind="primary" onClick=${go.rentrer}>Rentrer</${Btn}>`}><p>Il n'est que ${CR.fmtTime(s.min)} un jour ouvré. Les appels de l'après-midi iront sur la messagerie vocale. Un après-midi tranquille aide à récupérer.</p></${UI.Modal}>`}
       ${chezSoi && modal.type === "soir" && html`<div className="chez-soi-plan staged">
         <${UI.Plan} name="domicile" opts=${{ min: s.min, rain: CR.dec.rainy(s), ringing: !!s.ring }} /><div className="stg-shade"></div>

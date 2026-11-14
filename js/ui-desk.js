@@ -131,6 +131,7 @@
         </div>
       </div>
       ${s.night && html`<div className="banner warn">Il est ${CR.fmtTime(s.min)}. Vous avez été réveillé par la permanence. Chaque heure passée debout est une heure de sommeil en moins.</div>`}
+      ${CR.suspendu(s) && html`<div className="banner bad">Interdiction temporaire d'exercer jusqu'au ${CR.fmtDate(s.flags.suspendedUntil, "dow")}. Vous ne pouvez ni recevoir de clients ni tenir de permanence ; les charges du cabinet, elles, continuent de partir.</div>`}
       ${s.burnout && html`<div className="banner bad">Arrêt de travail jusqu'au ${CR.fmtDate(s.burnout.until, "dow")}. Les appels vont sur la messagerie. Les délais continuent de courir.</div>`}
       ${s.lastMonthly && s.lastMonthly.day === s.day && html`<div className="banner">Les charges du mois sont parties ce matin : ${CR.money(s.lastMonthly.total)}. Compte professionnel : ${CR.money(s.cash)}.</div>`}
       ${s.lastDayStats && s.min === CR.DAY_START && !s.night && html`<p className="muted small">Vous avez dormi et récupéré ${Math.round(s.lastDayStats.rec)} points d'énergie.</p>`}
@@ -671,10 +672,11 @@
     const days = [];
     for (let d = s.day + 1; d <= s.day + 21; d++) days.push(d);
     return html`<div>
+      ${CR.suspendu(s) && html`<div className="banner bad">Vous êtes interdit d'exercer jusqu'au ${CR.fmtDate(s.flags.suspendedUntil, "long")} : aucune inscription n'est possible avant cette date.</div>`}
       <p className="muted">Inscription auprès du service des permanences de l'Ordre. Une permanence de garde à vue de nuit peut vous réveiller ; une permanence de comparution immédiate occupe l'après-midi au Palais.</p>
       <div className="tbl-wrap"><table className="tbl perm"><thead><tr><th>Jour</th><th>Garde à vue (jour)</th><th>Garde à vue (nuit)</th><th>Comparutions immédiates</th></tr></thead><tbody>
         ${days.map((d) => html`<tr key=${d}><td>${CR.fmtDate(d, "dowshort")}${!CR.isBusinessDay(d) ? html` <span className="small muted">${CR.holidayName(d) || "week-end"}</span>` : ""}</td>
-          ${["gav_jour", "gav_nuit", "ci"].map((t) => { const on = s.duty.some((x) => x.day === d && x.type === t); const possible = t !== "ci" || CR.isBusinessDay(d); return html`<td key=${t}>${on ? html`<${Tag} tone="ok">Inscrit</${Tag}>` : possible ? html`<button className="link small" onClick=${() => { CR.signDuty(s, d, t); bump(); }}>S'inscrire</button>` : "—"}</td>`; })}
+          ${["gav_jour", "gav_nuit", "ci"].map((t) => { const on = s.duty.some((x) => x.day === d && x.type === t); const possible = (t !== "ci" || CR.isBusinessDay(d)) && !CR.suspenduLe(s, d); return html`<td key=${t}>${on ? html`<${Tag} tone="ok">Inscrit</${Tag}>` : possible ? html`<button className="link small" onClick=${() => { CR.signDuty(s, d, t); bump(); }}>S'inscrire</button>` : "—"}</td>`; })}
         </tr>`)}
       </tbody></table></div>
     </div>`;

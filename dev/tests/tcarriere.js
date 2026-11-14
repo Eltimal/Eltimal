@@ -24,7 +24,7 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("ÉCHEC", m
   const f0 = CR.fairForfait(s, def), t0 = CR.fairTaux(s);
   // --- grades
   s.stats.dossiers = 3; CAR.verifier(s);
-  ok(s.car.grade === 1 && s.inbox.some((m) => /Avocat installé/.test(m.subj)), "trois dossiers : avocat installé, un courriel l'annonce");
+  ok(s.car.grade === 1 && s.inbox.some((m) => /Avocat installé/.test(m.subject)), "trois dossiers : avocat installé, un courriel l'annonce");
   s.stats.dossiers = 10; CAR.verifier(s); ok(s.car.grade === 1, "dix dossiers ne suffisent pas sans réputation");
   s.reps = { clients: 32, confreres: 30, siege: 32, parquet: 30 }; s.car.favorables = 3; CAR.verifier(s);
   ok(s.car.grade === 2 && CAR.primeGrade(s) === 1.08, "pénaliste confirmé : honoraires relevés");

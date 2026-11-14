@@ -114,7 +114,7 @@
   UI.TravelFX = ({ s }) => {
     const fx = CR.fx.travel;
     const [, force] = useState(0);
-    const skip = () => { if (CR.fx.travel === fx) CR.fx.travel = null; force((x) => x + 1); };
+    const skip = () => { if (CR.fx.travel === fx) CR.fx.travel = null; force((x) => x + 1); CR.store.bump(); }; // bump : la scène cachée derrière le trajet reprend
     useEffect(() => {
       if (!fx) return;
       if (reduced()) { skip(); return; }

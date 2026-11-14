@@ -63,7 +63,7 @@
     cs.vars.cass = { day: s.day, limite: CR.rollForward(s.day + 11), vice, etat: "delai", ferme, pc };
     const ca = CASS.cour(s, cs);
     CR.mail(s, {
-      from: `${ca} — greffe`, subj: `Arrêt du ${D(s.day)} — ${CR.clientName(cs)}`, kind: "greffe", important: true, caseId: cs.id,
+      from: `${ca} — greffe`, subject: `Arrêt du ${D(s.day)} — ${CR.clientName(cs)}`, kind: "greffe", important: true, caseId: cs.id,
       body: [[`L'arrêt de la chambre des appels correctionnels a été prononcé le ${D(s.day)}. La copie est à votre disposition.`], [`Il peut être frappé d'un pourvoi en cassation dans les dix jours francs du prononcé (art. 568 du code de procédure pénale), soit jusqu'au ${D(cs.vars.cass.limite)} inclus. Passé ce délai, il sera définitif.`], ["Depuis votre bureau : « Lire l'arrêt »."]],
     });
     if (CR.addAgenda) { try { s.agenda.push({ id: CR.uid("a"), created: s.day, day: cs.vars.cass.limite, title: `Dernier jour pour le pourvoi en cassation — ${CR.clientName(cs)}`, caseId: cs.id }); s.agenda.sort((x, y) => x.day - y.day || (x.min || 0) - (y.min || 0)); } catch (e) { /* agenda facultatif */ } }
@@ -172,7 +172,7 @@
     const titre = { cassation: "Cassation", non_admis: "Non-admission du pourvoi", irrecevable: "Irrecevabilité", desistement: "Désistement" }[etat];
     fin(s, cs, etat, bilan);
     CR.mail(s, {
-      from: "Cour de cassation — greffe criminel", subj: `${titre} — ${CR.clientName(cs)}`, kind: "greffe", important: true, caseId: cs.id,
+      from: "Cour de cassation — greffe criminel", subject: `${titre} — ${CR.clientName(cs)}`, kind: "greffe", important: true, caseId: cs.id,
       body: [[etat === "cassation" ? `La chambre criminelle casse et annule l'arrêt de la ${CASS.cour(s, cs).replace(/^C/, "c")} du ${D(c.day)} et renvoie la cause et les parties devant la cour d'appel de ${renvoi}, pour qu'il soit à nouveau jugé conformément à la loi.` : etat === "non_admis" ? "La chambre criminelle déclare le pourvoi non admis." : etat === "irrecevable" ? "La chambre criminelle déclare le mémoire irrecevable et rejette le pourvoi." : "Il est donné acte du désistement du pourvoi."]].concat(bilan.map((b) => [b.text])),
     });
     CR.toast(s, `Cour de cassation — ${CR.clientName(cs)} : ${titre.toLowerCase()}.`, etat === "cassation" ? "good" : etat === "desistement" ? "info" : "bad");

@@ -10,10 +10,11 @@
     const base = (def.honoraires && def.honoraires.forfait) || 1500;
     return Math.round(base * (0.85 + s.reps.clients / 230) / 50) * 50;
   };
+  CR.FEE_ESPERE = 0.4; // part de l'honoraire de résultat tenue pour acquise, par le client comme par le cabinet
   CR.expectedFee = (s, def, offer) => {
     if (!offer) return 0;
     if (offer.type === "temps") return offer.rate * ((def.honoraires && def.honoraires.heures) || 10);
-    return offer.amount + (offer.complement ? offer.complement * 0.4 : 0);
+    return offer.amount + (offer.complement ? offer.complement * CR.FEE_ESPERE : 0);
   };
   const TEMPER = {
     ferme: { patience: 1, label: "Ferme" },
@@ -81,7 +82,9 @@
       if (n.patience <= 0) return leave(s, cs, "Je suis désolé. Je vais chercher quelqu'un de moins cher.");
       return { verdict: "counter", line, gesture: "plan" };
     }
-    let ratio = offer.type === "temps" ? offer.rate / (resT * boost) : offer.amount / (resF * boost);
+    // M10 : l'honoraire de résultat fait partie du prix. Le client le compte pour ce qu'il s'attend à payer (CR.FEE_ESPERE
+    // de son montant, la même part que l'honoraire attendu par le cabinet) : il n'est plus jamais « gratuit ».
+    let ratio = offer.type === "temps" ? offer.rate / (resT * boost) : (offer.amount + (offer.complement || 0) * CR.FEE_ESPERE) / (resF * boost);
     const ok = ratio <= 1;
     n.history.push({ who: "you", text: CR.offerText(offer) });
     const T = p.temper;
@@ -131,7 +134,7 @@
     n.done = true;
     n.result = "accept";
     const def = CR.caseDef(cs);
-    const fairRatio = offer.type === "temps" ? offer.rate / n.fairTaux : offer.amount / n.fairForfait;
+    const fairRatio = offer.type === "temps" ? offer.rate / n.fairTaux : (offer.amount + (offer.complement || 0) * CR.FEE_ESPERE) / n.fairForfait;
     cs.fee = Object.assign({}, offer, { agreed: s.day, fairRatio, rounds: n.round, expected: CR.expectedFee(s, def, offer) });
     CR.trust(s, cs, fairRatio <= 1.05 ? 6 : fairRatio > 1.3 ? -4 : 2);
     return { verdict: "accept", line };
@@ -378,6 +381,7 @@
   CR.DUTY_LABEL = { gav_jour: "Permanence de garde à vue (jour)", gav_nuit: "Permanence de garde à vue (nuit)", ci: "Permanence de comparution immédiate" };
   CR.signDuty = function (s, day, type) {
     if (s.duty.some((d) => d.day === day && d.type === type)) return false;
+    if (CR.suspenduLe(s, day)) return false; // interdit d'exercer ce jour-là : pas de permanence (M6)
     s.duty.push({ day, type, signed: s.day });
     s.duty.sort((a, b) => a.day - b.day);
     if (CR.planDuty) CR.planDuty(s, day, type);
@@ -386,6 +390,7 @@
   CR.dutyOn = (s, day) => s.duty.filter((d) => d.day === day);
   CR.dailyLeads = function (s, d) {
     if (s.mode !== "carriere") return;
+    if (CR.suspendu(s)) return; // interdit d'exercer : aucun client ne peut être pris (M6)
     if (!CR.GEN || !CR.GEN.lead) return;
     // Phase 2 : cinq à quinze affaires criminelles par année de carrière, au milieu des délits
     if (CR.GEN2 && CR.GEN2.infoDue && CR.GEN2.infoDue(s, d)) { CR.GEN.lead(s, d, "info"); return; }
@@ -473,7 +478,7 @@
     if (s.mode === "carriere" && s.reseau[id] >= 58 && R.chance(s, 0.6)) CR.schedule(s, { day: s.day + R.int(s, 20, 60), min: 10 * 60 + R.int(s, 0, 360), type: "fn", key: "ascenseur", data: { id } });
   };
   CR.GLOBAL_FN.ascenseur = (s, d) => {
-    if (s.burnout || s.gameOver || !CR.GEN || !CR.GEN.lead) return;
+    if (s.burnout || s.gameOver || CR.suspendu(s) || !CR.GEN || !CR.GEN.lead) return;
     const a = CR.acteur(d.id) || { nom: "Un confrère" };
     CR.mail(s, { from: a.nom, subject: "Un dossier pour vous", kind: "email", body: [[`Mon cher confrère, en retour de votre confiance, je vous adresse un client que je ne peux pas suivre. Il va vous appeler. Bien confraternellement, ${a.nom}.`]] });
     try { CR.GEN.lead(s, { day: s.day }, CR.GEN2 ? CR.GEN2.leadKind(s) : undefined); } catch (e) { console.error(e); }
@@ -549,13 +554,27 @@
     if (level === 4) CR.suspend(s);
     if (level === 5) CR.endGame(s, "radie", "Le conseil de discipline a prononcé votre radiation du tableau de l'Ordre.");
   };
+  // Interdiction temporaire d'exercer (M6) : six mois pendant lesquels aucun dossier ne peut être pris ni suivi — les
+  // dossiers en cours et les contacts sont transmis, les permanences rayées, aucun client n'arrive. Les charges courent.
+  CR.suspendu = (s) => !!s && s.flags.suspendedUntil != null && s.day < s.flags.suspendedUntil;
+  CR.suspenduLe = (s, day) => !!s && s.flags.suspendedUntil != null && day < s.flags.suspendedUntil;
   CR.suspend = function (s) {
     for (const id of s.order) {
       const cs = s.cases[id];
-      if (cs && (cs.status === "active" || cs.status === "prospect")) CR.closeCase(s, cs, { type: "transferred", note: "Dossier transmis à un confrère pendant votre interdiction temporaire." });
+      if (cs && ["active", "prospect", "lead"].includes(cs.status)) CR.closeCase(s, cs, { type: "transferred", note: "Dossier transmis à un confrère pendant votre interdiction temporaire." });
     }
     s.flags.suspendedUntil = s.day + 182;
-    CR.log(s, "Interdit d'exercer pour six mois. Tous vos dossiers ont été transmis à des confrères.", "bad");
+    s.duty = s.duty.filter((d) => d.day >= s.flags.suspendedUntil);
+    CR.unschedule(s, (e) => (e.type === "fn" && e.key === "dutyCall" && e.day < s.flags.suspendedUntil) || (e.type === "lead" && e.day < s.flags.suspendedUntil));
+    s.ring = null;
+    CR.schedule(s, { day: s.flags.suspendedUntil, type: "fn", key: "finInterdiction" });
+    if (CR.CAR && CR.CAR.finCollab) CR.CAR.finCollab(s, "interdiction");
+    CR.log(s, `Interdit d'exercer pour six mois, jusqu'au ${CR.fmtDate(s.flags.suspendedUntil, "long")}. Tous vos dossiers ont été transmis à des confrères ; vous ne pouvez ni en prendre de nouveaux ni tenir de permanence.`, "bad");
+  };
+  CR.GLOBAL_FN.finInterdiction = (s) => {
+    if (s.gameOver) return;
+    CR.mail(s, { from: ORDRE, subject: "Fin de votre interdiction temporaire", kind: "ordre", important: true, body: [["Mon cher confrère,"], ["Votre interdiction temporaire d'exercer a pris fin ce jour. Vous pouvez de nouveau recevoir des clients et vous inscrire aux permanences."]] });
+    CR.log(s, "Votre interdiction d'exercer a pris fin : vous reprenez la robe.", "good");
   };
   // Mise en cause de la responsabilité civile professionnelle
   CR.rcp = function (s, cs, why) {

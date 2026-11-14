@@ -81,7 +81,7 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("ÉCHEC", m
     await click(w, findBtn(doc, "Fermer"));
   }
   while (s.day < jour + 1 && !s.gameOver) CR.endDay(s);
-  ok(c11.vars.cass.etat === "cassation" && s.inbox.some((m) => /Cassation/.test(m.subj)), "l'arrêt de la chambre criminelle arrive par courriel : " + c11.vars.cass.etat);
+  ok(c11.vars.cass.etat === "cassation" && s.inbox.some((m) => /Cassation/.test(m.subject)), "l'arrêt de la chambre criminelle arrive par courriel : " + c11.vars.cass.etat);
   const s2 = JSON.parse(JSON.stringify(s)); ok(s2.cases[c1.id].vars.cass.etat === "cassation", "le pourvoi survit à la sauvegarde");
   console.log("échecs:", fails); console.log("errors:", errors.length ? errors.slice(0, 4).join("\n---\n") : "none");
   process.exit(0);
