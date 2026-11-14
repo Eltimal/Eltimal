@@ -87,8 +87,26 @@
       window.addEventListener("keydown", k);
       return () => window.removeEventListener("keydown", k);
     }, [onClose]);
-    return html`<div className="modal-wrap" role="dialog" aria-modal="true">
-      <div className=${UI.cx("modal", wide && "modal-wide", className)}>
+    // Accessibilité (sortie 1.0) : à l'ouverture le focus entre dans la fenêtre, Tab y reste, et il revient d'où il venait
+    const boite = React.useRef(null);
+    useEffect(() => {
+      const avant = document.activeElement;
+      const el = boite.current;
+      if (el && !el.contains(document.activeElement)) { try { el.focus({ preventScroll: true }); } catch (e) { /* rien */ } }
+      const tab = (e) => {
+        if (e.key !== "Tab" || !el) return;
+        const f = [...el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.disabled && x.offsetParent !== null);
+        if (!f.length) { e.preventDefault(); return; }
+        const premier = f[0], dernier = f[f.length - 1];
+        if (!el.contains(document.activeElement)) { e.preventDefault(); premier.focus(); }
+        else if (e.shiftKey && (document.activeElement === premier || document.activeElement === el)) { e.preventDefault(); dernier.focus(); }
+        else if (!e.shiftKey && document.activeElement === dernier) { e.preventDefault(); premier.focus(); }
+      };
+      window.addEventListener("keydown", tab);
+      return () => { window.removeEventListener("keydown", tab); try { if (avant && avant.focus && document.contains(avant)) avant.focus({ preventScroll: true }); } catch (e) { /* rien */ } };
+    }, []);
+    return html`<div className="modal-wrap" role="dialog" aria-modal="true" aria-label=${typeof title === "string" ? title : undefined}>
+      <div className=${UI.cx("modal", wide && "modal-wide", className)} ref=${boite} tabIndex="-1">
         <div className="modal-head"><h2>${title}</h2>${onClose && html`<button className="icon-btn" onClick=${onClose} aria-label="Fermer"><${UI.Icon} n="close" /></button>`}</div>
         <div className="modal-body">${children}</div>
         ${footer && html`<div className="modal-foot">${footer}</div>`}

@@ -25,6 +25,7 @@ async function lancer() {
   let { app, page, errs } = await lancer();
   const info = await page.evaluate(async (POLICES) => {
     const CR = window.CR, out = {};
+    await CR.Saves.init();
     out.url = location.protocol; out.version = CR.JEU && CR.JEU.version; out.backend = CR.Saves.backend;
     out.polices = {};
     for (const f of POLICES) { try { const l = await document.fonts.load('16px "' + f + '"'); out.polices[f] = l.length > 0 && l.every((x) => x.status === "loaded"); } catch (e) { out.polices[f] = false; } }
@@ -49,7 +50,7 @@ async function lancer() {
   note("scripts et scène", info.canvas && info.scriptsPrevus > 50 && info.ressources.every((u) => u.startsWith("file:")), info.scriptsPrevus + " scripts, tous locaux");
   const pol = Object.entries(info.polices).filter(([, v]) => !v).map(([k]) => k);
   note("polices locales", pol.length === 0, pol.length ? "manquent : " + pol.join(", ") : POLICES.length + " familles chargées");
-  note("sauvegardes sur l'appareil", info.backend === "local", "mode " + info.backend);
+  note("sauvegardes sur l'appareil (IndexedDB)", info.backend === "idb", "mode " + info.backend);
   note("son démarré sans clic", info.son.etat === "running", "contexte " + info.son.etat);
   note("le son produit du signal", info.son.ambiance > 0.002 || info.son.bruit > 0.002, "ambiance " + info.son.ambiance + ", sonnerie " + info.son.bruit);
   // Une vraie partie : créée par le jeu, sauvegardée dans l'emplacement « essai »
@@ -75,7 +76,7 @@ async function lancer() {
     return { marque: localStorage.getItem("lp-test-marque"), volume: CR.prefs.volume, parties: l.map((x) => x.slot + "@" + x.where) };
   });
   note("réglages gardés après relance", apres.marque === "42" && apres.volume === 0.37, "volume " + apres.volume);
-  note("partie retrouvée après relance", apres.parties.includes("essai@local"), apres.parties.join(", ") || "aucune");
+  note("partie retrouvée après relance", apres.parties.includes("essai@idb"), apres.parties.join(", ") || "aucune");
   await app.close();
   fs.rmSync(donnees, { recursive: true, force: true });
   const ko = res.filter((x) => !x).length;

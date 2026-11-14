@@ -542,6 +542,11 @@
             ${CR.SAISIE_MODES.map(([k, l, d]) => html`<option key=${k} value=${k}>${l} — ${d}</option>`)}
           </select>
           <p className="small muted">Dans les actes et à l'audience, vous tapez le numéro de l'article au lieu de le choisir. Les articles ratés reviennent dans le classeur.</p>
+          <label htmlFor="aide" className="small">Niveau d'aide</label>
+          <select id="aide" value=${s.settings.parole === "assiste" ? "assiste" : "libre"} onChange=${(e) => { s.settings.parole = e.target.value === "assiste" ? "assiste" : "libre"; bump(); }}>
+            <option value="libre">Libre — ni jauge, ni signal, ni liste de questions</option><option value="assiste">Assisté — questions et moyens en liste, jauges visibles</option>
+          </select>
+          <p className="small muted">Le changement vaut pour les scènes à venir. Une réussite aidée ne fait pas monter vos compétences.</p>
           <label className="check"><input type="checkbox" id="indices" checked=${!!s.settings.indices} onChange=${(e) => { s.settings.indices = e.target.checked; bump(); }} /> Mode assisté : un indice après un moment passé sur une pièce</label>
           <p className="small muted">Sans ce réglage, rien ne vous signale une irrégularité : à vous de lire les heures, les mentions et les signatures.</p>
           <label className="check"><input type="checkbox" id="coach" checked=${!!s.settings.coach} onChange=${(e) => { s.settings.coach = e.target.checked; bump(); }} /> Conseils de Me Varenne à la première rencontre</label>
@@ -553,12 +558,30 @@
           <h3>Carrière</h3>
           ${s.mode === "carriere" && (!confirmRetire ? html`<${Btn} onClick=${() => setConfirmRetire(true)}>Quitter la profession</${Btn}>` : html`<${Btn} kind="danger" onClick=${() => { CR.endGame(s, "retraite", "Vous avez rendu votre robe, à votre heure."); bump(); onClose(); }}>Confirmer : rendre la robe</${Btn}>`)}
           ${!confirmQuit ? html`<${Btn} kind="ghost" onClick=${() => setConfirmQuit(true)}>Retour à l'écran titre</${Btn}>` : html`<${Btn} kind="danger" onClick=${() => { CR.Saves.vider(); CR.poserPartie(null); }}>Quitter (partie enregistrée)</${Btn}>`}
-          <p className="small muted">La Permanence, version ${CR.JEU.libelle} (${CR.JEU.date}).</p>
+          <details className="menu-credits"><summary>Crédits et licences</summary><${UI.Credits} /></details>
           <p className="small muted">Le droit du jeu est à jour de novembre 2026 : les réformes récentes, les peines et les délais sensibles ont été vérifiés en ligne. Les textes sont des résumés rédigés pour le jeu : à relire sur Légifrance avant tout usage réel. Les magistrats, policiers, confrères et clients sont fictifs ; les lieux sont réels.</p>
         </div>
       </div>
     </${UI.Modal}>`;
   }
+
+  // =================================================================== Crédits et licences (sortie 1.0)
+  // Ce que le jeu doit à d'autres, avec la licence de chaque élément ; les textes complets sont livrés avec le jeu
+  // (fonts/OFL.txt, lib/LICENCES.txt, js/sons/CREDITS.md).
+  UI.Credits = function Credits() {
+    const L = [
+      ["Texte des codes", "Légifrance, base LEGI (Direction de l'information légale et administrative), mis en forme par codes.droit.org. Licence Ouverte 2.0. Le jeu en donne une copie datée : la version en vigueur se lit sur Légifrance."],
+      ["Sons", "Enregistrements de Joseph Sardin (BigSoundBank.com) et de Kenney (kenney.nl), placés dans le domaine public (CC0)."],
+      ["Polices", "Source Sans 3 (Adobe), Spectral (Production Type), Courier Prime (Quote-Unquote Apps), Silkscreen (Jason Kottke), Caveat (Impallari Type), Bodoni Moda (Owen Earl, indestructible type). SIL Open Font License 1.1."],
+      ["Logiciels", "React et React DOM (Meta, licence MIT), htm (Google, licence Apache 2.0) ; l'app Mac repose sur Electron (OpenJS Foundation, licence MIT)."],
+    ];
+    return html`<div className="credits">
+      <p><strong>La Permanence</strong>, version ${CR.JEU.libelle} (${CR.JEU.date}). Conception, écriture et réalisation : Kevin.</p>
+      <dl>${L.map(([t, d]) => html`<div key=${t}><dt>${t}</dt><dd>${d}</dd></div>`)}</dl>
+      <p className="small muted">Les textes complets des licences sont livrés avec le jeu.</p>
+      <p className="small muted">Les magistrats, policiers, avocats et clients sont fictifs ; toute ressemblance avec des personnes réelles serait fortuite. Les lieux sont réels. Le droit est résumé pour le jeu : il ne remplace ni la lecture des textes sur Légifrance ni le conseil d'un avocat.</p>
+    </div>`;
+  };
 
   // =================================================================== Jouer une affaire par son code
   function CodeBox({ onBack, player }) {
@@ -620,6 +643,7 @@
     const [nom, setNom] = useState("");
     const [cabinet, setCabinet] = useState("");
     const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1e6));
+    const [aide, setAide] = useState(CR.prefs.aide === "assiste" ? "assiste" : "libre");
     const [saves, setSaves] = useState(null);
     const fileRef = useRef(null);
     useEffect(() => { Saves.list().then(setSaves); }, [Saves.backend]);
@@ -630,6 +654,9 @@
       const n = nom.trim() || "Durand";
       const st = CR.newGame({ prenom: p, nom: n, cabinet: cabinet.trim() || `Cabinet ${n}`, look, mode: m });
       if (debut === "collab" && CR.CAR) CR.CAR.demarrerCollab(st);
+      // le niveau d'aide choisi à la prestation de serment (D-57 : l'aide est un choix du joueur) ; il se change dans le menu
+      if (aide === "assiste") { st.settings.parole = "assiste"; st.settings.indices = true; }
+      CR.prefsSet("aide", aide);
       CR.installerPartie(st);
     };
     const importFile = (e) => {
@@ -666,6 +693,7 @@
               ${others.length > 0 && html`<button type="button" className="ts-btn" onClick=${() => setMode("load")}>Charger une partie</button>`}
               <button type="button" className="ts-btn" onClick=${() => fileRef.current && fileRef.current.click()}>Importer une sauvegarde</button>
               <button type="button" className="ts-btn" onClick=${() => setMode("reglages")}>Réglages</button>
+              <button type="button" className="ts-btn" onClick=${() => setMode("credits")}>Crédits et licences</button>
               <input type="file" accept=".json,application/json" ref=${fileRef} hidden onChange=${importFile} />
             </nav>
             ${err && html`<p className="warn-txt small">${err}</p>`}
@@ -674,6 +702,11 @@
           ${mode === "reglages" && html`<div className="ts-box">
             <p className="ts-box-title">Réglages</p>
             <${UI.Reglages} />
+            <button type="button" className="ts-btn ts-btn-sm" onClick=${() => setMode("menu")}>Retour</button>
+          </div>`}
+          ${mode === "credits" && html`<div className="ts-box">
+            <p className="ts-box-title">Crédits et licences</p>
+            <${UI.Credits} />
             <button type="button" className="ts-btn ts-btn-sm" onClick=${() => setMode("menu")}>Retour</button>
           </div>`}
           ${mode === "load" && html`<div className="ts-box">
@@ -693,6 +726,11 @@
                 <label htmlFor="nc-cab">Nom du cabinet</label>
                 <input id="nc-cab" type="text" value=${cabinet} placeholder=${`Cabinet ${nom.trim() || "Durand"}`} onChange=${(e) => setCabinet(e.target.value)} />
               </div>
+            </div>
+            <div className="aide-pick" role="radiogroup" aria-label="Niveau d'aide">
+              <p className="small"><strong>Niveau d'aide</strong> — il se change à tout moment dans le menu.</p>
+              <label><input type="radio" name="nc-aide" checked=${aide === "libre"} onChange=${() => setAide("libre")} /> <span><strong>Libre</strong> — rien ne vous guide : ni jauge, ni signal, ni indice. Vous lisez les pièces, vous composez vos questions, vous plaidez vos moyens. C'est le jeu tel qu'il est pensé.</span></label>
+              <label><input type="radio" name="nc-aide" checked=${aide === "assiste"} onChange=${() => setAide("assiste")} /> <span><strong>Assisté</strong> — pour une première carrière : questions et moyens proposés en liste, jauges visibles, un indice après un moment passé sur une pièce. Une réussite aidée ne fait pas monter vos compétences.</span></label>
             </div>
             <div className="mode-pick">
               <button className="decide-opt" onClick=${() => start("carriere")}><strong>Carrière — à votre compte</strong><span className="small muted">Lundi 2 novembre 2026. 6 200 € sur le compte professionnel, un prêt d'installation de 15 000 €, un découvert de 5 000 €. Les permanences de l'Ordre, les commissions d'office, puis vos propres clients.</span></button>

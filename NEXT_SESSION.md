@@ -2,6 +2,10 @@
 
 À lire en premier, avec `GAMEPLAY_STATE.md`, `GAMEPLAY_ROADMAP.md` et `GAMEPLAY_DECISIONS.md`. Mandat : direction autonome du chantier jusqu'à la livraison finale ; ne demander aucune validation à Kevin ; seule la livraison finale fait l'objet d'un rapport.
 
+## Sortie 1.0 (depuis le 14 novembre 2026)
+
+L'audit de sortie et sa correction sont suivis dans `SORTIE_1.0.md` (plan, journal, checklist) ; la publication suit `PUBLICATION.md` : les branches `claude/**` publient sur le canal d'essai (`essai-N`), seule `main` publie aux joueurs (`jeu-N`), et rien n'est publié sans la batterie. Tout nouveau lot ajoute son test à `dev/tools/batterie.js`.
+
 ## Avant toute chose
 
 1. `git fetch --all` ; partir de la branche la plus avancée entre `claude/keen-heisenberg-nk0cv3` et `claude/permanence-mac-app-graphics-wege0b` (fusionner l'autre dedans s'il le faut ; les deux publient le jeu sur le Mac, numéro = nombre de commits).

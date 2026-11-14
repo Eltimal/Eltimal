@@ -7,12 +7,13 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "node electron/paquet-jeu.js --version-livree && electron-builder --mac",
-    "build:zip": "node electron/paquet-jeu.js --version-livree && electron-builder --mac zip --arm64 --x64",
+    "build": "node electron/paquet-jeu.js --version-livree && electron-builder --mac dir -c.mac.identity=-",
+    "build:zip": "node electron/paquet-jeu.js --version-livree && electron-builder --mac zip --arm64 --x64 -c.mac.identity=-",
     "test:app": "node electron/test-app.js",
     "paquet": "node electron/paquet-jeu.js",
     "test:maj": "node electron/test-maj.js",
-    "test:son": "node electron/test-son.js"
+    "test:son": "node electron/test-son.js",
+    "test:maj:module": "LP_SANS_APP=1 node electron/test-maj.js"
   },
   "devDependencies": {
     "electron": "45.3.0",
@@ -33,21 +34,27 @@
       "electron/main.js",
       "electron/maj.js",
       "electron/jeu-version.json",
-      "electron/maj-cle-publique.pem"
+      "electron/maj-cle-publique.pem",
+      "LICENCES.md"
     ],
     "mac": {
       "category": "public.app-category.simulation-games",
+      "icon": "build/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "target": [
         {
-          "target": "dir",
+          "target": "zip",
           "arch": [
             "arm64",
             "x64"
           ]
         }
-      ],
-      "identity": "-"
-    }
+      ]
+    },
+    "copyright": "© 2026 Kevin — La Permanence"
   },
   "author": "Kevin"
 }

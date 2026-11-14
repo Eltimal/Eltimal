@@ -119,6 +119,9 @@ const P = require("./play");
     ok(n === CR.DUTY_MAX_MOIS && !CR.peutSinscrire(s, d, "gav_nuit").ok === (CR.monthIndex(d) === CR.monthIndex(s.day)), "le plafond mensuel n'est pas appliqué", { n, mois: CR.dutyDuMois(s, s.day) });
     CR.store.s = s; CR.store.bump(); await sleep(100); CR.UI._setScene({ type: "permanences" }); await sleep(120);
     ok(/sur 8/.test(texts(doc.querySelector(".modal") || doc.body)) && !!findBtn(doc, /Se désinscrire/), "le tableau des permanences ne montre ni le plafond ni la désinscription"); CR.UI._setScene(null); await sleep(40); }
+  // ---------- un revolver a un barillet de six coups, pas un chargeur de onze cartouches
+  { const s = neuve(12, true); let rev = 0, faux = 0; for (let i = 0; i < 900 && rev < 6; i++) { const cs = CR.GEN.open(s, ["copj", "gav", "ci"][i % 3], {}); const def = CR.caseDef(cs); for (const k of Object.keys(def.docs || {})) { let r; try { r = CR.renderDoc(s, cs, { key: k, vars: {} }); } catch (e) { continue; } const t = [].concat(...(r.paras || [])).map((x) => (typeof x === "string" ? x : x && x.t) || "").join(" "); const m = /revolver[\s\S]{0,120}?(chargeur|barillet) garni de (\d+)/.exec(t); if (m) { rev++; if (m[1] === "chargeur" || +m[2] > 6) faux++; } } }
+    ok(rev > 0 && faux === 0, "un revolver à chargeur ou à plus de six coups dans le barillet", { rev, faux }); }
   // ---------- le code d'affaire donné en exemple est un vrai code
   { const ex = CR.GEN2.codeExemple(); const a = CR.GEN2.VIE.apercu(ex); ok(a && a.ok, "le code d'exemple est refusé par le jeu", [ex, a && a.msg]); ok(CR.GEN2.lireCode("").msg.includes(ex), "le message d'aide ne cite pas le code d'exemple"); }
 

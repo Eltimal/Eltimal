@@ -452,6 +452,6 @@
     tirer(r) { return { arme: pk(r, ["un pistolet semi-automatique de calibre 9 mm", "un revolver de calibre .38"]), lieu: "dans une sacoche", munitions: int(r, 4, 15), agg: [] }; },
     qual: () => CAT.delit(60, 75000, "art. 222-52 CP", "détention sans autorisation d'une arme de catégorie B", { textes: ["CP_222-52"] }),
     comp: () => ["confiscation de l'arme", "interdiction de détenir une arme soumise à autorisation pendant cinq ans"],
-    recit(X, f) { return { titre: "l'arme", resume: `${X.n(X.A)} détenait ${f.arme} ${f.lieu}.`, constat: [`Découvrons ${f.arme}, chargeur garni de ${f.munitions} cartouches, ${f.lieu}.`], version: { nie: "Ce n'est pas à moi.", minimise: "On me l'a confiée.", reconnait: "C'était pour me protéger." }, audition: [], prevention: `détenu sans autorisation une arme de catégorie B, en l'espèce ${f.arme}`, prejudice: [] }; },
+    recit(X, f) { return { titre: "l'arme", resume: `${X.n(X.A)} détenait ${f.arme} ${f.lieu}.`, constat: [`Découvrons ${f.arme}, ${/revolver/.test(f.arme) ? `barillet garni de ${Math.min(6, f.munitions)} cartouches${f.munitions > 6 ? `, ${f.munitions - 6} autres dans une boîte` : ""}` : `chargeur garni de ${f.munitions} cartouches`}, ${f.lieu}.`], version: { nie: "Ce n'est pas à moi.", minimise: "On me l'a confiée.", reconnait: "C'était pour me protéger." }, audition: [], prevention: `détenu sans autorisation une arme de catégorie B, en l'espèce ${f.arme}`, prejudice: [] }; },
   });
 })();

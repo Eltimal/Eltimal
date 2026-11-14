@@ -25,6 +25,21 @@ const ok = (c, k, d) => { if (!c) { echecs++; console.log("  ✗ " + k + (d !== 
   ok((await p.evaluate(() => window.CR.Saves.backend)) === "idb", "B2 : le rangement de l'appareil n'est pas IndexedDB");
   ok((await p.evaluate(() => document.documentElement.lang)) === "fr", "la page ne déclare pas sa langue");
 
+  // ---------- finitions : crédits et licences à l'écran titre ; niveau d'aide choisi à la création ; focus gardé dans le menu
+  await p.click("text=Crédits et licences");
+  { const t = await p.evaluate(() => (document.querySelector(".credits") || {}).textContent || ""); ok(/Licence Ouverte/.test(t) && /CC0/.test(t) && /MIT/.test(t) && /Open Font License/.test(t) && /fictifs/.test(t), "crédits et licences incomplets", t.slice(0, 200)); }
+  await p.click("text=Retour");
+  await p.click("text=Nouvelle partie");
+  await p.evaluate(() => [...document.querySelectorAll(".aide-pick input")][1].click());
+  await p.fill("#nc-nom", "Aide"); await p.click("text=Carrière — à votre compte"); await p.waitForSelector(".hud");
+  ok(await p.evaluate(() => window.CR.store.s.settings.parole === "assiste" && window.CR.store.s.settings.indices === true && !window.CR.libre(window.CR.store.s)), "le niveau d'aide « assisté » choisi à la création n'est pas appliqué");
+  await p.keyboard.press("Escape"); await p.waitForSelector(".menu-grid");
+  { let dehors = 0; for (let i = 0; i < 40; i++) { await p.keyboard.press(i % 7 === 6 ? "Shift+Tab" : "Tab"); if (!(await p.evaluate(() => { const m = document.querySelector(".modal"); return !!m && m.contains(document.activeElement); }))) dehors++; } ok(dehors === 0, "le focus sort de la fenêtre du menu avec Tab", dehors); }
+  await p.selectOption("#aide", "libre"); ok(await p.evaluate(() => window.CR.libre(window.CR.store.s)), "le niveau d'aide ne se change pas dans le menu");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+  await p.evaluate(() => { window.CR.prefsSet("aide", "libre"); });
+  await titre();
+
   // ---------- M1 : actions au bureau, fermeture immédiate, reprise
   await nouvelle("Premier");
   await p.evaluate(() => { const CR = window.CR, s = CR.store.s; for (const m of s.inbox.slice()) CR.readMail(s, m.id); CR.signDuty(s, 3, "gav_jour"); CR.addAgenda(s, { day: 5, title: "test" }); CR.store.bump(); });
@@ -74,6 +89,7 @@ const ok = (c, k, d) => { if (!c) { echecs++; console.log("  ✗ " + k + (d !== 
   await p.mouse.click(1440 - 14 - 20, 30); await p.waitForTimeout(400);
   ok((await aud()).menu, "M5 : le clic sur le bouton de pause n'ouvre pas le menu");
   const lu = () => p.evaluate(() => (document.querySelector(".scene-host") || document.body).innerText.length);
+  await p.waitForTimeout(600); // une frappe déjà programmée à l'ouverture du menu peut encore tomber
   const l0 = await lu(); await p.waitForTimeout(2500); const l1 = await lu();
   ok(l1 === l0, "M5 : l'audience continue pendant la pause", { l0, l1 });
   await p.keyboard.press("Escape"); await p.waitForTimeout(300);

@@ -1946,6 +1946,17 @@ button.eb-tuile { cursor: pointer; } .eb-tuile b { font-size: 1.6em; }
 .ebarreau-poste input:focus, .ebarreau-poste select:focus { outline: none; border-bottom-color: #3d64c9 !important; }
 @media (max-width: 720px) { .ebarreau-poste { grid-template-columns: 1fr; } .eb-menu { flex-direction: row; flex-wrap: wrap; } .eb-annu-l { grid-template-columns: 1fr; } }
 
+/* Sortie 1.0 : la fenêtre qui reçoit le focus à son ouverture ne s'entoure pas */
+.modal:focus { outline: none; }
+/* Sortie 1.0 : crédits et licences */
+.credits dl { margin: 8px 0; display: grid; gap: 8px; }
+.credits dt { font-weight: 700; }
+.credits dd { margin: 2px 0 0; font-size: calc(13px * var(--tz, 1)); line-height: 1.4; }
+.menu-credits summary { cursor: pointer; margin: 10px 0 6px; }
+/* Sortie 1.0 : choix du niveau d'aide à la création de la carrière */
+.aide-pick { margin: 10px 0 12px; display: grid; gap: 6px; }
+.aide-pick p { margin: 0; }
+.aide-pick label { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; font-size: calc(13px * var(--tz, 1)); line-height: 1.35; cursor: pointer; }
 /* Sortie 1.0 : bouton de pause des scènes plein écran, écran d'erreur */
 .scene-pause { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 14px; z-index: 60; width: 40px; height: 40px; display: grid; place-items: center; background: rgba(8,12,20,.82); color: #f1e7cf; border: 0; box-shadow: inset 0 0 0 2px #3a4a72; cursor: pointer; }
 .scene-pause:hover, .scene-pause:focus-visible { background: #263a6a; outline: none; box-shadow: inset 0 0 0 2px #93b6ec; }
