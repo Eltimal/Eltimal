@@ -8,6 +8,10 @@
 2. `cd dev && npm install` si `node_modules` manque. Navigateur : `CHROME=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` (vérifier `ls /opt/pw-browsers`). Après une modification de `index.html`, `node tools/shot.js` régénère `tools/preview` avant toute capture par `tools/shotui.js`.
 3. Batterie : `cd dev && node tools/batterie.js` (rapide, en parallèle : environ 70 s) après chaque changement ; `node tools/batterie.js complete` (environ 3 min, avec `tgen`, `tsim`, `trepetition` et les boucles) avant chaque commit qui touche la génération des affaires ou l'audience ; `node tools/batterie.js t1 tsim tboucle:9` pour des tests choisis. Ne pas relancer la batterie entière pour une retouche de texte : le test du lot suffit.
 
+## Principe (D-89, consigne de Kevin)
+
+La taille d'un fichier n'est jamais une raison de refuser, réduire ou reporter ce qui va dans le sens du jeu. Réduire quand c'est possible sans rien retirer (compression, paquet à part, chargement à la demande).
+
 ## Où on en est
 
 Phase A : A1 à A4 faits (parole en garde à vue, tribunal qui raisonne, procès-verbal tiré de l'audition, entretiens libres, plaidoirie par catalogue). A4 bis (débats intégraux), A5 (débrief « ce qu'il fallait demander »), B1 (canaux) faits. B2 avancé (ordre mélangé, fonds commun, clauses voisines : 51 %). Lot 4 (peine choisie, `peines.js`) et C1 en partie (aide juridictionnelle) faits. A4 ter (gestes d'audience) et B1 bis (écran e-Barreau, sans PLEX) faits. C2 mesuré (`tecono`). A5 fait (peine motivée au débrief). Phase A terminée. Lot 7 commencé : délibéré criminel (`tcrimes`) ; peine criminelle faite (`tpeinescrime`), mémoire devant la chambre de l'instruction fait (`tmemoirechins`) ; suivent le dossier criminel au volume réel. C3 fait (grille de compétences). Prochain : phase D, lot 1 ter (familles d'infractions au niveau de l'arrachage) ; restes : B2 (blancs à valeur propre), PLEX, aide réglée par compétence.
@@ -26,7 +30,7 @@ Fait : l'aménagement de la peine devant le juge de l'application des peines (`a
 
 ## Lot 9 — bibliothèque
 
-Texte intégral fait (D-87, `tintegral`) : `js/codes/*.js`, générés par `node dev/tools/codes.js <dossier des XML>` (téléchargement en tête du script, codes.droit.org). Après une nouvelle version, relancer le script, puis `tbiblio`, `tlivre`, `tintegral` et `CHROME=… node tools/livremesure.js` (0 débordement attendu ; régler `CR.LIVRE_METRIQUES` sinon). Reste la jurisprudence sous les articles (D-83) : bloquée sans l'accord de Kevin pour lire echanges.dila.gouv.fr. Le texte intégral pèse 1,4 Mo compressé dans le paquet léger de mise à jour (`electron/paquet-jeu.js`, 2,7 Mo au total contre 1,3) : s'il le faut, le sortir dans un paquet à part comme `js/sons/`.
+Texte intégral fait (D-87, `tintegral`) : `js/codes/*.js`, générés par `node dev/tools/codes.js <dossier des XML>` (téléchargement en tête du script, codes.droit.org). Après une nouvelle version, relancer le script, puis `tbiblio`, `tlivre`, `tintegral` et `CHROME=… node tools/livremesure.js` (0 débordement attendu ; régler `CR.LIVRE_METRIQUES` sinon). Reste la jurisprudence sous les articles (D-83) : bloquée sans l'accord de Kevin pour lire echanges.dila.gouv.fr. Réduction à faire (D-89) : publier `js/codes/` dans un paquet de mise à jour à part, comme `js/sons/`, en gardant les codes dans le paquet léger pour les enveloppes actuelles.
 
 ## Lot 10 — abandonné
 

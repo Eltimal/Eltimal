@@ -303,3 +303,10 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
   - **SARVI.** Il est fermé à la victime indemnisable au titre des articles 706-3 ou 706-14 (706-15-1). Demandé à tort, il est refusé (erreur datée, compétence « Victimes ») et la commission reste à saisir. Si la commission rejette la demande (ressources trop hautes, situation non grave), le SARVI reste ouvert, et son délai d'un an court de la notification du rejet (706-5, dernier alinéa).
   - **Mesure** (400 parties civiles) : 134 relèvent de la CIVI de l'article 706-3, 120 du champ de l'article 706-14, dont 40 remplissent les conditions.
 
+## Principe de pilotage (14 novembre 2026, consigne de Kevin)
+
+- **D-89. La taille des fichiers n'est jamais une raison de renoncer à ce qui sert le jeu.**
+  - Aucun contenu, aucune règle, aucun détail qui va dans le sens du jeu n'est écarté, réduit ou reporté à cause du poids d'un fichier, du dépôt ou des paquets de mise à jour.
+  - Quand une réduction est possible sans rien retirer au jeu, elle se fait : format plus compact, compression, paquet publié à part, chargement à la demande.
+  - Appliqué au texte intégral (D-87) : les quatre codes restent en entier, toutes parties comprises. Réduction à faire : publier `js/codes/` dans un paquet de mise à jour à part, comme `js/sons/` (`electron/paquet-jeu.js`, `electron/maj.js`). Elle ne profitera qu'à une enveloppe Mac reconstruite ; les enveloppes actuelles doivent continuer de recevoir les codes dans le paquet léger.
+
