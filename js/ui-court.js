@@ -165,6 +165,8 @@
       if (cur.delibere) { setPhase("delibere"); return; }
       if (cur.requisitions) { const q = cur.requisitions(api, st); cs.vars.requisitionsFond = true; for (const l of q) addLog(l); setPhase("pause"); setTimeout(next, 400); return; }
       setPhase("type");
+      // (pas sur une didascalie ni sur une réplique de l'avocat, qui passent sans pause de frappe)
+      if (st.incidentEnAttente && cur.who !== "you" && cur.who !== "sys" && cur.t != null) { const x = st.incidentEnAttente; st.incidentEnAttente = null; setTimeout(() => souleverRef.current && souleverRef.current(x.inc, x.motif, true), 0); }
     }, [cur && cur._k]);
 
     const lineText = cur && (cur.t != null) ? T(cur.t) : "";
@@ -257,9 +259,11 @@
     }
     // Soulever un incident : l'avocat se lève pendant qu'un autre parle ; l'incident inscrit par l'affaire produit ses
     // effets ; sans fondement au dossier, le président demande sur quoi il repose ; sans objet, il est écarté
-    function soulever(inc, motif) {
+    function soulever(inc, motif, force) {
       setIncOuvert(null);
-      if (!cur || phase !== "type") return;
+      if (!cur) return;
+      // entre deux répliques (pause, fenêtre), l'incident attend la réplique suivante : le bouton ne clignote plus
+      if (phase !== "type" && !force) { st.incidentEnAttente = { inc, motif }; return; }
       setTyped(lineText.length);
       addLog({ who: cur.who || "sys", t: lineText, name: cur.name });
       if (cur.fx) applyFx(s, cs, st, cur.fx);
@@ -277,6 +281,8 @@
       bump();
       if (then && then.length) push(then); else next();
     }
+    const souleverRef = useRef(null);
+    souleverRef.current = soulever;
     // Une carte de texte, en saisie : on tape son numéro (le temps est suspendu pendant la saisie)
     function playCard(card) {
       if (card.jp) { if (CR.saisieOn(s)) setJpCard(card); else jpResolve(card, { id: card.id, g: "ok" }); return; }
@@ -359,9 +365,9 @@
             ${jpCard ? html`<${UI.JPInput} key=${jpCard.id} s=${s} attendu=${jpCard.id} label=${"Citez l'arrêt : " + jpCard.label} onDone=${(r) => jpResolve(jpCard, r)} onSkip=${() => setJpCard(null)} />` : citeCard ? html`<${UI.CiteInput} key=${citeCard.id} s=${s} expect=${[citeCard.ref]} label=${"Citez : " + citeCard.label} onDone=${(r) => citeCardDone(citeCard, r)} onSkip=${() => setCiteCard(null)} />` : html`
             <button className="parole" onClick=${phase === "card" ? () => setMainOuverte(true) : demanderParole}>Demander la parole</button>
             <button className="parole produire" onClick=${() => setMainOuverte((x) => !x)}>Produire une pièce ou citer un texte</button>
-            ${phase === "type" && html`<button className="parole incident" onClick=${() => setIncOuvert((x) => (x ? null : "menu"))}>Soulever un incident</button>`}
-            ${incOuvert === "menu" && phase === "type" && html`<div className="hand-cards incidents">${INCIDENTS.map((inc) => html`<button key=${inc.id} className="hcard hk-incident" onClick=${() => (inc.motifs ? setIncOuvert("recidive") : soulever(inc))}>${inc.label}</button>`)}</div>`}
-            ${incOuvert === "recidive" && phase === "type" && html`<div className="hand-cards incidents"><p className="small muted">Pourquoi la récidive n'est-elle pas constituée ?</p>${Object.entries((CR.GEN2 && CR.GEN2.VICES) || {}).map(([k, l]) => html`<button key=${k} className="hcard hk-incident" onClick=${() => soulever(INCIDENTS.find((x) => x.id === "recidive"), k)}>${l}</button>`)}</div>`}
+            ${phase !== "card" && html`<button className="parole incident" onClick=${() => setIncOuvert((x) => (x ? null : "menu"))}>Soulever un incident</button>`}
+            ${incOuvert === "menu" && phase !== "card" && html`<div className="hand-cards incidents">${INCIDENTS.map((inc) => html`<button key=${inc.id} className="hcard hk-incident" onClick=${() => (inc.motifs ? setIncOuvert("recidive") : soulever(inc))}>${inc.label}</button>`)}</div>`}
+            ${incOuvert === "recidive" && phase !== "card" && html`<div className="hand-cards incidents"><p className="small muted">Pourquoi la récidive n'est-elle pas constituée ?</p>${Object.entries((CR.GEN2 && CR.GEN2.VICES) || {}).map(([k, l]) => html`<button key=${k} className="hcard hk-incident" onClick=${() => soulever(INCIDENTS.find((x) => x.id === "recidive"), k)}>${l}</button>`)}</div>`}
             ${mainOuverte && html`<div className="hand-cards">${hand.length === 0 && html`<p className="small muted">Rien noté, aucun texte enregistré dans ce dossier.</p>`}${hand.map((c, i) => html`<button key=${i} className=${cx("hcard", "hk-" + c.kind)} onClick=${() => geste(c)}><span className="pix">${c.kind === "texte" ? "Texte" : c.kind === "piece" ? "Pièce" : "Note"}</span>${c.label}</button>`)}</div>`}`}
           </div>`}
           ${phase === "choose" && cur && html`<div className="choices court-choices">
