@@ -24,6 +24,10 @@ Mesure du 13 novembre : un dossier criminel généré comptait 14 pièces et env
 
 Fait : l'aménagement de la peine devant le juge de l'application des peines (`apres.js`, `tjap`, D-79, D-80). Règles relues pour la suite (D-79) : exclusion du bulletin n° 2 (art. 775-1 CPP, à plaider au jugement ou sur requête), CIVI (706-3, 706-5) et SARVI (706-15-1, 706-15-2) pour les dossiers de victimes. Fait aussi : le recouvrement de la victime (CIVI, SARVI, D-81, `tvictimes`). Exclusion du bulletin n° 2 au jugement faite (D-82, `tb2`) ; action civile renvoyée jouée (D-85, `tic`). Reste : la requête en exclusion après jugement (D-86, en attente d'une jurisprudence), l'assignation devant le juge civil (procédure civile et RPVA : un module entier, à cadrer), l'article 706-14 (plafond de l'aide juridictionnelle partielle à relire).
 
+## Lot 9 — bibliothèque
+
+Texte intégral fait (D-87, `tintegral`) : `js/codes/*.js`, générés par `node dev/tools/codes.js <dossier des XML>` (téléchargement en tête du script, codes.droit.org). Après une nouvelle version, relancer le script, puis `tbiblio`, `tlivre`, `tintegral` et `CHROME=… node tools/livremesure.js` (0 débordement attendu ; régler `CR.LIVRE_METRIQUES` sinon). Reste la jurisprudence sous les articles (D-83) : bloquée sans l'accord de Kevin pour lire echanges.dila.gouv.fr. Le texte intégral pèse 1,4 Mo compressé dans le paquet léger de mise à jour (`electron/paquet-jeu.js`, 2,7 Mo au total contre 1,3) : s'il le faut, le sortir dans un paquet à part comme `js/sons/`.
+
 ## Lot 10 — abandonné
 
 Le 14 novembre 2026, à la demande de Kevin : les affaires écrites et le tutoriel sont retirés du jeu (D-84). Toutes les affaires viennent du générateur ; ne rien réintroduire qui en dépende.

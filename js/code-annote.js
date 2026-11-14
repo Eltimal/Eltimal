@@ -573,13 +573,57 @@
     L("Livre VII", "Dispositions relatives à l'outre-mer", "L711-1"),
   ];
 
+  // =================================================================== Plan officiel tiré du texte intégral (lot 9)
+  // Quand js/codes/<code>.js est chargé (CR.INTEGRAL), le plan du code est celui du fichier : toutes les divisions en
+  // vigueur, chaque article à sa place exacte (n.integ, dans l'ordre du code). Les plans relevés à la main ci-dessus
+  // restent la solution de repli si les fichiers manquent.
+  const DIV = /^(Partie|Livre|Titre|Sous-titre|Chapitre|Section|Sous-section|Paragraphe|Sous-paragraphe|Annexe)/i;
+  const coupe = (titre) => {
+    const x = String(titre || "").replace(/^(LIVRE|TITRE|CHAPITRE|SECTION|PARTIE|PARAGRAPHE)\b/, (w) => w.charAt(0) + w.slice(1).toLowerCase());
+    const i = x.indexOf(" : ");
+    if (i > 0) return [x.slice(0, i).trim(), x.slice(i + 3).trim()];
+    return DIV.test(x) ? [x, ""] : ["", x];
+  };
+  const depuisIntegral = (code) => {
+    const I = (CR.INTEGRAL || {})[code];
+    if (!I || !Array.isArray(I.plan)) return null;
+    const conv = (x) => {
+      const [t, h] = coupe(x.t);
+      const c = (x.c || []).map(conv);
+      const integ = (x.a || []).map((a) => code + "_" + a);
+      const tous = integ.concat(...c.map((y) => y.tousIds));
+      const n = N(t, h, tous.length ? numOfId(tous[0]) : null, tous.length > 1 ? numOfId(tous[tous.length - 1]) : null, c);
+      n.integ = integ; n.tousIds = tous;
+      return n;
+    };
+    return I.plan.map((p) => {
+      const noeuds = (p.c || []).map(conv);
+      const integ = (p.a || []).map((a) => code + "_" + a);
+      const premier = integ[0] || (noeuds[0] && noeuds[0].tousIds[0]);
+      const P = parseNum(numOfId(premier || ""));
+      return { nom: p.t, noeuds, integ, pre: P && P.pre ? P.pre : undefined, integral: true };
+    });
+  };
+  CR.integralDe = (code) => (CR.INTEGRAL || {})[code] || null;
+  // Un article du texte intégral, qu'il soit ou non une fiche du jeu : { id, lib, alineas, officiel, cite, maj }
+  CR.article = function (id) {
+    const pre = String(id).split("_")[0], num = numOfId(id);
+    const I = CR.integralDe(pre);
+    const al = I && I.arts[num];
+    const l = CR.lib ? CR.lib(id) : null;
+    if (!al && !l) return null;
+    const nom = I ? I.nom.charAt(0).toLowerCase() + I.nom.slice(1) : "";
+    return { id, lib: l, alineas: al || String(l.texte || "").split("\n"), officiel: !!al, cite: l ? l.cite : `Art. ${num} du ${nom}`, maj: I ? I.maj : null };
+  };
+  CR.dateCode = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ""); return m ? `${+m[3] === 1 ? "1er" : +m[3]} ${["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"][+m[2] - 1]} ${m[1]}` : iso || ""; };
+
   const AVERIF = "à revérifier sur Légifrance";
   // { id: préfixe des identifiants, nom, parties: [{ nom, noeuds }] }
   CR.CODES_PLAN = [
-    { id: "CP", nom: "Code pénal", parties: [{ nom: "Partie législative", noeuds: CP }, { nom: "Partie réglementaire", noeuds: CP_R, pre: "R" }] },
-    { id: "CPP", nom: "Code de procédure pénale", parties: [{ nom: "Partie législative", noeuds: CPP }] },
-    { id: "CR", nom: "Code de la route", note: "Seul le livre 2 (le conducteur) figure dans la bibliothèque du jeu.", parties: [{ nom: "Partie législative", noeuds: ROUTE, pre: "L" }, { nom: "Partie réglementaire", noeuds: ROUTE_R, pre: "R" }] },
-    { id: "CJPM", nom: "Code de la justice pénale des mineurs", parties: [{ nom: "Partie législative", noeuds: CJPM, pre: "L" }] },
+    { id: "CP", nom: "Code pénal", parties: depuisIntegral("CP") || [{ nom: "Partie législative", noeuds: CP }, { nom: "Partie réglementaire", noeuds: CP_R, pre: "R" }] },
+    { id: "CPP", nom: "Code de procédure pénale", parties: depuisIntegral("CPP") || [{ nom: "Partie législative", noeuds: CPP }] },
+    { id: "CR", nom: "Code de la route", note: CR.integralDe("CR") ? null : "Seul le livre 2 (le conducteur) figure dans la bibliothèque du jeu.", parties: depuisIntegral("CR") || [{ nom: "Partie législative", noeuds: ROUTE, pre: "L" }, { nom: "Partie réglementaire", noeuds: ROUTE_R, pre: "R" }] },
+    { id: "CJPM", nom: "Code de la justice pénale des mineurs", parties: depuisIntegral("CJPM") || [{ nom: "Partie législative", noeuds: CJPM, pre: "L" }] },
     { id: "CSP", nom: "Code de la santé publique", note: "Intitulés " + AVERIF + " (table des matières non relue).", parties: [{ nom: "Partie législative", pre: "L", noeuds: [G(N("Troisième partie", "Lutte contre les maladies et dépendances", "L3111-1", null, [G(N("Livre IV", "Lutte contre la toxicomanie", "L3411-1", null, [G(N("Titre II", "Dispositions pénales et mesures d'accompagnement", "L3421-1", null, [G(L("Chapitre Ier", "Dispositions pénales", "L3421-1"))]))]))]))] }] },
     { id: "CCOM", nom: "Code de commerce", parties: [{ nom: "Partie législative", pre: "L", noeuds: [G(N("Livre II", "Des sociétés commerciales et des groupements d'intérêt économique", "L210-1", null, [G(N("Titre IV", "Dispositions pénales", "L241-1", null, [L("Chapitre Ier", "Des infractions concernant les sociétés à responsabilité limitée", "L241-2", "L241-9")]))]))] }] },
     { id: "CGI", nom: "Code général des impôts", parties: [{ nom: "", noeuds: [G(N("Livre II", "Recouvrement de l'impôt", "1658", null, [G(N("Chapitre II", "Pénalités", "1725", null, [G(N("Section I", "Dispositions communes", "1725", null, [L("C", "Sanctions pénales", "1741", "1753 bis B")]))]))]))] }] },
@@ -594,7 +638,10 @@
     D91: "Décret n° 91-1197 du 27 novembre 1991 organisant la profession d'avocat",
     RIN: "Règlement intérieur national de la profession d'avocat",
   };
-  CR.PLAN_SOURCE = "Intitulés relevés le 9 novembre 2026 sur les tables des matières générées depuis Légifrance (codes.droit.org : code pénal éd. du 20 octobre 2026, code de procédure pénale éd. du 23 octobre 2026, code de la route éd. du 27 octobre 2026).";
+  for (const c of CR.CODES_PLAN) c.integral = c.parties.some((p) => p.integral);
+  const integraux = CR.CODES_PLAN.filter((c) => c.integral);
+  CR.PLAN_SOURCE_MAIN = "Intitulés relevés le 9 novembre 2026 sur les tables des matières générées depuis Légifrance (codes.droit.org : code pénal éd. du 20 octobre 2026, code de procédure pénale éd. du 23 octobre 2026, code de la route éd. du 27 octobre 2026).";
+  CR.PLAN_SOURCE = integraux.length ? `Texte intégral et plan officiel des articles en vigueur, générés depuis Légifrance (base LEGI, Licence Ouverte) par codes.droit.org : ${integraux.map((c) => `${c.nom.charAt(0).toLowerCase() + c.nom.slice(1)}, version du ${CR.dateCode(CR.integralDe(c.id).maj)}`).join(" ; ")}.${integraux.length < 4 ? " " + CR.PLAN_SOURCE_MAIN : ""}` : CR.PLAN_SOURCE_MAIN;
 
   // Clés stables des nœuds (code/partie/chemin) et ordre d'affichage
   (function indexer() {
@@ -642,8 +689,17 @@
     hors.parties[0].noeuds = [];
     RANGE = {};
     const horsN = {};
+    // Codes en texte intégral : chaque article à sa division ; node.tous = tous les articles, node.arts = les fiches du jeu
+    const estFiche = new Set((CR.LIB || []).filter((e) => !CR.estJP(e.id)).map((e) => e.id));
+    for (const c of CR.CODES_PLAN) if (c.integral) for (const p of c.parties) {
+      p.tous = p.integ.slice();
+      for (const id of p.integ) { RANGE[id] = { code: c, partie: p, node: null }; if (estFiche.has(id)) p.arts.push(id); }
+      const w = (arr) => arr.forEach((n) => { n.tous = n.integ.slice(); for (const id of n.integ) { RANGE[id] = { code: c, partie: p, node: n }; if (estFiche.has(id)) n.arts.push(id); } w(n.c); });
+      w(p.noeuds);
+    }
     for (const e of CR.LIB || []) {
       if (CR.estJP(e.id)) continue;
+      if (RANGE[e.id]) continue;
       const pre = String(e.id).split("_")[0];
       const num = numOfId(e.id);
       const code = CR.CODES_PLAN.find((c) => c.id === pre);
@@ -651,6 +707,7 @@
         const p = partieDe(code, num);
         const n = p ? placer(p.noeuds, num) : null;
         (n ? n.arts : p ? p.arts : []).push(e.id);
+        if (code.integral && (n || p)) (n || p).tous.push(e.id); // une fiche absente du texte intégral, rangée par sa plage
         RANGE[e.id] = { code, partie: p, node: n };
       } else if (CR.HORS_CODES[pre]) {
         if (!horsN[pre]) { horsN[pre] = N("", CR.HORS_CODES[pre]); horsN[pre].key = "HORS:0." + pre; horsN[pre].code = "HORS"; horsN[pre].path = [horsN[pre]]; horsN[pre].arts = []; NODES[horsN[pre].key] = horsN[pre]; hors.parties[0].noeuds.push(horsN[pre]); }
@@ -659,10 +716,14 @@
       }
     }
     const tri = (a, b) => CR.cmpArticle(numOfId(a), numOfId(b));
-    for (const k of Object.keys(NODES)) NODES[k].arts.sort(tri);
-    // Compte des textes et des arrêts sous chaque nœud
-    const compter = (n) => { let t = n.arts.length, j = n.arts.reduce((x, id) => x + CR.notesOf(id).length, 0); for (const c of n.c) { const r = compter(c); t += r.t; j += r.j; } n.nTextes = t; n.nArrets = j; return { t, j }; };
-    for (const c of CR.CODES_PLAN) { c.nTextes = 0; for (const p of c.parties) { p.nTextes = p.arts.length; for (const n of p.noeuds) { compter(n); p.nTextes += n.nTextes; } c.nTextes += p.nTextes; } }
+    const rang = {};
+    for (const c of CR.CODES_PLAN) if (c.integral) for (const p of c.parties) { let i = 0; p.tous.forEach((id) => { rang[id] = i++; }); const w = (arr) => arr.forEach((n) => { n.tous.forEach((id) => { rang[id] = i++; }); w(n.c); }); w(p.noeuds); }
+    // l'ordre du code quand il est connu (« 16-1 A » après « 16-1 »), sinon l'ordre des numéros
+    const triCode = (a, b) => (rang[a] != null && rang[b] != null ? rang[a] - rang[b] : tri(a, b));
+    for (const k of Object.keys(NODES)) NODES[k].arts.sort(triCode);
+    // Compte des textes (fiches du jeu), des articles du texte intégral et des arrêts sous chaque nœud
+    const compter = (n) => { let t = n.arts.length, j = n.arts.reduce((x, id) => x + CR.notesOf(id).length, 0), a = (n.tous || n.arts).length; for (const c of n.c) { const r = compter(c); t += r.t; j += r.j; a += r.a; } n.nTextes = t; n.nArrets = j; n.nTous = a; return { t, j, a }; };
+    for (const c of CR.CODES_PLAN) { c.nTextes = 0; c.nTous = 0; for (const p of c.parties) { p.nTextes = p.arts.length; p.nTous = (p.tous || p.arts).length; for (const n of p.noeuds) { compter(n); p.nTextes += n.nTextes; p.nTous += n.nTous; } c.nTextes += p.nTextes; c.nTous += p.nTous; } }
     return RANGE;
   };
   CR.planOf = (id) => { if (!RANGE) CR.ranger(); return RANGE[id] || null; };

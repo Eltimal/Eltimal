@@ -82,9 +82,6 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
   ok(shown()[0] === avant[0], "page précédente au clavier : " + shown());
   // lire une note : le temps passe, l'arrêt est lu
   const min0 = s.min;
-  const lire = doc.querySelector(".lv-note .lv-lire");
-  ok(lire, "note à lire");
-  if (lire) { await click(w, lire); ok(s.min > min0 && s.researched.some((id) => CR.estJP(id)), "lire une note prend du temps"); }
   // annoter
   await click(w, doc.querySelector("#lv-CPP_63 .lv-crayon"));
   const inp = doc.querySelector(".lv-annot input");
@@ -95,6 +92,11 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
     await click(w, findBtn(doc, "Écrire"));
     ok(s.annots && s.annots.CPP_63 && s.annots.CPP_63.length === 1 && doc.querySelector(".lv-postit"), "annotation au crayon");
   }
+  // le texte intégral de l'art. 63 remplit sa page : ses notes sont à la page suivante
+  if (!doc.querySelector(".lv-note .lv-lire")) { await click(w, doc.querySelector(".lv-coin-d")); await sleep(700); }
+  const lire = doc.querySelector(".lv-note .lv-lire");
+  ok(lire, "note à lire");
+  if (lire) { await click(w, lire); ok(s.min > min0 && s.researched.some((id) => CR.estJP(id)), "lire une note prend du temps"); }
   // chercher dans le volume
   const q = doc.querySelector(".lv-cherche");
   Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, "value").set.call(q, "perquisition"); q.dispatchEvent(new w.Event("input", { bubbles: true })); await sleep(30);

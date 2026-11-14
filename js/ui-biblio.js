@@ -71,9 +71,9 @@
       <button className="link small" onClick=${back}>← Retour au plan</button>
       ${r ? html`<p className="ca-chemin small muted">${[r.code.nom].concat(r.partie && r.partie.nom ? [r.partie.nom] : [], (r.node ? r.node.path : []).map((n) => (n.t ? n.t + " : " : "") + n.h)).join(" › ")}</p>` : null}
       <div className=${cx("lib-item", known && "known")}>
-        <div className="lib-cite"><strong>${e.cite}</strong> ${e.etat === "resume" ? html`<${Tag} tone="warn" title="Texte récemment modifié : seule la règle est résumée">Résumé</${Tag}>` : html`<${Tag} title="Reproduction faite hors ligne">À revérifier sur Légifrance</${Tag}>`}</div>
+        <div className="lib-cite"><strong>${e.cite}</strong> ${CR.article(id) && CR.article(id).officiel ? html`<${Tag} title="Texte intégral généré depuis Légifrance (codes.droit.org)">Texte officiel</${Tag}>` : e.etat === "resume" ? html`<${Tag} tone="warn" title="Texte récemment modifié : seule la règle est résumée">Résumé</${Tag}>` : html`<${Tag} title="Reproduction faite hors ligne">À revérifier sur Légifrance</${Tag}>`}</div>
         <div className="lib-title">${e.titre}</div>
-        ${known ? html`<p className="lib-text">${e.texte}</p>` : html`<${Btn} small icon="library" onClick=${() => read(e)}>Lire et extraire · ${fmtTemps(e.temps)}${here ? " · dans ce dossier" : ""}</${Btn}>`}
+        ${known ? (() => { const a = CR.article(id); return a && a.officiel ? html`<div className="lib-text">${a.alineas.map((x, i) => html`<p key=${i} className="lib-al">${x}</p>`)}<p className="small muted">Texte officiel en vigueur au ${CR.dateCode(a.maj)}.${e.etat === "resume" ? html` <b>En bref :</b> ${e.texte}` : ""}</p></div>` : html`<p className="lib-text">${e.texte}</p>`; })() : html`<${Btn} small icon="library" onClick=${() => read(e)}>Lire et extraire · ${fmtTemps(e.temps)}${here ? " · dans ce dossier" : ""}</${Btn}>`}
         ${known && html`<${Pin} s=${s} here=${here} id=${id} openCases=${openCases} pin=${pin} />`}
       </div>
       <div className="sub-head">Jurisprudence sous l'article${notes.length ? ` (${notes.length})` : ""}</div>
@@ -97,7 +97,7 @@
       </button>
       ${isOpen && html`<div className="pl-in">
         ${n.arts.length > 0 && html`<ul className="pl-arts">${n.arts.map((id) => { const e = CR.lib(id); const nj = CR.notesOf(id).length; return html`<li key=${id}><button type="button" className=${cx("pl-art", s.researched.includes(id) && "known")} onClick=${() => goArt(id)}><strong>${e.cite.replace(/ du code.*| de la loi.*| du décret.*| du règlement.*/, "")}</strong> ${e.titre}${nj ? html` <span className="pl-jp" title="Arrêts annotés sous l'article">${nj} ${nj > 1 ? "notes" : "note"}</span>` : null}</button></li>`; })}</ul>`}
-        ${n.c.length > 0 && html`<ul className="pl-list">${n.c.map((c) => html`<${Noeud} key=${c.key} s=${s} n=${c} open=${open} toggle=${toggle} goArt=${goArt} depth=${depth + 1} />`)}</ul>`}
+        ${n.c.length > 0 && html`<ul className="pl-list">${n.c.filter((c) => !(c.tous && !c.nTextes)).map((c) => html`<${Noeud} key=${c.key} s=${s} n=${c} open=${open} toggle=${toggle} goArt=${goArt} depth=${depth + 1} />`)}</ul>`}
         ${vide && html`<p className="small muted pl-none">Aucun texte dans la bibliothèque.</p>`}
       </div>`}
     </li>`;
@@ -138,12 +138,12 @@
         ${recherche ? html`<ul className="lib-list">${recherche.length === 0 && html`<li className="small muted">Rien trouvé. Essayez l'index, ou un autre mot.</li>`}${recherche.map((e) => html`<li key=${e.id}><button type="button" className=${cx("pl-art", s.researched.includes(e.id) && "known")} onClick=${() => goArt(e.id)}><strong>${e.cite}</strong> ${e.titre}<span className="small muted pl-path">${CR.planChemin(e.id, true)}</span></button></li>`)}</ul>` : html`<ul className="pl-list pl-codes">
           ${CR.CODES_PLAN.filter((c) => c.nTextes || !c.hors).map((c) => { const k = c.id + "-code"; const isOpen = open.has(k); return html`<li key=${c.id} className=${cx("pl-code", !c.nTextes && "pl-vide")}>
             <button type="button" className="pl-row pl-coderow" aria-expanded=${isOpen} onClick=${() => toggle(k)}><span className="pl-caret">${isOpen ? "▾" : "▸"}</span><span className="pl-h"><strong>${c.nom}</strong></span><span className="pl-meta small">${CR.plural(c.nTextes, "texte")}</span></button>
-            ${isOpen && html`<div className="pl-in">${c.note ? html`<p className="small muted">${c.note}</p>` : null}${c.parties.map((p, i) => html`<div key=${i}>${c.parties.length > 1 && p.nom ? html`<div className="pl-partie">${p.nom}</div>` : null}
+            ${isOpen && html`<div className="pl-in">${c.note ? html`<p className="small muted">${c.note}</p>` : null}${c.parties.filter((p) => !c.integral || p.nTextes).map((p, i) => html`<div key=${i}>${c.parties.length > 1 && p.nom ? html`<div className="pl-partie">${p.nom}</div>` : null}
               ${p.arts.length > 0 && html`<ul className="pl-arts">${p.arts.map((id) => html`<li key=${id}><button type="button" className="pl-art" onClick=${() => goArt(id)}><strong>${CR.lib(id).cite}</strong> ${CR.lib(id).titre}</button></li>`)}</ul>`}
-              <ul className="pl-list">${p.noeuds.map((n) => html`<${Noeud} key=${n.key} s=${s} n=${n} open=${open} toggle=${toggle} goArt=${goArt} depth=${0} />`)}</ul></div>`)}</div>`}
+              <ul className="pl-list">${p.noeuds.filter((n) => !c.integral || n.nTextes).map((n) => html`<${Noeud} key=${n.key} s=${s} n=${n} open=${open} toggle=${toggle} goArt=${goArt} depth=${0} />`)}</ul></div>`)}</div>`}
           </li>`; })}
         </ul>`}
-        <p className="small muted ca-source">${CR.PLAN_SOURCE} Les divisions grisées n'ont aucun texte dans la bibliothèque du jeu.</p>
+        <p className="small muted ca-source">${CR.PLAN_SOURCE} Le mode liste ne montre que les divisions qui portent des fiches du jeu (le texte intégral se lit dans les codes reliés) ; ailleurs, les divisions grisées n'ont aucun texte dans la bibliothèque du jeu.</p>
       </div>`}
     </div>`;
 

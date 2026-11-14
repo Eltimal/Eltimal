@@ -555,6 +555,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .lib-item.known { border-left: 3px solid #3c5f9c; }
 .lib-cite { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .lib-text { font-family: var(--f-doc); font-size: .96rem; color: #e6dfcf; margin: 0; }
+.lib-text .lib-al { margin: 0 0 6px; }
 .fiches { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
 .fiche { background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; }
 .fiche .tbl td:first-child { width: 120px; color: var(--muted); }
@@ -1184,7 +1185,11 @@ button.lv-som-l:hover span:first-child { color: #0c447c; text-decoration: underl
 .lv-rub { font: italic 11.5px/16px var(--f-doc); color: #565a63; display: flex; gap: 6px; align-items: baseline; }
 .lv-crayon { margin-left: auto; background: none; border: 0; padding: 0 2px; color: #888780; font-size: 13px; line-height: 1; cursor: pointer; }
 .lv-crayon:hover { color: #0c447c; }
-.lv-art-t { margin: 0; font: 600 13px/19px var(--f-doc); text-align: justify; }
+.lv-art-t { margin: 0; font: 400 13px/19px var(--f-doc); text-align: justify; hyphens: auto; }
+.lv-art-t .lv-al { display: block; text-indent: 1.4em; }
+.lv-art-t .lv-alc { display: block; }
+.lv-suite .lv-art-t > .lv-al:first-child, .lv-suite .lv-flou .lv-al:first-child { margin-top: 0; }
+.lv-integ .lv-crayon { opacity: 0; margin-left: 4px; } .lv-integ:hover .lv-crayon, .lv-integ .lv-crayon:focus { opacity: 1; }
 .lv-art-n { color: #0c447c; font-weight: 700; margin-right: 2px; }
 .lv-stabilo { }
 .lv-art.lv-lu::before, .lv-arret.lv-lu::before { content: ""; position: absolute; left: -15px; top: 20px; bottom: 3px; width: 2px; background: rgba(12, 68, 124, .38); }
@@ -1997,6 +2002,11 @@ button.eb-tuile { cursor: pointer; } .eb-tuile b { font-size: 1.6em; }
 <script src="js/directeur.js"></script>
 <script src="js/repliques.js"></script>
 <script src="js/retournements.js"></script>
+<!-- texte intégral des codes (lot 9) : fichiers générés par dev/tools/codes.js -->
+<script src="js/codes/cp.js"></script>
+<script src="js/codes/cpp.js"></script>
+<script src="js/codes/cr.js"></script>
+<script src="js/codes/cjpm.js"></script>
 <script src="js/code-annote.js"></script>
 <script src="js/ui-base.js"></script>
 <script src="js/ui-video.js"></script>

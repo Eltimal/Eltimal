@@ -17,15 +17,15 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
     if (process.env.VOIR) console.log(e.id.padEnd(16), CR.planChemin(e.id, true));
   }
   console.log(`textes rangés : ${arts.length} (dont ${hors} hors codes)`);
-  // 2. Quelques rangements connus (vérifiés sur la table des matières)
+  // 2. Quelques rangements connus (plan officiel du texte intégral : la division la plus fine, paragraphe compris)
   const attendu = {
-    "CP_222-11": "Section 1", "CP_222-33": "Section 3", "CP_222-33-1-1": "Section 4", "CP_222-37": "Section 7", "CP_221-18": "Chapitre Ier ter",
-    "CP_132-10": "Section 1", "CP_132-75": "Section 3", "CP_434-27": "Section 3", "CP_434-15-2": "Section 2", "CP_433-7": "Section 5", "CP_R625-1": "Chapitre V",
-    "CP_R635-1": "Chapitre V", "CP_227-4-2": "Section 2 bis", "CP_223-15-2": "Section 6 bis", "CP_315-2": "Chapitre V", "CP_121-2": "Chapitre Ier",
-    "CPP_63-1": "Chapitre Ier", "CPP_76": "Chapitre II", "CPP_78-2": "Chapitre III", "CPP_706-88": "Chapitre II", "CPP_716-4": "Section 1", "CPP_720": "Section 1 bis",
+    "CP_222-11": "Paragraphe 2", "CP_222-33": "Paragraphe 4", "CP_222-33-1-1": "Section 4", "CP_222-37": "Section 7", "CP_221-18": "Chapitre Ier ter",
+    "CP_132-10": "Paragraphe 1", "CP_132-75": "Section 3", "CP_434-27": "Paragraphe 2", "CP_434-15-2": "Section 2", "CP_433-7": "Section 5", "CP_R625-1": "Section 1",
+    "CP_R635-1": "Section 1", "CP_227-4-2": "Section 2 bis", "CP_223-15-2": "Section 6 bis", "CP_315-2": "Chapitre V", "CP_121-2": "Chapitre Ier",
+    "CPP_63-1": "Chapitre Ier", "CPP_76": "Chapitre II", "CPP_78-2": "Chapitre III", "CPP_706-88": "Section 3", "CPP_716-4": "Section 1", "CPP_720": "Section 1 bis",
     "CPP_801": "", "CPP_173-1": "Section 10", "CPP_495-8": "Section 8", "CPP_498": "Section 1", "CPP_515": "Section 3", "CPP_380-16": "Sous-titre II",
-    "CPP_552": "Titre IV", "CPP_230-33": "Chapitre V", "CPP_85": "Section 2", "CPP_41-1": "Section 3", "CPP_9-2": "Sous-titre Ier", "CPP_298": "Chapitre V",
-    "CR_L234-1": "Chapitre 4", "CR_R234-1": "Chapitre IV", "CR_L233-1": "Chapitre 3", "CJPM_L433-4": "Titre III", "CJPM_L11-1": "Chapitre Ier",
+    "CPP_552": "Titre IV", "CPP_230-33": "Chapitre V", "CPP_85": "Section 2", "CPP_41-1": "Section 3", "CPP_9-2": "Sous-titre Ier", "CPP_298": "Section 2",
+    "CR_L234-1": "Chapitre 4", "CR_R234-1": "Chapitre IV", "CR_L233-1": "Chapitre 3", "CJPM_L433-4": "Chapitre III", "CJPM_L11-1": "Chapitre Ier",
     "CCOM_L241-3": "Chapitre Ier", "CGI_1741": "C", "LPF_L228": "Section II", "CP_222-52": "Section 10", "CP_221-19": "Chapitre Ier ter",
   };
   for (const [id, t] of Object.entries(attendu)) { const r = CR.planOf(id); ok(r && r.node && r.node.t === t, `rangement ${id} : ${r && r.node ? r.node.t + " " + r.node.h : "aucun"} (attendu ${t || "Dispositions générales"})`); }
@@ -92,7 +92,8 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
   await click(w, row(/Titre II : Des enquêtes/));
   await click(w, row(/Chapitre Ier : Des crimes et des délits flagrants/));
   ok(/art\. 53 à 74-2/.test(texts(row(/Chapitre Ier : Des crimes et des délits flagrants/))), "plage d'articles du chapitre");
-  ok([...doc.querySelectorAll(".pl-vide")].length >= 2, "divisions sans texte grisées");
+  // texte intégral : le mode liste ne montre que les divisions qui portent des fiches du jeu
+  ok(![...doc.querySelectorAll(".pl-node.pl-vide")].length, "divisions sans fiche affichées dans le mode liste");
   const a63 = [...doc.querySelectorAll(".pl-art")].find((b) => /^Art\. 63 /.test(texts(b)) || /^63 /.test(texts(b)) || /\b63\b.*Durée/.test(texts(b)));
   ok(a63, "article 63 dans le chapitre");
   if (a63) {

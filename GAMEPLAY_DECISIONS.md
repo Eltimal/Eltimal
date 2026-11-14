@@ -276,3 +276,18 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
 - **D-86. La requête en exclusion du bulletin n° 2 après jugement attend une vérification.**
   - L'article 775-1 renvoie aux règles des articles 702-1 et 703 (relus) : requête au procureur, qui saisit la juridiction ; décision en chambre du conseil.
   - L'article 702-1 impose un délai de six mois pour le relèvement des interdictions. Qu'il s'applique ou non à l'exclusion du bulletin n° 2 demande une jurisprudence que la session ne peut pas lire. La requête n'est pas codée.
+
+## Lot 9 : texte intégral des codes (14 novembre 2026)
+
+- **D-87. Les quatre codes du jeu sont reliés en texte intégral, sous leur plan officiel.**
+  - **Source.** codes.droit.org, généré depuis Légifrance (base LEGI, Licence Ouverte). Versions : code pénal du 26 août 2026, code de procédure pénale du 23 octobre 2026, code de la route du 25 octobre 2026, CJPM du 3 octobre 2026. `dev/tools/codes.js` convertit les XML en `js/codes/<code>.js` (`CR.INTEGRAL[code] = { nom, legi, maj, source, plan, arts }`), à relancer pour une nouvelle version.
+  - **Contenu.** Tous les articles en vigueur, toutes les parties (législative, réglementaire, arrêtés, annexes) : 7 672 articles, 5,8 Mo de texte, sous 2 083 divisions officielles.
+  - **Plan.** Le plan officiel du fichier remplace, pour ces quatre codes, les plans relevés à la main (gardés en secours si les fichiers manquent). Chaque article est rangé à sa division exacte, paragraphe compris, dans l'ordre du code (« 16-1 A » après « 16-1 »). Les autres codes (santé publique, commerce, impôts, sécurité intérieure) gardent leur plan partiel.
+  - **Fiches du jeu et autres articles.**
+    - Les 260 fiches des quatre codes ont toutes leur texte officiel, qui remplace dans les codes reliés les résumés du jeu (191 fiches n'étaient que résumées). Elles gardent leur rubrique en italique, leur lecture payante, leur flou tant qu'elles n'ont pas été lues, et l'enregistrement au dossier.
+    - Les autres articles se lisent librement, sans temps ni enregistrement : ils ne deviennent pas des cartes (`CR.lib` et `CR.isLibId` ne les connaissent pas ; `CR.article(id)` donne le texte de tout article).
+    - Le bloc-notes et les cartes gardent le résumé du jeu, plus court ; le mode liste montre le texte officiel de la fiche lue, avec le résumé « En bref ».
+  - **Mise en pages.** Un article plus long qu'une page coule sur les suivantes, coupé entre deux alinéas, ou entre deux mots pour un alinéa trop long (tableaux). Volumes : code pénal 630 pages, code de procédure pénale 2 493, code de la route 811, CJPM 255. Mesure dans Chromium : 0 page qui déborde sur 4 214, remplissage médian 0,79.
+  - **Recherche dans un volume.** Elle porte sur le numéro, la rubrique des fiches et le texte des autres articles. Le texte d'une fiche non lue reste hors recherche : la trouver par ses mots dirait où chercher sans la lire.
+  - **Mode liste.** Il ne montre plus que les divisions qui portent des fiches : le plan complet se lit dans les codes reliés.
+  - **Reste du lot 9.** La jurisprudence sous les articles (D-83) attend toujours l'accord de Kevin pour lire les données ouvertes de la Cour de cassation, ou des sources fournies.

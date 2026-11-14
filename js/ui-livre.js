@@ -21,10 +21,10 @@
   // Contenu utile d'une page : 426 × 636 px (voir .lv-page dans index.html). CAP garde une marge de sécurité.
   const L = (CR.LIVRE_METRIQUES = {
     CAP: 622,
-    art: { cpl: 72, lh: 19, rub: 16, mb: 12 },
+    art: { cpl: 70, lh: 19, rub: 16, mb: 12 },
     note: { cpl: 40, lh: 16, mb: 6 },
     plein: { cpl: 80, lh: 16 },
-    som: { cpl: 70, lh: 17 },
+    som: { cpl: 64, lh: 17 },
     ar: { cpl: 74 },
   });
   const lignes = (t, cpl) => String(t || "").split("\n").reduce((n, p) => n + Math.max(1, Math.ceil(p.length / cpl)), 0);
@@ -56,7 +56,26 @@
     for (const h of hs) { acc += h; best = Math.min(best, Math.max(acc, tot - acc)); }
     return best + 10;
   };
-  const hauteurArticle = (id) => { const e = CR.lib(id); return L.art.rub + lignes(`Art. ${numOf(id)} ${e.texte}`, L.art.cpl) * L.art.lh + L.art.mb; };
+  // Texte intégral (lot 9) : le texte officiel, alinéa par alinéa ; la rubrique (intitulé du jeu) n'existe que pour les fiches
+  // Un article long coule sur plusieurs pages : il est découpé en morceaux (un alinéa, ou un fragment d'alinéa trop long
+  // pour une page, coupé entre deux mots) ; cont : suite du même alinéa, sans alinéa rentré.
+  const MORC = {};
+  const morceaux = (id) => {
+    if (MORC[id]) return MORC[id];
+    const max = Math.floor((L.CAP - 60) / L.art.lh) * L.art.cpl;
+    const out = [];
+    CR.article(id).alineas.forEach((x, i) => {
+      let r = x, first = true;
+      while (r.length > max) { let cut = r.lastIndexOf(" ", max); if (cut < max * 0.6) cut = max; out.push({ i, t: r.slice(0, cut), cont: !first }); r = r.slice(cut).trimStart(); first = false; }
+      out.push({ i, t: r, cont: !first });
+    });
+    return (MORC[id] = out);
+  };
+  // hauteur d'un morceau d'article : rubrique et numéro en tête du premier, marge sous le dernier
+  const hauteurMorceaux = (id, ps, tete, fin) => (tete && CR.lib(id) ? L.art.rub : 0) + lignes((tete ? `Art. ${numOf(id)} ` : "") + ps.map((p) => p.t).join("\n"), L.art.cpl) * L.art.lh + (fin ? L.art.mb : 0);
+  const hauteurArticle = (id) => hauteurMorceaux(id, morceaux(id), true, true);
+  const nTous = (n) => (n.nTous != null ? n.nTous : n.nTextes);
+  const tousDe = (n) => n.tous || n.arts;
   const niveau = (n) => (/^(Livre|Titre préliminaire|Troisième partie|Première partie)/.test(n.t) || n.code === "HORS" ? 1 : /^(Titre|Sous-titre)/.test(n.t) ? 2 : /^Chapitre/.test(n.t) ? 3 : 4);
   const hauteurTitre = (n) => { const lv = niveau(n); const r = CR.planRange(n); if (lv === 1) return 100 + lignes(n.h, 38) * 22 + (r ? 16 : 0); if (lv === 2) return 40 + lignes(`${n.t} ${n.h}`, 46) * 20 + (r ? 16 : 0); return lv === 3 ? 24 + lignes(`${n.t} ${n.h} ${r}`, 50) * 18 : 16 + lignes(`${n.t} ${n.h} ${r}`, 70) * 17; };
 
@@ -64,7 +83,7 @@
   // Un volume par grand code ; les codes dont le jeu n'a que quelques articles sont reliés ensemble en « Textes annexes »
   const PROPRES = ["CP", "CPP", "CR", "CJPM"];
   CR.volumes = function () {
-    const avec = CR.CODES_PLAN.filter((c) => c.nTextes > 0);
+    const avec = CR.CODES_PLAN.filter((c) => nTous(c) > 0);
     const v = avec.filter((c) => PROPRES.includes(c.id)).map((c) => ({ id: c.id, nom: c.nom, codes: [c], couleur: COULEURS[c.id] || "#4a4a50" }));
     const ann = avec.filter((c) => !PROPRES.includes(c.id));
     if (ann.length) v.push({ id: "ANNEXES", nom: "Textes annexes", codes: ann, couleur: COULEURS.HORS, annexes: true });
@@ -108,7 +127,8 @@
       if (plusieurs) som.push({ label: code.nom, depth: 0, code: code.id });
       for (const p of code.parties) {
         if (code.parties.length > 1 && p.nom) som.push({ label: p.nom, depth: d0, partie: p.key });
-        const w = (arr, d) => arr.forEach((n) => { if (niveau(n) <= 3 || n.nTextes) som.push({ label: `${n.t ? n.t + " : " : ""}${n.h}`, depth: d + 1, key: n.key, vide: !n.nTextes }); if (niveau(n) < 3 || n.nTextes) w(n.c, d + 1); });
+        // texte intégral : le sommaire s'arrête aux chapitres (les sections sont dans le corps) ; sinon, les sections qui portent des fiches
+        const w = (arr, d) => arr.forEach((n) => { if (niveau(n) <= 3 || (!code.integral && n.nTextes)) som.push({ label: `${n.t ? n.t + " : " : ""}${n.h}`, depth: d + 1, key: n.key, vide: !nTous(n) }); if (niveau(n) < 3 || (!code.integral && n.nTextes)) w(n.c, d + 1); });
         w(p.noeuds, d0);
       }
     }
@@ -120,9 +140,20 @@
       const rows = CR.notesOf(id).filter((r) => CR.lib(r.jp));
       const h = hauteurArticle(id);
       const h1 = rows.length ? Math.min(24 + hauteurNote(id, rows[0]), 90) : 0;
-      if (h + h1 > M.reste() && M.cur.blocks.length) M.neuve("corps");
-      M.poser({ t: "art", id }, h);
-      out.artPage[id] = M.cur.n; M.cur.arts.push(id);
+      const ps = morceaux(id);
+      // un article qui tient sur une page n'est jamais coupé ; un plus long commence où il peut (trois lignes au moins)
+      if (h + h1 > M.reste() && M.cur.blocks.length && (h <= L.CAP || M.reste() < (CR.lib(id) ? L.art.rub : 0) + 3 * L.art.lh)) M.neuve("corps");
+      for (let k = 0; k < ps.length;) {
+        const room = M.reste();
+        let j = k;
+        while (j < ps.length && hauteurMorceaux(id, ps.slice(k, j + 1), k === 0, j + 1 === ps.length) <= room) j++;
+        if (j === k) { if (M.cur.blocks.length) { M.neuve("corps"); continue; } j = k + 1; }
+        M.poser({ t: "art", id, de: k, a: j, suite: k > 0 }, hauteurMorceaux(id, ps.slice(k, j), k === 0, j === ps.length));
+        if (k === 0) out.artPage[id] = M.cur.n;
+        if (!M.cur.arts.includes(id)) M.cur.arts.push(id);
+        k = j;
+        if (k < ps.length) M.neuve("corps");
+      }
       let th = null, bloc = null, hs = [], base = 0;
       for (const r of rows) {
         const hn = hauteurNote(id, r);
@@ -143,13 +174,13 @@
       }
     };
     for (const code of codes) for (const [ip, p] of code.parties.entries()) {
-      if (!p.nTextes) continue;
+      if (!nTous(p)) continue;
       M.neuve("corps");
       if (plusieurs && ip === 0) { out.nodePage[code.id] = M.cur.n; M.cur.div = code.nom; M.poser({ t: "partie", nom: code.nom }, 60); }
       if (code.parties.length > 1 && p.nom) { out.nodePage[p.key] = M.cur.n; M.poser({ t: "partie", nom: p.nom, sous: plusieurs }, 60); }
-      for (const id of p.arts) article(id);
+      for (const id of tousDe(p)) article(id);
       const w = (arr) => arr.forEach((n) => {
-        if (!n.nTextes) return;
+        if (!nTous(n)) return;
         const lv = niveau(n);
         // une grande division (livre) commence sur une page neuve, sauf si la page ne porte encore que l'intitulé de la partie
         if (lv === 1 && M.cur.blocks.length && !M.cur.blocks.every((b) => b.t === "partie")) M.neuve("corps");
@@ -158,7 +189,7 @@
         if (lv <= 2) M.cur.div = n.h;
         M.poser({ t: "h", lv, node: n.key }, h);
         out.nodePage[n.key] = M.cur.n;
-        for (const id of n.arts) article(id);
+        for (const id of tousDe(n)) article(id);
         w(n.c);
       });
       w(p.noeuds);
@@ -234,7 +265,7 @@
       ? html`<div className="lv-head"><span className="lv-folio">${p.n}</span>${headArt ? html`<span className="lv-head-art">Art. ${numOf(headArt)}</span>` : null}<span className="lv-head-r">${vol.bulletin ? "Bulletin des arrêts" : vol.annexes ? (CR.planOf(headArt || "") || {}).code ? CR.planOf(headArt).code.nom : vol.nom : vol.nom}</span></div>`
       : html`<div className="lv-head"><span className="lv-head-l">${headLbl}</span>${headArt ? html`<span className="lv-head-art">Art. ${numOf(headArt)}</span>` : null}<span className="lv-folio">${p.n}</span></div>`;
     return html`<div className=${cx("lv-page", side, "lv-k-" + p.kind)} lang="fr" data-page=${p.n}>
-      ${rubans.map((r, i) => html`<button key=${r.id} type="button" className=${cx("lv-ruban", "lv-ruban-" + r.k)} style=${{ top: 70 + i * 54 + "px" }} title=${(r.k === "jp" ? CR.jpCite(r.id) : CR.lib(r.id).cite) + " — enregistré dans le dossier"} onClick=${() => (r.k === "art" ? goArt(r.id) : null)}></button>`)}
+      ${rubans.map((r, i) => html`<button key=${r.id} type="button" className=${cx("lv-ruban", "lv-ruban-" + r.k)} style=${{ top: 70 + i * 54 + "px" }} title=${(r.k === "jp" ? CR.jpCite(r.id) : CR.article(r.id).cite) + " — enregistré dans le dossier"} onClick=${() => (r.k === "art" ? goArt(r.id) : null)}></button>`)}
       ${tete}
       <div className="lv-body">${p.blocks.map((b, i) => html`<${Bloc} key=${i} b=${b} ctx=${ctx} p=${p} />`)}</div>
     </div>`;
@@ -250,11 +281,11 @@
         <div className="lv-tv-sous">${vol.bulletin ? "Arrêts annotés dans la bibliothèque du jeu" : "annoté"}</div>
         <div className="lv-tv-filet"></div>
         <div className="lv-tv-ed">Édition 2027</div>
-        <div className="lv-tv-ajour">Texte à jour au 9 novembre 2026</div>
+        <div className="lv-tv-ajour">${(() => { const I = !vol.bulletin && vol.codes.length === 1 && CR.integralDe(vol.codes[0].id); return I ? `Texte en vigueur au ${CR.dateCode(I.maj)}` : "Texte à jour au 9 novembre 2026"; })()}</div>
       </div>`;
       case "avert": return html`<div className="lv-avert">
         <h4>Avertissement</h4>
-        ${vol.bulletin ? html`<p>Les arrêts sont classés par date. Chacun renvoie aux articles sous lesquels il est annoté dans les codes. La mention de publication (F-B, FS-B, P+B+R+I) n'est donnée que lorsqu'elle a été vérifiée.</p>` : html`<p>${CR.PLAN_SOURCE}</p><p>Les articles reproduisent le texte en vigueur tel qu'il a été relevé hors ligne : à revérifier sur Légifrance avant tout usage réel. Les notes de jurisprudence sont rédigées pour le jeu ; chaque arrêt indique dans le Bulletin la source et la date de sa vérification.</p>`}
+        ${vol.bulletin ? html`<p>Les arrêts sont classés par date. Chacun renvoie aux articles sous lesquels il est annoté dans les codes. La mention de publication (F-B, FS-B, P+B+R+I) n'est donnée que lorsqu'elle a été vérifiée.</p>` : html`<p>${CR.PLAN_SOURCE}</p><p>${vol.codes.some((c) => c.integral) ? "Le volume reproduit tous les articles en vigueur, dans l'ordre et sous les intitulés officiels du code. Les articles qui servent dans les affaires du jeu portent en tête une rubrique en italique, imprimée flou tant qu'ils n'ont pas été lus. " : "Les articles reproduisent le texte en vigueur tel qu'il a été relevé hors ligne. "}À revérifier sur Légifrance avant tout usage réel. Les notes de jurisprudence sont rédigées pour le jeu ; chaque arrêt indique dans le Bulletin la source et la date de sa vérification.</p>`}
         <p><b>Abréviations.</b> Ass. plén. : assemblée plénière de la Cour de cassation. — Crim. : chambre criminelle. — Cons. const. : Conseil constitutionnel. — F-B, FS-B : arrêt publié au Bulletin (formation restreinte, de section). — V. : voir. — Rappr. : rapprocher. — n° : numéro de note sous l'article.</p>
         <p><b>Lecture.</b> Un texte imprimé flou n'a pas encore été lu : un clic le lit, ce qui prend du temps, et l'enregistre dans le dossier ouvert. Les marque-pages sur la tranche signalent les textes enregistrés dans ce dossier.</p>
       </div>`;
@@ -267,11 +298,17 @@
         return html`<div className=${"lv-h lv-h" + b.lv}>${n.t ? html`<span className="lv-h-t">${n.t}</span> ` : null}<span className="lv-h-h">${b.lv <= 3 ? n.h.toUpperCase() : n.h}</span>${r && b.lv <= 3 ? html`<span className="lv-h-r">(${r})</span>` : null}</div>`;
       }
       case "art": {
-        const e = CR.lib(b.id);
-        const posts = ((s.annots || {})[b.id] || []);
-        return html`<div className=${cx("lv-art", lu(b.id) && "lv-lu", hl === b.id && "lv-hl")} id=${"lv-" + b.id}>
-          <div className="lv-rub">${e.titre}${e.etat === "resume" ? " (résumé)" : ""}<button type="button" className="lv-crayon" title="Annoter au crayon" aria-label="Annoter l'article" onClick=${() => annoter(b.id)}>✎</button></div>
-          <p className="lv-art-t"><b className="lv-art-n">Art. ${numOf(b.id)}</b> ${lu(b.id) ? html`<span className="lv-stabilo">${e.texte}</span>` : html`<${Flou} lu=${false} onLire=${() => read(e)} temps=${e.temps} label="Lire et extraire">${e.texte}</${Flou}>`}</p>
+        const a = CR.article(b.id);
+        const e = a.lib;
+        const suite = !!b.suite;
+        const posts = suite ? [] : ((s.annots || {})[b.id] || []);
+        // le texte : alinéa par alinéa ; le premier suit le numéro de l'article ; un article long continue sur la page suivante
+        const ps = morceaux(b.id).slice(b.de || 0, b.a == null ? undefined : b.a);
+        const corps = ps.map((x, i) => html`<span key=${i} className=${i === 0 && !suite ? "lv-al0" : x.cont ? "lv-alc" : "lv-al"}>${x.t}</span>`);
+        const crayon = html`<button type="button" className="lv-crayon" title="Annoter au crayon" aria-label="Annoter l'article" onClick=${() => annoter(b.id)}>✎</button>`;
+        return html`<div className=${cx("lv-art", e && lu(b.id) && "lv-lu", !e && "lv-integ", hl === b.id && "lv-hl", suite && "lv-suite")} id=${suite ? undefined : "lv-" + b.id}>
+          ${e && !suite ? html`<div className="lv-rub">${e.titre}${crayon}</div>` : null}
+          <div className="lv-art-t">${suite ? null : html`<b className="lv-art-n">Art. ${numOf(b.id)}</b>`}${e || suite ? null : crayon}${suite ? null : " "}${!e ? corps : lu(b.id) ? html`<span className="lv-stabilo">${corps}</span>` : html`<${Flou} lu=${false} onLire=${() => read(e)} temps=${e.temps} label="Lire et extraire">${corps}</${Flou}>`}</div>
           ${posts.map((x, i) => html`<div key=${i} className="lv-postit" style=${{ transform: `rotate(${i % 2 ? 2 : -2.5}deg)` }} title=${x.c ? "Dossier " + x.c : ""}>${x.t}</div>`)}
         </div>`;
       }
@@ -306,6 +343,24 @@
       default: return null;
     }
   }
+
+  const ongletPartie = (nom) => (/Arrêtés/i.test(nom) ? "Arrêtés" : /Décrets simples/i.test(nom) ? "P. régl. (D)" : /réglementaire/i.test(nom) ? "P. régl." : /législative/i.test(nom) ? "P. lég." : nom.replace("Partie ", "P. "));
+  // Recherche dans un volume : numéro, rubrique des fiches (leur texte une fois lu) et texte des autres articles.
+  // Le texte d'une fiche non lue reste hors recherche : la trouver par ses mots dirait où chercher sans la lire.
+  const plat = (t) => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  function chercher(livre, qf, s) {
+    if (!livre.plat) livre.plat = {};
+    const q = plat(qf);
+    const out = [];
+    for (const a of Object.keys(livre.artPage)) {
+      if (livre.plat[a] == null) { const x = CR.article(a); livre.plat[a] = plat(`art. ${numOf(a)} ${x.lib ? x.lib.titre : x.alineas.join(" ")}`); }
+      const x = CR.lib(a);
+      if (livre.plat[a].includes(q) || (x && s.researched.includes(a) && plat(CR.article(a).alineas.join(" ")).includes(q))) out.push(a);
+      if (out.length >= 12) break;
+    }
+    return out;
+  }
+  const extrait = (t, qf) => { const i = plat(t).indexOf(plat(qf)); if (i < 0) return t.slice(0, 70) + (t.length > 70 ? "…" : ""); const d = Math.max(0, i - 30); return (d ? "…" : "") + t.slice(d, i + qf.length + 40) + "…"; };
 
   // Tourner : une feuille animée au-dessus des pages, puis on fixe la nouvelle page
   function Livre({ s, volId, here, read, fermer, setMode, focusArt, focusPage }) {
@@ -369,12 +424,13 @@
       if (id) { setAller(""); goArt(id); return; }
       const autre = CR.LIB.find((e) => !CR.estJP(e.id) && numOf(e.id).toLowerCase() === t.toLowerCase());
       if (autre) { setAller(""); goArt(autre.id); return; }
+      if (!vol.bulletin && vol.codes.some((c) => c.integral)) { setMsg(`L'article ${t} n'est pas en vigueur dans ce code, ou ce numéro n'existe pas.`); return; }
       setMsg(`L'article ${t} n'est pas dans la bibliothèque du jeu.`);
     };
     const qf = q.trim().toLowerCase();
     const resultats = qf.length >= 2 ? (vol.bulletin
       ? Object.keys(livre.jpPage).filter((j) => `${CR.jpCite(j)} ${CR.JP[j].titre} ${CR.JP[j].titrage.join(" ")}`.toLowerCase().includes(qf)).map((j) => ({ id: j, label: CR.jpCite(j), sous: CR.JP[j].titre, page: livre.jpPage[j] }))
-      : Object.keys(livre.artPage).filter((a) => { const e = CR.lib(a); return `art. ${numOf(a)} ${e.titre} ${s.researched.includes(a) ? e.texte : ""}`.toLowerCase().includes(qf); }).map((a) => ({ id: a, label: "Art. " + numOf(a), sous: CR.lib(a).titre, page: livre.artPage[a] }))).slice(0, 12) : null;
+      : chercher(livre, qf, s).map((a) => { const x = CR.article(a); return { id: a, label: "Art. " + numOf(a), sous: x.lib ? x.lib.titre : extrait(x.alineas.join(" "), qf), page: livre.artPage[a] }; })).slice(0, 12) : null;
     const pinned = here ? here.cards.filter((id) => livre.artPage[id] || livre.jpPage[id]) : [];
     const annoter = (id) => setAnnot({ id, t: "" });
     const sauverAnnot = () => {
@@ -386,7 +442,7 @@
     // Onglets de la tranche : sommaire, grandes divisions, index
     const onglets = vol.bulletin ? [{ l: "Avertissement", p: 2 }, { l: "Arrêts", p: 3 }] : [{ l: "Sommaire", p: 3 }];
     if (vol.annexes) for (const c of vol.codes) onglets.push({ l: ABR[c.id] || c.nom.replace("Textes hors codes", "Hors codes"), p: livre.nodePage[c.id] });
-    else if (!vol.bulletin) for (const p of vol.codes[0].parties) { if (vol.codes[0].parties.length > 1 && p.nTextes && livre.nodePage[p.key]) onglets.push({ l: p.nom.replace("Partie ", "P. "), p: livre.nodePage[p.key] }); for (const n of p.noeuds) if (n.nTextes && livre.nodePage[n.key]) onglets.push({ l: (n.t || n.h).replace("Titre préliminaire", "Tit. prél."), p: livre.nodePage[n.key] }); }
+    else if (!vol.bulletin) for (const p of vol.codes[0].parties) { if (vol.codes[0].parties.length > 1 && nTous(p) && livre.nodePage[p.key]) onglets.push({ l: ongletPartie(p.nom), p: livre.nodePage[p.key] }); if (!vol.codes[0].integral || p === vol.codes[0].parties[0]) for (const n of p.noeuds) if (nTous(n) && livre.nodePage[n.key]) onglets.push({ l: (n.t || n.h).replace("Titre préliminaire", "Tit. prél."), p: livre.nodePage[n.key] }); }
     onglets.push({ l: vol.bulletin ? "Table" : "Index", p: livre.pages.find((x) => x.kind === "index").n });
     const ctx = { s, vol, here, read, goPage, goArt, annoter, hl, livre };
     const P = (n, side) => html`<${Page} p=${livre.pages[n - 1]} side=${side} ctx=${ctx} />`;
@@ -413,13 +469,13 @@
           <input type="text" aria-label="Aller à l'article" placeholder="Aller à l'art. 63-1" value=${aller} onChange=${(e) => { setAller(e.target.value); setMsg(null); }} />
         </form>
         <input type="search" className="lv-cherche" aria-label="Chercher dans le volume" placeholder="Chercher dans le volume" value=${q} onChange=${(e) => setQ(e.target.value)} />
-        ${pinned.length > 0 && html`<select aria-label="Marque-pages" value="" onChange=${(e) => { const id = e.target.value; if (!id) return; if (CR.estJP(id)) goPage(livre.jpPage[id], id); else goArt(id); }}><option value="">Marque-pages (${pinned.length})</option>${pinned.map((id) => html`<option key=${id} value=${id}>${CR.estJP(id) ? CR.jpCite(id, true) : CR.lib(id).cite} — p. ${livre.artPage[id] || livre.jpPage[id]}</option>`)}</select>`}
+        ${pinned.length > 0 && html`<select aria-label="Marque-pages" value="" onChange=${(e) => { const id = e.target.value; if (!id) return; if (CR.estJP(id)) goPage(livre.jpPage[id], id); else goArt(id); }}><option value="">Marque-pages (${pinned.length})</option>${pinned.map((id) => html`<option key=${id} value=${id}>${CR.estJP(id) ? CR.jpCite(id, true) : CR.article(id).cite} — p. ${livre.artPage[id] || livre.jpPage[id]}</option>`)}</select>`}
         ${zoomAjuste < 0.85 && html`<button type="button" className="link small" aria-pressed=${loupe} onClick=${() => setLoupe(!loupe)}>${loupe ? "Page entière" : "Loupe"}</button>`}
         <button type="button" className="link small" onClick=${() => setMode("liste")}>Mode liste</button>
       </div>
       ${msg && html`<p className="small warn-txt">${msg}</p>`}
       ${resultats && html`<ul className="lv-resultats">${resultats.length === 0 ? html`<li className="small muted">Rien dans ce volume.</li>` : resultats.map((r) => html`<li key=${r.id}><button type="button" className="lv-res" onClick=${() => { setQ(""); CR.estJP(r.id) ? goPage(r.page, r.id) : goArt(r.id); }}><strong>${r.label}</strong> ${r.sous}<span className="lv-res-p">p. ${r.page}</span></button></li>`)}</ul>`}
-      ${annot && html`<div className="lv-annot"><label className="small">Annotation au crayon sous ${CR.lib(annot.id).cite}${here ? ` (dossier ${CR.caseTitle(s, here)})` : ""}</label><div className="lv-annot-row"><input type="text" maxLength=${140} value=${annot.t} onChange=${(e) => setAnnot({ id: annot.id, t: e.target.value })} onKeyDown=${(e) => { if (e.key === "Enter") sauverAnnot(); }} placeholder="à soulever in limine" /><${Btn} small kind="primary" onClick=${sauverAnnot}>Écrire</${Btn}><${Btn} small kind="ghost" onClick=${() => setAnnot(null)}>Annuler</${Btn}></div></div>`}
+      ${annot && html`<div className="lv-annot"><label className="small">Annotation au crayon sous ${CR.article(annot.id).cite}${here ? ` (dossier ${CR.caseTitle(s, here)})` : ""}</label><div className="lv-annot-row"><input type="text" maxLength=${140} value=${annot.t} onChange=${(e) => setAnnot({ id: annot.id, t: e.target.value })} onKeyDown=${(e) => { if (e.key === "Enter") sauverAnnot(); }} placeholder="à soulever in limine" /><${Btn} small kind="primary" onClick=${sauverAnnot}>Écrire</${Btn}><${Btn} small kind="ghost" onClick=${() => setAnnot(null)}>Annuler</${Btn}></div></div>`}
       <div className=${cx("lv-zone", loupe && "lv-loupe")} ref=${zoneRef} onTouchStart=${(e) => { touch.current = e.touches[0].clientX; }} onTouchEnd=${(e) => { if (touch.current == null || loupe) return; const dx = e.changedTouches[0].clientX - touch.current; touch.current = null; if (dx < -45) suivante(); else if (dx > 45) precedente(); }}>
         <div className="lv-zoom" style=${{ zoom }}>
           ${scene}
