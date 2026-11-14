@@ -263,8 +263,13 @@
     for (const a of aggs) base = base.replace(", " + AGG[a].label, "");
     base = base.replace(/, en état de récidive légale/, "");
     const oui = J.coupable ? `Oui, ${C.maj}.` : "Non.";
+    if (J.irresp) {
+      // la cause d'irresponsabilité invoquée : deux questions (art. 349-1), réponses positives (art. 361-1)
+      p(`Question n° 1 : l'accusé${e} a-t-${fem ? "elle" : "il"} commis les faits ${de(base)} ? — Oui, ${C.maj}.`);
+      p(`Question n° 2 : l'accusé${e} bénéficie-t-${fem ? "elle" : "il"} pour ces faits de la cause d'irresponsabilité pénale prévue par le premier alinéa de l'article 122-1 du code pénal, selon lequel n'est pas pénalement responsable la personne qui était atteinte, au moment des faits, d'un trouble psychique ou neuropsychique ayant aboli son discernement ou le contrôle de ses actes ? — Oui.`);
+    } else
     p(`Question n° 1 : l'accusé${e} est-${fem ? "elle" : "il"} coupable ${de(base)} ? — ${oui}`);
-    aggs.forEach((a, i) => {
+    if (!J.irresp) aggs.forEach((a, i) => {
       const prev = AGG[a].prev || "";
       const q = /^avec cette circonstance que les faits ont été commis /.test(prev) ? `les faits ont-ils été commis ${prev.replace(/^avec cette circonstance que les faits ont été commis /, "")} ?` : /^avec cette circonstance qu/.test(prev) ? `les faits ont-ils été commis avec cette circonstance ${prev.replace(/^avec cette circonstance /, "")} ?` : `les faits ont-ils été commis avec cette circonstance : ${AGG[a].label} ?`;
       p(`Question n° ${i + 2} : ${q} — ${J.coupable ? `Oui, ${C.maj}.` : "Sans objet."}`);
@@ -273,7 +278,7 @@
     if (J.coupable) p(`Sur la peine, ${C.jury ? "la cour et le jury ont" : "la cour a"} délibéré ; le vote a eu lieu au scrutin secret ; la décision est prise à la majorité absolue des votants${peine.perpetuite ? `, le maximum de la peine encourue l'ayant été ${C.maj}` : ""} (art. 362).`);
     p(C.jury ? `La feuille de questions a été signée par ${pr} et par le premier juré désigné par le sort (art. 364).` : `La feuille de questions a été signée par ${pr} (art. 364).`);
     p("FEUILLE DE MOTIVATION (art. 365-1)");
-    p(J.coupable ? "Sur la culpabilité, les principaux éléments à charge qui ont convaincu la cour, exposés au cours de la délibération :" : "Les principaux éléments qui ont conduit la cour à ne pas retenir la culpabilité :");
+    p(J.irresp ? "Les principaux éléments qui ont convaincu la cour que l'accusé" + e + " a commis les faits, puis que son discernement était aboli au moment des faits :" : J.coupable ? "Sur la culpabilité, les principaux éléments à charge qui ont convaincu la cour, exposés au cours de la délibération :" : "Les principaux éléments qui ont conduit la cour à ne pas retenir la culpabilité :");
     for (const m of J.motifs || []) p(`— ${m.titre}. ${m.t}`);
     if (cul && cul.r) p(cul.r + (J.qualif && J.coupable ? ` Les faits sont retenus sous la qualification de ${J.qualif.label}.` : ""));
     const pq = questions.find((q) => /peine/i.test(q.q));
@@ -285,7 +290,8 @@
     p(`La cour, après lecture faite à l'audience par ${pr} des textes de loi dont il est fait application (art. 366), statuant publiquement ${appel ? "en appel" : "en premier ressort"} et contradictoirement :`);
     p(dispositif);
     if (J.coupable) p(`${Pr} a donné à l'accusé${e}` + " l'avertissement prévu par la loi. La présente décision est assujettie au droit fixe de procédure prévu par l'article 1018 A du code général des impôts.");
-    p(appel ? "Voies de recours : pourvoi en cassation dans les dix jours francs qui suivent le prononcé (art. 568 du code de procédure pénale)."
+    p(J.irresp && !appel ? "Voies de recours : le procureur général peut faire appel de l'arrêt de déclaration d'irresponsabilité pénale (art. 706-132) ; l'accusé et la partie civile, de la décision sur l'action civile, devant la chambre des appels correctionnels (art. 706-132, al. 2)."
+      : appel ? "Voies de recours : pourvoi en cassation dans les dix jours francs qui suivent le prononcé (art. 568 du code de procédure pénale)."
       : J.coupable ? `Voies de recours : appel dans le délai de dix jours à compter du prononcé (art. 380-9), par déclaration au greffe de la cour qui a rendu la décision (art. 380-12) ; l'appel est examiné par ${C.ccd ? "la cour d'assises (art. 380-21)" : "une autre cour d'assises, ou la même autrement composée,"} désignée par le premier président de la cour d'appel (art. 380-1 et 380-14).`
         : `Voies de recours : le procureur général peut faire appel de l'arrêt d'acquittement dans les dix jours du prononcé ; la partie civile, quant à ses seuls intérêts civils (art. 380-2 et 380-9).`);
     p(`Et le présent arrêt a été signé par ${pr} et le greffier.`);

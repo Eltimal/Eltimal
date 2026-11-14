@@ -40,13 +40,15 @@ const { boot } = require("./harness");
       ok(spe || ccd ? /Oui, à la majorité\./.test(T) : new RegExp(`Oui, à la majorité de ${appel ? "huit" : "sept"} voix au moins`).test(T), `${id} : majorité de la culpabilité (art. 359)`);
       ok(/art\. 362/.test(T), `${id} : vote sur la peine absent`);
       ok(appel ? /art\. 568/.test(T) : /art\. 380-9/.test(T) && (ccd ? /380-21/.test(T) : /380-14/.test(T)), `${id} : voies de recours`, T.slice(-500));
+    } else if (J.irresp) {
+      ok(/Question n° 2 : .+ cause d'irresponsabilité pénale/.test(T) && /706-129/.test(T) && /706-132/.test(T), `${id} : irresponsabilité sans ses deux questions (art. 349-1)`);
     } else {
       ok(/— Non\./.test(T), `${id} : acquittement sans réponse négative`);
       ok(appel ? /art\. 568/.test(T) : /procureur général/.test(T), `${id} : voies de recours après acquittement`);
     }
     if ((J.dec.questions || []).some((q) => /civile/.test(q.q))) ok(/sans l'assistance du jury \(art\. 371\)/.test(T), `${id} : action civile non séparée`);
     const nAgg = ((J.qualif && J.qualif.aggs) || []).filter((a) => CR.CAT.AGG[a]).length;
-    ok((T.match(/Question n° \d+ :/g) || []).length === 1 + nAgg, `${id} : une question par circonstance aggravante (art. 349)`, `${nAgg} circonstances ; ${(T.match(/Question n° [^\n]+/g) || []).join(" | ")}`);
+    ok((T.match(/Question n° \d+ :/g) || []).length === (J.irresp ? 2 : 1 + nAgg), `${id} : une question par circonstance aggravante (art. 349)`, `${nAgg} circonstances ; ${(T.match(/Question n° [^\n]+/g) || []).join(" | ")}`);
     if (J.coupable && J.dec.peine && /^(\d|réclusion)/i.test(J.dec.peine.texte || "")) ok(/le condamne à/.test(T), `${id} : dispositif sans « le condamne à »`, J.dec.dispositif);
     if (/Aucune constitution/.test(T)) ok(!/, partie civile\./.test(T.split("\n")[1]), `${id} : victime non constituée nommée partie civile`);
     ok(!/\bart\. [\d-]+(?: et [\d-]+)* CP\b/.test(T), `${id} : visa abrégé « art. … CP »`, (T.match(/.{30}art\. [\d-]+.{20}/) || [])[0]);

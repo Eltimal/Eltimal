@@ -1431,6 +1431,33 @@
         dec.dispositif = dec.dispositif.replace(old.replace(/^./, (c) => c.toLowerCase()), pn.texte.replace(/^./, (c) => c.toLowerCase()));
         cs.vars.peine = pn;
       }
+      // la cause d'irresponsabilité invoquée (relu : art. 349-1, 361-1, 706-129 à 706-131) : deux questions, « a-t-il commis
+      // les faits ? », puis « bénéficie-t-il de l'article 122-1, al. 1 ? » ; deux réponses positives : arrêt de déclaration
+      // d'irresponsabilité pénale pour cause de trouble mental, qui met fin à la détention ; la cour, sans le jury, statue
+      // sur les dommages et intérêts (art. 414-3 du code civil) et sur les mesures de sûreté. La défense doit l'invoquer :
+      // c'est le moyen « aboli » ; quand le joueur est l'avocat de la partie civile, la défense adverse l'invoque.
+      const aboliT = t.f.psy === "aboli" || (cs.vars.renfort && cs.vars.renfort.aboli);
+      const invoque = aboliT && (D0 ? played.has("arg:aboli") || played.has("E_aboli") : true);
+      if (dec.coupable && invoque && qq.nature === "crime") {
+        const victimeVivante = V && !decede;
+        const mesures = [];
+        if (victimeVivante || P) mesures.push(`interdiction d'entrer en relation avec ${victimeVivante ? "la victime" : "la famille de la victime"} (art. 706-136, 1°)`);
+        if (I.fam === "crim_personnes" || /arme/.test(qq.label)) mesures.push("interdiction de détenir ou de porter une arme (art. 706-136, 3°)");
+        // l'admission en soins suppose des troubles qui compromettent la sûreté des personnes (art. 706-135) : atteintes aux personnes
+        const soins = /^crim_(personnes|sexuel)/.test(I.fam || "") && !(D0 && played.has("arg:soins_suffisent"));
+        let civil = 0;
+        if (t.camp === "pc" || V) civil = Math.max(1000, Math.round(postes.reduce((n0, po) => n0 + (po.justif && po.justif.some((f0) => CR.hasFact(cs, f0)) ? po.base : Math.round(po.base * (t.camp === "pc" ? 0.5 : 0.35))), 0) / 100) * 100);
+        const nm = nomA;
+        dec.irresp = { mesures, soins, civil, duree: "quinze ans" };
+        dec.coupable = false; dec.peine = null; cs.vars.peine = null;
+        const cul = dec.questions.find((x) => x.q === "Sur la culpabilité");
+        if (cul) cul.r = `${nm} a commis les faits qui lui sont reprochés. Les expertises psychiatriques, et les experts entendus à l'audience, concordent : au moment des faits, un trouble psychique ou neuropsychique abolissait son discernement et le contrôle de ses actes. ${CR.cap(GEN2.PR.il(A))} bénéficie de la cause d'irresponsabilité pénale du premier alinéa de l'article 122-1 du code pénal.`;
+        dec.questions = dec.questions.filter((x) => x.q !== "Sur la peine");
+        dec.dispositif = `Déclare que ${nm} a commis les faits qui lui sont reprochés ; le déclare pénalement irresponsable pour cause de trouble mental (art. 706-129 et 706-130 du code de procédure pénale) ; dit que le présent arrêt met fin à la détention provisoire ou au contrôle judiciaire (art. 706-130)${soins ? " ; ordonne son admission en soins psychiatriques sous la forme d'une hospitalisation complète, le préfet de police étant immédiatement avisé (art. 706-135)" : ""}${mesures.length ? ` ; prononce, pour une durée de quinze ans, les mesures de sûreté suivantes : ${mesures.join(" ; ")}` : ""}${civil ? ` ; statuant sans l'assistance du jury, déclare ${nm} civilement responsable (art. 414-3 du code civil et 706-131) et le condamne à payer à la partie civile la somme de ${CR.money(civil)}` : ""}.`.replace(/le déclare|le condamne/g, (w) => (A.g === "f" ? w.replace("le ", "la ") : w));
+        dec.titre = enAppel ? "Arrêt de déclaration d'irresponsabilité pénale pour cause de trouble mental (cour d'assises statuant en appel)" : "Arrêt de déclaration d'irresponsabilité pénale pour cause de trouble mental";
+        if (cs.vars.jugementEcrit) Object.assign(cs.vars.jugementEcrit, { coupable: false, irresp: dec.irresp, titre: dec.titre });
+        CR.PROC.event(api, "Arrêt de déclaration d'irresponsabilité pénale pour cause de trouble mental (art. 706-129).");
+      }
       cs.vars.verdictTitre = dec.titre;
       cs.vars.verdictTexte = dec.dispositif;
       return dec;
@@ -1438,7 +1465,7 @@
     O.apresProces = function (api, res) {
       const { s, cs } = api;
       const dec = (res && res.decision) || {};
-      cs.vars.verdict = { coupable: !!dec.coupable, peine: dec.peine ? dec.peine.texte : null, ferme: dec.peine ? dec.peine.ferme : 0, day: s.day, civil: dec.civil ? dec.civil.total : 0, requalifie: !!(dec.qualif && dec.qualif.favorable) };
+      cs.vars.verdict = { coupable: !!dec.coupable, peine: dec.peine ? dec.peine.texte : null, ferme: dec.peine ? dec.peine.ferme : 0, day: s.day, civil: dec.irresp ? dec.irresp.civil : dec.civil ? dec.civil.total : 0, requalifie: !!(dec.qualif && dec.qualif.favorable), irresp: !!dec.irresp };
       api.doc("verdict", flowTitles.verdict);
       const pn = dec.peine;
       if (dec.coupable && pn && pn.ferme > 0 && (pn.mandatDepot || cs.proc.detention.statut === "dp")) CR.PROC.detention(api, "dp", { etab: def.proc.etab });
@@ -1448,10 +1475,11 @@
       // l'appel : dix jours ; le ministère public fait appel d'un acquittement ou d'une peine très en deçà de ses réquisitions
       const reqF = (cs.vars.requis && cs.vars.requis.ferme) || 0;
       const pr = api.profil("parquet") || CR.PROFILS.deborde;
-      const pAppel = !dec.coupable ? 0.55 : pn && reqF && pn.ferme < reqF * 0.55 ? 0.35 : (pr.appel || 0.2) * 0.4;
+      // l'irresponsabilité déclarée : le procureur général peut en faire appel (art. 706-132), rarement quand les experts concordent
+      const pAppel = dec.irresp ? 0.12 : !dec.coupable ? 0.55 : pn && reqF && pn.ferme < reqF * 0.55 ? 0.35 : (pr.appel || 0.2) * 0.4;
       cs.vars.appelParquetVerdict = R.chance(s, pAppel);
       api.at(CR.rollForward(s.day + 10), "_appelVerdict", {}, 17 * 60);
-      CR.PROC.stade(api, "jugement", dec.coupable ? "Condamnation en premier ressort." : "Acquittement en premier ressort.");
+      CR.PROC.stade(api, "jugement", dec.coupable ? "Condamnation en premier ressort." : dec.irresp ? "Déclaration d'irresponsabilité pénale pour cause de trouble mental, en premier ressort." : "Acquittement en premier ressort.");
     };
     // appel du joueur (gabarit commun « appel ») : défense sur tout, partie civile sur ses intérêts civils seulement (art. 380-2)
     O.apresAppel = function (api, { ctrl, etendue }) {
@@ -1492,6 +1520,8 @@
       const pn = cs.vars.peine;
       if (v.coupable && pn && pn.ferme > 0 && cs.proc.detention.statut === "dp") CR.condamneDetenu(s, cs, pn.perpetuite ? 360 : pn.ferme, def.proc.etab === "fleury" ? "fleury" : "fresnes", cs.proc.detention.since != null ? cs.proc.detention.since : s.day);
       CR.PROC.stade(api, "definitif", "Décision définitive.");
+      if (t.camp === "pc" && v.irresp) { CR.closeCase(s, cs, v.civil ? { type: "indemnise", detail: `irresponsabilité pénale de l'auteur ; ${CR.money(v.civil)} alloués`, indemnisation: v.civil } : { type: "deboute", detail: "irresponsabilité pénale de l'auteur" }); return; }
+      if (v.irresp) { CR.closeCase(s, cs, { type: "non_lieu", detail: "irresponsabilité pénale pour cause de trouble mental, déclarée par la cour" }); return; }
       if (t.camp === "pc") { CR.closeCase(s, cs, !v.coupable ? { type: "deboute", detail: "acquittement de l'accusé" } : v.civil ? { type: "indemnise", detail: CR.money(v.civil), indemnisation: v.civil } : { type: "done", detail: "culpabilité reconnue" }); return; }
       CR.closeCase(s, cs, !v.coupable ? { type: ["tc", "tpe"].includes(cs.vars.jurProces) ? "relaxe" : "acquittement" } : v.requalifie ? { type: "requalification_favorable", detail: v.peine || "" } : { type: "condamnation", detail: v.peine || "" });
     };

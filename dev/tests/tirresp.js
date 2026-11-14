@@ -82,6 +82,30 @@ const { boot, sleep, texts } = require("./harness");
     else ok(cs.status === "closed", `${cs.id} : dossier ouvert après l'arrêt`, cs.status);
     vus[camp]++;
   }
+  // devant la cour d'assises (art. 349-1, 361-1, 706-129 à 706-132) : la défense invoque l'abolition, ou non
+  const assises = { invoque: 0, sans: 0, pc: 0 };
+  for (let i = 0; i < 4000 && (assises.invoque < 3 || assises.sans < 2 || assises.pc < 2); i++) {
+    let cs; try { cs = CR.GEN.open(s, "info", {}); } catch (e) { continue; }
+    const t = CR.GEN.paramsOf(s, cs.id).t, def = CR.caseDef(cs);
+    if (t.f.psy !== "aboli" || t.q.nature !== "crime" || !CR.hookExists(cs, "decider")) continue;
+    const pc = t.camp === "pc", cas = pc ? "pc" : assises.invoque <= assises.sans ? "invoque" : "sans";
+    if (assises[cas] >= 3) continue;
+    cs.status = "active"; cs.vars.jurProces = t.jur; cs.vars.reglement = { qual: "q", type: "oma", jur: t.jur };
+    const played = new Set(cas === "invoque" ? ["arg:aboli"] : []);
+    let d; try { d = CR.runHook(s, cs, "decider", { st: { played, dernierMot: "regrets" } }); } catch (e) { ok(false, `${cs.id} : ${e.message}`); continue; }
+    if (!d) continue;
+    if (cas === "sans") { if (d.coupable) { assises.sans++; ok(!d.irresp, `${cs.id} : irresponsabilité déclarée sans que la défense l'invoque`); } continue; }
+    if (!d.irresp) continue; // charges non établies : acquittement
+    assises[cas]++;
+    ok(!d.coupable && !d.peine && /706-129/.test(d.dispositif), `${cs.id} : arrêt d'irresponsabilité sans son dispositif`, d.dispositif);
+    const J = CR.SHARED_DOCS._jugement({ s, cs }), TX = J.paras.map((x) => x.join("")).join("\n");
+    ok(/Question n° 2 : l'accusée? bénéficie-t-(il|elle) pour ces faits de la cause d'irresponsabilité/.test(TX) && /706-132/.test(TX), `${cs.id} : arrêt écrit sans les deux questions ou l'appel du procureur général`, TX.slice(0, 900));
+    CR.runHook(s, cs, "apresProces", { decision: d });
+    ok(cs.proc.detention.statut !== "dp", `${cs.id} : détenu après l'arrêt d'irresponsabilité (art. 706-130)`);
+    if (pc) ok(d.irresp.civil > 0, `${cs.id} : la cour ne statue pas sur les intérêts civils (art. 706-131)`);
+  }
+  ok(assises.invoque >= 1 && assises.sans >= 1 && assises.pc >= 1, "trop peu de procès d'assises sur l'irresponsabilité", JSON.stringify(assises));
+  console.log("cour d'assises :", JSON.stringify(assises));
   // la scène se rend
   if (scene) {
     const { cs, h } = scene; s.day = h.day; s.min = h.min;

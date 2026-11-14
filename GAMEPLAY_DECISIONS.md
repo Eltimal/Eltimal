@@ -417,3 +417,13 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
   - **L'identité du témoin suit ses propos**, sans nouveau tirage : secrétaire médicale (une femme), aide-soignant du foyer, préparateur en pharmacie, collègue de la victime, enfant majeur du couple.
   - **Les phrases du moyen tiré du consentement** sont écrites pour la collègue de travail, la secrétaire du cabinet (à la sortie de la consultation, de jour) et le couple (les messages du lendemain). Avant, toutes recevaient la phrase d'une soirée (« À 2 h 14, elle m'a envoyé un message »).
 
+- **D-96. La cour d'assises déclare elle-même l'irresponsabilité pénale (art. 349-1, 361-1, 706-129 à 706-132, relus).**
+  - **Le défaut.** Une affaire dont le discernement était aboli peut être renvoyée devant la cour d'assises : environ un dossier sur cinq côté partie civile, quand le juge n'a pas retenu l'irresponsabilité. La cour condamnait alors comme si de rien n'était.
+  - **La règle.** Quand la défense invoque la cause d'irresponsabilité, chaque fait fait l'objet de deux questions : l'accusé a-t-il commis le fait ? bénéficie-t-il du premier alinéa de l'article 122-1 ? (349-1). Deux réponses positives : déclaration d'irresponsabilité pénale pour cause de trouble mental (361-1, 706-129).
+  - **Dans le jeu.**
+    - **Invocation.** En défense, il faut plaider le moyen « aboli » ; sans cela, la question n'est pas posée et l'accusé est condamné. Côté partie civile, la défense adverse l'invoque.
+    - **L'arrêt.** Il dit que les faits ont été commis, déclare l'irresponsabilité et met fin à la détention (706-130). La cour, sans le jury, déclare la responsabilité civile et alloue les dommages-intérêts (706-131 ; art. 414-3 du code civil), qui ouvrent le recouvrement.
+    - **Mesures.** Mesures de sûreté de l'article 706-136 (interdiction de contact, interdiction des armes, pour quinze ans). Admission en soins (706-135) pour les seules atteintes aux personnes, puisqu'elle suppose des troubles qui compromettent leur sûreté ; la défense peut plaider que les soins en cours suffisent.
+    - **L'arrêt écrit** porte les deux questions et une motivation qui dit les faits établis puis l'abolition. Voies de recours : appel du procureur général ; appel de l'accusé et de la partie civile sur l'action civile, devant la chambre des appels correctionnels (706-132). Le parquet en fait rarement appel.
+    - **L'issue** : non-lieu pour la défense ; pour la partie civile, indemnisée si la cour alloue des dommages-intérêts.
+
