@@ -427,3 +427,17 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
     - **L'arrêt écrit** porte les deux questions et une motivation qui dit les faits établis puis l'abolition. Voies de recours : appel du procureur général ; appel de l'accusé et de la partie civile sur l'action civile, devant la chambre des appels correctionnels (706-132). Le parquet en fait rarement appel.
     - **L'issue** : non-lieu pour la défense ; pour la partie civile, indemnisée si la cour alloue des dommages-intérêts.
 
+## Audience : la personnalité et la peine motivée (14 novembre 2026)
+
+- **D-97. À l'audience correctionnelle, la personnalité se débat sur pièces, et le parquet motive la peine qu'il demande.**
+  - **La personnalité** (président, en mode libre).
+    - Le casier lu : vierge, des mentions, ou une condamnation pour des faits de même nature.
+    - L'enquête sociale rapide, quand elle est au dossier : hébergement vérifié ou absence d'adresse, emploi ou non.
+    - Les pièces versées par la défense, lues : attestation d'hébergement, promesse d'embauche, attestation de l'employeur.
+    - Un hébergement ou un emploi que rien ne justifie (ni pièce, ni enquête sociale) est relevé, et la crédibilité du client baisse. Le travail de l'avocat avant l'audience se voit.
+  - **Les réquisitions motivées** (relu : art. 132-19 et 132-25 du code pénal, 397-4 du code de procédure pénale).
+    - L'emprisonnement ferme demandé est justifié comme dernier recours (132-19).
+    - Pour une partie ferme de six mois au plus, le parquet ne s'oppose à l'aménagement que si les garanties sont justifiées (pièces ou enquête sociale), sinon il dit pourquoi il est impossible (132-25).
+    - En comparution immédiate, il demande le maintien en détention par décision spécialement motivée (397-4). Il le fait désormais au-delà de six mois de prison ferme, et plus seulement en récidive ; seul le texte des réquisitions change, pas la décision du tribunal.
+  - **Variantes.** Chaque phrase a trois tournures, pour ne pas dépasser le seuil de répétition des audiences (`trepetition`, 25 %).
+
