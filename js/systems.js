@@ -388,6 +388,31 @@
     return true;
   };
   CR.dutyOn = (s, day) => s.duty.filter((d) => d.day === day);
+  // Règles d'inscription (sortie 1.0) : l'Ordre répartit les permanences entre les volontaires — huit par mois au plus —,
+  // une seule permanence de jour par date (garde à vue ou comparutions immédiates : on ne peut pas être au commissariat et
+  // à l'audience), rien pendant une interdiction d'exercer. On se désinscrit jusqu'à l'avant-veille ; après, le tableau est
+  // arrêté. Le service de l'Ordre applique ces règles (interface) ; CR.signDuty reste l'acte d'inscription lui-même.
+  CR.DUTY_MAX_MOIS = 8;
+  CR.dutyDuMois = (s, day) => s.duty.filter((d) => CR.monthIndex(d.day) === CR.monthIndex(day)).length;
+  CR.peutSinscrire = function (s, day, type) {
+    if (day <= s.day) return { ok: false, motif: "Le tableau de ce jour est arrêté." };
+    if (s.duty.some((d) => d.day === day && d.type === type)) return { ok: false, motif: "Vous êtes déjà inscrit." };
+    if (CR.suspenduLe(s, day)) return { ok: false, motif: "Vous êtes interdit d'exercer à cette date." };
+    if (type === "ci" && !CR.isBusinessDay(day)) return { ok: false, motif: "Pas d'audience de comparution immédiate ce jour-là." };
+    if (type !== "gav_nuit" && s.duty.some((d) => d.day === day && d.type !== "gav_nuit")) return { ok: false, motif: "Vous tenez déjà une permanence de jour à cette date." };
+    if (CR.dutyDuMois(s, day) >= CR.DUTY_MAX_MOIS) return { ok: false, motif: `L'Ordre n'attribue pas plus de ${CR.DUTY_MAX_MOIS} permanences par mois à un même avocat.` };
+    return { ok: true };
+  };
+  CR.peutSeDesinscrire = (s, day) => day - s.day >= 2;
+  CR.unsignDuty = function (s, day, type) {
+    const i = s.duty.findIndex((d) => d.day === day && d.type === type);
+    if (i < 0 || !CR.peutSeDesinscrire(s, day)) return false;
+    s.duty.splice(i, 1);
+    // les appels déjà planifiés pour cette permanence sont retirés (nuit : l'appel tombe le lendemain avant le jour)
+    const jourAppel = type === "gav_nuit" ? day + 1 : day;
+    CR.unschedule(s, (e) => e.type === "fn" && e.key === "dutyCall" && e.day === jourAppel && e.data && (type === "ci" ? e.data.kind === "ci" : e.data.kind === "gav" && !!e.data.night === (type === "gav_nuit")));
+    return true;
+  };
   CR.dailyLeads = function (s, d) {
     if (s.mode !== "carriere") return;
     if (CR.suspendu(s)) return; // interdit d'exercer : aucun client ne peut être pris (M6)
@@ -489,7 +514,6 @@
   // =================================================================== PERSONNEL
   // L'équipe du cabinet vit dans equipe.js (feuille de route, n° 14) : postes, recrutement, tâches confiées,
   // assistante au téléphone, paie, moral, départs. Plus aucun revenu tiré au hasard.
-  CR.staffOf = (s, role) => (s.staff || []).find((x) => x.role === role && !(x.depart && x.depart.fait));
   CR.dailyStaff = function (s, d) {
     if (CR.ymd(d).d <= 3 && CR.ymd(d).w === 1 && CR.refreshApplicants) CR.refreshApplicants(s);
     if (CR.equipeJour) CR.equipeJour(s, d);
@@ -745,13 +769,6 @@
     };
     s.classeur = s.classeur.filter((x) => x.caseId !== cs.id);
     s.classeur.unshift(fiche);
-  };
-  // L'épilogue peut évoluer : un sursis probatoire violé, une révocation, la fiche se met à jour
-  CR.updateDevenir = function (s, caseId, text) {
-    const f = s.classeur.find((x) => x.caseId === caseId);
-    if (f) f.devenir = (f.devenir ? f.devenir + " " : "") + text;
-    const cs = s.cases[caseId];
-    if (cs && cs.debrief) cs.debrief.epilogue = (cs.debrief.epilogue ? cs.debrief.epilogue + " " : "") + text;
   };
 
   // =================================================================== FIN DE PARTIE

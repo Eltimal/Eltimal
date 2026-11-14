@@ -483,6 +483,7 @@
         <div className="stg-top"><div className="stg-cap"><span className="pix">${CR.fmtDate(s.day, "long")}</span><span className="stg-sub">Chez vous · ${CR.fmtTime(CR.DAY_START - 50)}</span></div></div>
         <div className="chez-card">
           <p>Vous avez dormi${s.lastDayStats ? html` et récupéré ${Math.round(s.lastDayStats.rec)} points d'énergie` : ""}. Le café est chaud, il est temps d'y aller.</p>
+          ${s.lastDayStats && s.lastDayStats.cabinet > 0 && html`<p className="small muted">La matinée est aux dossiers du cabinet : votre journée à vous commence à ${CR.fmtTime(s.min)}.</p>`}
           <div className="chez-btns"><${Btn} kind="primary" onClick=${() => setModal(null)}>Partir au cabinet</${Btn}></div>
         </div>
       </div>`}
@@ -586,7 +587,7 @@
       <p className="ts-box-title">Jouer une affaire par son code</p>
       <p className="small">Chaque affaire générée a un code (dans le dossier et sur la fiche de révision). Il la rejoue à l'identique, hors carrière : la partie en cours n'est pas touchée.</p>
       <label htmlFor="code-in">Code d'affaire</label>
-      <input id="code-in" type="text" value=${code} placeholder="COP-7K4Q-9XFB" autoComplete="off" spellCheck=${false} onChange=${(e) => { setCode(e.target.value); setMsg(""); }} />
+      <input id="code-in" type="text" value=${code} placeholder=${G.codeExemple()} autoComplete="off" spellCheck=${false} onChange=${(e) => { setCode(e.target.value); setMsg(""); }} />
       ${A && !A.ok && html`<p className="warn-txt small" role="alert">${A.msg}</p>`}
       ${A && A.ok && html`<div className="code-apercu small">
         <p><strong>${A.c.code}</strong> · ${A.genreLib} · ${A.infraction}</p>
@@ -695,7 +696,7 @@
             </div>
             <div className="mode-pick">
               <button className="decide-opt" onClick=${() => start("carriere")}><strong>Carrière — à votre compte</strong><span className="small muted">Lundi 2 novembre 2026. 6 200 € sur le compte professionnel, un prêt d'installation de 15 000 €, un découvert de 5 000 €. Les permanences de l'Ordre, les commissions d'office, puis vos propres clients.</span></button>
-              <button className="decide-opt" onClick=${() => start("carriere", "collab")}><strong>Carrière — collaborateur dans un cabinet</strong><span className="small muted">Même date. Ni prêt ni loyer : une rétrocession d'honoraires de 3 700 € par mois, le minimum de l'Ordre. En échange, les dossiers du cabinet prennent vos matinées, et il vous reste moins d'énergie pour vos clients personnels. Un début plus calme ; vous pourrez vous installer ou vous associer.</span></button>
+              <button className="decide-opt" onClick=${() => start("carriere", "collab")}><strong>Carrière — collaborateur dans un cabinet</strong><span className="small muted">Même date. Ni prêt ni loyer : une rétrocession d'honoraires de 3 700 € par mois, le minimum de l'Ordre. En échange, les dossiers du cabinet prennent vos matinées : votre journée à vous commence à 13 heures, sauf les matins d'audience ou de permanence. Un début plus calme ; vous pourrez vous installer ou vous associer.</span></button>
             </div>
             ${auto && !auto.meta.over && html`<p className="small muted">La carrière en cours (${auto.meta.nom}, ${auto.meta.date}) ne sera pas perdue : elle sera rangée dans « Partie précédente », à retrouver par « Charger une partie ».</p>`}
             <button type="button" className="ts-btn ts-btn-sm" onClick=${() => setMode("menu")}>Retour</button>

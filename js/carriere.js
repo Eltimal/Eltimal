@@ -15,6 +15,8 @@
   CAR.RETRO = [3700, 4100];
   CAR.APPORT = 8000;
   CAR.DRAIN = 20;
+  CAR.MATIN_FIN = 13 * 60; // la matinée du cabinet finit à 13 heures
+  CAR.LIBRES_MOIS = 6; // matinées laissées chaque mois au collaborateur pour ses audiences et ses permanences
 
   CAR.SPECS = {
     urgence: { t: "Défense d'urgence", sub: "Gardes à vue et comparutions immédiates.", effet: "L'Ordre vous rappelle plus souvent en permanence de garde à vue de jour." },
@@ -272,7 +274,7 @@
         const faits = cb ? cb.jours || 0 : 0, manques = cb ? cb.absences || 0 : 0;
         const part = faits + manques > 0 ? faits / (faits + manques) : 1;
         const m = Math.round(CAR.retro(s) * part);
-        if (cb) { cb.jours = 0; cb.absences = 0; }
+        if (cb) { cb.jours = 0; cb.absences = 0; cb.liberes = 0; }
         if (m) { s.cash += m; CR.ledgerAdd(s, { day: d, label: `Rétrocession d'honoraires — ${s.car.collab.cabinet}${part < 1 ? ` (${manques} jour${manques > 1 ? "s" : ""} d'arrêt retenu${manques > 1 ? "s" : ""})` : ""}`, amount: m, acct: "op" }); if (CR.settleDecouvert) CR.settleDecouvert(s); }
         if (cb && part < 1) CAR.absencesCollab(s, manques);
         CAR.verifier(s);
@@ -285,10 +287,21 @@
     const r = ed.apply(this, arguments);
     if (CAR.actif(s) && s.car && s.car.collab && !s.gameOver && !s.night && CR.isBusinessDay(s.day)) {
       const cb = s.car.collab;
+      // Les matinées sont vraiment au cabinet (sortie 1.0) : la journée du collaborateur commence à 13 heures, les appels
+      // du matin vont sur la messagerie. Le contrat lui garantit du temps pour sa clientèle personnelle : les matins où il
+      // a une audience à lui ou une permanence de jour lui sont laissés, six par mois ; au-delà, le jour est retenu.
+      const perso = (CR.dutyOn ? CR.dutyOn(s, s.day) : []).some((d) => d.type !== "gav_nuit") || (CR.hearingsToday ? CR.hearingsToday(s) : []).some((x) => x.h.min < CAR.MATIN_FIN);
       if (s.burnout) cb.absences = (cb.absences || 0) + 1; // en arrêt : la matinée du cabinet n'est pas faite
-      else {
+      else if (perso) {
+        cb.liberes = (cb.liberes || 0) + 1;
+        if (cb.liberes > CAR.LIBRES_MOIS) cb.absences = (cb.absences || 0) + 1; else cb.jours = (cb.jours || 0) + 1;
+        if (s.lastDayStats) s.lastDayStats.cabinet = 0;
+      } else {
         cb.jours = (cb.jours || 0) + 1;
         s.energy = Math.max(25, s.energy - CAR.DRAIN);
+        CR.fireTimed(s, s.min, CAR.MATIN_FIN, true);
+        s.min = CAR.MATIN_FIN;
+        s.workedToday = CAR.MATIN_FIN - CR.DAY_START;
         if (s.lastDayStats) s.lastDayStats.cabinet = CAR.DRAIN;
       }
     }
@@ -331,7 +344,7 @@
         </div>`}
       </${UI.Section}>
       ${c.collab && html`<${UI.Section} title=${`Collaboration — ${c.collab.cabinet}`}>
-        <p>Rétrocession d'honoraires : <strong>${CR.money(CAR.retro(s))}</strong> hors taxes, versée le 1er du mois. Les dossiers de ${c.collab.patron} prennent vos matinées : vous commencez chaque jour ouvré avec ${CAR.DRAIN} points d'énergie en moins. Ni loyer, ni prêt.</p>
+        <p>Rétrocession d'honoraires : <strong>${CR.money(CAR.retro(s))}</strong> hors taxes, versée le 1er du mois. Les dossiers de ${c.collab.patron} prennent vos matinées : chaque jour ouvré, votre journée commence à 13 heures, avec ${CAR.DRAIN} points d'énergie en moins. Les matins d'audience ou de permanence vous sont laissés, ${CAR.LIBRES_MOIS} par mois (ce mois-ci : ${c.collab.liberes || 0}) ; au-delà, le jour est retenu sur la rétrocession. Ni loyer, ni prêt.</p>
         <p className="small muted">La collaboration libérale laisse à l'avocat le temps de développer sa clientèle personnelle : c'est ce qui la distingue du salariat.</p>
         ${c.grade >= 1 ? html`<div className="car-btns">${inst ? html`<span>Prêt d'installation de 15 000 € (273 € par mois), loyer de 850 €, plus de rétrocession. C'est sans retour.</span><${Btn} small kind="danger" onClick=${() => { CAR.sInstaller(s); setInst(false); bump(); }}>Confirmer</${Btn}><${Btn} small onClick=${() => setInst(false)}>Annuler</${Btn}>` : html`<${Btn} onClick=${() => setInst(true)}>S'installer à son compte</${Btn}>`}</div>` : html`<p className="small muted">Vous pourrez vous installer à votre compte une fois trois dossiers personnels menés à terme.</p>`}
       </${UI.Section}>`}

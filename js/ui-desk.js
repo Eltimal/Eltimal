@@ -673,10 +673,11 @@
     for (let d = s.day + 1; d <= s.day + 21; d++) days.push(d);
     return html`<div>
       ${CR.suspendu(s) && html`<div className="banner bad">Vous êtes interdit d'exercer jusqu'au ${CR.fmtDate(s.flags.suspendedUntil, "long")} : aucune inscription n'est possible avant cette date.</div>`}
+      <p className="small">Ce mois-ci : ${CR.dutyDuMois(s, s.day)} permanence${CR.dutyDuMois(s, s.day) > 1 ? "s" : ""} sur ${CR.DUTY_MAX_MOIS} ; le mois prochain : ${CR.dutyDuMois(s, CR.addMonths(s.day, 1))} sur ${CR.DUTY_MAX_MOIS}. Une seule permanence de jour par date ; désinscription possible jusqu'à l'avant-veille.</p>
       <p className="muted">Inscription auprès du service des permanences de l'Ordre. Une permanence de garde à vue de nuit peut vous réveiller ; une permanence de comparution immédiate occupe l'après-midi au Palais.</p>
       <div className="tbl-wrap"><table className="tbl perm"><thead><tr><th>Jour</th><th>Garde à vue (jour)</th><th>Garde à vue (nuit)</th><th>Comparutions immédiates</th></tr></thead><tbody>
         ${days.map((d) => html`<tr key=${d}><td>${CR.fmtDate(d, "dowshort")}${!CR.isBusinessDay(d) ? html` <span className="small muted">${CR.holidayName(d) || "week-end"}</span>` : ""}</td>
-          ${["gav_jour", "gav_nuit", "ci"].map((t) => { const on = s.duty.some((x) => x.day === d && x.type === t); const possible = (t !== "ci" || CR.isBusinessDay(d)) && !CR.suspenduLe(s, d); return html`<td key=${t}>${on ? html`<${Tag} tone="ok">Inscrit</${Tag}>` : possible ? html`<button className="link small" onClick=${() => { CR.signDuty(s, d, t); bump(); }}>S'inscrire</button>` : "—"}</td>`; })}
+          ${["gav_jour", "gav_nuit", "ci"].map((t) => { const on = s.duty.some((x) => x.day === d && x.type === t); const p = CR.peutSinscrire(s, d, t); return html`<td key=${t}>${on ? html`<${Tag} tone="ok">Inscrit</${Tag}>${CR.peutSeDesinscrire(s, d) && html` <button className="link small" onClick=${() => { CR.unsignDuty(s, d, t); bump(); }}>Se désinscrire</button>`}` : p.ok ? html`<button className="link small" onClick=${() => { CR.signDuty(s, d, t); bump(); }}>S'inscrire</button>` : html`<span className="small muted" title=${p.motif}>—</span>`}</td>`; })}
         </tr>`)}
       </tbody></table></div>
     </div>`;

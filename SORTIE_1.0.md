@@ -65,3 +65,28 @@ et notarisation Apple (phase 7).
 | M12 | Passé 23 h 30, le travail demandé se paie en énergie (tarif de nuit) et en sommeil perdu (`s.veille`, déduit de la récupération). | `js/engine.js` | `tmajeurs` |
 | (découvert) | L'audience commençait derrière l'animation de trajet, qui recouvrait aussi le bouton de pause : elle attend maintenant la fin du trajet. | `js/ui-court.js`, `js/ui-moments.js` | `tnavigateur` |
 
+### Phases 3 à 5 — cohérence, carrières longues, économie (14 novembre 2026)
+
+| Sujet | Modification | Fichiers | Test |
+|---|---|---|---|
+| Permanences sans règle | Huit inscriptions par mois au plus, une seule permanence de jour par date, désinscription jusqu'à l'avant-veille (les appels planifiés sont retirés) ; le tableau montre le décompte. `CR.signDuty` reste l'acte brut (les parties automatiques des tests s'en servent). | `js/systems.js`, `js/ui-desk.js` | `tmajeurs` |
+| Collaboration plus rentable que l'installation | Les matinées du cabinet prennent vraiment la matinée : la journée du collaborateur commence à 13 heures ; six matinées par mois lui sont laissées pour ses audiences et ses permanences, au-delà le jour est retenu. | `js/carriere.js`, `js/main.js` | `tviabilite`, `tcarriere` |
+| Code d'exemple refusé | L'exemple affiché est un vrai code (`GEN2.codeExemple`). | `js/gen-moteur.js`, `js/main.js` | `tmajeurs` |
+| Code mort | Retirés : `CR.updateDevenir` (épilogue évolutif jamais branché, rien ne l'annonçait au joueur), `CR.staffOf`, `CR.caseDay`, `CR.carpaToOperating`. Gardés : `CR.pinTexts` (parties automatiques), `CR.hire` / `CR.letGo` (alias d'équipe). | `js/systems.js`, `js/engine.js` | batterie |
+| « Ouvrir le dossier des sauvegardes » | Entrée de menu retirée de l'app : le dossier ne contient aucun fichier lisible ; l'export de fichier du menu du jeu la remplace. | `electron/main.js` | — |
+| Automate « joueur moyen » | `dev/tools/carriere-auto.js` : carrière simulée sur le vrai moteur (hypothèses écrites en tête du fichier). | `dev/tools/carriere-auto.js` | `tviabilite` |
+
+Mesures du 14 novembre (20 graines, 12 mois) : joueur moyen 20/20 solvables, trésorerie médiane 74 901 €, 8,2 missions de
+permanence et 4 clients payants par mois ; collaborateur 74 318 € ; cabinet passif : faillite au jour 119. Carrière de cinq
+ans : 997 dossiers, 6,6 Mo, sérialisation 46 ms, rechargement 2 s, trésorerie 539 944 €.
+
+**Point ouvert (équilibrage, non bloquant pour la robustesse, à trancher par la direction du jeu)** : l'économie est très
+généreuse pour un joueur actif ; l'argent n'a pas d'emploi au-delà de l'équipe et de l'association. Le modèle suppose 75 %
+des contacts convertis à 90 % du prix juste et dix heures de travail par dossier : ces hypothèses sont à confronter à des
+parties réellement jouées avant tout réglage. Leviers : fréquence des clients selon la réputation (`CR.dailyLeads`), prix
+juste (`CR.fairForfait`), impayés, charges de la deuxième année.
+
+**Point ouvert (taille)** : les contacts jamais suivis (540 sur 997 en cinq ans) pèsent 2,8 Mo. Les retirer demande de
+garder leurs signatures (affaires sans doublon) et de vérifier toutes les lectures de `s.cases` : reporté, la taille n'est
+plus un blocage depuis IndexedDB.
+

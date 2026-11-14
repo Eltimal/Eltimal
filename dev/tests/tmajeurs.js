@@ -107,6 +107,21 @@ const P = require("./play");
     const t = neuve(5, true); t.min = 23 * 60 + 25; CR.spend(t, 120, "idle", { fixed: true }); ok(!t.veille, "M12 : attendre compte comme du travail de nuit");
     const u = neuve(6, true); u.min = 23 * 60 + 25; CR.spend(u, 60, "desk"); CR.endDay(u); ok(!u.veille, "M12 : la dette de sommeil ne s'efface pas au réveil"); }
 
+  // ---------- permanences : plafond mensuel, une seule permanence de jour par date, désinscription jusqu'à l'avant-veille
+  { const s = neuve(8, true); const j = (n) => { let d = s.day + n; while (!CR.isBusinessDay(d)) d++; return d; };
+    ok(CR.peutSinscrire(s, s.day, "gav_jour").ok === false, "inscription possible le jour même");
+    const d5 = j(5); ok(CR.peutSinscrire(s, d5, "gav_jour").ok && CR.signDuty(s, d5, "gav_jour"), "inscription refusée sans raison");
+    ok(!CR.peutSinscrire(s, d5, "ci").ok && CR.peutSinscrire(s, d5, "gav_nuit").ok, "deux permanences de jour à la même date, ou nuit refusée");
+    const nPend = s.pending.filter((e) => e.key === "dutyCall" && e.day === d5).length; ok(nPend >= 1, "aucun appel planifié pour la permanence");
+    ok(CR.unsignDuty(s, d5, "gav_jour") && !s.duty.some((x) => x.day === d5) && !s.pending.some((e) => e.key === "dutyCall" && e.day === d5), "la désinscription laisse des appels planifiés");
+    CR.signDuty(s, s.day + 1, "gav_nuit"); ok(CR.unsignDuty(s, s.day + 1, "gav_nuit") === false, "désinscription acceptée la veille");
+    let n = CR.dutyDuMois(s, s.day), d = s.day + 2; while (CR.monthIndex(d) === CR.monthIndex(s.day) && n < CR.DUTY_MAX_MOIS) { if (CR.peutSinscrire(s, d, "gav_nuit").ok) { CR.signDuty(s, d, "gav_nuit"); n++; } d++; }
+    ok(n === CR.DUTY_MAX_MOIS && !CR.peutSinscrire(s, d, "gav_nuit").ok === (CR.monthIndex(d) === CR.monthIndex(s.day)), "le plafond mensuel n'est pas appliqué", { n, mois: CR.dutyDuMois(s, s.day) });
+    CR.store.s = s; CR.store.bump(); await sleep(100); CR.UI._setScene({ type: "permanences" }); await sleep(120);
+    ok(/sur 8/.test(texts(doc.querySelector(".modal") || doc.body)) && !!findBtn(doc, /Se désinscrire/), "le tableau des permanences ne montre ni le plafond ni la désinscription"); CR.UI._setScene(null); await sleep(40); }
+  // ---------- le code d'affaire donné en exemple est un vrai code
+  { const ex = CR.GEN2.codeExemple(); const a = CR.GEN2.VIE.apercu(ex); ok(a && a.ok, "le code d'exemple est refusé par le jeu", [ex, a && a.msg]); ok(CR.GEN2.lireCode("").msg.includes(ex), "le message d'aide ne cite pas le code d'exemple"); }
+
   if (errors.length) { echecs++; console.log("  ✗ erreurs : " + errors.slice(0, 3).join(" | ").slice(0, 700)); }
   console.log("échecs:", echecs);
   process.exit(echecs ? 1 : 0);

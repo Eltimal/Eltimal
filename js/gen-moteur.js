@@ -781,11 +781,11 @@
   // Lecture tolérante : minuscules, espaces, tirets, O pour 0, I et L pour 1 ; un message clair pour chaque erreur
   GEN2.lireCode = function (saisie) {
     const brut = String(saisie || "").toUpperCase().replace(/[\s\-_.–—]/g, "");
-    if (!brut) return { ok: false, msg: "Saisissez un code d'affaire, par exemple COP-7K4Q-9XFB." };
+    if (!brut) return { ok: false, msg: `Saisissez un code d'affaire, par exemple ${GEN2.codeExemple()}.` };
     const pre = brut.slice(0, 3);
     if (!GENRE_DE[pre]) return { ok: false, msg: `Un code commence par trois lettres qui disent le genre d'affaire : ${Object.keys(GENRE_DE).join(", ")}. « ${pre} » n'en est pas un.` };
     const reste = brut.slice(3);
-    if (reste.length !== 8) return { ok: false, msg: `Après « ${pre} », un code compte huit caractères (par exemple ${pre}-7K4Q-9XFB) ; il y en a ${reste.length}.` };
+    if (reste.length !== 8) return { ok: false, msg: `Après « ${pre} », un code compte huit caractères (quatre, un tiret, quatre) ; il y en a ${reste.length}.` };
     const corps = reste.slice(0, 7).replace(/O/g, "0").replace(/[IL]/g, "1");
     const bad = [...corps].find((c) => B32.indexOf(c) < 0);
     if (bad) return { ok: false, msg: `Le caractère « ${bad} » n'existe pas dans les codes d'affaire (ni I, ni L, ni O, ni U : ils se confondent avec 1 et 0).` };
@@ -813,6 +813,13 @@
   GEN2.codeDe = (t) => t && t.code || null;
   // Construire un code à partir de critères : famille d'infraction, délit ou crime, camp, irrégularité, difficulté
   // crit : { fam, nature: "delit" | "crime", camp: "defense" | "pc", irr: true | false | null, niveau: 1 | 2 | 3, genre }
+  // Le code donné en exemple (écran titre, messages) est un vrai code, que le jeu accepte (sortie 1.0 : l'ancien exemple
+  // écrit en dur était refusé pour clé de contrôle fausse)
+  let exemple = null;
+  GEN2.codeExemple = function () {
+    if (!exemple) { try { const r = GEN2.codeParCriteres({ genre: "copj" }, { essai: 0 }); if (r && r.ok) exemple = r.code; } catch (e) { /* repli ci-dessous */ } }
+    return exemple || "COP-0000-0000";
+  };
   GEN2.codeParCriteres = function (crit = {}, o = {}) {
     const crime = crit.nature === "crime" || (crit.fam && /^crim_/.test(crit.fam));
     const pc = crit.camp === "pc";

@@ -444,7 +444,7 @@
     if (!cs.textesParDossier) { for (const x of CR.pinnedTexts(s, cs)) CR.addCard(cs, x); cs.textesParDossier = true; }
     cs.cards = cs.cards.filter((c) => c !== id);
   };
-  CR.pinTexts = (s, cs, ids) => { for (const id of ids) CR.pinText(s, cs, id); };
+  CR.pinTexts = (s, cs, ids) => { for (const id of ids) CR.pinText(s, cs, id); }; // sert aux parties automatiques des tests
   CR.inHand = (s, cs, id) => CR.hasFact(cs, id) || CR.textInCase(s, cs, id);
   CR.addIssue = function (s, cs, issue) {
     if (cs.issues.some((i) => i.text === issue.text)) return null;
@@ -678,7 +678,6 @@
     if (def.vars) Object.assign(v, typeof def.vars === "function" ? def.vars(s, cs, v) : def.vars);
     return v;
   };
-  CR.caseDay = (s, cs, k) => { const def = CR.caseDef(cs); return (cs.vars.base != null ? cs.vars.base : cs.opened) + ((def.dates && def.dates[k]) || 0); };
 
   // ------------------------------------------------------------------ Nouveaux dossiers et appels entrants
   // Arrivée d'une affaire (générée) : le client se manifeste par le moyen que dit sa définition.
