@@ -202,11 +202,26 @@
     const { t } = x;
     if (!t.rec || !t.recid) return [];
     const opts = Object.keys(GEN2.VICES).map((k) => ({ t: `« La récidive n'est pas constituée : ${GEN2.VICES[k].replace(/^./, (c) => c.toLowerCase())}. »`, need: "G_ant", then: [{ do: (a) => a.run("_contesterRecidive", { motif: k }) }] }));
-    return [
+    const guide = [
       { who: "president", t: "Maître, des observations sur l'état de récidive ?" },
       { choose: opts.concat([{ t: "« Pas d'observation sur la récidive. »", then: [{ do: (a) => a.run("_contesterRecidive", { motif: null }) }] }]) },
     ];
+    // en mode libre, personne n'invite la défense : c'est un incident qu'elle soulève elle-même (geste « Soulever un incident »)
+    return [{ do: (a, st) => {
+      if (!CR.libre(a.s) || !CR.AUD.incident) return guide;
+      CR.AUD.incident(st, "recidive", { need: "G_ant", motifs: Object.fromEntries(Object.keys(GEN2.VICES).map((k) => [k, [{ do: (b) => b.run("_contesterRecidive", { motif: k }) }]])) });
+      return [];
+    } }];
   };
+  // l'inscription seule, dès l'ouverture des débats au fond : l'avocat peut contester la récidive à tout moment
+  B.incidentsDebut = (x) => [{ do: (a, st) => {
+    if (!CR.libre(a.s) || !CR.AUD.incident) return [];
+    const t = x.t;
+    if (t.rec && t.recid) CR.AUD.incident(st, "recidive", { need: "G_ant", motifs: Object.fromEntries(Object.keys(GEN2.VICES).map((k) => [k, [{ do: (b) => b.run("_contesterRecidive", { motif: k }) }]])) });
+    if (t.inf === "fraude_fiscale" && t.f.plainte) CR.AUD.incident(st, "fisc", { need: "G_fisc_origine", then: [{ do: (b) => b.run("_exceptionN12", { quoi: "fisc" }) }] });
+    if (t.presc) CR.AUD.incident(st, "presc", { need: "G_comptes", then: [{ do: (b) => b.run("_exceptionN12", { quoi: "presc" }) }] });
+    return [];
+  } }];
   B.contesterRecidive = function (x, api, motif) {
     const { t, q } = x;
     const { cs } = api;
@@ -228,14 +243,21 @@
   B.stepsAvantFond = function (x) {
     const { t } = x;
     const out = [];
-    if (t.inf === "fraude_fiscale" && t.f.plainte) out.push({ choose: [
+    // en mode libre, ces fins de non-recevoir sont des incidents que la défense soulève elle-même : leur seule présence à
+    // l'écran disait qu'il y avait quelque chose à soulever (geste « Soulever un incident », ui-court.js)
+    const libre = (quoi, need, choix) => ({ do: (a, st) => {
+      if (!CR.libre(a.s) || !CR.AUD.incident) return [{ choose: choix }];
+      CR.AUD.incident(st, quoi, { need, then: [{ do: (b) => b.run("_exceptionN12", { quoi }) }] });
+      return [];
+    } });
+    if (t.inf === "fraude_fiscale" && t.f.plainte) out.push(libre("fisc", "G_fisc_origine", [
       { t: "« Les poursuites pour fraude fiscale sont irrecevables : ni plainte ni dénonciation de l'administration (art. L. 228 LPF). »", need: "G_fisc_origine", then: [{ do: (a) => a.run("_exceptionN12", { quoi: "fisc" }) }] },
       { t: "« Rien sur la recevabilité des poursuites. »" },
-    ] });
-    if (t.presc) out.push({ choose: [
+    ]));
+    if (t.presc) out.push(libre("presc", "G_comptes", [
       { t: "« L'action publique est prescrite : les dépenses figuraient dans les comptes approuvés il y a plus de six ans (art. 8 et 9-1 CPP). »", need: "G_comptes", then: [{ do: (a) => a.run("_exceptionN12", { quoi: "presc" }) }] },
       { t: "« Rien sur la prescription. »" },
-    ] });
+    ]));
     return out;
   };
   B.exceptionN12 = function (x, api, quoi) {
@@ -662,6 +684,7 @@
       const sept = prisonMax > 84;
       const base = B.requis(x);
       const fond = [
+        ...B.incidentsDebut(x),
         { limine: { joindre: true } },
         // refonte (lot 4b) : en mode libre, l'interrogatoire entier du président (CR.DEB) ; sinon les débats courts d'avant
         ...(CR.DEB && CR.DEB.actif(api) ? CR.DEB.interrogatoire(api, x) : [

@@ -55,6 +55,16 @@
     const addLog = (e) => { if (e && e.who && e.who !== "sys" && CR.dec && CR.dec.cue) CR.dec.cue(e.who, 1200 + Math.min(2400, String(e.t || "").length * 14)); setLog((l) => l.concat([e]).slice(-160)); };
     return { api, cur, st, next, push, log, addLog };
   }
+  // Les incidents que la défense soulève d'elle-même (refonte : la fin des choix d'incidents à options). Chaque affaire
+  // inscrit, au fil des débats, ceux qu'elle permet (CR.AUD.incident) ; la liste offerte à l'avocat est la même partout.
+  CR.AUD = CR.AUD || {};
+  CR.AUD.incident = (st, id, reg) => { st.incidents = st.incidents || {}; if (!st.incidents[id]) st.incidents[id] = Object.assign({ used: false }, reg); };
+  const INCIDENTS = [
+    { id: "presc", label: "La prescription de l'action publique", say: () => "« Le tribunal ne peut juger ces faits : l'action publique est prescrite (art. 8 et 9-1 du code de procédure pénale). »", sans: "(Le substitut feuillette la procédure.) Les faits sont récents, monsieur le président : la question de la prescription ne se pose pas." },
+    { id: "fisc", label: "L'irrecevabilité des poursuites : pas de plainte préalable de l'administration", say: () => "« Les poursuites sont irrecevables : elles exigent une plainte ou une dénonciation préalable de l'administration fiscale (art. L. 228 du livre des procédures fiscales). »", sans: "Il ne s'agit pas d'une infraction fiscale, maître. Les poursuites n'exigent aucune plainte préalable." },
+    { id: "recidive", label: "L'état de récidive légale n'est pas constitué", motifs: true, say: (m) => `« La récidive n'est pas constituée : ${String((CR.GEN2 && CR.GEN2.VICES && CR.GEN2.VICES[m]) || "").replace(/^./, (c) => c.toLowerCase())}. »`, sans: "Le prévenu n'est pas poursuivi en état de récidive légale, maître." },
+  ];
+  CR.AUD.INCIDENTS = INCIDENTS;
   function applyFx(s, cs, st, fx) {
     if (!fx) return;
     if (fx.cred) st.cred += fx.cred;
@@ -129,6 +139,7 @@
     const [citeCard, setCiteCard] = useState(null);
     const [jpCard, setJpCard] = useState(null);
     const [mainOuverte, setMainOuverte] = useState(false);
+    const [incOuvert, setIncOuvert] = useState(null); // null | "menu" | "recidive"
     const logRef = useRef(null);
     const cps = 36 * CR.textSpeedMult(s);
     const fatigue = CR.fatigueMult(s);
@@ -244,6 +255,28 @@
       st.gestesHorsMoment = (st.gestesHorsMoment || 0) + 1;
       bump();
     }
+    // Soulever un incident : l'avocat se lève pendant qu'un autre parle ; l'incident inscrit par l'affaire produit ses
+    // effets ; sans fondement au dossier, le président demande sur quoi il repose ; sans objet, il est écarté
+    function soulever(inc, motif) {
+      setIncOuvert(null);
+      if (!cur || phase !== "type") return;
+      setTyped(lineText.length);
+      addLog({ who: cur.who || "sys", t: lineText, name: cur.name });
+      if (cur.fx) applyFx(s, cs, st, cur.fx);
+      addLog({ who: "you", t: inc.say(motif) });
+      const reg = (st.incidents || {})[inc.id];
+      st.played.add("incident:" + inc.id);
+      if (!reg || reg.used) {
+        addLog({ who: inc.id === "recidive" || inc.id === "fisc" ? "president" : "parquet", t: reg && reg.used ? "Le tribunal a déjà entendu ce moyen, maître." : inc.sans });
+        if (!reg) addLog({ who: "president", t: "L'incident est écarté." });
+        applyFx(s, cs, st, { cred: -2 }); st.incidentsVains = (st.incidentsVains || 0) + 1; bump(); next(); return;
+      }
+      if (reg.need && !CR.inHand(s, cs, reg.need)) { addLog({ who: "president", t: "Qu'est-ce qui, dans le dossier, permet de le dire, maître ?" }); applyFx(s, cs, st, { cred: -2 }); bump(); next(); return; }
+      reg.used = true;
+      const then = inc.motifs ? reg.motifs && reg.motifs[motif] : reg.then;
+      bump();
+      if (then && then.length) push(then); else next();
+    }
     // Une carte de texte, en saisie : on tape son numéro (le temps est suspendu pendant la saisie)
     function playCard(card) {
       if (card.jp) { if (CR.saisieOn(s)) setJpCard(card); else jpResolve(card, { id: card.id, g: "ok" }); return; }
@@ -326,6 +359,9 @@
             ${jpCard ? html`<${UI.JPInput} key=${jpCard.id} s=${s} attendu=${jpCard.id} label=${"Citez l'arrêt : " + jpCard.label} onDone=${(r) => jpResolve(jpCard, r)} onSkip=${() => setJpCard(null)} />` : citeCard ? html`<${UI.CiteInput} key=${citeCard.id} s=${s} expect=${[citeCard.ref]} label=${"Citez : " + citeCard.label} onDone=${(r) => citeCardDone(citeCard, r)} onSkip=${() => setCiteCard(null)} />` : html`
             <button className="parole" onClick=${phase === "card" ? () => setMainOuverte(true) : demanderParole}>Demander la parole</button>
             <button className="parole produire" onClick=${() => setMainOuverte((x) => !x)}>Produire une pièce ou citer un texte</button>
+            ${phase === "type" && html`<button className="parole incident" onClick=${() => setIncOuvert((x) => (x ? null : "menu"))}>Soulever un incident</button>`}
+            ${incOuvert === "menu" && phase === "type" && html`<div className="hand-cards incidents">${INCIDENTS.map((inc) => html`<button key=${inc.id} className="hcard hk-incident" onClick=${() => (inc.motifs ? setIncOuvert("recidive") : soulever(inc))}>${inc.label}</button>`)}</div>`}
+            ${incOuvert === "recidive" && phase === "type" && html`<div className="hand-cards incidents"><p className="small muted">Pourquoi la récidive n'est-elle pas constituée ?</p>${Object.entries((CR.GEN2 && CR.GEN2.VICES) || {}).map(([k, l]) => html`<button key=${k} className="hcard hk-incident" onClick=${() => soulever(INCIDENTS.find((x) => x.id === "recidive"), k)}>${l}</button>`)}</div>`}
             ${mainOuverte && html`<div className="hand-cards">${hand.length === 0 && html`<p className="small muted">Rien noté, aucun texte enregistré dans ce dossier.</p>`}${hand.map((c, i) => html`<button key=${i} className=${cx("hcard", "hk-" + c.kind)} onClick=${() => geste(c)}><span className="pix">${c.kind === "texte" ? "Texte" : c.kind === "piece" ? "Pièce" : "Note"}</span>${c.label}</button>`)}</div>`}`}
           </div>`}
           ${phase === "choose" && cur && html`<div className="choices court-choices">

@@ -38,6 +38,7 @@
     const pv = camp === "defense" ? "client" : "prevenu";
     const pname = `${o.prevenu.prenom} ${o.prevenu.nom}`;
     const steps = [];
+    steps.push(...(o.debut || [])); // inscriptions silencieuses (incidents que la défense pourra soulever), avant l'ouverture
     steps.push(...(o.ouvertureSteps || A.ouverture(api, Object.assign({}, o, { prevenuWho: pv }))));
     if (camp === "defense" && o.sansLimine) steps.push({ who: "president", t: o.sansLimine });
     else if (camp === "defense") steps.push({ who: "president", t: "Avant d'aborder le fond : des exceptions, maître ?" }, { limine: { joindre: true } });

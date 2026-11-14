@@ -441,3 +441,14 @@ Constat de l'audit, captures à l'appui. On ne distinguait pas sa question de la
     - En comparution immédiate, il demande le maintien en détention par décision spécialement motivée (397-4). Il le fait désormais au-delà de six mois de prison ferme, et plus seulement en récidive ; seul le texte des réquisitions change, pas la décision du tribunal.
   - **Variantes.** Chaque phrase a trois tournures, pour ne pas dépasser le seuil de répétition des audiences (`trepetition`, 25 %).
 
+- **D-98. Les incidents d'audience se soulèvent d'eux-mêmes, par un geste : plus de choix d'options qui annoncent le moment.**
+  - **Le défaut.** La contestation de la récidive, la prescription de l'action publique et l'irrecevabilité faute de plainte préalable de l'administration fiscale apparaissaient comme des choix à l'écran (« Maître, des observations sur l'état de récidive ? », « Rien sur la prescription »). Leur seule présence disait qu'il y avait quelque chose à soulever.
+  - **Le geste.** En mode libre, un troisième bouton, « Soulever un incident », s'ajoute à « Demander la parole » et « Produire une pièce ». Il est disponible pendant que quelqu'un parle, avec la même liste pour toutes les affaires : la prescription ; l'irrecevabilité faute de plainte préalable ; la récidive non constituée, avec ses trois motifs (condamnation non définitive, délai dépassé, délits ni identiques ni assimilés).
+  - **L'issue.**
+    - Chaque affaire inscrit, dès l'ouverture des débats, les incidents qu'elle permet (`CR.AUD.incident`).
+    - Fondé et appuyé sur la bonne pièce, l'incident produit les effets d'avant : récidive écartée, prescription examinée, poursuites fiscales jugées irrecevables.
+    - Sans la pièce au dossier (le bulletin n° 1, les comptes approuvés, l'origine de la procédure fiscale), le président demande sur quoi il repose.
+    - Sans objet dans l'affaire, il est écarté ; un incident déjà jugé ne se soulève pas deux fois. La crédibilité baisse dans ces trois cas.
+  - **Restent des questions du président, à dessein.** Le consentement à être jugé en comparution immédiate (art. 397 : le président doit le demander) et les éléments de personnalité ou les garanties de représentation, qu'il demande à la barre.
+  - **En mode assisté**, le choix guidé est conservé.
+

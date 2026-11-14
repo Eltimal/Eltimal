@@ -38,6 +38,7 @@
       steps: AUD.jugement(api, {
         prevenu: def.client, victime: vict && pcV ? vict : null, ouvertureSteps: ouvPM,
         prevention: `Vous êtes prévenu${e(A)} d'avoir, à ${x.SF.nom}, le ${CR.fmtDate(t.d.faits, "long")}, ${x.prevention(q)}. Faits prévus et réprimés par ${B.reprime(x)}.`,
+        debut: B.incidentsDebut(x),
         avantFond: B.stepsAvantFond(x),
         instruction: pm ? [
           { who: "president", t: `Je résume le dossier. ${N.resume}` },

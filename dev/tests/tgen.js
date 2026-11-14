@@ -274,7 +274,10 @@ const REVELE = /irrégularit|aucune autorisation|aucune ordonnance|nullit|ne men
         // la récidive se discute pour une personne physique ; une société cliente est jugée sans elle (B.qPrincipale)
         if (t.rec && t.recid && !x.pmClient && (got.vice < want.vice || got.valide < want.valide)) {
           const steps = JSON.stringify(sc.steps.map((st) => Object.keys(st)));
-          ok(/choose/.test(steps), `${cs.id} : pas d'étape pour discuter la récidive`, "n12:steprec");
+          // en mode libre, la récidive est un incident inscrit (geste « Soulever un incident ») ; sinon un choix guidé
+          const st0 = { incidents: {}, played: new Set() };
+          for (const z of sc.steps) if (z && z.do) { try { const r = z.do(api, st0); if (Array.isArray(r) && r.some((y) => y && y.choose)) st0.choix = true; } catch (e) { /* étape propre à la scène */ } }
+          ok(/choose/.test(steps) || st0.choix || (st0.incidents.recidive && st0.incidents.recidive.motifs), `${cs.id} : pas d'étape pour discuter la récidive`, "n12:steprec");
           const q0 = CAT.qualifier(t.inf, t.f);
           const reqAvec = B.requisDyn(x, api);
           if (t.recid.vice) {
