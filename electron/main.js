@@ -15,6 +15,9 @@ let MAJ_ETAT = null; // dernier résultat de la recherche de mise à jour
 const bloquees = []; // requêtes réseau refusées (doit rester vide) — lu par electron/test-app.js
 global.lpBloquees = bloquees;
 
+// Canal de mise à jour de cette app : le réglage du joueur, sinon celui de sa construction (stable hors branche de travail)
+const canal = () => MAJ.lireCanal(app.getPath("userData"), MAJ.versionLivree(APP_DIR).canal);
+
 function fenetre() {
   const win = new BrowserWindow({
     width: 1440, height: 900, minWidth: 1024, minHeight: 640,
@@ -29,6 +32,16 @@ function fenetre() {
   // Réveille le son dès le chargement (le jeu l'ouvre d'ordinaire au premier geste).
   win.webContents.on("did-finish-load", () => {
     win.webContents.executeJavaScript("window.dispatchEvent(new Event('keydown'))", true).catch(() => {});
+  });
+  // À la fermeture, le jeu finit d'écrire sa sauvegarde avant que la fenêtre disparaisse (au plus 1,5 s d'attente).
+  let range = false;
+  win.on("close", (e) => {
+    if (range || win.webContents.isDestroyed()) return;
+    e.preventDefault();
+    range = true;
+    const fin = () => { if (!win.isDestroyed()) win.close(); };
+    const garde = setTimeout(fin, 1500);
+    win.webContents.executeJavaScript("window.CR && CR.Saves && CR.Saves.vider ? CR.Saves.vider().then(() => true) : true", true).catch(() => {}).then(() => { clearTimeout(garde); fin(); });
   });
   win.loadFile(path.join(JEU.dossier, "index.html"));
   return win;
@@ -45,10 +58,10 @@ function menu() {
       { role: "resetZoom", label: "Taille réelle" }, { role: "zoomIn", label: "Agrandir" }, { role: "zoomOut", label: "Réduire" },
       { type: "separator" },
       { role: "reload", label: "Recharger le jeu" },
-      { label: "Ouvrir le dossier des sauvegardes", click: () => shell.openPath(app.getPath("userData")) },
     ] },
     { label: "Mise à jour", submenu: [
       { label: "Rechercher une mise à jour", click: () => rechercher(true) },
+      { label: "Recevoir aussi les versions d'essai", type: "checkbox", checked: canal() === "essai", click: (item) => { MAJ.ecrireCanal(app.getPath("userData"), item.checked ? "essai" : "stable"); rechercher(true); } },
       { label: "Version du jeu : n° " + JEU.numero + (JEU.source === "telechargee" ? " (téléchargée)" : " (livrée avec l'app)"), enabled: false },
     ] },
     ...(mac ? [] : [{ label: "Fichier", submenu: [{ role: "quit", label: "Quitter" }] }]),
@@ -58,7 +71,7 @@ function menu() {
 // Cherche une mise à jour ; « demande » = lancée depuis le menu (on répond même quand il n'y a rien)
 async function rechercher(demande) {
   const win = BrowserWindow.getAllWindows()[0];
-  const r = await MAJ.verifier({ cle: MAJ.lireCle(__dirname), userData: app.getPath("userData"), numeroActuel: JEU.numero, appDir: APP_DIR, api: process.env.LP_MAJ_API, depot: process.env.LP_MAJ_DEPOT });
+  const r = await MAJ.verifier({ cle: MAJ.lireCle(), canal: canal(), clePublique: MAJ.lireClePublique(__dirname), userData: app.getPath("userData"), numeroActuel: JEU.numero, appDir: APP_DIR, api: process.env.LP_MAJ_API, depot: process.env.LP_MAJ_DEPOT });
   MAJ_ETAT = r;
   global.lpMaj = r;
   if (!win || win.isDestroyed()) return r;

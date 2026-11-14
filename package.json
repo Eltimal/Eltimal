@@ -1,7 +1,7 @@
 {
   "name": "la-permanence",
   "productName": "La Permanence",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.1",
   "description": "La Permanence — jeu d'avocat pénaliste, hors ligne.",
   "private": true,
   "main": "electron/main.js",
@@ -33,7 +33,7 @@
       "electron/main.js",
       "electron/maj.js",
       "electron/jeu-version.json",
-      "electron/maj-cle.txt"
+      "electron/maj-cle-publique.pem"
     ],
     "mac": {
       "category": "public.app-category.simulation-games",

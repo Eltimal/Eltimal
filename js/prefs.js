@@ -2,7 +2,9 @@
    Ces réglages suivent l'appareil, pas la partie : ils valent dès l'écran titre et pour toutes les sauvegardes. */
 (function () {
   const CR = (window.CR = window.CR || {});
-  CR.JEU = { version: "1.0", date: "novembre 2026" };
+  // etat : « bêta » tant que la checklist de sortie (SORTIE_1.0.md) n'est pas entièrement cochée ; vide à la sortie officielle
+  CR.JEU = { version: "1.0", etat: "bêta", date: "novembre 2026" };
+  CR.JEU.libelle = CR.JEU.version + (CR.JEU.etat ? " " + CR.JEU.etat : "");
   const KEY = "la-permanence-reglages-v1";
   const DEF = { taille: 1, son: true, volume: 0.6, ambiance: true, musique: true };
   CR.TAILLES = [[0.9, "Petit"], [1, "Normal"], [1.12, "Grand"], [1.25, "Très grand"]];

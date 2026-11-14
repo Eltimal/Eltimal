@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="fr"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>La Permanence</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -1945,6 +1945,16 @@ button.eb-tuile { cursor: pointer; } .eb-tuile b { font-size: 1.6em; }
 .ebarreau-poste input:not([type=checkbox]):not([type=radio]), .ebarreau-poste select { background: #fff !important; color: #1c2340 !important; border: none !important; border-bottom: 1px solid #c9cfe0 !important; border-radius: 0 !important; box-shadow: none !important; padding: 5px 2px !important; min-height: 0; }
 .ebarreau-poste input:focus, .ebarreau-poste select:focus { outline: none; border-bottom-color: #3d64c9 !important; }
 @media (max-width: 720px) { .ebarreau-poste { grid-template-columns: 1fr; } .eb-menu { flex-direction: row; flex-wrap: wrap; } .eb-annu-l { grid-template-columns: 1fr; } }
+
+/* Sortie 1.0 : bouton de pause des scènes plein écran, écran d'erreur */
+.scene-pause { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 14px; z-index: 60; width: 40px; height: 40px; display: grid; place-items: center; background: rgba(8,12,20,.82); color: #f1e7cf; border: 0; box-shadow: inset 0 0 0 2px #3a4a72; cursor: pointer; }
+.scene-pause:hover, .scene-pause:focus-visible { background: #263a6a; outline: none; box-shadow: inset 0 0 0 2px #93b6ec; }
+.game:not(.in-scene) .scene-pause { display: none; }
+.panne { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #0b0f1a; color: #e9e4d4; }
+.panne-carte { max-width: 640px; background: #121a2c; padding: 28px; box-shadow: inset 0 0 0 2px #3a4a72; }
+.panne-carte h1 { margin: 6px 0 12px; font-size: 22px; }
+.panne-btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+.panne-carte pre { white-space: pre-wrap; word-break: break-word; font-size: 11px; max-height: 220px; overflow: auto; background: #0b0f1a; padding: 10px; }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>

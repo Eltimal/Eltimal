@@ -42,6 +42,7 @@ function fauxGithub() {
       const liste = etat.publications.map((p, i) => ({ tag_name: p.tag, draft: false, assets: [
         { name: "manifest.json", url: `http://localhost:${port}/piece/${i}/manifest` },
         { name: "jeu.json.gz", url: `http://localhost:${port}/piece/${i}/paquet` },
+        ...(p.sig ? [{ name: "manifest.sig", url: `http://localhost:${port}/piece/${i}/sig` }] : []),
         ...(p.paquetSons ? [{ name: "jeu-leger.json.gz", url: `http://localhost:${port}/piece/${i}/paquet` }, { name: "sons.json.gz", url: `http://localhost:${port}/piece/${i}/sons` }] : []) ] }));
       rep.writeHead(200, { "Content-Type": "application/json" }); return rep.end(JSON.stringify(liste));
     }
@@ -50,7 +51,7 @@ function fauxGithub() {
     }
     if (u.pathname.startsWith("/stock/")) {
       const [, , i, quoi] = u.pathname.split("/"); const p = etat.publications[Number(i)];
-      rep.writeHead(200); return rep.end(quoi === "manifest" ? JSON.stringify(p.manifest) : quoi === "sons" ? p.paquetSons : p.paquet);
+      rep.writeHead(200); return rep.end(quoi === "manifest" ? (p.manifesteBrut || JSON.stringify(p.manifest)) : quoi === "sig" ? p.sig : quoi === "sons" ? p.paquetSons : p.paquet);
     }
     rep.writeHead(404); rep.end();
   });
@@ -105,6 +106,40 @@ function fauxGithub() {
   note("sons abîmés refusés", r.etat === "erreur" && /sons/.test(r.detail) && MAJ.versionTelechargee(ud).numero === 19, r.detail);
   fs.writeFileSync(path.join(ud, "jeu", "actuel.json"), "{abîmé");
   note("pointeur abîmé : retour à la version livrée", MAJ.jeuACharger(appDir, ud).source === "livree");
+
+  // ---------- 1 bis. sortie 1.0 : canaux (stable, essai) et signature du manifeste
+  {
+    const ud2 = fs.mkdtempSync(path.join(os.tmpdir(), "lp-maj2-"));
+    const v2 = (o) => MAJ.verifier(Object.assign({ cle: etat.cle, userData: ud2, numeroActuel: 100, api, depot: "a/b" }, o));
+    etat.publications = [];
+    const pubT = (tag, numero, o) => { const f = fabriquer(numero, o); const brut = Buffer.from(JSON.stringify(f.manifest)); etat.publications.unshift(Object.assign({ tag, manifest: f.manifest, manifesteBrut: brut, paquet: f.paquet, paquetSons: f.paquetSons }, o && o.signer ? { sig: crypto.sign(null, brut, o.signer).toString("base64") } : {}, o && o.sig ? { sig: o.sig } : {})); };
+    pubT("essai-120", 120); pubT("jeu-110", 110);
+    let r2 = await v2({});
+    note("canal stable : une version d'essai n'est jamais installée", r2.etat === "pret" && r2.numero === 110, JSON.stringify(r2));
+    r2 = await v2({ canal: "stable", numeroActuel: 110 });
+    note("canal stable : à jour malgré une version d'essai plus récente", r2.etat === "a-jour", JSON.stringify(r2));
+    r2 = await v2({ canal: "essai", numeroActuel: 110 });
+    note("canal essai : la version d'essai est installée", r2.etat === "pret" && r2.numero === 120, JSON.stringify(r2));
+    note("canal par défaut : stable ; réglage du joueur relu", MAJ.lireCanal(ud2) === "stable" && MAJ.lireCanal(ud2, "essai") === "essai" && MAJ.ecrireCanal(ud2, "essai") && MAJ.lireCanal(ud2) === "essai" && MAJ.ecrireCanal(ud2, "stable") && MAJ.lireCanal(ud2, "essai") === "stable" && !MAJ.ecrireCanal(ud2, "n'importe quoi"));
+    const { publicKey, privateKey } = crypto.generateKeyPairSync("ed25519");
+    const pem = publicKey.export({ type: "spki", format: "pem" });
+    const autre = crypto.generateKeyPairSync("ed25519").privateKey;
+    pubT("jeu-130", 130);
+    r2 = await v2({ clePublique: pem, numeroActuel: 120 });
+    note("app à clé publique : publication non signée refusée", r2.etat === "erreur" && /non signée/.test(r2.detail) && MAJ.versionTelechargee(ud2).numero === 120, r2.detail);
+    pubT("jeu-131", 131, { signer: autre });
+    r2 = await v2({ clePublique: pem, numeroActuel: 120 });
+    note("signature d'une autre clé refusée", r2.etat === "erreur" && /signature/.test(r2.detail) && MAJ.versionTelechargee(ud2).numero === 120, r2.detail);
+    pubT("jeu-132", 132, { sig: "pas-une-signature" });
+    r2 = await v2({ clePublique: pem, numeroActuel: 120 });
+    note("signature illisible refusée", r2.etat === "erreur" && MAJ.versionTelechargee(ud2).numero === 120, r2.detail);
+    pubT("jeu-133", 133, { signer: privateKey });
+    r2 = await v2({ clePublique: pem, numeroActuel: 120 });
+    note("publication signée par la bonne clé installée", r2.etat === "pret" && r2.numero === 133, JSON.stringify(r2));
+    note("aucune clé d'accès n'est lue dans l'app", MAJ.lireCle(__dirname) === (process.env.LP_MAJ_CLE || "") && !JSON.stringify(require("../package.json").build.files).includes("maj-cle.txt"));
+    etat.publications = [];
+  }
+  if (process.env.LP_SANS_APP) { srv.close(); const ko0 = res.filter((x) => !x).length; console.log(ko0 ? ko0 + " ÉCHEC(S)" : "module de mise à jour : tout est vert (app Electron non lancée : LP_SANS_APP)"); process.exit(ko0 ? 1 : 0); }
 
   // ---------- 2. l'app Electron
   let electron = null; try { electron = require("playwright")._electron; } catch (e) {}

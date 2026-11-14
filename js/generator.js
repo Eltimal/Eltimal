@@ -147,7 +147,9 @@
   GEN.paramsOf = (s, id) => (s.generated || []).find((p) => p.id === id) || { t: null };
   CR.restoreGenerated = function (s) {
     if (CR.GEN2 && CR.GEN2.histDepuisPartie) CR.GEN2.histDepuisPartie(s);
-    for (const p of s.generated || []) if (!CR.CASES[p.id]) { try { GEN.build(p); } catch (e) { console.error("Affaire générée non reconstruite", p.id, e); } }
+    // toujours reconstruire : les identifiants (g_gav_1…) se répètent d'une partie à l'autre, et une définition restée en
+    // mémoire d'une autre partie donnerait à ce dossier les faits et les personnes d'une autre affaire (sortie 1.0)
+    for (const p of s.generated || []) { try { GEN.build(p); } catch (e) { console.error("Affaire générée non reconstruite", p.id, e); } }
   };
 
   // ------------------------------------------------------------------ Permanences : planification des appels

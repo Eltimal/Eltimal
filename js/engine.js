@@ -724,14 +724,53 @@
   // ------------------------------------------------------------------ Sauvegarde
   CR.SAVE_KEY = "la-permanence-saves-v2"; // v2 : refonte graphique (novembre 2026), les parties d'avant ne sont plus lues
   CR.serialize = (s) => JSON.stringify(Object.assign({}, s, { toasts: [] }));
+  // Sortie 1.0 (B3) : un fichier n'est repris que s'il a la forme d'une partie. Les champs indispensables sont contrôlés
+  // (type et valeur), les champs secondaires absents sont remis à leur valeur d'une partie neuve ; une partie écrite par
+  // une version plus récente du jeu est refusée avec un message clair. Rien n'est chargé à moitié.
+  const refuse = (msg) => { const e = new Error(msg); e.refus = true; return e; };
+  const NB = (x) => typeof x === "number" && isFinite(x);
+  const OBJ = (x) => !!x && typeof x === "object" && !Array.isArray(x);
+  CR.validerPartie = function (s) {
+    const PAS = "Ce fichier n'est pas une sauvegarde de La Permanence";
+    if (!OBJ(s) || !OBJ(s.player) || typeof s.player.prenom !== "string" || typeof s.player.nom !== "string") throw refuse(PAS);
+    if (s.v != null && (!NB(s.v) || s.v > CR.VERSION)) throw refuse("Cette sauvegarde vient d'une version plus récente du jeu : mettez le jeu à jour pour la reprendre.");
+    const abime = (quoi) => refuse(`Cette sauvegarde est abîmée (${quoi}) : elle ne peut pas être reprise.`);
+    for (const k of ["day", "min", "cash", "energy", "rng"]) if (!NB(s[k])) throw abime(k);
+    if (s.day < 0 || s.day !== Math.floor(s.day) || s.min < 0 || s.min > 24 * 60) throw abime("date");
+    if (!OBJ(s.cases) || !Array.isArray(s.order)) throw abime("dossiers");
+    for (const id of s.order) { const c = s.cases[id]; if (!OBJ(c) || typeof c.def !== "string" || typeof c.status !== "string") throw abime("dossier " + id); }
+    if (!OBJ(s.reps) || !["clients", "confreres", "siege", "parquet"].every((k) => NB(s.reps[k]))) throw abime("réputations");
+    if (!OBJ(s.decouvert) || !NB(s.decouvert.used) || !NB(s.decouvert.limit) || !OBJ(s.pret) || !NB(s.pret.balance) || !OBJ(s.fixed)) throw abime("comptes");
+    if (!OBJ(s.disc) || !Array.isArray(s.disc.open) || !Array.isArray(s.disc.record)) throw abime("discipline");
+    if (!OBJ(s.stats)) throw abime("statistiques");
+    // champs secondaires : valeur d'une partie neuve s'ils manquent ou n'ont pas la bonne forme
+    const listes = ["inbox", "voicemails", "callLog", "agenda", "pending", "invoices", "ajDue", "staff", "applicants", "cohort", "log", "researched", "revision", "duty", "detenus", "classeur", "ledger"];
+    for (const k of listes) if (!Array.isArray(s[k])) s[k] = [];
+    for (const k of ["carpaBy", "earnedBy", "flags", "seen", "world", "competence"]) if (!OBJ(s[k])) s[k] = {};
+    if (!OBJ(s.settings)) s.settings = { textSpeed: 1, coach: true };
+    if (!NB(s.carpa)) s.carpa = 0;
+    if (!NB(s.workedToday)) s.workedToday = 0;
+    if (!NB(s.overdraftMonths)) s.overdraftMonths = 0;
+    if (!NB(s.nightRec)) s.nightRec = 0;
+    if (!NB(s.disc.points)) s.disc.points = 0;
+    if (typeof s.at !== "string") s.at = "cabinet";
+    if (typeof s.mode !== "string") s.mode = "carriere";
+    s.energy = CR.clamp(s.energy, 0, 100);
+    s.night = !!s.night;
+    s.gameOver = OBJ(s.gameOver) ? s.gameOver : null;
+    s.burnout = OBJ(s.burnout) && NB(s.burnout.until) ? s.burnout : null;
+    for (const k of Object.keys(s.cases)) if (!s.order.includes(k)) s.order.push(k);
+    return s;
+  };
   CR.deserialize = (json) => {
-    const s = typeof json === "string" ? JSON.parse(json) : json;
-    if (!s || !s.player || s.player.prenom == null) throw new Error("Ce fichier n'est pas une sauvegarde de La Permanence");
+    let s;
+    try { s = typeof json === "string" ? JSON.parse(json) : json; } catch (e) { throw refuse("Ce fichier n'est pas une sauvegarde de La Permanence"); }
+    CR.validerPartie(s);
+    s.v = CR.VERSION;
     s.toasts = [];
-    s.ring = s.ring || null;
+    s.ring = OBJ(s.ring) ? s.ring : null;
     s.workCase = null;
-    s.revision = s.revision || [];
-    if (CR.restoreGenerated) CR.restoreGenerated(s);
+    try { if (CR.restoreGenerated) CR.restoreGenerated(s); } catch (e) { console.error(e); throw refuse("Cette sauvegarde est abîmée (affaires générées) : elle ne peut pas être reprise."); }
     // le tutoriel et les affaires écrites ont été retirés du jeu : une partie qui en dépend ne peut plus être reprise
     const perdus = Object.values(s.cases || {}).filter((cs) => cs && !CR.CASES[cs.def]);
     if (s.mode === "tutoriel" || perdus.length) {
@@ -746,6 +785,6 @@
   };
   CR.saveMeta = (s) => ({
     nom: `${s.player.prenom} ${s.player.nom}`, cabinet: s.player.cabinet, day: s.day, date: CR.fmtDate(s.day), cash: Math.round(s.cash), mode: s.mode,
-    dossiers: s.order.filter((id) => s.cases[id] && s.cases[id].status === "active").length, over: !!s.gameOver, savedAt: Date.now(),
+    dossiers: s.order.filter((id) => s.cases[id] && s.cases[id].status === "active").length, over: !!s.gameOver, savedAt: Date.now(), created: s.created, v: s.v,
   });
 })();

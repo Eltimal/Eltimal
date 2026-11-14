@@ -1,18 +1,46 @@
-# Publie le jeu à chaque push sur une branche claude/* ou main (la session du gameplay et celle des graphismes) : l'app installée le télécharge au lancement suivant (electron/maj.js).
-# Publication « jeu-<numéro> » : jeu.json.gz (complet, pour les anciennes apps), jeu-leger.json.gz et sons.json.gz (téléchargé seulement s'il a changé), manifest.json. Les 10 dernières sont gardées.
+# Publie le jeu après la batterie de tests. Rien n'est publié si un test échoue (sortie 1.0, anomalie B4).
+#  - branche main      → publication « jeu-<numéro> » : canal stable, reçu par toutes les apps installées ;
+#  - branches claude/** → publication « essai-<numéro> » (préversion) : canal d'essai, reçu seulement par les apps qui l'ont
+#    demandé (menu Mise à jour → Recevoir aussi les versions d'essai) ou construites depuis une branche de travail.
+# Pièces : jeu.json.gz (complet), jeu-leger.json.gz et sons.json.gz (téléchargé seulement s'il a changé), manifest.json,
+# manifest.sig (signature Ed25519 du manifeste, si le secret MAJ_SIGNATURE existe). Les 10 dernières de chaque canal sont gardées.
 name: Publier le jeu
 on:
   push:
     branches: ["claude/**", main]
-    paths: ["index.html", "js/**", "lib/**", "fonts/**", "electron/maj.js", "electron/paquet-jeu.js"]
+    paths: ["index.html", "js/**", "lib/**", "fonts/**", "electron/maj.js", "electron/paquet-jeu.js", "dev/tests/**", "dev/tools/batterie.js", ".github/workflows/publier-jeu.yml"]
   workflow_dispatch:
 permissions:
   contents: write
 concurrency:
-  group: publier-jeu
+  group: publier-jeu-${{ github.ref_name }}
   cancel-in-progress: false
 jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Outils de test
+        working-directory: dev
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Batterie complète (jsdom)
+        working-directory: dev
+        run: node tools/batterie.js complete
+      - name: Le jeu dans un vrai navigateur (sauvegardes, scènes, pause, garde-fou)
+        working-directory: dev
+        run: node tests/tnavigateur.js
+      - name: Module de mise à jour (canaux, signature)
+        env:
+          LP_SANS_APP: "1"
+        run: node electron/test-maj.js
   jeu:
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,18 +50,23 @@ jobs:
         with:
           node-version: 20
       - name: Fabriquer le paquet
+        env:
+          LP_MAJ_SIGNATURE: ${{ secrets.MAJ_SIGNATURE }}
         run: node electron/paquet-jeu.js
       - name: Publier
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           N=$(node -p "require('./dist-jeu/manifest.json').numero")
-          if gh release view "jeu-$N" >/dev/null 2>&1; then echo "jeu-$N déjà publié"; exit 0; fi
-          gh release create "jeu-$N" dist-jeu/jeu.json.gz dist-jeu/jeu-leger.json.gz dist-jeu/manifest.json $(ls dist-jeu/sons.json.gz 2>/dev/null) \
-            --title "Jeu n° $N" --notes "Commit ${GITHUB_SHA::7} sur ${GITHUB_REF_NAME}" --target "$GITHUB_SHA" --latest=false
-      - name: Garder les 10 dernières publications du jeu
+          if [ "$GITHUB_REF_NAME" = "main" ]; then TAG="jeu-$N"; TITRE="Jeu n° $N"; PRE=""; else TAG="essai-$N"; TITRE="Essai n° $N ($GITHUB_REF_NAME)"; PRE="--prerelease"; fi
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "$TAG déjà publié"; exit 0; fi
+          gh release create "$TAG" dist-jeu/jeu.json.gz dist-jeu/jeu-leger.json.gz dist-jeu/manifest.json $(ls dist-jeu/sons.json.gz dist-jeu/manifest.sig 2>/dev/null) \
+            --title "$TITRE" --notes "Commit ${GITHUB_SHA::7} sur ${GITHUB_REF_NAME}. Batterie de tests verte." --target "$GITHUB_SHA" --latest=false $PRE
+      - name: Garder les 10 dernières publications de chaque canal
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release list --limit 100 --json tagName --jq '.[].tagName' | grep '^jeu-' | sort -t- -k2 -nr | tail -n +11 \
-            | xargs -r -I{} gh release delete {} --yes --cleanup-tag
+          for P in jeu essai; do
+            gh release list --limit 200 --json tagName --jq '.[].tagName' | grep "^$P-" | sort -t- -k2 -nr | tail -n +11 \
+              | xargs -r -I{} gh release delete {} --yes --cleanup-tag
+          done

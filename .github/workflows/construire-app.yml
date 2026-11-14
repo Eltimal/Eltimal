@@ -1,5 +1,6 @@
 # Construit l'app Mac (Apple Silicon), signée localement par le runner macOS, à la demande (Actions > Construire l'app > Run workflow).
-# Sans clé, l'app lit les publications anonymement (dépôt public). Le secret MAJ_CLE, facultatif, permet un dépôt privé.
+# L'app ne contient aucune clé d'accès : elle lit les publications anonymement (dépôt public). Si electron/maj-cle-publique.pem
+# est commité, elle refuse toute mise à jour dont le manifeste n'est pas signé (voir electron/cles-maj.js).
 # Sortie : publication « app », pièce « La-Permanence-mac-arm64.zip ».
 name: Construire l'app
 on:
@@ -17,11 +18,6 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - name: Poser la clé de mise à jour
-        env:
-          MAJ_CLE: ${{ secrets.MAJ_CLE }}
-        run: |
-          if [ -n "$MAJ_CLE" ]; then printf '%s' "$MAJ_CLE" > electron/maj-cle.txt; else echo "Pas de clé : mise à jour anonyme (dépôt public)."; fi
       - name: Construire
         run: |
           node electron/paquet-jeu.js --version-livree
@@ -40,6 +36,3 @@ jobs:
           N=$(node -p "require('./electron/jeu-version.json').numero")
           gh release create app La-Permanence-mac-arm64.zip --title "App Mac (jeu n° $N)" \
             --notes "Installer une fois. Le jeu se met ensuite à jour tout seul au lancement." --target "$GITHUB_SHA" --latest=false
-      - name: Effacer la clé
-        if: always()
-        run: rm -f electron/maj-cle.txt

@@ -172,11 +172,12 @@
     const lineText = cur && (cur.t != null) ? T(cur.t) : "";
     useEffect(() => {
       if (phase !== "type" || !cur || cur._end) return;
+      if (CR.enPause) return; // menu ouvert : l'audience est suspendue (sortie 1.0, M5)
       if (cur.who === "you" || cur.who === "sys") { finishLine(); return; }
       if (typed >= lineText.length) { finishLine(); return; }
       const t = setTimeout(() => setTyped((n) => Math.min(lineText.length, n + Math.max(1, Math.round(cps / 30)))), 1000 / 30);
       return () => clearTimeout(t);
-    }, [typed, phase, cur && cur._k]);
+    }, [typed, phase, cur && cur._k, !!CR.enPause]);
     function canInterject() { return !!(cur && cur.interject && (!cur.interject.need || [].concat(cur.interject.need).some((n) => CR.inHand(s, cs, n)))); }
     function finishLine() {
       if (canInterject()) { setPhase("window"); setTimer((cur.interject.window || 4500) / fatigue); return; }
@@ -185,10 +186,10 @@
       setTimeout(() => { addLog({ who: cur.who, t: lineText, name: cur.name }); if (cur.fx) applyFx(s, cs, st, cur.fx); if (cur.signal) (CR.libre(s) || addLog({ who: "sys", t: CR.ACT.signal(api, cur.signal) })); next(); }, cur.who === "you" || cur.who === "sys" ? 250 : pause);
     }
     useEffect(() => {
-      if (!["window", "card", "choose"].includes(phase) || timer <= 0 || citeCard || jpCard) return;
+      if (!["window", "card", "choose"].includes(phase) || timer <= 0 || citeCard || jpCard || CR.enPause) return;
       const t = setTimeout(() => setTimer((x) => x - 100), 100);
       return () => clearTimeout(t);
-    }, [timer, phase]);
+    }, [timer, phase, !!CR.enPause]);
     useEffect(() => {
       if (timer > 0) return;
       if (phase === "window") windowExpired();

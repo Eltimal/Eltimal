@@ -24,13 +24,30 @@
     </div>`;
   };
 
-  // =================================================================== Sauvegardes : compte (par joueur) → navigateur → aucune
+  // =================================================================== Sauvegardes : compte (par joueur) → appareil → aucune
+  // Sortie 1.0 (B2) : sur l'appareil, les parties sont rangées dans IndexedDB, une fiche par emplacement (plus de quota
+  // commun de cinq millions de caractères) ; les parties de l'ancien rangement (localStorage) y sont recopiées au premier
+  // lancement. Sans IndexedDB (tests jsdom, navigation privée), l'ancien rangement sert de repli. Tout échec d'écriture est
+  // dit au joueur. Les écritures se suivent une à une (file) : jamais deux versions d'une partie qui se croisent.
   const CHUNK = 180000;
+  const IDB_NOM = "la-permanence", IDB_TABLE = "parties";
+  const idbReq = (r) => new Promise((ok, ko) => { r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error || new Error("IndexedDB")); });
   const Saves = (CR.Saves = {
-    backend: "none", db: null, uid: null, downloads: null,
-    async init() {
-      const local = (() => { try { localStorage.setItem("lp-probe", "1"); localStorage.removeItem("lp-probe"); return true; } catch (e) { return false; } })();
-      this.backend = local ? "local" : "none";
+    backend: "none", db: null, idb: null, uid: null, downloads: null, local: false, pret: null, echec: null,
+    init() { if (!this.pret) this.pret = this._init(); return this.pret; },
+    async _init() {
+      this.local = (() => { try { localStorage.setItem("lp-probe", "1"); localStorage.removeItem("lp-probe"); return true; } catch (e) { return false; } })();
+      this.backend = this.local ? "local" : "none";
+      try {
+        if (window.indexedDB && !window.LP_SANS_IDB) {
+          const open = window.indexedDB.open(IDB_NOM, 1);
+          open.onupgradeneeded = () => { if (!open.result.objectStoreNames.contains(IDB_TABLE)) open.result.createObjectStore(IDB_TABLE, { keyPath: "slot" }); };
+          this.idb = await idbReq(open);
+          this.backend = "idb";
+          await this.migrerLocal();
+          await this.reprendreUrgence();
+        }
+      } catch (e) { console.warn("IndexedDB indisponible : repli sur le rangement du navigateur", e); this.idb = null; this.backend = this.local ? "local" : "none"; }
       try {
         if (window.claude && window.claude.use) {
           const [db, user, dl] = await Promise.all([window.claude.use("db").catch(() => null), window.claude.use("user").catch(() => null), window.claude.use("downloads").catch(() => null)]);
@@ -42,6 +59,19 @@
         }
       } catch (e) { console.warn("Sauvegardes", e); }
       bump();
+    },
+    table(mode) { return this.idb.transaction(IDB_TABLE, mode).objectStore(IDB_TABLE); },
+    // les parties de l'ancien rangement passent dans IndexedDB ; l'ancien n'est effacé qu'une fois tout recopié
+    async migrerLocal() {
+      const loc = this.localAll(), slots = Object.keys(loc);
+      if (!slots.length) return;
+      for (const slot of slots) {
+        const x = loc[slot];
+        if (!x || typeof x.json !== "string" || !x.meta) continue;
+        const deja = await idbReq(this.table("readonly").get(slot));
+        if (!deja || (deja.meta.savedAt || 0) < (x.meta.savedAt || 0)) await idbReq(this.table("readwrite").put({ slot, meta: x.meta, json: x.json }));
+      }
+      try { localStorage.removeItem(CR.SAVE_KEY); } catch (e) { /* rien */ }
     },
     col() { return this.db.collection("data/users/" + this.uid); },
     // Phase 3 : l'historique des signatures d'affaires, commun à toutes les parties (navigateur et compte)
@@ -55,24 +85,41 @@
       if (this.backend !== "cloud" || !CR.GEN2 || !CR.GEN2.histAjouter) return;
       try { const d = await this.col().doc("historique").get(); const x = d && d.exists !== false && d.data ? d.data() : null; if (x && x.h) CR.GEN2.histAjouter(String(x.h).split(",").filter(Boolean)); } catch (e) { console.warn("Historique des affaires", e); }
     },
-    localAll() { try { return JSON.parse(localStorage.getItem(CR.SAVE_KEY) || "{}"); } catch (e) { return {}; } },
+    localAll() { try { const x = JSON.parse(localStorage.getItem(CR.SAVE_KEY) || "{}"); return x && typeof x === "object" && !Array.isArray(x) ? x : {}; } catch (e) { return {}; } },
     async list() {
+      await this.init();
       const out = [];
-      if (this.backend === "cloud") {
+      const okMeta = (m) => m && typeof m === "object" && typeof m.nom === "string";
+      if (this.db) {
         try {
           const snap = await this.col().get();
-          snap.docs.forEach((d) => { const x = d.data(); if (/^partie-[a-z0-9]+$/.test(d.id) && x && x.meta) out.push({ slot: d.id.slice(7), meta: x.meta, where: "cloud" }); });
+          snap.docs.forEach((d) => { const x = d.data(); if (/^partie-[a-z0-9]+$/.test(d.id) && x && okMeta(x.meta)) out.push({ slot: d.id.slice(7), meta: x.meta, where: "cloud" }); });
         } catch (e) { console.warn(e); }
       }
+      if (this.idb) {
+        try { for (const x of await idbReq(this.table("readonly").getAll())) if (x && okMeta(x.meta) && !out.some((o) => o.slot === x.slot)) out.push({ slot: x.slot, meta: x.meta, where: "idb" }); } catch (e) { console.warn(e); }
+      }
       const loc = this.localAll();
-      for (const [slot, x] of Object.entries(loc)) if (!out.some((o) => o.slot === slot)) out.push({ slot, meta: x.meta, where: "local" });
+      for (const [slot, x] of Object.entries(loc)) if (x && okMeta(x.meta) && !out.some((o) => o.slot === slot)) out.push({ slot, meta: x.meta, where: "local" });
       return out.sort((a, b) => (b.meta.savedAt || 0) - (a.meta.savedAt || 0));
     },
-    async save(slot, s) {
-      const json = CR.serialize(s);
-      const meta = CR.saveMeta(s);
+    // Ce qui s'écrit pour la partie en cours : pendant une scène (appel, garde à vue, audience…), c'est l'état pris à
+    // l'entrée de la scène — la progression d'une scène ne vit pas dans la partie, une scène se reprend donc à son début (B1)
+    contenu(s) {
+      if (CR.instantane && s === CR.store.s) return CR.instantane;
+      return { json: CR.serialize(s), meta: CR.saveMeta(s) };
+    },
+    _file: Promise.resolve(),
+    save(slot, s) {
+      const c = this.contenu(s);
+      const r = this._file.then(() => this._ecrire(slot, c));
+      this._file = r.catch(() => false);
+      return r;
+    },
+    async _ecrire(slot, { json, meta }) {
+      await this.init();
       let ok = false;
-      if (this.backend === "cloud") {
+      if (this.db) {
         try {
           const n = Math.ceil(json.length / CHUNK);
           for (let i = 0; i < n; i++) await this.col().doc(`partie-${slot}-c${i}`).set({ part: json.slice(i * CHUNK, (i + 1) * CHUNK) });
@@ -80,11 +127,18 @@
           ok = true;
         } catch (e) { console.warn("Sauvegarde sur le compte impossible", e); }
       }
-      try { const all = this.localAll(); all[slot] = { meta, json }; localStorage.setItem(CR.SAVE_KEY, JSON.stringify(all)); ok = true; } catch (e) { /* stockage indisponible */ }
+      if (this.idb) {
+        try { await idbReq(this.table("readwrite").put({ slot, meta, json })); ok = true; } catch (e) { console.warn("Sauvegarde sur l'appareil impossible", e); }
+      } else {
+        try { const all = this.localAll(); all[slot] = { meta, json }; localStorage.setItem(CR.SAVE_KEY, JSON.stringify(all)); ok = true; } catch (e) { /* stockage indisponible ou plein */ }
+      }
+      this.echec = ok ? null : { slot, at: Date.now() };
+      this.taille = json.length;
       return ok;
     },
     async load(slot) {
-      if (this.backend === "cloud") {
+      await this.init();
+      if (this.db) {
         try {
           const d = await this.col().doc("partie-" + slot).get();
           if (d.exists) {
@@ -95,20 +149,117 @@
           }
         } catch (e) { console.warn(e); }
       }
+      if (this.idb) {
+        let x = null;
+        try { x = await idbReq(this.table("readonly").get(slot)); } catch (e) { console.warn(e); }
+        if (x) return CR.deserialize(x.json);
+      }
       const all = this.localAll();
       return all[slot] ? CR.deserialize(all[slot].json) : null;
     },
+    async remove(slot) {
+      await this.init();
+      if (this.idb) { try { await idbReq(this.table("readwrite").delete(slot)); } catch (e) { console.warn(e); } }
+      try { const all = this.localAll(); if (all[slot]) { delete all[slot]; localStorage.setItem(CR.SAVE_KEY, JSON.stringify(all)); } } catch (e) { /* rien */ }
+    },
+    // place prise et place offerte par l'appareil (pour le menu) ; null si l'appareil ne le dit pas
+    async place() {
+      try { if (navigator.storage && navigator.storage.estimate) { const e = await navigator.storage.estimate(); return { pris: e.usage || 0, quota: e.quota || 0 }; } } catch (e) { /* rien */ }
+      return null;
+    },
+    nomFichier(s) {
+      const nom = `${s.player.prenom}-${s.player.nom}`.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\W+/g, "-").toLowerCase();
+      return `la-permanence-${nom}-jour${s.day}.json`;
+    },
+    // Export d'un fichier : par le service de téléchargement de l'hôte s'il existe, sinon par le navigateur ou l'app
+    // (un lien de téléchargement ; l'app Mac ouvre la fenêtre « Enregistrer sous »)
     async exportFile(s) {
-      if (!this.downloads) return "indisponible";
+      const c = this.contenu(s);
       try {
-        const nom = `${s.player.prenom}-${s.player.nom}`.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\W+/g, "-").toLowerCase();
-        await this.downloads.save({ filename: `la-permanence-${nom}-jour${s.day}.json`, data: CR.serialize(s) });
+        if (this.downloads) { await this.downloads.save({ filename: this.nomFichier(s), data: c.json }); return "ok"; }
+        const url = URL.createObjectURL(new Blob([c.json], { type: "application/json" }));
+        const a = document.createElement("a");
+        a.href = url; a.download = this.nomFichier(s); a.style.display = "none";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
         return "ok";
       } catch (e) { return (e && e.code) || "erreur"; }
     },
   });
-  // une affaire jouée par son code a son propre emplacement : la carrière en cours n'est pas touchée
-  CR.autosave = () => { const s = CR.store.s; if (s && !s.gameOver) Saves.save(s.mode === "affaire" ? "affaire" : "auto", s); };
+  // une affaire jouée par son code a son propre emplacement : la carrière en cours n'est pas touchée.
+  // La fin de carrière s'enregistre aussi (M3) : « Reprendre » ne rend pas la partie d'avant la radiation ou la faillite.
+  let dernierJson = null, avertiEchec = 0;
+  CR.autosave = () => {
+    const s = CR.store.s;
+    if (!s || CR.store.enPanne) return Promise.resolve(false);
+    const c = Saves.contenu(s);
+    if (c.json === dernierJson) return Promise.resolve(true);
+    dernierJson = c.json;
+    return Saves.save(s.mode === "affaire" ? "affaire" : "auto", s).then((ok) => {
+      if (!ok) {
+        dernierJson = null;
+        // l'échec est toujours dit, au plus une fois par minute
+        if (Date.now() - avertiEchec > 60000 && CR.store.s === s) { avertiEchec = Date.now(); CR.toast(s, "La partie n'a pas pu être enregistrée sur cet appareil. Exportez un fichier depuis le menu pour ne rien perdre.", "bad"); bump(); }
+      }
+      return ok;
+    });
+  };
+  // M1 : la partie s'enregistre après chaque action (au plus tard 0,8 s après), et tout de suite quand la fenêtre se cache
+  // ou se ferme : fermer le jeu ne fait perdre au plus que le dernier geste
+  let tAuto = null;
+  CR.autosaveBientot = () => { if (tAuto) return; tAuto = setTimeout(() => { tAuto = null; CR.autosave(); }, 800); };
+  CR.store.sub(() => { if (CR.store.s) CR.autosaveBientot(); });
+  const vider = () => { if (tAuto) { clearTimeout(tAuto); tAuto = null; } if (CR.store.s) CR.autosave(); };
+  // À la fermeture, l'écriture dans IndexedDB peut ne pas aboutir : une copie d'urgence part aussi, tout de suite, dans le
+  // rangement synchrone du navigateur ; au lancement suivant elle remplace la sauvegarde si elle est plus récente.
+  const URGENCE = "la-permanence-urgence";
+  const urgence = () => {
+    const s = CR.store.s;
+    if (!s || CR.store.enPanne || !Saves.idb) return;
+    try { const c = Saves.contenu(s); localStorage.setItem(URGENCE, JSON.stringify({ slot: s.mode === "affaire" ? "affaire" : "auto", meta: c.meta, json: c.json })); } catch (e) { /* trop gros ou refusé : la sauvegarde ordinaire suffit */ }
+  };
+  Saves.reprendreUrgence = async function () {
+    let u = null;
+    try { u = JSON.parse(localStorage.getItem(URGENCE) || "null"); } catch (e) { u = null; }
+    try { localStorage.removeItem(URGENCE); } catch (e) { /* rien */ }
+    if (!u || typeof u.json !== "string" || !u.meta || !this.idb) return;
+    const deja = await idbReq(this.table("readonly").get(u.slot));
+    if (!deja || (deja.meta.savedAt || 0) < (u.meta.savedAt || 0)) await idbReq(this.table("readwrite").put({ slot: u.slot, meta: u.meta, json: u.json }));
+  };
+  CR.Saves.vider = () => { vider(); return Saves._file; };
+  try {
+    document.addEventListener("visibilitychange", () => { if (document.hidden) vider(); });
+    window.addEventListener("pagehide", () => { vider(); urgence(); });
+    window.addEventListener("beforeunload", () => { vider(); urgence(); });
+  } catch (e) { /* pas de fenêtre */ }
+  // Poser une partie (nouvelle, chargée, importée) ou revenir au titre : l'interface repart de zéro — plus de scène, de
+  // fenêtre ni de rubrique héritées de la partie d'avant (M4)
+  CR.poserPartie = (st) => { CR.store.s = st; CR.store.gen = (CR.store.gen || 0) + 1; CR.instantane = null; CR.enPause = false; CR.store.enPanne = false; dernierJson = null; bump(); };
+  // Installer une autre partie que celle de la sauvegarde automatique (nouvelle, importée, autre emplacement) : la carrière
+  // en cours est d'abord recopiée dans « Partie précédente » — rien n'est écrasé sans copie (M2)
+  const NOM_EMPLACEMENT = (slot) => (slot === "auto" ? "Sauvegarde automatique" : slot === "affaire" ? "Affaire jouée par son code" : slot === "precedente" ? "Partie précédente" : "Emplacement " + slot);
+  CR.nomEmplacement = NOM_EMPLACEMENT;
+  Saves.copier = async function (de, vers) {
+    await this.init();
+    let x = null;
+    if (this.idb) { try { x = await idbReq(this.table("readonly").get(de)); } catch (e) { /* rien */ } }
+    if (!x) { const l = this.localAll()[de]; if (l) x = { meta: l.meta, json: l.json }; }
+    if (!x || typeof x.json !== "string") return false;
+    const r = this._file.then(() => this._ecrire(vers, { json: x.json, meta: x.meta }));
+    this._file = r.catch(() => false);
+    return r;
+  };
+  CR.installerPartie = async function (st) {
+    try {
+      if (st && st.mode !== "affaire") {
+        const a = (await Saves.list()).find((x) => x.slot === "auto");
+        if (a && !a.meta.over && a.meta.created !== st.created) await Saves.copier("auto", "precedente");
+      }
+    } catch (e) { console.warn(e); }
+    CR.poserPartie(st);
+    return CR.autosave();
+  };
+  const msgLecture = (e) => (e && (e.perime || e.refus) ? e.message : "Cette sauvegarde ne peut pas être lue.");
 
   // =================================================================== Application
   const MODAL_SCENES = ["decide", "conflict", "withdraw", "mentor", "grievance", "library", "permanences", "canal", "ebarreau"];
@@ -117,7 +268,17 @@
     const [ui, setUi] = useState({ panel: "bureau", caseId: null, mail: null, firmSub: null });
     const [scene, setSceneRaw] = useState(null);
     // La scène ouverte désigne le dossier sur lequel le temps est imputé (facturation au temps passé)
-    const setScene = (sc) => { const st = CR.store.s; if (st) st.workCase = (sc && sc.caseId) || null; setSceneRaw(sc); };
+    // B1 : à l'entrée d'une scène plein écran, l'état de la partie est pris en instantané ; tant que la scène dure, c'est
+    // lui qui s'enregistre (sauvegarde automatique, emplacements, export, retour au titre). Quitter au milieu d'une
+    // audience ne laisse donc jamais une audience « tenue » sans jugement : la scène se rejoue depuis son début.
+    const setScene = (sc) => {
+      const st = CR.store.s;
+      const pleine = sc && !MODAL_SCENES.includes(sc.type);
+      if (st && pleine && !CR.instantane) { st.workCase = null; CR.instantane = { json: CR.serialize(st), meta: CR.saveMeta(st) }; }
+      if (!pleine) CR.instantane = null;
+      if (st) st.workCase = (sc && sc.caseId) || null;
+      setSceneRaw(sc);
+    };
     const [modal, setModal] = useState(null);
     const [toasts, setToasts] = useState([]);
     useEffect(() => {
@@ -128,6 +289,16 @@
     });
     useEffect(() => { window.scrollTo && window.scrollTo(0, 0); }, [scene && scene.type, ui.panel]);
     UI._setScene = setScene;
+    // M5 : le menu (pause, réglages, enregistrement, sortie) s'ouvre de partout par Échap, y compris dans les scènes
+    // plein écran où le décor recouvre le bandeau ; menu ouvert, l'audience est suspendue (CR.enPause)
+    // hors scène, aucun instantané ne reste (une scène refermée par un autre chemin que endScene)
+    useEffect(() => { if (!scene) CR.instantane = null; }, [scene]);
+    CR.enPause = !!(modal && modal.type === "menu");
+    useEffect(() => {
+      const k = (e) => { if (e.key !== "Escape" || !CR.store.s || CR.store.s.gameOver) return; if (document.querySelector(".modal-wrap")) return; e.preventDefault(); setModal({ type: "menu" }); };
+      window.addEventListener("keydown", k);
+      return () => window.removeEventListener("keydown", k);
+    }, []);
     if (CR.SON) CR.SON.sync(s, scene);
     if (!s) return html`<${TitleScreen} />`;
     if (s.gameOver) return html`<${CareerEnd} s=${s} />`;
@@ -265,6 +436,7 @@
       ${!fullScene && html`<${UI.RingBar} s=${s} onAnswer=${answer} />`}
       ${fullScene ? html`<main className="scene-host">
           <div className="scene-top"><span className="pix">${scene.caseId && s.cases[scene.caseId] ? CR.caseTitle(s, s.cases[scene.caseId]) : ""}</span></div>
+          <button type="button" className="scene-pause" onClick=${() => setModal({ type: "menu" })} aria-label="Pause et menu (Échap)" title="Pause et menu (Échap)"><${Icon} n="menu" /></button>
           ${sceneEl}
         </main>` : html`<div className="main">
         <${UI.Rail} s=${s} panel=${ui.panel} onNav=${go.nav} />
@@ -286,7 +458,7 @@
       <${UI.TravelFX} s=${s} />
       ${modal && modal.type === "agenda" && html`<${UI.AgendaDialog} s=${s} init=${modal.init} onClose=${() => setModal(null)} />`}
       ${modal && modal.type === "travel" && html`<${UI.TravelDialog} s=${s} to=${modal.to} then=${modal.then} onClose=${() => setModal(null)} onGo=${(mode) => { const m = modal; setModal(null); const prevWork = s.workCase; if (m.cs) s.workCase = m.cs.id; CR.travel(s, m.to, mode); s.workCase = prevWork; if (m.cs && m.t) doRun(m.cs, m.t); bump(); }} />`}
-      ${modal && modal.type === "menu" && html`<${MenuModal} s=${s} onClose=${() => setModal(null)} />`}
+      ${modal && modal.type === "menu" && html`<${MenuModal} s=${s} enScene=${!!fullScene} onClose=${() => setModal(null)} />`}
       ${modal && modal.type === "wait" && html`<${UI.Modal} title=${`${modal.pl.nom} : fermé`} onClose=${() => setModal(null)} footer=${html`<${Btn} onClick=${() => setModal(null)}>Faire autre chose</${Btn}><${Btn} kind="primary" onClick=${() => { const m = modal; setModal(null); CR.spend(s, m.until - s.min, "idle", { fixed: true }); doRun(m.cs, m.t); bump(); }}>Attendre jusqu'à ${CR.fmtTime(modal.until)}</${Btn}>`}><p>Il est ${CR.fmtTime(s.min)}. ${CR.HORAIRES[modal.pl.horaires].label}.</p><p className="small muted">Attendre sur un banc du hall coûte peu d'énergie, mais le temps passe pour tous vos dossiers.</p></${UI.Modal}>`}
       ${modal && modal.type === "confirmEnd" && html`<${UI.Modal} title="Rentrer si tôt ?" onClose=${() => setModal(null)} footer=${html`<${Btn} onClick=${() => setModal(null)}>Rester</${Btn}><${Btn} kind="primary" onClick=${go.rentrer}>Rentrer</${Btn}>`}><p>Il n'est que ${CR.fmtTime(s.min)} un jour ouvré. Les appels de l'après-midi iront sur la messagerie vocale. Un après-midi tranquille aide à récupérer.</p></${UI.Modal}>`}
       ${chezSoi && modal.type === "soir" && html`<div className="chez-soi-plan staged">
@@ -324,8 +496,8 @@
   // =================================================================== Fin d'une affaire jouée par son code
   function AffaireFin({ s }) {
     const close = () => { s.flags.affaireFinieVu = true; bump(); };
-    const rejouer = () => { const p = s.player; const r = CR.newAffaire({ code: s.affaire.code, camp: s.affaire.camp, prenom: p.prenom, nom: p.nom, cabinet: p.cabinet, look: p.look }); if (r.ok) { CR.store.s = r.s; CR.autosave(); bump(); } };
-    const titre = () => { CR.autosave(); CR.store.s = null; bump(); };
+    const rejouer = () => { const p = s.player; const r = CR.newAffaire({ code: s.affaire.code, camp: s.affaire.camp, prenom: p.prenom, nom: p.nom, cabinet: p.cabinet, look: p.look }); if (r.ok) { CR.poserPartie(r.s); CR.autosave(); } };
+    const titre = () => { CR.Saves.vider(); CR.poserPartie(null); };
     return html`<${UI.Modal} title="Affaire terminée" onClose=${close} footer=${html`<${Btn} onClick=${close}>Rester</${Btn}><${Btn} onClick=${rejouer}>Rejouer ce code</${Btn}><${Btn} kind="primary" onClick=${titre}>Écran titre</${Btn}>`}>
       <p>L'affaire est close ; sa fiche de révision est dans le classeur. Vous pouvez la rejouer à l'identique, ou partager son code.</p>
       <p><${UI.CodeAffaire} code=${s.affaire && s.affaire.code} /></p>
@@ -333,20 +505,21 @@
   }
 
   // =================================================================== Menu
-  function MenuModal({ s, onClose }) {
+  function MenuModal({ s, onClose, enScene }) {
     const [saves, setSaves] = useState(null);
     const [msg, setMsg] = useState("");
     const [confirmQuit, setConfirmQuit] = useState(false);
     const [confirmRetire, setConfirmRetire] = useState(false);
     useEffect(() => { Saves.list().then(setSaves); }, []);
-    const doSave = async (slot) => { const ok = await Saves.save(slot, s); setMsg(ok ? `Partie enregistrée dans l'emplacement ${slot}.` : "Ce navigateur ne peut pas enregistrer. Exportez un fichier."); setSaves(await Saves.list()); };
+    const doSave = async (slot) => { const ok = await Saves.save(slot, s); setMsg(ok ? `Partie enregistrée dans l'emplacement ${slot}.${enScene ? " La scène en cours n'y figure pas : elle reprendra à son début." : ""}` : "L'enregistrement a échoué sur cet appareil. Exportez un fichier."); setSaves(await Saves.list()); };
     return html`<${UI.Modal} title="Menu" onClose=${onClose} wide>
       <div className="menu-grid">
         <div>
           <h3>Enregistrer</h3>
-          <p className="small muted">${Saves.backend === "cloud" ? "Vos parties sont enregistrées avec votre compte et vous suivent d'un appareil à l'autre." : Saves.backend === "local" ? "Vos parties sont enregistrées dans ce navigateur seulement. Exportez un fichier pour en garder une copie." : "Ce navigateur ne peut pas enregistrer. Exportez un fichier."}</p>
+          <p className="small muted">${Saves.backend === "cloud" ? "Vos parties sont enregistrées avec votre compte et vous suivent d'un appareil à l'autre." : Saves.backend !== "none" ? "Vos parties sont enregistrées sur cet appareil, après chaque action. Exportez un fichier pour en garder une copie ailleurs." : "Cet appareil ne peut pas enregistrer. Exportez un fichier."}</p>
           <div className="save-slots">${["1", "2", "3"].map((k) => html`<${Btn} key=${k} onClick=${() => doSave(k)}>Emplacement ${k}</${Btn}>`)}</div>
-          ${Saves.downloads && html`<${Btn} onClick=${async () => { const r = await Saves.exportFile(s); setMsg(r === "ok" ? "Fichier exporté." : r === "declined" ? "Export annulé." : "L'export n'est pas disponible ici."); }}>Exporter un fichier de sauvegarde</${Btn}>`}
+          <${Btn} onClick=${async () => { const r = await Saves.exportFile(s); setMsg(r === "ok" ? "Fichier de sauvegarde exporté." : r === "declined" ? "Export annulé." : "L'export a échoué."); }}>Exporter un fichier de sauvegarde</${Btn}>
+          ${enScene && html`<p className="small muted">Jeu en pause. Une scène en cours ne s'enregistre pas : si vous quittez maintenant, elle reprendra à son début.</p>`}
           ${msg && html`<p className="small">${msg}</p>`}
           <h3>Réglages</h3>
           <${UI.Reglages} />
@@ -367,11 +540,11 @@
         </div>
         <div>
           <h3>Charger</h3>
-          ${saves == null ? html`<p className="muted small">Chargement…</p>` : saves.length === 0 ? html`<${Empty}>Aucune partie enregistrée.</${Empty}>` : html`<ul className="save-list">${saves.map((x) => html`<li key=${x.slot}><div><strong>${x.slot === "auto" ? "Sauvegarde automatique" : "Emplacement " + x.slot}</strong><span className="small muted">${x.meta.nom} · ${x.meta.date} · ${CR.money(x.meta.cash)}</span></div><${Btn} small onClick=${async () => { let st = null; try { st = await Saves.load(x.slot); } catch (e) { window.alert(e.perime ? e.message : "Cette sauvegarde ne peut pas être lue."); } if (st) { CR.store.s = st; bump(); onClose(); } }}>Charger</${Btn}></li>`)}</ul>`}
+          ${saves == null ? html`<p className="muted small">Chargement…</p>` : saves.length === 0 ? html`<${Empty}>Aucune partie enregistrée.</${Empty}>` : html`<ul className="save-list">${saves.map((x) => html`<li key=${x.slot}><div><strong>${NOM_EMPLACEMENT(x.slot)}</strong><span className="small muted">${x.meta.nom} · ${x.meta.date} · ${CR.money(x.meta.cash)}</span></div><${Btn} small onClick=${async () => { let st = null; try { st = await Saves.load(x.slot); } catch (e) { setMsg(msgLecture(e)); } if (st) { await CR.Saves.vider(); await CR.installerPartie(st); } }}>Charger</${Btn}></li>`)}</ul>`}
           <h3>Carrière</h3>
           ${s.mode === "carriere" && (!confirmRetire ? html`<${Btn} onClick=${() => setConfirmRetire(true)}>Quitter la profession</${Btn}>` : html`<${Btn} kind="danger" onClick=${() => { CR.endGame(s, "retraite", "Vous avez rendu votre robe, à votre heure."); bump(); onClose(); }}>Confirmer : rendre la robe</${Btn}>`)}
-          ${!confirmQuit ? html`<${Btn} kind="ghost" onClick=${() => setConfirmQuit(true)}>Retour à l'écran titre</${Btn}>` : html`<${Btn} kind="danger" onClick=${() => { CR.autosave(); CR.store.s = null; bump(); }}>Quitter (partie enregistrée)</${Btn}>`}
-          <p className="small muted">La Permanence, version ${CR.JEU.version} (${CR.JEU.date}).</p>
+          ${!confirmQuit ? html`<${Btn} kind="ghost" onClick=${() => setConfirmQuit(true)}>Retour à l'écran titre</${Btn}>` : html`<${Btn} kind="danger" onClick=${() => { CR.Saves.vider(); CR.poserPartie(null); }}>Quitter (partie enregistrée)</${Btn}>`}
+          <p className="small muted">La Permanence, version ${CR.JEU.libelle} (${CR.JEU.date}).</p>
           <p className="small muted">Le droit du jeu est à jour de novembre 2026 : les réformes récentes, les peines et les délais sensibles ont été vérifiés en ligne. Les textes sont des résumés rédigés pour le jeu : à relire sur Légifrance avant tout usage réel. Les magistrats, policiers, confrères et clients sont fictifs ; les lieux sont réels.</p>
         </div>
       </div>
@@ -389,7 +562,7 @@
     const A = useMemo(() => (code.trim().length >= 3 ? G.VIE.apercu(code) : null), [code]);
     const camps = A && A.ok ? A.camps : [];
     const campChoisi = camp && camps.includes(camp) ? camp : camps[0];
-    const jouer = () => { const r = CR.newAffaire(Object.assign({ code, camp: campChoisi }, player)); if (!r.ok) { setMsg(r.msg); return; } CR.store.s = r.s; CR.autosave(); bump(); };
+    const jouer = () => { const r = CR.newAffaire(Object.assign({ code, camp: campChoisi }, player)); if (!r.ok) { setMsg(r.msg); return; } CR.poserPartie(r.s); CR.autosave(); };
     const chercher = () => {
       const c0 = {};
       for (const k of Object.keys(crit)) if (crit[k] !== "") c0[k] = k === "irr" ? crit[k] === "oui" : k === "niveau" ? +crit[k] : crit[k];
@@ -446,16 +619,17 @@
     const start = (m, debut) => {
       const p = prenom.trim() || "Camille";
       const n = nom.trim() || "Durand";
-      CR.store.s = CR.newGame({ prenom: p, nom: n, cabinet: cabinet.trim() || `Cabinet ${n}`, look, mode: m });
-      if (debut === "collab" && CR.CAR) CR.CAR.demarrerCollab(CR.store.s);
-      CR.autosave();
-      bump();
+      const st = CR.newGame({ prenom: p, nom: n, cabinet: cabinet.trim() || `Cabinet ${n}`, look, mode: m });
+      if (debut === "collab" && CR.CAR) CR.CAR.demarrerCollab(st);
+      CR.installerPartie(st);
     };
     const importFile = (e) => {
       const f = e.target.files && e.target.files[0];
       if (!f) return;
       const rd = new FileReader();
-      rd.onload = () => { try { CR.store.s = CR.deserialize(rd.result); bump(); } catch (err) { console.warn(err); alertMsg(err && err.perime ? err.message : "Ce fichier n'est pas une sauvegarde de La Permanence."); } };
+      rd.onload = () => { let st = null; try { st = CR.deserialize(rd.result); } catch (err) { console.warn(err); alertMsg(err && (err.perime || err.refus) ? err.message : "Ce fichier n'est pas une sauvegarde de La Permanence."); } if (st) CR.installerPartie(st); };
+      rd.onerror = () => alertMsg("Ce fichier ne peut pas être lu.");
+      e.target.value = "";
       rd.readAsText(f);
     };
     const [err, alertMsg] = useState("");
@@ -477,7 +651,7 @@
           ${mode === "menu" && html`<div className="ts-menu-wrap">
             <p className="ts-sub">Vous venez de prêter serment. Un prêt, un bureau en sous-location dans le 17e, et un téléphone qui sonnera à deux heures du matin. Chaque délai est réel ; personne ne vous en rappellera aucun.</p>
             <nav className="ts-menu" aria-label="Menu principal">
-              ${auto && html`<button type="button" className="ts-btn ts-primary" onClick=${async () => { try { const st = await Saves.load("auto"); if (st) { CR.store.s = st; bump(); } } catch (e) { alertMsg(e.perime ? e.message : "Cette sauvegarde ne peut pas être lue."); } }}>Reprendre<small>${auto.meta.nom} · ${auto.meta.date}</small></button>`}
+              ${auto && html`<button type="button" className="ts-btn ts-primary" onClick=${async () => { try { const st = await Saves.load("auto"); if (st) CR.poserPartie(st); } catch (e) { alertMsg(msgLecture(e)); } }}>${auto.meta.over ? "Revoir la fin de carrière" : "Reprendre"}<small>${auto.meta.nom} · ${auto.meta.date}</small></button>`}
               <button type="button" className=${cx("ts-btn", !auto && "ts-primary")} onClick=${() => setMode("new")}>Nouvelle partie</button>
               <button type="button" className="ts-btn" onClick=${() => setMode("code")}>Jouer une affaire par son code</button>
               ${others.length > 0 && html`<button type="button" className="ts-btn" onClick=${() => setMode("load")}>Charger une partie</button>`}
@@ -495,7 +669,7 @@
           </div>`}
           ${mode === "load" && html`<div className="ts-box">
             <p className="ts-box-title">Charger une partie</p>
-            <ul className="save-list">${others.map((x) => html`<li key=${x.slot}><div><strong>Emplacement ${x.slot}</strong><span className="small muted">${x.meta.nom} · ${x.meta.date}</span></div><${Btn} small onClick=${async () => { let st = null; try { st = await Saves.load(x.slot); } catch (e) { alertMsg(e.perime ? e.message : "Cette sauvegarde ne peut pas être lue."); } if (st) { CR.store.s = st; bump(); } }}>Charger</${Btn}></li>`)}</ul>
+            <ul className="save-list">${others.map((x) => html`<li key=${x.slot}><div><strong>${NOM_EMPLACEMENT(x.slot)}</strong><span className="small muted">${x.meta.nom} · ${x.meta.date}</span></div><${Btn} small onClick=${async () => { let st = null; try { st = await Saves.load(x.slot); } catch (e) { alertMsg(msgLecture(e)); } if (st) CR.installerPartie(st); }}>Charger</${Btn}></li>`)}</ul>
             <button type="button" className="ts-btn ts-btn-sm" onClick=${() => setMode("menu")}>Retour</button>
           </div>`}
           ${mode === "new" && html`<div className="ts-box">
@@ -515,10 +689,11 @@
               <button className="decide-opt" onClick=${() => start("carriere")}><strong>Carrière — à votre compte</strong><span className="small muted">Lundi 2 novembre 2026. 6 200 € sur le compte professionnel, un prêt d'installation de 15 000 €, un découvert de 5 000 €. Les permanences de l'Ordre, les commissions d'office, puis vos propres clients.</span></button>
               <button className="decide-opt" onClick=${() => start("carriere", "collab")}><strong>Carrière — collaborateur dans un cabinet</strong><span className="small muted">Même date. Ni prêt ni loyer : une rétrocession d'honoraires de 3 700 € par mois, le minimum de l'Ordre. En échange, les dossiers du cabinet prennent vos matinées, et il vous reste moins d'énergie pour vos clients personnels. Un début plus calme ; vous pourrez vous installer ou vous associer.</span></button>
             </div>
+            ${auto && !auto.meta.over && html`<p className="small muted">La carrière en cours (${auto.meta.nom}, ${auto.meta.date}) ne sera pas perdue : elle sera rangée dans « Partie précédente », à retrouver par « Charger une partie ».</p>`}
             <button type="button" className="ts-btn ts-btn-sm" onClick=${() => setMode("menu")}>Retour</button>
           </div>`}
-          <p className="ts-note">${Saves.backend === "cloud" ? "Progression enregistrée avec votre compte." : Saves.backend === "local" ? "Progression enregistrée dans ce navigateur." : "Ce navigateur ne peut pas enregistrer : exportez un fichier depuis le menu."} Personnages fictifs, lieux réels. Droit à jour de novembre 2026 ; textes résumés pour le jeu.</p>
-          <p className="ts-version">Version ${CR.JEU.version} · ${CR.JEU.date} · fonctionne sans réseau</p>
+          <p className="ts-note">${Saves.backend === "cloud" ? "Progression enregistrée avec votre compte." : Saves.backend !== "none" ? "Progression enregistrée sur cet appareil, après chaque action." : "Cet appareil ne peut pas enregistrer : exportez un fichier depuis le menu."} Personnages fictifs, lieux réels. Droit à jour de novembre 2026 ; textes résumés pour le jeu.</p>
+          <p className="ts-version">Version ${CR.JEU.libelle} · ${CR.JEU.date} · fonctionne sans réseau</p>
         </div>
       </div>
     </div>`;
@@ -547,9 +722,40 @@
         <ul className="log-list">${s.cohort.map((c) => html`<li key=${c.id}><strong>${c.name}</strong> — ${c.status}</li>`)}</ul>
         <h3>Les personnes que vous avez assistées</h3>
         <ul className="log-list">${s.order.map((id) => s.cases[id]).filter((c) => c && c.debrief && c.debrief.epilogue).slice(0, 14).map((c) => html`<li key=${c.id}><strong>${CR.clientName(c)}</strong> — ${c.debrief.epilogue}</li>`)}</ul>
-        <div className="title-btns"><${Btn} kind="primary" onClick=${() => { CR.store.s = null; bump(); }}>Recommencer</${Btn}></div>
+        <div className="title-btns"><${Btn} kind="primary" onClick=${() => { CR.Saves.vider(); CR.poserPartie(null); }}>Retour à l'écran titre</${Btn}></div>
       </div>
     </div>`;
+  }
+
+  // =================================================================== Garde-fou d'erreur (B3)
+  // Une erreur de rendu ne laisse plus un écran blanc : le joueur voit ce qui s'est passé, peut exporter sa partie et
+  // revenir à l'écran titre. Tant que l'écran d'erreur est affiché, plus rien ne s'enregistre par-dessus les sauvegardes.
+  class GardeFou extends React.Component {
+    constructor(p) { super(p); this.state = { err: null }; }
+    static getDerivedStateFromError(err) { return { err }; }
+    componentDidCatch(err, info) { CR.store.enPanne = true; console.error("Erreur d'affichage", err, info && info.componentStack); }
+    render() {
+      if (!this.state.err) return this.props.children;
+      const s = CR.store.s;
+      const e = this.state.err;
+      return html`<div className="panne" role="alert">
+        <div className="panne-carte">
+          <p className="pix">La Permanence</p>
+          <h1>Le jeu a rencontré une erreur</h1>
+          <p>L'écran en cours n'a pas pu s'afficher. Votre dernière sauvegarde automatique est intacte : rien n'a été enregistré depuis l'erreur.</p>
+          <div className="panne-btns">
+            <${Btn} kind="primary" onClick=${() => { CR.poserPartie(null); this.setState({ err: null }); }}>Revenir à l'écran titre</${Btn}>
+            ${s && html`<${Btn} onClick=${() => { CR.instantane = null; Saves.exportFile(s); }}>Exporter la partie en l'état</${Btn}>`}
+          </div>
+          <details><summary>Détail technique</summary><pre>${String((e && e.stack) || e).slice(0, 1500)}</pre><p className="small muted">Version ${CR.JEU.libelle}</p></details>
+        </div>
+      </div>`;
+    }
+  }
+  // L'application est remontée à neuf à chaque partie posée (CR.poserPartie) : la clé change, l'état d'interface repart de zéro
+  function Racine() {
+    UI.useGame();
+    return html`<${GardeFou} key=${"g" + (CR.store.gen || 0)}><${App} key=${CR.store.gen || 0} /></${GardeFou}>`;
   }
 
   // =================================================================== Démarrage
@@ -559,7 +765,7 @@
     const hot = window.claude && window.claude.hot;
     const start = (data) => {
       if (data && data.state) { try { CR.store.s = CR.deserialize(data.state); } catch (e) {} }
-      root.render(html`<${App} />`);
+      root.render(html`<${Racine} />`);
     };
     if (hot && hot.snapshot) { try { hot.snapshot(() => ({ state: CR.store.s ? CR.serialize(CR.store.s) : null })); } catch (e) {} }
     if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});

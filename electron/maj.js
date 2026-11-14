@@ -12,7 +12,7 @@ const http = require("http");
 const https = require("https");
 
 // Version de l'enveloppe. Une publication qui exige une enveloppe plus récente (manifest.enveloppeMin) n'est pas installée.
-const ENVELOPPE = 1;
+const ENVELOPPE = 2; // 2 (sortie 1.0) : canaux stable et essai, signature du manifeste, plus aucune clé d'accès dans l'app
 const DEPOT = "eltimal/eltimal";
 const API = "https://api.github.com";
 const PREFIXES = ["index.html", "js/", "lib/", "fonts/"];
@@ -22,7 +22,7 @@ const lireJson = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); }
 // Version livrée dans l'app (écrite au moment du build par electron/paquet-jeu.js --version-livree)
 function versionLivree(appDir) {
   const v = lireJson(path.join(appDir, "electron", "jeu-version.json"));
-  return { numero: v && Number.isInteger(v.numero) ? v.numero : 0, commit: v && v.commit, sons: v && v.sons, dossier: appDir, source: "livree" };
+  return { numero: v && Number.isInteger(v.numero) ? v.numero : 0, commit: v && v.commit, sons: v && v.sons, canal: v && v.canal === "essai" ? "essai" : "stable", dossier: appDir, source: "livree" };
 }
 
 // Version téléchargée en dernier, si elle est complète
@@ -129,6 +129,31 @@ function nettoyer(userData, garder) {
   for (const n of noms) if (n.endsWith(".partiel")) fs.rmSync(path.join(base, n), { recursive: true, force: true });
 }
 
+// Canal de mise à jour. « stable » : les seules publications « jeu-N », faites depuis la branche principale après la
+// batterie de tests. « essai » : en plus, les publications « essai-N » des branches de travail (elles aussi testées).
+// Une app ne reçoit jamais une version d'essai sans l'avoir demandé : réglage rangé à côté des sauvegardes, sinon le canal
+// de construction de l'app (jeu-version.json).
+const CANAUX = ["stable", "essai"];
+function lireCanal(userData, defaut) {
+  const c = lireJson(path.join(userData, "canal.json"));
+  return c && CANAUX.includes(c.canal) ? c.canal : CANAUX.includes(defaut) ? defaut : "stable";
+}
+function ecrireCanal(userData, canal) {
+  if (!CANAUX.includes(canal)) return false;
+  fs.mkdirSync(userData, { recursive: true });
+  fs.writeFileSync(path.join(userData, "canal.json"), JSON.stringify({ canal }));
+  return true;
+}
+// Signature du manifeste (Ed25519). La clé publique est livrée dans l'app (electron/maj-cle-publique.pem) ; la clé privée
+// ne quitte pas les secrets du dépôt. Une app qui a une clé publique refuse toute publication non signée ou mal signée :
+// un paquet ne s'installe que si son empreinte figure dans un manifeste signé.
+function lireClePublique(dir) {
+  try { return fs.readFileSync(path.join(dir, "maj-cle-publique.pem"), "utf8").trim() || null; } catch (e) { return null; }
+}
+function signatureValide(manifesteBrut, signatureB64, clePubliquePem) {
+  try { return crypto.verify(null, manifesteBrut, crypto.createPublicKey(clePubliquePem), Buffer.from(String(signatureB64).trim(), "base64")); } catch (e) { return false; }
+}
+
 // Cherche une publication plus récente et l'installe. Renvoie { etat, numero?, detail? } ; ne lève jamais.
 // etat : a-jour, enveloppe (il faut réinstaller l'app), pret (installée, chargée au prochain lancement), prive, erreur
 // Sans clé, la requête est anonyme : elle ne réussit que si le dépôt est public (sinon GitHub répond 404 : état « prive »).
@@ -142,12 +167,14 @@ async function verifier(o) {
     if (r.status === 403 && !cle) return { etat: "erreur", detail: "trop de requêtes, réessai au prochain lancement" };
     if (r.status === 401 || r.status === 403 || r.status === 404) return { etat: "erreur", detail: "clé refusée ou expirée (" + r.status + ")" };
     if (r.status !== 200) return { etat: "erreur", detail: "réponse " + r.status };
+    const motif = o.canal === "essai" ? /^(jeu|essai)-(\d+)$/ : /^(jeu)-(\d+)$/;
+    const num = (p) => Number(motif.exec(p.tag_name)[2]);
     const pubs = JSON.parse(r.corps.toString("utf8"))
-      .filter((p) => !p.draft && /^jeu-\d+$/.test(p.tag_name))
-      .sort((a, b) => Number(b.tag_name.slice(4)) - Number(a.tag_name.slice(4)));
+      .filter((p) => !p.draft && motif.test(p.tag_name))
+      .sort((a, b) => num(b) - num(a) || (a.tag_name.startsWith("jeu") ? -1 : 1));
     const pub = pubs[0];
     if (!pub) return { etat: "a-jour", detail: "aucune publication" };
-    const numero = Number(pub.tag_name.slice(4));
+    const numero = num(pub);
     if (numero <= o.numeroActuel) return { etat: "a-jour", numero };
     const piece = (nom) => (pub.assets || []).find((a) => a.name === nom);
     const charger = async (nom, delai) => {
@@ -157,7 +184,13 @@ async function verifier(o) {
       if (d.status !== 200) throw new Error(nom + " : réponse " + d.status);
       return d.corps;
     };
-    const manifest = JSON.parse((await charger("manifest.json", 15000)).toString("utf8"));
+    const manifesteBrut = await charger("manifest.json", 15000);
+    if (o.clePublique) {
+      if (!piece("manifest.sig")) return { etat: "erreur", detail: "publication non signée : refusée" };
+      const sig = (await charger("manifest.sig", 15000)).toString("utf8");
+      if (!signatureValide(manifesteBrut, sig, o.clePublique)) return { etat: "erreur", detail: "signature du manifeste invalide : publication refusée" };
+    }
+    const manifest = JSON.parse(manifesteBrut.toString("utf8"));
     if (manifest.numero !== numero) return { etat: "erreur", detail: "manifeste incohérent" };
     if ((manifest.enveloppeMin || 1) > ENVELOPPE) return { etat: "enveloppe", numero };
     // le jeu léger et les sons à part (recopiés d'une version déjà présente s'ils n'ont pas changé), sinon le paquet complet
@@ -175,9 +208,10 @@ async function verifier(o) {
   }
 }
 
-// Clé d'accès facultative : fichier posé au moment du build (jamais commité), sinon variable d'environnement
-function lireCle(dir) {
-  try { return fs.readFileSync(path.join(dir, "maj-cle.txt"), "utf8").trim(); } catch (e) { return process.env.LP_MAJ_CLE || ""; }
+// Clé d'accès : plus jamais livrée dans l'app (sortie 1.0 : une clé embarquée se lit dans le paquet). Les publications sont
+// lues anonymement (dépôt public) ; la variable d'environnement ne sert qu'aux essais d'un développeur sur un dépôt privé.
+function lireCle() {
+  return process.env.LP_MAJ_CLE || "";
 }
 
-module.exports = { ENVELOPPE, DEPOT, jeuACharger, versionLivree, versionTelechargee, verifier, installer, nettoyer, lireCle, obtenir };
+module.exports = { ENVELOPPE, DEPOT, CANAUX, jeuACharger, versionLivree, versionTelechargee, verifier, installer, nettoyer, lireCle, lireCanal, ecrireCanal, lireClePublique, signatureValide, obtenir };
