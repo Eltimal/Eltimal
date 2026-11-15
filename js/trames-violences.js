@@ -98,7 +98,7 @@
     let S;
     try { S = CR.SIMV.simuler(t, { C: k.C }); } catch (e) { return null; }
     if (!S) return null;
-    SIM.simvCache[t.sig] = S;
+    SIM.simvCache[t.sig] = S; SIM.simvCache[CR.GEN2.signature(t)] = S;
     const liste = CR.DOCSV.liste(S);
     const docs = {}, titres = {}, ordre = [], cotes = {};
     const vus = new Set();

@@ -46,6 +46,36 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40) console.log("ÉCHEC", 
       prec++;
     }
   }
+  // le récit tiré de la simulation : l'arrachage (fuite, objet retrouvé, délai d'interpellation) et les violences détaillées
+  let nArr = 0, nViol = 0, nPre = 0;
+  for (let i = 0; i < 6000 && (nArr < 15 || nViol < 15 || nPre < 15); i++) {
+    const genre = i % 2 ? "ci" : "gav";
+    let t; try { t = G.tirer("trs" + i, genre, { day: 30, inf: i % 3 === 0 ? "vol" : i % 3 === 1 ? "violences" : undefined }); } catch (e) { continue; }
+    if (!t || !CR.SIM.supporte(t) || (t.vie && (t.vie.ment || t.vie.retracte))) continue;
+    const N = G.recit(t), PZ = G.pieces(t, N), Sx = R.simDe(t, N), E = R.episodes(t, N, { scene: "gav" }), T = txt([].concat(...Object.values(E)));
+    const tag = `${genre} ${t.inf}/${t.f.sc} ${t.stance}`;
+    ok(!/undefined|NaN|\$\{|\[object/.test(T), `${tag} : texte fautif : ${T}`);
+    ok(E.geste.filter((x) => x && x.f === "G_version").length === 1, `${tag} : version absente ou répétée`);
+    if (Sx.SV && nViol < 15) {
+      nViol++;
+      const D = Sx.SV.dires.A;
+      ok(txt(E.geste).includes(D.coups.texte) && txt(E.pourquoi).includes(D.mobile.texte), `${tag} : le récit ne reprend pas ce que la simulation fait dire au client`);
+      ok(!/\d+ mètres/.test(T), `${tag} : le client compte les mètres`);
+    } else if (Sx.S && Sx.S.arrachage && nArr < 15) {
+      nArr++;
+      const S = Sx.S, fu = { trottinette: /trottinette/, scooter: /scooter/, pied: /en courant/ }[S.fuite];
+      if (t.stance !== "nie") ok(fu.test(txt(E.geste)), `${tag} : fuite « ${S.fuite} » absente du récit : ${txt(E.geste)}`);
+      ok(S.objet.retrouve ? /poche|sur moi/.test(txt(E.police)) : /rien trouvé/.test(txt(E.police)), `${tag} : objet ${S.objet.retrouve ? "retrouvé" : "non retrouvé"} mal raconté : ${txt(E.police)}`);
+      if (S.tenueA) ok(txt(E.comment).includes(CR.video.vetu(S.tenueA, t.A.g)), `${tag} : tenue absente du déroulé`);
+      ok(/après/.test(txt(E.quand)) && !/quelques minutes après. Dix minutes/.test(txt(E.quand)), `${tag} : délai d'interpellation non tiré de la simulation`);
+    } else if (Sx.S && Sx.S.prelim && nPre < 15) {
+      nPre++;
+      ok(Sx.S.venue === "domicile" ? /sonné chez moi/.test(txt(E.police)) : /appelé/.test(txt(E.police)), `${tag} : venue au commissariat mal racontée : ${txt(E.police)}`);
+      ok(!/\d{4}/.test(txt(E.police).replace(/\d+ (heures?|h)/g, "")), `${tag} : le client dit l'année : ${txt(E.police)}`);
+    }
+  }
+  console.log(`simulation : ${nArr} arrachages, ${nViol} violences détaillées, ${nPre} gardes à vue après enquête`);
+  ok(nArr >= 10 && nViol >= 10 && nPre >= 10, "récits tirés de la simulation non rencontrés");
   console.log(`affaires : ${vus} ; mensonges sur les faits : ${ments} ; rétractations après la garde à vue : ${retr} ; contrôles : ${ctrl} ; entretiens de garde à vue joués : ${prec}`);
   ok(ments > 0 && retr > 0 && ctrl > 0 && prec > 20, "cas attendus non rencontrés");
   ok(!env.errors.length, "erreurs jsdom : " + env.errors.join(" | "));

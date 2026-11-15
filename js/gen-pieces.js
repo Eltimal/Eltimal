@@ -511,6 +511,9 @@
     if (CR.SIM && CR.SIM.supporte(t) && CR.SIM.pieces && CR.DOCS) {
       const kS = { N, C, VID, SF, TJ, opjN, has, irr, dou, A, V, T, q };
       const SS = CR.SIM.simuler(t, kS);
+      // la simulation reste en mémoire pour l'affaire : le récit du client la lit (recit.js)
+      CR.SIM.memo = CR.SIM.memo || {};
+      CR.SIM.memo[t.sig || CR.GEN2.signature(t)] = SS; if (t.sig !== CR.GEN2.signature(t)) CR.SIM.memo[CR.GEN2.signature(t)] = SS;
       const HORS = ["enq_video", "esr", "casier", "convocation", "avis_classement", "pv_auteur", "proposition_cjip"];
       // les pièces que le moteur ne compose pas encore gardent leur texte et prennent leur place dans la chronologie
       const E = SS.E, fin = E.fin != null ? E.fin : E.debut + 600;
