@@ -100,7 +100,7 @@
       const h = t.d && t.d.h != null ? R.heure(t.d.h) : null, dep = R.depuis(t);
       E.cadre.push(`C'était ${dep}${h ? ", vers " + (/^il y a/.test(dep) ? h : h.replace(/ du matin$/, "")) : ""}${lieu ? ", " + lieu : ""}.`);
       const av = avantDe(t);
-      if (av) E.cadre.push(av);
+      if (av) E.cadre.push(av.replace(/(arrêté|arrivé|sorti|parti|venu)(?=[\s.,;!?]|$)/g, "$1" + G.e));
     }
     // 2. le geste : la version (fait G_version), le mensonge, puis les explications qu'il a données ou qu'il donnera
     const vers = phrases(N.version[st] || N.version[t.stance]);

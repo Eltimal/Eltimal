@@ -1674,7 +1674,7 @@
           t.camp === "pc" ? { plaidoirie: { role: "pc", max: 3, args: argsPC } } : (V || P) ? { who: "adverse", t: "La famille demande que la chambre dise que les faits ont été commis, et qu'elle protège la victime." } : null,
           { who: "parquet", t: t.f.psy === "aboli" ? "Les charges sont suffisantes ; les expertises concordent sur l'abolition. Je requiers une déclaration d'irresponsabilité, l'hospitalisation complète et des mesures de sûreté." : "Les charges sont suffisantes et le discernement n'était qu'altéré : je requiers le renvoi devant la juridiction de jugement." },
           { who: "president", t: "La parole est à la défense, qui aura la parole en dernier." },
-          D0 ? { plaidoirie: { role: "defense", max: 3, args: argsD } } : { who: "adverse", t: "La défense ne conteste pas les expertises. Elle demande à la chambre de ne prononcer que les mesures nécessaires." },
+          D0 ? { plaidoirie: { role: "defense", max: 3, args: argsD } } : { who: "adverse", t: "La défense ne conteste pas les expertises et demande à la chambre de ne prononcer que les mesures nécessaires." },
           { do: (a, st) => a.run("irrespDecider", { played: st.played }) },
         ].filter(Boolean),
       };
