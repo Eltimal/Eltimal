@@ -93,7 +93,7 @@
     return {
       t, sig: t.sig || CR.GEN2.signature(t), A, G: V.G, hum, reg: V.reg, voix: V, topics, sujets, ctx,
       confiance: { mefiant: 30, colere: 38, anxieux: 50, abattu: 45, bavard: 60, calme: 55 }[hum] || 50,
-      dit: {}, poses: [], questionsClient: [], repondues: 0, ignorees: 0,
+      dit: {}, poses: [], questionsClient: [], repondues: 0, ignorees: 0, scene: (g && g.mode) || null,
       ment: t.vie && t.vie.ment && t.client === "A" ? t.vie.ment : null, avoue: false,
     };
   };
@@ -172,6 +172,22 @@
         segs = [{ t: r.pk(["Ça, c'est ce qu'ils disent, eux.", "Je l'ai jamais dit comme ça.", "(Il relit dans sa tête.) Je vois pas le problème.", "C'est faux. Enfin… c'est pas exactement ça."]) }];
         M.confiance -= 6;
       }
+    } else if (q.sujet === "faits" && CR.RECIT && M.ctx.N && (M.recit = M.recit || CR.RECIT.episodes(M.t, M.ctx.N, { scene: M.scene })) && q.forme !== "fermee") {
+      // le récit des faits (recit.js) : chaque angle va chercher sa partie du souvenir ; la relance, la suite non dite
+      const E = M.recit, neuf = (arr) => arr.filter((x) => !deja.includes(segT(x)));
+      const ORDRE = ["cadre", "geste", "police", "comment", "pourquoi", "confirme"];
+      // quand, où, comment : les précisions ; si le récit n'a pas encore été fait, la partie du cadre ou du geste d'abord
+      const PAR = { recit: ["cadre", "geste"], quand: neuf(E.cadre).length ? ["cadre"] : ["quand"], ou: neuf(E.cadre).length ? ["cadre"] : ["ou"], comment: neuf(E.geste).length ? ["geste"] : ["comment"], pourquoi: ["pourquoi"], confirme: ["confirme"] };
+      let parts = q.forme === "relance" ? [ORDRE.find((k) => neuf(E[k]).length)].filter(Boolean) : PAR[q.angle] || ["geste"];
+      let L = [].concat(...parts.map((k) => neuf(E[k])));
+      if (q.forme !== "relance" && (q.angle === "quand" || q.angle === "ou") && parts[0] === "cadre") L = L.slice(0, 1);
+      // ce qui s'est passé, déjà dit : il enchaîne sur la suite
+      if (!L.length && q.angle === "recit") L = neuf(E.police).concat(neuf(E.confirme)).slice(0, 2);
+      // le fait du bloc-notes ne se gagne qu'aux combinaisons clés (ouverte : ce qui s'est passé, comment ; ou la relance)
+      L = L.map((x) => (x && typeof x === "object" && x.f && !(cle || q.forme === "relance") ? Object.assign({}, x, { f: null }) : x));
+      if (L.length) prendre(L);
+      if (!segs.length) segs = [{ t: q.forme === "relance" && M.ment && !M.avoue ? r.pk(["Je vous dis que c'est comme ça.", "Pourquoi vous me croyez pas ?", "C'est la vérité. Je vous jure."]) : r.pk(["Je vous ai tout dit.", "C'est tout. Il y a rien d'autre.", "Je vous l'ai déjà dit."]) }];
+      M.confiance += q.forme === "relance" ? 1 : 0;
     } else if (tp && cle && q.forme !== "relance") {
       const neufs = tp.a.filter((x) => !deja.includes(segT(x)));
       if (q.forme === "fermee") {

@@ -80,6 +80,8 @@
       const rapporte = (x) => (def.famille && call.who ? `${GA.Il} m'a dit : « ${x} »` : x);
       for (const tp of call.topics) {
         if (!Array.isArray(tp.a)) continue;
+        // le récit du client (recit.js) porte déjà son mensonge ou sa rétractation, à sa place
+        if (CR.RECIT && CR.RECIT.porteVie(tp.a)) continue;
         const i = tp.a.findIndex((sg) => sg && typeof sg === "object" && sg.f === "G_version");
         if (i >= 0 && ment && defense) tp.a = tp.a.slice(0, i + 1).concat([{ t: rapporte(PR.vie.mensonge(t, ment)), f: "G_vie_ment" }], tp.a.slice(i + 1));
         else if (i >= 0 && v.retracte && defense) tp.a = tp.a.slice(0, i).concat([{ t: rapporte(PR.vie.retractation(t)), f: "G_version" }], tp.a.slice(i + 1));

@@ -560,7 +560,7 @@
         { t: V.pk("conv", [`On me l'a donnée ${PR.date(t.d.convoc, ref, true)}, ${t.mesure === "gav" ? "à la sortie de la garde à vue" : "au commissariat"}.`, `${cap(PR.date(t.d.convoc, ref, true))}. ${t.mesure === "gav" ? "En sortant de garde à vue" : "Au commissariat"}, on me l'a mise dans la main.`]), f: "C_convoc" },
         { t: V.pk("aud", [`L'audience, c'est ${PR.date(t.d.audience, ref)}.`, `Et le procès est ${PR.date(t.d.audience, ref)}, c'est marqué là.`]), f: "C_audience" },
       ], { kind: "neutre", reac: false }), cost: 3, tag: "good" });
-      topics.push({ id: "c_faits", q: V.pk("q1", ["Que s'est-il passé ?", "Racontez-moi, avec vos mots.", "Qu'est-ce qui s'est passé, ce jour-là ?"]), a: V.rep("c_faits", [version], { kind: "sensible", reac: vReac }), cost: 5 });
+      topics.push({ id: "c_faits", q: V.pk("q1", ["Que s'est-il passé ?", "Racontez-moi, avec vos mots.", "Qu'est-ce qui s'est passé, ce jour-là ?"]), a: V.rep("c_faits", (CR.RECIT ? CR.RECIT.complet(t, N, { scene: "cabinet" }) : [version]), { kind: "sensible", reac: vReac }), cost: 5 });
       const gav = t.mesure === "gav";
       topics.push({ id: "c_mesure", q: gav ? "Comment s'est passée la garde à vue ?" : "Comment s'est passée l'audition ?", a: V.rep("c_mesure", gav
         ? [t.irr.includes("sans_avocat") ? V.pk("m1", ["On m'a dit que l'avocat venait. Il n'est jamais venu, ils ont commencé sans lui.", "Ils ont dit « l'avocat arrive ». Ils ont commencé sans lui. Il n'est jamais venu."]) : V.pk("m1", ["C'était long. J'ai vu l'avocat de permanence trente minutes.", "Une nuit entière. L'avocat de permanence est venu, une demi-heure."]), t.stance === "reconnait" ? V.pk("m2", ["J'ai tout dit. Je voulais que ça s'arrête.", "J'ai tout reconnu. Je voulais sortir."]) : V.pk("m2", ["J'ai donné ma version.", "J'ai dit ce que je vous dis."])]
@@ -579,7 +579,7 @@
         { t: V.pk("k1", [`${cap(CR.fmtDate(o.jour, "dowshort"))}, à 14 heures, au ${CR.MONDE.lieuxDe(t).F.commCourt}.`, `${cap(CR.fmtDate(o.jour, "dowshort"))} à 14 heures. Le ${CR.MONDE.lieuxDe(t).F.commCourt}.`]), f: "K_convoc" },
         V.pk("k2", [`Pour ${o.infNom}, d'après le papier.`, `On me parle de ${o.infNom}. Je ne comprends pas.`, `C'est écrit « ${o.infNom} ».`]),
       ], { kind: "neutre", reac: false }), cost: 3, tag: "good" });
-      topics.push({ id: "k_faits", q: V.pk("q1", ["Que s'est-il passé, selon vous ?", "Racontez-moi ce qui s'est passé, de votre point de vue."]), a: V.rep("k_faits", [version], { kind: "sensible", reac: vReac }), cost: 5 });
+      topics.push({ id: "k_faits", q: V.pk("q1", ["Que s'est-il passé, selon vous ?", "Racontez-moi ce qui s'est passé, de votre point de vue."]), a: V.rep("k_faits", (CR.RECIT ? CR.RECIT.complet(t, N, { scene: "cabinet" }) : [version]), { kind: "sensible", reac: vReac }), cost: 5 });
       topics.push({ id: "k_casier", q: "Avez-vous déjà eu affaire à la justice ?", a: V.rep("k_casier", [{ t: A.casier === 0 ? casierOral(V, A, false, "cas") : t.ant && A.casier === 2 ? PR.casierRecent(V, t, "cas") : PR.casierUneFois(V, A, "cas", ["Une fois, il y a longtemps.", "Une fois. Ça remonte à des années."]), f: "G_casier" }], { kind: "sensible", reac: false }), cost: 2 });
       topics.push({ id: "k_vie", q: "Votre travail, votre famille ?", a: V.rep("k_vie", vieOral(V, A, "vie"), { kind: "neutre", reac: false }), cost: 2 });
       topics.push(...PR.qx(V, N.qA, "k_x", 2, { differe: true }));
@@ -594,7 +594,7 @@
         { t: V.pk("o1", ["Une ordonnance pénale, en recommandé. J'ai signé l'avis le {notifDate}.", "Le facteur me l'a donnée le {notifDate}. Un recommandé, j'ai signé l'avis."]), f: "O_notif" },
         { t: V.pk("o2", [`Ils me condamnent à ${o.opTexte}.`, `${cap(o.opTexte)}, voilà ce qu'ils me mettent.`]), f: "O_peine" },
       ], { kind: "neutre", reac: false }), cost: 3, tag: "good" });
-      topics.push({ id: "o_faits", q: "Que s'était-il passé ?", a: V.rep("o_faits", [V.pk("of", [`D'après la lettre, j'aurais commis ${o.qLabel}.`, `Ils parlent de ${o.qLabel}.`]), N.version[t.stance]], { kind: "sensible", reac: vReac }), cost: 4 });
+      topics.push({ id: "o_faits", q: "Que s'était-il passé ?", a: V.rep("o_faits", [V.pk("of", [`D'après la lettre, j'aurais commis ${o.qLabel}.`, `Ils parlent de ${o.qLabel}.`])].concat(CR.RECIT ? CR.RECIT.complet(t, N, { scene: "cabinet" }) : [N.version[t.stance]]), { kind: "sensible", reac: vReac }), cost: 4 });
       topics.push({ id: "o_enjeu", q: V.pk("q2", ["Qu'est-ce qui vous inquiète le plus ?", "Qu'est-ce qui vous fait le plus peur, dans tout ça ?"]), a: V.rep("o_enjeu", [{ t: V.pk("oe", (o.route ? CR.MONDE.enjeuPermis(A) : CR.MONDE.enjeuCasier(A)).dit), f: "O_enjeu" }], { kind: "neutre" }), cost: 2 });
       topics.push({ id: "o_proc", q: "Avez-vous des papiers de la procédure ?", a: V.rep("o_proc", [V.pk("op", ["Rien. Juste cette lettre.", "Non, rien d'autre. On ne m'a rien donné.", "Seulement l'enveloppe et la lettre."])], { intro: false, reac: false }), cost: 1 });
       topics.push(...PR.qx(V, N.qA, "o_x", 2, { differe: true }));
@@ -688,7 +688,7 @@
     const prox = PR.proche(A);
     const Gpx = PR.gram({ g: prox.g });
     const topics = [
-      { id: "g_faits", q: V.pk("q1", ["Racontez-moi ce qui s'est passé.", "Dites-moi ce qui s'est passé, avec vos mots.", "Qu'est-ce qui s'est passé ?"]), a: V.rep("g_faits", [{ t: N.version[t.stance], f: "G_version" }], { kind: "sensible", reac: { anxieux: ["Je vais dormir ici ?", "Ma famille sait que je suis là ?"], colere: ["Ils m'ont embarqué" + G.e + " comme un voleur.", "Ils ont rien voulu entendre."], mefiant: ["Voilà. C'est tout."], abattu: ["Je suis fatigué" + G.e + "."] } }), cost: 5 },
+      { id: "g_faits", q: V.pk("q1", ["Racontez-moi ce qui s'est passé.", "Dites-moi ce qui s'est passé, avec vos mots.", "Qu'est-ce qui s'est passé ?"]), a: V.rep("g_faits", CR.RECIT ? CR.RECIT.complet(t, N, { scene: "gav" }) : [{ t: N.version[t.stance], f: "G_version" }], { kind: "sensible", reac: { anxieux: ["Je vais dormir ici ?", "Ma famille sait que je suis là ?"], colere: ["Ils m'ont embarqué" + G.e + " comme un voleur.", "Ils ont rien voulu entendre."], mefiant: ["Voilà. C'est tout."], abattu: ["Je suis fatigué" + G.e + "."] } }), cost: 5 },
       { id: "g_heure", q: V.pk("q2", ["À quelle heure vous a-t-on notifié vos droits ?", "Quand est-ce qu'on vous a lu vos droits ? Vous avez une idée de l'heure ?"]), a: V.rep("g_heure", t.irr.includes("gav_notif")
         ? [V.pk("h1", ["Longtemps après. Ils m'ont laissé dans le couloir, les photos, les empreintes…", "Pas tout de suite, ça c'est sûr. D'abord les photos, les empreintes, et j'ai attendu dans le couloir."]), { t: V.pk("h2", [`C'était vers ${hm(o.notif)}, j'ai vu l'horloge.`, `Il était ${hm(o.notif)} quand ils m'ont lu le papier. Il y a une horloge au-dessus du bureau.`]), f: "G_notif" }]
         : t.irr.includes("interprete") ? [{ t: V.pk("h1", ["Un papier en français. J'ai signé. J'ai pas tout compris.", "Ils m'ont donné un papier, en français. J'ai signé. Comprendre… non, pas tout."]), f: "G_langue" }]
@@ -749,7 +749,7 @@
     const hm = o.hm;
     const opening = V.pk("ouv", [`Le dépôt du tribunal. ${G.nom} n'a presque pas dormi depuis ${t.bo ? "quatre" : "deux"} jours. « Il va se passer quoi, maintenant ? »`, `Le dépôt, sous le tribunal. ${G.nom} se lève, les traits tirés par ${t.bo ? "quatre" : "deux"} jours de garde à vue. « C'est vous, mon avocat ? Il se passe quoi, maintenant ? »`]);
     const topics = [
-      { id: "d_faits", q: "Racontez-moi, avec vos mots.", a: V.rep("d_faits", [{ t: N.version[t.stance], f: "G_version" }], { kind: "sensible", reac: { anxieux: ["Je vais aller en prison ?"], abattu: ["Je n'en peux plus."], colere: ["Ils ne m'écoutent pas."] } }), cost: 6 },
+      { id: "d_faits", q: "Racontez-moi, avec vos mots.", a: V.rep("d_faits", CR.RECIT ? CR.RECIT.complet(t, N, { scene: "depot" }) : [{ t: N.version[t.stance], f: "G_version" }], { kind: "sensible", reac: { anxieux: ["Je vais aller en prison ?"], abattu: ["Je n'en peux plus."], colere: ["Ils ne m'écoutent pas."] } }), cost: 6 },
       { id: "d_gav", q: "Comment s'est passée la garde à vue ? Quand vous a-t-on lu vos droits ?", a: V.rep("d_gav", t.irr.includes("gav_notif") ? [V.pk("g1", ["Ils m'ont laissé des heures dans un couloir avant de me lire un papier.", "Des heures dans un couloir, avant qu'on me lise quoi que ce soit."]), { t: V.pk("g2", [`Il était plus de ${hm(o.notif - 20)}, je l'ai vu à l'horloge.`, `Quand ils m'ont lu mes droits, il était plus de ${hm(o.notif - 20)}. Il y avait une horloge.`]), f: "G_notif" }]
         : t.irr.includes("gav_enreg") ? [{ t: V.pk("g1", ["Il n'y avait pas de caméra dans le bureau. Le policier a dit que c'était pas la peine.", "Pas de caméra pendant les auditions. Le policier a dit que c'était pas la peine."]), f: "G_camera_gav" }]
           : t.irr.includes("avocat_differe") ? [{ t: V.pk("g1", ["L'avocat est arrivé le troisième jour. Avant, on m'a interrogé" + G.e + " seul" + G.e + ".", "Pas d'avocat avant le troisième jour. Ils m'ont interrogé" + G.e + " seul" + G.e + "."]), f: "G_avocat_absent" }]
@@ -821,7 +821,7 @@
     const G = V.G;
     const Gv = PR.gram(t.V);
     const L = {
-      absent: [`Moi ? Je n'étais même pas là. J'étais chez moi, ce soir-là. Demandez à ${PR.proche(t.A).ma}.`, "Je n'y étais pas. Je vous le jure : je n'étais pas dans le quartier.", "Ce n'est pas moi. Ils se trompent de personne, je n'étais pas là."],
+      absent: [`Moi ? Je n'étais même pas là. J'étais chez moi, à ce moment-là. Demandez à ${PR.proche(t.A).ma}.`, "Je n'y étais pas. Je vous le jure : je n'étais pas dans le quartier.", "Ce n'est pas moi. Ils se trompent de personne, je n'étais pas là."],
       volant: ["Ce n'est pas moi qui conduisais. C'était un ami, il avait ma voiture.", "Je n'étais pas au volant. J'avais prêté la voiture, ce jour-là."],
       pas_bu: [t.inf === "stups_volant" ? "Je n'avais rien pris. Rien. Peut-être la veille, et encore." : "J'avais bu un verre. Un seul, au repas.", t.inf === "stups_volant" ? "Rien fumé, rien pris. Leur test ne vaut rien." : "Un verre de vin, c'est tout. Je n'étais pas ivre."],
       jamais_touche: ["Cet argent, je n'y ai jamais touché. Je ne sais même pas de quoi ils parlent.", "Je n'ai rien fait avec ce compte. On a dû utiliser mon nom.", "Ce n'est pas moi. Je n'ai jamais rien eu entre les mains."],
