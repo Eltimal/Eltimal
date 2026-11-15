@@ -565,6 +565,19 @@
     </${UI.Modal}>`;
   }
 
+  // =================================================================== Notes de mise à jour (js/version.js)
+  // la dernière mise à jour ouverte, les précédentes repliées ; un correctif n'a pas de nom
+  function NotesMaj() {
+    const H = CR.JEU.historique || [];
+    const nv = new Set((CR.JEU.nouveautes ? CR.JEU.nouveautes() : []).map((h) => h.version));
+    return html`<div className="notes-maj">${H.map((h, i) => html`<details key=${h.version} className=${cx("nm-entree", "nm-" + h.type)} open=${i === 0 || nv.has(h.version)}>
+      <summary><span className="nm-version">${h.version}</span>${h.nom ? html` <span className="nm-nom">« ${h.nom} »</span>` : html` <span className="nm-nom nm-corr">correctif</span>`} <span className="nm-date small muted">${h.date}</span>${nv.has(h.version) ? html` <span className="nm-neuf small">nouveau</span>` : null}</summary>
+      ${h.resume && html`<p className="nm-resume">${h.resume}</p>`}
+      <ul>${h.notes.map((n, j) => html`<li key=${j}>${n}</li>`)}</ul>
+    </details>`)}
+    ${CR.JEU.build ? html`<p className="small muted">Build ${CR.JEU.build} · canal ${CR.JEU.canal === "stable" ? "stable" : "bêta"} · référence ${CR.JEU.complet}</p>` : null}</div>`;
+  }
+
   // =================================================================== Crédits et licences (sortie 1.0)
   // Ce que le jeu doit à d'autres, avec la licence de chaque élément ; les textes complets sont livrés avec le jeu
   // (fonts/OFL.txt, lib/LICENCES.txt, js/sons/CREDITS.md).
@@ -638,7 +651,8 @@
 
   // =================================================================== Écran titre
   function TitleScreen() {
-    const [mode, setMode] = useState("menu");
+    // après une mise à jour, les notes s'ouvrent une fois (js/version.js) ; à la toute première ouverture, rien
+    const [mode, setMode] = useState(() => { const nv = CR.JEU.nouveautes ? CR.JEU.nouveautes() : []; if (CR.JEU.premiereFois && CR.JEU.premiereFois() && CR.JEU.marquerVu) CR.JEU.marquerVu(); return nv.length ? "notes" : "menu"; });
     const [prenom, setPrenom] = useState("");
     const [nom, setNom] = useState("");
     const [cabinet, setCabinet] = useState("");
@@ -693,6 +707,7 @@
               ${others.length > 0 && html`<button type="button" className="ts-btn" onClick=${() => setMode("load")}>Charger une partie</button>`}
               <button type="button" className="ts-btn" onClick=${() => fileRef.current && fileRef.current.click()}>Importer une sauvegarde</button>
               <button type="button" className="ts-btn" onClick=${() => setMode("reglages")}>Réglages</button>
+              <button type="button" className="ts-btn" onClick=${() => setMode("notes")}>Notes de mise à jour</button>
               <button type="button" className="ts-btn" onClick=${() => setMode("credits")}>Crédits et licences</button>
               <input type="file" accept=".json,application/json" ref=${fileRef} hidden onChange=${importFile} />
             </nav>
@@ -703,6 +718,11 @@
             <p className="ts-box-title">Réglages</p>
             <${UI.Reglages} />
             <button type="button" className="ts-btn ts-btn-sm" onClick=${() => setMode("menu")}>Retour</button>
+          </div>`}
+          ${mode === "notes" && html`<div className="ts-box ts-notes">
+            <p className="ts-box-title">Notes de mise à jour</p>
+            <${NotesMaj} />
+            <button type="button" className="ts-btn ts-btn-sm" onClick=${() => { if (CR.JEU.marquerVu) CR.JEU.marquerVu(); setMode("menu"); }}>Retour</button>
           </div>`}
           ${mode === "credits" && html`<div className="ts-box">
             <p className="ts-box-title">Crédits et licences</p>
@@ -740,7 +760,7 @@
             <button type="button" className="ts-btn ts-btn-sm" onClick=${() => setMode("menu")}>Retour</button>
           </div>`}
           <p className="ts-note">${Saves.backend === "cloud" ? "Progression enregistrée avec votre compte." : Saves.backend !== "none" ? "Progression enregistrée sur cet appareil, après chaque action." : "Cet appareil ne peut pas enregistrer : exportez un fichier depuis le menu."} Personnages fictifs, lieux réels. Droit à jour de novembre 2026 ; textes résumés pour le jeu.</p>
-          <p className="ts-version">Version ${CR.JEU.libelle} · ${CR.JEU.date} · fonctionne sans réseau</p>
+          <p className="ts-version">Version ${CR.JEU.titre} · ${CR.JEU.date} · fonctionne sans réseau</p>
         </div>
       </div>
     </div>`;

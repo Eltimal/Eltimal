@@ -16,6 +16,8 @@ const bloquees = []; // requêtes réseau refusées (doit rester vide) — lu pa
 global.lpBloquees = bloquees;
 
 // Canal de mise à jour de cette app : le réglage du joueur, sinon celui de sa construction (stable hors branche de travail)
+// la version du jeu chargé (« 0.9.0 »), lue dans son js/version.js : le numéro de build reste celui des mises à jour
+const versionDe = (dossier) => { try { const m = /version: "(\d+\.\d+\.\d+)"/.exec(require("fs").readFileSync(path.join(dossier, "js", "version.js"), "utf8")); return m ? m[1] : null; } catch (e) { return null; } };
 const canal = () => MAJ.lireCanal(app.getPath("userData"), MAJ.versionLivree(APP_DIR).canal);
 
 function fenetre() {
@@ -43,7 +45,8 @@ function fenetre() {
     const garde = setTimeout(fin, 1500);
     win.webContents.executeJavaScript("window.CR && CR.Saves && CR.Saves.vider ? CR.Saves.vider().then(() => true) : true", true).catch(() => {}).then(() => { clearTimeout(garde); fin(); });
   });
-  win.loadFile(path.join(JEU.dossier, "index.html"));
+  // le numéro de build et le canal, pour l'affichage de la version (js/version.js)
+  win.loadFile(path.join(JEU.dossier, "index.html"), { query: { build: String(JEU.numero || ""), canal: canal() === "essai" ? "beta" : "stable" } });
   return win;
 }
 
@@ -62,7 +65,7 @@ function menu() {
     { label: "Mise à jour", submenu: [
       { label: "Rechercher une mise à jour", click: () => rechercher(true) },
       { label: "Recevoir aussi les versions d'essai", type: "checkbox", checked: canal() === "essai", click: (item) => { MAJ.ecrireCanal(app.getPath("userData"), item.checked ? "essai" : "stable"); rechercher(true); } },
-      { label: "Version du jeu : n° " + JEU.numero + (JEU.source === "telechargee" ? " (téléchargée)" : " (livrée avec l'app)"), enabled: false },
+      { label: "Version du jeu : " + (versionDe(JEU.dossier) ? versionDe(JEU.dossier) + " · build " + JEU.numero : "build " + JEU.numero) + (JEU.source === "telechargee" ? " (téléchargée)" : " (livrée avec l'app)"), enabled: false },
     ] },
     ...(mac ? [] : [{ label: "Fichier", submenu: [{ role: "quit", label: "Quitter" }] }]),
   ]));
@@ -78,7 +81,7 @@ async function rechercher(demande) {
   if (r.etat === "pret") {
     const { response } = await dialog.showMessageBox(win, {
       type: "info", buttons: ["Plus tard", "Relancer maintenant"], defaultId: 0, cancelId: 0,
-      message: "Une nouvelle version de La Permanence est prête (n° " + r.numero + ").",
+      message: r.version ? `La mise à jour ${r.version}${r.nom ? " « " + r.nom + " »" : ""} de La Permanence est prête (build ${r.numero}).` : "Une nouvelle version de La Permanence est prête (build " + r.numero + ").",
       detail: "Elle sera utilisée au prochain lancement. Si vous relancez maintenant, vous reprendrez à la dernière sauvegarde automatique.",
     });
     if (response === 1) {

@@ -202,7 +202,7 @@ async function verifier(o) {
     } else paquet = await charger("jeu.json.gz", 600000);
     installer(paquet, manifest, o.userData, sons);
     nettoyer(o.userData, numero);
-    return { etat: "pret", numero };
+    return { etat: "pret", numero, version: manifest.version || null, nom: manifest.nom || "" };
   } catch (e) {
     return { etat: "erreur", detail: String(e && e.message || e) };
   }

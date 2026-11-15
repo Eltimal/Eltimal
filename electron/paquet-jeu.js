@@ -16,6 +16,9 @@ const git = (c) => execSync("git " + c, { cwd: racine }).toString().trim();
 const numero = Number(process.env.LP_NUMERO || git("rev-list --count HEAD"));
 const commit = process.env.LP_COMMIT || git("rev-parse HEAD");
 const date = new Date().toISOString();
+// la version affichée (MAJEUR.MINEUR.CORRECTIF et nom), lue dans js/version.js ; le numéro reste le build
+const version = ((x) => (x ? x[1] : null))(/version: "(\d+\.\d+\.\d+)"/.exec(fs.readFileSync(path.join(racine, "js", "version.js"), "utf8")));
+const nomMaj = ((x) => (x ? x[1] : ""))(/version: "\d+\.\d+\.\d+", nom: "([^"]*)"/.exec(fs.readFileSync(path.join(racine, "js", "version.js"), "utf8")));
 
 function lister(rel) {
   const abs = path.join(racine, rel);
@@ -31,7 +34,7 @@ const SONS = "js/sons/";
 const paquet = zlib.gzipSync(Buffer.from(JSON.stringify({ numero, commit, date, fichiers })), { level: 6 });
 const leger = {}; for (const c of chemins) if (!c.startsWith(SONS)) leger[c] = fichiers[c];
 const paquetLeger = zlib.gzipSync(Buffer.from(JSON.stringify({ numero, commit, date, fichiers: leger })), { level: 9 });
-const manifest = { numero, commit, date, enveloppeMin: 1, sha256: sha(paquet), taille: paquet.length, fichiers: chemins.length, leger: { sha256: sha(paquetLeger), taille: paquetLeger.length } };
+const manifest = { numero, version, nom: nomMaj, commit, date, enveloppeMin: 1, sha256: sha(paquet), taille: paquet.length, fichiers: chemins.length, leger: { sha256: sha(paquetLeger), taille: paquetLeger.length } };
 // les sons : empreinte du contenu (chemins et fichiers), indépendante du numéro de version
 let sons = null, paquetSons = null;
 if (fs.existsSync(path.join(racine, "js", "sons"))) {
@@ -61,6 +64,6 @@ if (process.env.LP_MAJ_SIGNATURE) {
 // canal de l'app construite : stable depuis la branche principale, essai depuis une branche de travail (LP_CANAL pour forcer)
 const branche = process.env.GITHUB_REF_NAME || (() => { try { return git("rev-parse --abbrev-ref HEAD"); } catch (e) { return ""; } })();
 const canal = ["stable", "essai"].includes(process.env.LP_CANAL) ? process.env.LP_CANAL : branche === "main" ? "stable" : "essai";
-if (process.argv.includes("--version-livree")) fs.writeFileSync(path.join(__dirname, "jeu-version.json"), JSON.stringify({ numero, commit, date, sons: sons && sons.empreinte, canal }));
+if (process.argv.includes("--version-livree")) fs.writeFileSync(path.join(__dirname, "jeu-version.json"), JSON.stringify({ numero, version, commit, date, sons: sons && sons.empreinte, canal }));
 console.log(signe ? "manifeste signé" : "manifeste NON signé (pas de LP_MAJ_SIGNATURE)");
 console.log(`jeu n° ${numero} (${commit.slice(0, 7)}) : ${chemins.length} fichiers, complet ${(paquet.length / 1048576).toFixed(1)} Mo, léger ${(paquetLeger.length / 1048576).toFixed(1)} Mo` + (sons ? ` ; sons : ${sons.fichiers} fichiers, ${(sons.taille / 1048576).toFixed(1)} Mo, empreinte ${sons.empreinte.slice(0, 8)}` : ""));

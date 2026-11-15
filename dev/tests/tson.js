@@ -10,8 +10,21 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("ÉCHEC", m
   for (const m of page.matchAll(/(?:src="|url\()((?:lib|fonts|js)\/[^")]+)/g)) ok(fs.existsSync(path.join(ROOT, m[1])), "fichier embarqué présent : " + m[1]);
   const { w, CR, doc, errors } = boot();
   await sleep(300);
-  ok(CR.JEU && CR.JEU.version === "1.0", "version 1.0");
-  ok(/Version 1\.0/.test(texts(doc.body)), "version affichée à l'écran titre");
+  // numérotation (js/version.js) : MAJEUR.MINEUR.CORRECTIF, la plus récente en tête, toujours croissante ; un nom pour chaque
+  // mise à jour de contenu (correctif à 0), aucun pour un correctif ; la version affichée est celle de la tête
+  const H = CR.JEU && CR.JEU.historique;
+  ok(H && H.length && /^\d+\.\d+\.\d+$/.test(CR.JEU.version) && CR.JEU.version === H[0].version, "version du jeu = première note de mise à jour");
+  ok(H.every((h, i) => /^\d+\.\d+\.\d+$/.test(h.version) && (i === 0 || CR.JEU.comparer(H[i - 1].version, h.version) > 0)), "versions toujours croissantes");
+  ok(H.every((h) => (h.type === "contenu") === !!h.nom && (h.type !== "contenu" || /\.0$/.test(h.version)) && h.notes.length > 0 && h.date), "contenu nommé (correctif à 0), correctif sans nom, notes et date");
+  ok(CR.JEU.version.startsWith("0.") ? CR.JEU.etat === "bêta" : true, "avant la sortie 1.0, le jeu est en bêta");
+  ok(new RegExp("Version " + CR.JEU.version.replace(/\./g, "\\.") + " bêta « " + CR.JEU.nom + " »").test(texts(doc.body)), "version et nom affichés à l'écran titre : " + (texts(doc.querySelector(".ts-version") || doc.body).slice(0, 80)));
+  // notes de mise à jour depuis le menu ; après une mise à jour, elles s'ouvrent une fois
+  await click(w, findBtn(doc, /^Notes de mise à jour$/));
+  ok(doc.querySelectorAll(".nm-entree").length === H.length && /« La parole »|«/.test(texts(doc.querySelector(".notes-maj"))), "notes de mise à jour listées");
+  await click(w, findBtn(doc, /^Retour$/));
+  ok(w.localStorage.getItem("la-permanence-version-vue") === CR.JEU.version, "notes vues : la version est retenue");
+  w.localStorage.setItem("la-permanence-version-vue", H[H.length - 1].version);
+  ok(CR.JEU.nouveautes().length === H.length - 1, "après une mise à jour, les nouveautés depuis la version vue");
   ok(CR.SON.voulu && CR.SON.voulu.nom === "titre", "ambiance de l'écran titre");
   // réglages depuis l'écran titre
   await click(w, findBtn(doc, /^Réglages$/));

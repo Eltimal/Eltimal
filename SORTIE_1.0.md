@@ -98,7 +98,7 @@ plus un blocage depuis IndexedDB.
 | Crédits et licences | Écran « Crédits et licences » (titre, menu) ; `LICENCES.md`, `fonts/OFL.txt`, `lib/LICENCES.txt` livrés avec le jeu. | `js/main.js`, fichiers de licences | `tnavigateur` |
 | Accessibilité | `lang="fr"` ; fenêtres : le focus y entre, Tab y reste, il revient d'où il venait. | `index.html`, `js/ui-base.js` | `tnavigateur` |
 | Texte | Un revolver a un barillet de six coups (plus de « chargeur garni de onze cartouches »). | `js/cat-base.js`, `js/cat-biens.js` | `tmajeurs` |
-| Version | Libellé « 1.0 bêta » tant que la checklist n'est pas cochée (`CR.JEU.etat`), `package.json` en `1.0.0-beta.1`. | `js/prefs.js`, `package.json` | `tson` |
+| Version | Libellé « 1.0 bêta » tant que la checklist n'est pas cochée (`CR.JEU.etat`), `package.json` en `1.0.0-beta.1`. Remplacé le 15 novembre 2026 par la numérotation MAJEUR.MINEUR.CORRECTIF de `js/version.js` (0.9.0 « La parole », build, canal, notes de mise à jour) : la 1.0 sera la sortie officielle (voir `PUBLICATION.md`). | `js/version.js`, `package.json` | `tson` |
 | Distribution macOS | Icône (`build/icon.png`, `dev/tools/icone.js`), `hardened runtime` et droits, zip arm64 et x64, signature « Developer ID » et notarisation pilotées par des secrets, vérifications `codesign` / `spctl` / `stapler`, app construite lancée par `test:app`, app stable non signée refusée. | `package.json`, `build/*`, `.github/workflows/construire-app.yml` | non exécutable ici (macOS) |
 | Procédure | `PUBLICATION.md`, `README.md`. | — | — |
 

@@ -1966,12 +1966,26 @@ button.eb-tuile { cursor: pointer; } .eb-tuile b { font-size: 1.6em; }
 .panne-carte h1 { margin: 6px 0 12px; font-size: 22px; }
 .panne-btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
 .panne-carte pre { white-space: pre-wrap; word-break: break-word; font-size: 11px; max-height: 220px; overflow: auto; background: #0b0f1a; padding: 10px; }
+
+/* ---------- notes de mise à jour (écran titre) ---------- */
+.ts-notes { max-height: min(70vh, 640px); overflow-y: auto; }
+.notes-maj { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.nm-entree { border: 1px solid var(--line2); background: rgba(0,0,0,.25); padding: 6px 10px; }
+.nm-entree summary { cursor: pointer; }
+.nm-version { font-weight: 700; font-variant-numeric: tabular-nums; }
+.nm-nom { font-style: italic; }
+.nm-corr { font-style: normal; color: var(--muted); }
+.nm-neuf { background: var(--amber); color: var(--amber-ink); padding: 0 6px; margin-left: 4px; }
+.nm-resume { margin: 6px 0 4px; }
+.nm-entree ul { margin: 4px 0 2px; padding-left: 18px; }
+.nm-entree li { margin: 2px 0; }
 </style>
 <div id="app"></div>
 <script src="lib/react.production.min.js"></script>
 <script src="lib/react-dom.production.min.js"></script>
 <script src="lib/htm.umd.js"></script>
 <script src="js/core.js"></script>
+<script src="js/version.js"></script>
 <script src="js/prefs.js"></script>
 <script src="js/law-fr.js"></script>
 <script src="js/texts.js"></script>
