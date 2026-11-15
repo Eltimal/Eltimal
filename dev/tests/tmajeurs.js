@@ -132,6 +132,14 @@ const P = require("./play");
     }
     ok(errors.length === n0, "un formulaire d'annotation ouvert sur un passage vide fait tomber l'écran", errors.slice(n0, n0 + 1).join("").slice(0, 200)); errors.length = n0;
     racine.unmount(); hote.remove(); }
+  // ---------- saisie assistée d'un article sur un moyen sans texte attendu (plaidoirie, moyen hors sujet) : pas de plantage
+  // (trouvé par l'essai d'endurance du 15 novembre)
+  { const s = neuve(14, true); s.settings.saisie = "assiste"; CR.store.s = s; const hote = doc.createElement("div"); doc.body.appendChild(hote); const racine = w.ReactDOM.createRoot(hote); const n0 = errors.length; let fini = null;
+    racine.render(CR.UI.html`<${CR.UI.CiteInput} s=${s} expect=${["__aucun"]} label="Citez l'article" onDone=${(r) => { fini = r; }} onSkip=${() => {}} />`); await sleep(60);
+    const taper = async (v) => { const inp = hote.querySelector("input[type=text], input:not([type])"); Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, "value").set.call(inp, v); inp.dispatchEvent(new w.Event("input", { bubbles: true })); await sleep(30); const b = [...hote.querySelectorAll("button")].find((x) => /Citer|Valider|OK/i.test(texts(x)) && !x.disabled); if (b) await click(w, b); else inp.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Enter", bubbles: true })); await sleep(40); };
+    await taper("63-1"); ok(errors.length === n0 && /Aucun texte ne fonde/.test(texts(hote)), "l'indice du mode assisté tombe sur un moyen sans article attendu", (errors[n0] || texts(hote)).slice(0, 200));
+    await taper("63-1"); ok(errors.length === n0 && fini && fini.g === "faux" && fini.attendu == null, "la seconde tentative ne rend pas la main proprement", fini);
+    ok(CR.citeIndice("__aucun") === "" && CR.citeIndice({ code: "CPP" }) === "", "CR.citeIndice ne supporte pas une référence incomplète"); errors.length = n0; racine.unmount(); hote.remove(); }
   // ---------- le code d'affaire donné en exemple est un vrai code
   { const ex = CR.GEN2.codeExemple(); const a = CR.GEN2.VIE.apercu(ex); ok(a && a.ok, "le code d'exemple est refusé par le jeu", [ex, a && a.msg]); ok(CR.GEN2.lireCode("").msg.includes(ex), "le message d'aide ne cite pas le code d'exemple"); }
 

@@ -57,7 +57,7 @@
     return num ? { code: m[1], num } : null;
   };
   CR.sameRef = (a, b) => !!(a && b && a.code === b.code && a.num === b.num);
-  const numShow = (num) => num.replace(/^([LRDA])(\d)/, "$1. $2");
+  const numShow = (num) => String(num || "").replace(/^([LRDA])(\d)/, "$1. $2");
   CR.numLabel = (r) => (r ? numShow(r.num) : "");
   // « article 63-1 du code de procédure pénale » — sans le titre de l'article
   CR.citeLabel = (r, court) => {
@@ -158,7 +158,7 @@
   CR.CITE_LABEL = { ok: "Juste", code: "Bon article, mauvais code", aide: "Réponse donnée", voisin: "Article voisin", faux: "Article faux", absent: "Aucun article" };
   // Indice de la saisie assistée : le sujet du texte, puis le début du numéro
   CR.citeIndice = function (r) {
-    if (!r) return "";
+    if (!r || !r.code || !r.num) return "";
     const l = CR.lib(CR.refKey(r));
     const c = CR.codeOf(r.code);
     if (l && l.titre) return `Indice : le texte attendu porte sur « ${l.titre} » (${c ? c.label : r.code}).`;

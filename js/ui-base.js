@@ -357,7 +357,9 @@
   // expect : références attendues ; onDone({ ref, g, attendu, tape? }) ; le mode (libre, assisté, examen) règle les secondes chances
   UI.CiteInput = ({ s, expect, onDone, onSkip, label }) => {
     const mode = CR.saisieMode(s);
-    const ex = (expect || []).filter(Boolean);
+    // seules de vraies références comptent (sortie 1.0) : un moyen hors sujet n'a aucun article attendu — la plaidoirie le
+    // signale par une valeur vide —, et l'indice du mode assisté ne peut alors rien souffler
+    const ex = (expect || []).filter((e) => e && typeof e === "object" && e.code && e.num);
     const [code, setCode] = useState((ex[0] && ex[0].code) || "CPP");
     const [txt, setTxt] = useState("");
     const [tries, setTries] = useState(0);
@@ -374,8 +376,8 @@
       setTries(n);
       setTxt("");
       if (mode === "assiste") {
-        if (n >= 2) { onDone({ ref: ex[0], tape: ref, g: "aide", attendu: ex[0] }); return; }
-        setMsg({ tone: "bad", t: `Ce n'est pas le bon article (${CR.CITE_LABEL[r.g].toLowerCase()}). ${CR.citeIndice(ex[0])}` });
+        if (n >= 2) { onDone(ex.length ? { ref: ex[0], tape: ref, g: "aide", attendu: ex[0] } : { ref, g: r.g, attendu: null }); return; }
+        setMsg({ tone: "bad", t: `Ce n'est pas le bon article (${CR.CITE_LABEL[r.g].toLowerCase()}). ${ex.length ? CR.citeIndice(ex[0]) : "Aucun texte ne fonde ce moyen dans ce dossier."}` });
       } else {
         if (n >= 3) { onDone({ ref, g: r.g, attendu: r.attendu }); return; }
         setMsg({ tone: "bad", t: `Ce n'est pas le bon article. Essai ${n + 1} sur 3.` });
