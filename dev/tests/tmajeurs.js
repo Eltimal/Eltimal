@@ -122,6 +122,16 @@ const P = require("./play");
   // ---------- un revolver a un barillet de six coups, pas un chargeur de onze cartouches
   { const s = neuve(12, true); let rev = 0, faux = 0; for (let i = 0; i < 900 && rev < 6; i++) { const cs = CR.GEN.open(s, ["copj", "gav", "ci"][i % 3], {}); const def = CR.caseDef(cs); for (const k of Object.keys(def.docs || {})) { let r; try { r = CR.renderDoc(s, cs, { key: k, vars: {} }); } catch (e) { continue; } const t = [].concat(...(r.paras || [])).map((x) => (typeof x === "string" ? x : x && x.t) || "").join(" "); const m = /revolver[\s\S]{0,120}?(chargeur|barillet) garni de (\d+)/.exec(t); if (m) { rev++; if (m[1] === "chargeur" || +m[2] > 6) faux++; } } }
     ok(rev > 0 && faux === 0, "un revolver à chargeur ou à plus de six coups dans le barillet", { rev, faux }); }
+  // ---------- un passage sans texte ne fait plus tomber l'écran quand on ouvre un formulaire d'annotation dessus
+  // (trouvé par l'essai d'endurance du 15 novembre : « Plan de défense » et « Placer dans la chronologie »)
+  { const s = neuve(13, true); const cs = CR.GEN.open(s, "copj", {}); cs.status = "active"; CR.store.s = s; CR.store.bump(); await sleep(80);
+    const hote = doc.createElement("div"); doc.body.appendChild(hote); const racine = w.ReactDOM.createRoot(hote); const n0 = errors.length;
+    for (const libelle of [/Plan de défense/, /chronologie/i, /Qui dit quoi|version/i, /Relier|contredit/i, /irrégularité/i, /marge|note/i]) {
+      racine.render(CR.UI.html`<${CR.UI.SegPop} key=${String(libelle)} s=${s} cs=${cs} seg=${""} x=${0} y=${0} onClose=${() => {}} />`); await sleep(60);
+      const b = [...hote.querySelectorAll("button")].find((x) => libelle.test(texts(x)) && !x.disabled); if (b) { await click(w, b); await sleep(40); }
+    }
+    ok(errors.length === n0, "un formulaire d'annotation ouvert sur un passage vide fait tomber l'écran", errors.slice(n0, n0 + 1).join("").slice(0, 200)); errors.length = n0;
+    racine.unmount(); hote.remove(); }
   // ---------- le code d'affaire donné en exemple est un vrai code
   { const ex = CR.GEN2.codeExemple(); const a = CR.GEN2.VIE.apercu(ex); ok(a && a.ok, "le code d'exemple est refusé par le jeu", [ex, a && a.msg]); ok(CR.GEN2.lireCode("").msg.includes(ex), "le message d'aide ne cite pas le code d'exemple"); }
 

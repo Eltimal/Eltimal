@@ -50,6 +50,10 @@
     const couleurs = html`<div className="pop-coul">${T.COULEURS.map(([k, l]) => html`<button key=${k} type="button" className=${cx("nchip", "an-chip", "an-" + k, a && a.coul === k && "on")} onClick=${() => { assure(k); bump(); }}>${l}</button>`)}</div>`;
     const retour = html`<${UI.Btn} small onClick=${() => setMode(null)}>Retour</${UI.Btn}>`;
     let corps = null;
+    // Sortie 1.0 : un passage qui ne peut pas porter d'annotation (texte vide, pièce sans contenu) ne fait plus tomber
+    // l'écran quand on ouvre un formulaire dessus — le formulaire dit pourquoi et rend la main
+    const cible = mode ? assure(mode === "irreg" ? "procedure" : undefined) : null;
+    if (mode && !cible) return html`<div className="pop pop-form" style=${style}>${quote}<p className="small muted">Ce passage ne peut pas être annoté : il ne contient pas de texte.</p><div className="pop-row">${retour}</div></div>`;
     if (mode === "note") corps = html`<${NoteForm} a=${assure()} onDone=${() => { bump(); setMode(null); }} retour=${retour} />`;
     else if (mode === "lien") corps = html`<${LienForm} s=${s} cs=${cs} a=${assure()} onDone=${() => { bump(); setMode(null); }} retour=${retour} />`;
     else if (mode === "chrono") corps = html`<${ChronoForm} s=${s} cs=${cs} a=${assure()} onDone=${() => { bump(); setMode(null); }} retour=${retour} />`;
