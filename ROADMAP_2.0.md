@@ -2,7 +2,8 @@
 
 16 novembre 2026. Point de départ : la 1.0.0 « Le serment » (`jeu-174`). Sources : `AUDIT_1.0.md` (audit des mécaniques
 et relecture des textes). Cette feuille de route remplace l'ordre de travail de `GAMEPLAY_ROADMAP.md` pour la suite ;
-les lots déjà commencés là-bas (familles d'infractions, dossier criminel) sont repris ici dans les étapes 1.4 et 1.7.
+les lots déjà commencés là-bas (familles d'infractions, dossier criminel) sont repris ici dans les étapes 1.5 et 1.8.
+Le 16 novembre, à la demande de Kevin, la refonte du carnet a pris la place de la 1.2.0 : tout le reste est décalé d'un cran.
 
 ## Ce que sera la 2.0
 
@@ -23,12 +24,13 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 |---|---|---|---|
 | 1.0.1 | (correctif) | Corrections de texte et filet de sécurité | le script de relecture ne compte plus rien sur les défauts ponctuels |
 | 1.1.0 | L'accueil | Le menu principal retravaillé | **publiée le 16 novembre** ; reste la validation de Kevin sur son Mac |
-| 1.2.0 | Le premier appel | La première semaine conduite | un joueur passif joue une garde à vue avant le troisième jour |
-| 1.3.0 | La garde à vue | Contexte de procédure, parole par situation | moins de 10 % de questions sans effet, aucun « déjà dit » |
-| 1.4.0 | Le dossier juste | Une simulation par famille de faits | zéro contradiction entre pièces sur 1 000 affaires |
-| 1.5.0 | Le palais vous connaît | Réputations qui comptent, fin de carrière | chaque jauge a un effet mesuré ; une carrière a une fin |
-| 1.6.0 | Les comptes | Économie recalée, emplois de l'argent | les deux mesures de trésorerie concordent avec la cible choisie |
-| 1.7.0 | L'audience relue | Relecture de ce qui n'a pas été lu, répétition | audiences, jugements et dossiers criminels passés au script |
+| 1.2.0 | Le carnet | Le carnet refait autour du contexte de chaque note | **publiée le 16 novembre** ; reste le regard de Kevin |
+| 1.3.0 | Le premier appel | La première semaine conduite | un joueur passif joue une garde à vue avant le troisième jour |
+| 1.4.0 | La garde à vue | Contexte de procédure, parole par situation | moins de 10 % de questions sans effet, aucun « déjà dit » |
+| 1.5.0 | Le dossier juste | Une simulation par famille de faits | zéro contradiction entre pièces sur 1 000 affaires |
+| 1.6.0 | Le palais vous connaît | Réputations qui comptent, fin de carrière | chaque jauge a un effet mesuré ; une carrière a une fin |
+| 1.7.0 | Les comptes | Économie recalée, emplois de l'argent | les deux mesures de trésorerie concordent avec la cible choisie |
+| 1.8.0 | L'audience relue | Relecture de ce qui n'a pas été lu, répétition | audiences, jugements et dossiers criminels passés au script |
 | 2.0.0 | (à nommer) | Un seul parcours, distribution achevée | checklist de sortie entièrement cochée |
 
 ### 1.0.1 — corrections et filet de sécurité — **fait le 16 novembre 2026**
@@ -89,7 +91,29 @@ artistique.
 Méthode, parce que c'est une affaire de goût : deux ou trois directions montrées en captures avant de construire ;
 Kevin en choisit une ; elle est ensuite menée à terme et vérifiée à 1440 × 900, en petit écran et sur son Mac.
 
-### 1.2.0 « Le premier appel » — la première semaine
+### 1.2.0 « Le carnet » — la refonte du carnet (le « mémo ») — **publiée le 16 novembre 2026**
+
+Demande de Kevin (16 novembre) : le carnet n'est pas assez intuitif ni clair, il manque de contexte ; on ne peut pas y
+retrouver vite ce qui compte, parce qu'il faut interpréter chaque phrase ou se souvenir du moment où elle a été dite.
+Limite posée : le jeu ne choisit pas les phrases utiles à la place du joueur, sinon le carnet perd son sens.
+
+Fait, mesuré par `tcarnet` (batterie), `tparole` et `tconsult` (prise de note en situation) :
+
+- **Chaque note porte son contexte** (`note.cx`, posé par `CR.addNote`) : qui parle, la situation (entretien
+  confidentiel, audition, questions après l'audition, téléphone, parloir, cabinet, audience, confrontation, pièce avec
+  cote et feuillet), le jour et l'heure, et la question qui a amené la phrase (la vôtre ou celle de l'officier).
+- **Le carnet se range** par situation (par défaut), par personne, par catégorie, ou dans l'ordre de prise ; **il se
+  cherche** par mot (phrase, question, nom, titre, sans les accents).
+- **Le joueur titre ses notes** (« ce que vous en retenez ») en plus de les classer, dater et relier.
+- **À l'audience**, les cartes de notes de la main disent d'où elles viennent et portent le titre du joueur.
+- **Rien n'est trié pour le joueur** : le contexte est mécanique et identique pour toutes les notes ; `tcarnet` vérifie
+  qu'une note qui porte un fait et une note sans portée ont exactement le même habillage.
+
+Restes possibles, à la demande : rouvrir depuis une note l'échange entier ou la pièce au bon feuillet ; les notes prises
+d'office par le jeu en mode assisté (réponses à fait des appels en liste, questions d'audience, confrontation) sont
+conservées telles quelles — à revoir si Kevin veut que plus rien ne se note sans lui.
+
+### 1.3.0 « Le premier appel » — la première semaine
 
 - Inscription d'office à la permanence de la première nuit : la promesse de l'écran titre est tenue.
 - Bouton « S'inscrire aux permanences » dans le courrier de l'Ordre.
@@ -98,7 +122,7 @@ Kevin en choisit une ; elle est ensuite menée à terme et vérifiée à 1440 ×
 - « Assisté » coché par défaut à la première carrière, « Libre » ensuite.
 - Test : un automate qui ne fait que cliquer « Avancer » et « Répondre » joue une garde à vue avant le jour 3.
 
-### 1.3.0 « La garde à vue » — parole et procédure
+### 1.4.0 « La garde à vue » — parole et procédure
 
 - **Contexte de procédure** lu par tous les textes : arrêté sur le fait, convoqué, plaignant ; date des faits relative
   au jour où l'on parle.
@@ -108,7 +132,7 @@ Kevin en choisit une ; elle est ensuite menée à terme et vérifiée à 1440 ×
 - Mensonge du client tenu dans la durée d'un entretien (pas de démenti trois réponses plus loin sans confrontation).
 - Mesure de départ : 49 % d'angles sans effet, 12 % de « déjà dit ».
 
-### 1.4.0 « Le dossier juste » — une vérité par famille de faits
+### 1.5.0 « Le dossier juste » — une vérité par famille de faits
 
 Dans l'ordre, chaque famille avec sa simulation, ses pièces tirées de la même vérité et son test de cohérence :
 
@@ -122,21 +146,21 @@ Dans l'ordre, chaque famille avec sa simulation, ses pièces tirées de la même
 Avec elles : un **modèle de témoin** (qui il est, où il était, ce qu'il a vu) et une **fiche de famille** stable par
 personne (avec qui elle vit, qui peut attester).
 
-### 1.5.0 « Le palais vous connaît » — réputations et fin de carrière
+### 1.6.0 « Le palais vous connaît » — réputations et fin de carrière
 
 - Parquet : pèse sur l'orientation (alternative, comparution sur reconnaissance proposée) et bouge selon vos actes.
 - Siège : pèse sur les renvois, l'écoute des incidents, la marge de la peine.
 - Si l'un des deux ne peut pas être branché proprement, la jauge est retirée.
 - Fin de carrière : bilan chiffré, épilogue des clients marquants, un objectif après « Ténor du barreau ».
 
-### 1.6.0 « Les comptes » — économie
+### 1.7.0 « Les comptes » — économie
 
 - Choisir la cible (voir « Décisions à prendre »), puis régler l'arrivée des clients, le prix juste, les impayés.
 - Emplois de l'argent qui changent le jeu : local, documentation, formation, déplacements.
 - Sauvegarde allégée des contacts jamais suivis.
 - Test : `tecono` et `tviabilite` donnent la même réponse à la même question.
 
-### 1.7.0 « L'audience relue » — ce qui n'a pas été lu
+### 1.8.0 « L'audience relue » — ce qui n'a pas été lu
 
 - Relecture, par le même procédé, des audiences, jugements, dossiers criminels et d'instruction, après-jugement.
 - Répétition : ramener les deux mesures à cinq points sous leur seuil (24,3 % pour 25 ; 17,9 % pour 20).
@@ -158,11 +182,11 @@ personne (avec qui elle vit, qui peut attester).
 
 | Décision | Bloque | Proposition |
 |---|---|---|
-| Cible de l'économie : « le jeune avocat vit juste » ou « l'avocat actif s'enrichit » | 1.6.0 | Vit juste la première année, à l'aise ensuite : la pression au début, des choix après. |
+| Cible de l'économie : « le jeune avocat vit juste » ou « l'avocat actif s'enrichit » | 1.7.0 | Vit juste la première année, à l'aise ensuite : la pression au début, des choix après. |
 | Secrets Apple et clé de signature des mises à jour | 2.0.0 (app stable) | À poser dès que possible : rien d'autre n'en dépend. |
 | Bandeau « Mini-jeux » de l'écran titre | — | **Tranché le 16 novembre : retiré.** Les jeux restent cachés dans le décor. |
 | Direction artistique du menu principal | 1.1.0 | Choisir parmi deux ou trois directions montrées en captures. |
-| Relecture juridique : par qui, quand | 2.0.0 | À lancer pendant la 1.4, quand les pièces seront stables. |
+| Relecture juridique : par qui, quand | 2.0.0 | À lancer pendant la 1.5, quand les pièces seront stables. |
 | Accès aux données de la Cour de cassation (jurisprudence) | 2.0.0 | Sans accord, le report est abandonné par écrit. |
 
 ## Ce qui ne changera pas

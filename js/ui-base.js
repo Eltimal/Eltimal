@@ -204,11 +204,14 @@
     });
   };
 
-  // ------------------------------------------------------------------ Carnet (grands carreaux Seyès) : le bloc-notes du dossier
-  // Notes cliquées dans les pièces et les entretiens, et notes écrites par le joueur : classées (charge, décharge,
-  // à vérifier, délai, question au client), reliées à une pièce ou à un texte, datées pour la frise des faits.
-  const SRC_GLYPH = { call: "☎", doc: "§", court: "⚖", gav: "⌂", perso: "✎" };
-  const SRC_LABEL = { call: "Entretien ou appel", doc: "Pièce", court: "Audience", gav: "Garde à vue", perso: "Note écrite" };
+  // ------------------------------------------------------------------ Carnet : le bloc-notes du dossier (refonte 1.2.0)
+  // Notes cliquées dans les entretiens, les pièces et à l'audience, et notes écrites par le joueur. Chaque note porte son
+  // contexte : qui parle, dans quelle situation, quel jour et à quelle heure, et la question qui a amené la phrase. Le
+  // carnet se range par situation, par personne ou par catégorie, et se cherche par mot. Le joueur peut donner à une note
+  // son propre titre, la classer, la dater, la relier. Rien ici ne dit si une phrase est utile : le contexte est le même
+  // pour toutes, et le choix reste au joueur.
+  const SRC_GLYPH = { call: "☎", doc: "§", court: "⚖", gav: "⌂", perso: "✎", annot: "§" };
+  const SRC_LABEL = { call: "Entretien ou appel", doc: "Pièce", court: "Audience", gav: "Garde à vue", perso: "Note écrite", annot: "Pièce", client: "Remis par le client", file: "Dossier" };
   const fmtQuand = (n) => (n.quand != null ? CR.fmtDate(n.quand, "short") + (n.heure != null ? " · " + CR.fmtTime(n.heure) : "") : "");
   const linkLabel = (s, cs, l, hide) => {
     if (!l) return "";
@@ -217,10 +220,16 @@
     return x ? (hide && CR.refOfId(l.id) && CR.saisieOn(s) ? "Texte : " + x.titre : x.cite.replace(/^Art\./, "art.")) : "";
   };
   UI.noteLink = linkLabel;
+  // le contexte d'une note, avec un repli pour les notes d'avant la 1.2.0 (elles n'ont que leur source)
+  const noteCx = (n) => { const c = n.cx || {}; return { qui: c.qui || (n.own ? "Vous" : ""), ou: c.ou || (n.own ? "Note écrite" : SRC_LABEL[n.src] || "Dossier"), q: c.q || "", qqui: c.qqui || "", piece: c.piece || "" }; };
+  UI.noteCx = noteCx;
+  const sansAccent = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const RANGER = [["situation", "Par situation"], ["personne", "Par personne"], ["cat", "Par catégorie"], ["ajout", "Ordre de prise"], ["recent", "Plus récentes d'abord"], ["faits", "Date des faits"]];
   UI.Carnet = ({ s: sP, cs, onPick, pickable, selected, filter, title, full, hide, onOpenLink }) => {
     const s = sP || CR.store.s;
     const [cat, setCat] = useState("all");
-    const [sort, setSort] = useState("ajout");
+    const [sort, setSort] = useState("situation");
+    const [mot, setMot] = useState("");
     const [view, setView] = useState("liste");
     const [withProc, setWithProc] = useState(false);
     const [adding, setAdding] = useState(false);
@@ -228,11 +237,16 @@
     const [form, setForm] = useState({ text: "", cat: "", link: "", date: "", heure: "" });
     const base = cs.notes.filter((n) => !filter || filter(n));
     let notes = cat === "all" ? base : base.filter((n) => (cat === "none" ? !n.cat : n.cat === cat));
+    const cherche = sansAccent(mot).trim();
+    if (cherche) notes = notes.filter((n) => { const c = noteCx(n); return sansAccent([n.titre, n.text, c.q, c.qui, c.ou, c.piece].join(" ")).includes(cherche); });
     const ci = (k) => { const i = CR.NOTE_CATS.findIndex((c) => c[0] === k); return i < 0 ? 99 : i; };
     if (sort === "faits") notes = notes.slice().sort((a, b) => (a.quand == null) - (b.quand == null) || (a.quand || 0) - (b.quand || 0) || (a.heure || 0) - (b.heure || 0));
-    else if (sort === "cat") notes = notes.slice().sort((a, b) => ci(a.cat) - ci(b.cat));
-    else if (sort === "src") notes = notes.slice().sort((a, b) => String(a.src).localeCompare(String(b.src)));
     else if (sort === "recent") notes = notes.slice().reverse();
+    // rangement : des groupes à en-tête (situation et jour, personne, catégorie), dans l'ordre où ils apparaissent
+    const cle = sort === "situation" ? (n) => noteCx(n).ou + " · " + CR.fmtDate(n.day, "short") : sort === "personne" ? (n) => noteCx(n).qui || "Sans interlocuteur" : sort === "cat" ? (n) => CR.noteCatLabel(n.cat) : null;
+    const groupes = [];
+    if (cle) { const par = new Map(); for (const n of notes) { const k = cle(n); if (!par.has(k)) { const g = { k, notes: [] }; par.set(k, g); groupes.push(g); } par.get(k).notes.push(n); } if (sort === "cat") groupes.sort((a, b) => ci(a.notes[0].cat) - ci(b.notes[0].cat)); }
+    else groupes.push({ k: null, notes });
     const pinned = CR.pinnedTexts && s ? CR.pinnedTexts(s, cs) : [];
     const add = () => {
       if (!form.text.trim()) return;
@@ -250,17 +264,39 @@
     const frise = view === "frise" ? base.filter((n) => n.quand != null).map((n) => ({ day: n.quand, min: n.heure, text: n.text, cat: n.cat, id: n.id }))
       .concat(withProc && cs.proc ? (cs.proc.events || []).map((e, i) => ({ day: e.day, text: e.text, proc: true, id: "p" + i })) : [])
       .sort((a, b) => a.day - b.day || (a.min || 0) - (b.min || 0)) : [];
+    const ligne = (n) => {
+      const c = noteCx(n);
+      // ce que l'en-tête du groupe dit déjà n'est pas répété sur la ligne
+      const meta = [sort !== "personne" && c.qui, sort !== "situation" && c.ou, c.piece, sort !== "situation" && CR.fmtDate(n.day, "short"), n.min != null && CR.fmtTime(n.min)].filter(Boolean).join(" · ");
+      return html`<li key=${n.id} className=${UI.cx("carnet-line", pickable && "carnet-pick", selected === n.id && "carnet-sel", n.cat && "ncat-" + n.cat)} onClick=${() => pickable && onPick && onPick(n)} tabIndex=${pickable ? 0 : -1} onKeyDown=${(e) => { if (pickable && e.key === "Enter" && e.target === e.currentTarget) onPick && onPick(n); }}>
+        <span className="carnet-src" title=${SRC_LABEL[n.src] || "Note"}>${SRC_GLYPH[n.src] || "•"}</span>
+        <span className="nt-tete">${n.cat && html`<span className=${"ncat ncat-" + n.cat}>${CR.noteCatLabel(n.cat)}</span>`}${n.titre && html`<strong className="nt-titre">${n.titre}</strong>`}<span className="nt-meta">${meta}</span></span>
+        ${c.q && html`<span className="nt-q"><em>${c.qqui || "Question"} :</em> ${c.q}</span>`}
+        <span className="nt-txt">${n.text}</span>
+        ${(n.quand != null || n.link) && html`<span className="nmeta">${n.quand != null ? "Faits du " + fmtQuand(n) : ""}${n.quand != null && n.link ? " · " : ""}${n.link && html`<button type="button" className="nlink" onClick=${(e) => { e.stopPropagation(); onOpenLink && onOpenLink(n.link); }}>${linkLabel(s, cs, n.link, hide)}</button>`}</span>`}
+        <span className="nactions"><button type="button" className="nact" onClick=${(e) => { e.stopPropagation(); setClassing(classing === n.id ? null : n.id); }}>${classing === n.id ? "fermer" : n.titre ? "classer" : "titrer, classer"}</button>${full && n.own && html`<button type="button" className="nact" onClick=${(e) => { e.stopPropagation(); CR.removeNote(cs, n.id); UI.bump(); }}>effacer</button>`}</span>
+        ${classing === n.id && html`<span className="nclass" onClick=${(e) => e.stopPropagation()}>
+          <input type="text" className="nt-titre-in" aria-label="Votre titre pour cette note" placeholder="Votre titre : ce que vous en retenez, en quelques mots" value=${n.titre || ""} maxLength="80" onChange=${(e) => { CR.setNote(cs, n.id, { titre: e.target.value }); UI.bump(); }} onKeyDown=${(e) => e.stopPropagation()} />
+          ${CR.NOTE_CATS.map(([k, l]) => html`<button type="button" key=${k} className=${UI.cx("nchip", "ncat-" + k, n.cat === k && "on")} onClick=${() => { CR.setNote(cs, n.id, { cat: n.cat === k ? null : k }); UI.bump(); }}>${l}</button>`)}
+          <label className="small">Date des faits <input type="date" value=${n.quand != null ? CR.fmtDate(n.quand, "iso") : ""} onChange=${(e) => { CR.setNote(cs, n.id, { quand: e.target.value ? CR.parseISO(e.target.value) : null }); UI.bump(); }} /></label>
+          <select aria-label="Relier" value=${n.link ? n.link.k + ":" + n.link.id : ""} onChange=${(e) => { const v = e.target.value; CR.setNote(cs, n.id, { link: v ? { k: v.split(":")[0], id: v.slice(v.indexOf(":") + 1) } : null }); UI.bump(); }}>
+            <option value="">Reliée à… (rien)</option>
+            ${cs.docs.map((d) => html`<option key=${d.id} value=${"doc:" + d.id}>§ ${d.title}</option>`)}
+            ${pinned.map((id) => { const l = CR.lib(id); return html`<option key=${id} value=${"texte:" + id}>${hide && CR.saisieOn(s) && CR.refOfId(id) ? l.titre : l.cite}</option>`; })}
+          </select>
+        </span>`}
+      </li>`;
+    };
     return html`<div className=${UI.cx("carnet", full && "carnet-full")}>
       <div className="carnet-top"><span>${title || "Carnet"}</span><span className="carnet-count">${notes.length}${notes.length !== cs.notes.length ? " / " + cs.notes.length : ""}</span></div>
       <div className="carnet-tools">
+        <div className="carnet-tools-row">
+          <input type="search" className="carnet-mot" aria-label="Chercher dans le carnet" placeholder="Chercher : un mot, un nom, une question…" value=${mot} onInput=${(e) => setMot(e.target.value)} onKeyDown=${(e) => e.stopPropagation()} />
+          <select aria-label="Ranger les notes" value=${sort} onChange=${(e) => setSort(e.target.value)}>${RANGER.map(([k, l]) => html`<option key=${k} value=${k}>${l}</option>`)}</select>
+        </div>
         <div className="ncat-filter">
           ${[["all", "Toutes"]].concat(CR.NOTE_CATS, [["none", "Non classées"]]).map(([k, l]) => (k === "all" || counts[k] || cat === k) && html`<button key=${k} type="button" className=${UI.cx("nchip", "ncat-" + k, cat === k && "on")} onClick=${() => setCat(k)}>${l}${k !== "all" ? ` ${counts[k] || 0}` : ""}</button>`)}
-        </div>
-        <div className="carnet-tools-row">
-          <select aria-label="Trier les notes" value=${sort} onChange=${(e) => setSort(e.target.value)}>
-            <option value="ajout">Ordre de prise</option><option value="recent">Plus récentes d'abord</option><option value="faits">Date des faits</option><option value="cat">Catégorie</option><option value="src">Source</option>
-          </select>
-          <button type="button" className=${UI.cx("nchip", view === "frise" && "on")} onClick=${() => setView(view === "frise" ? "liste" : "frise")}>${view === "frise" ? "Liste" : "Frise des faits"}</button>
+          <button type="button" className=${UI.cx("nchip", "nfrise", view === "frise" && "on")} onClick=${() => setView(view === "frise" ? "liste" : "frise")}>${view === "frise" ? "Liste" : "Frise des faits"}</button>
           <button type="button" className="nchip nadd" onClick=${() => setAdding(!adding)}>${adding ? "Fermer" : "✎ Écrire une note"}</button>
         </div>
       </div>
@@ -282,23 +318,10 @@
       </div>`}
       ${view === "frise" ? html`<div className="frise-wrap">
           <label className="check small frise-proc"><input type="checkbox" checked=${withProc} onChange=${(e) => setWithProc(e.target.checked)} /> Avec les actes de procédure</label>
-          ${frise.length === 0 ? html`<p className="carnet-empty small">Aucune note datée. Donnez une date des faits à vos notes (« Écrire une note », ou « dater » sur une ligne).</p>` : html`<ol className="frise">${frise.map((f) => html`<li key=${f.id} className=${UI.cx("frise-item", f.proc && "frise-proc-item", f.cat && "ncat-" + f.cat)}><span className="frise-date">${CR.fmtDate(f.day, "short")}${f.min != null ? html`<br />${CR.fmtTime(f.min)}` : ""}</span><span className="frise-txt">${f.text}</span></li>`)}</ol>`}
-        </div>` : html`<ul className="carnet-lines">
-        ${notes.length === 0 && html`<li className="carnet-empty">${cs.notes.length ? "Aucune note dans ce classement." : "Rien de noté pour l'instant."}</li>`}
-        ${notes.map((n) => html`<li key=${n.id} className=${UI.cx("carnet-line", pickable && "carnet-pick", selected === n.id && "carnet-sel")} onClick=${() => pickable && onPick && onPick(n)} tabIndex=${pickable ? 0 : -1} onKeyDown=${(e) => { if (pickable && e.key === "Enter") onPick && onPick(n); }}>
-          <span className="carnet-src" title=${SRC_LABEL[n.src] || "Note"}>${SRC_GLYPH[n.src] || "•"}</span>${n.cat && html`<span className=${"ncat ncat-" + n.cat}>${CR.noteCatLabel(n.cat)}</span>`}${n.text}
-          ${(n.quand != null || n.link) && html`<span className="nmeta">${fmtQuand(n)}${n.quand != null && n.link ? " · " : ""}${n.link && html`<button type="button" className="nlink" onClick=${(e) => { e.stopPropagation(); onOpenLink && onOpenLink(n.link); }}>${linkLabel(s, cs, n.link, hide)}</button>`}</span>`}
-          <span className="nactions"><button type="button" className="nact" onClick=${(e) => { e.stopPropagation(); setClassing(classing === n.id ? null : n.id); }}>${classing === n.id ? "fermer" : "classer"}</button>${full && n.own && html`<button type="button" className="nact" onClick=${(e) => { e.stopPropagation(); CR.removeNote(cs, n.id); UI.bump(); }}>effacer</button>`}</span>
-          ${classing === n.id && html`<span className="nclass" onClick=${(e) => e.stopPropagation()}>
-            ${CR.NOTE_CATS.map(([k, l]) => html`<button type="button" key=${k} className=${UI.cx("nchip", "ncat-" + k, n.cat === k && "on")} onClick=${() => { CR.setNote(cs, n.id, { cat: n.cat === k ? null : k }); UI.bump(); }}>${l}</button>`)}
-            <label className="small">Date des faits <input type="date" value=${n.quand != null ? CR.fmtDate(n.quand, "iso") : ""} onChange=${(e) => { CR.setNote(cs, n.id, { quand: e.target.value ? CR.parseISO(e.target.value) : null }); UI.bump(); }} /></label>
-            <select aria-label="Relier" value=${n.link ? n.link.k + ":" + n.link.id : ""} onChange=${(e) => { const v = e.target.value; CR.setNote(cs, n.id, { link: v ? { k: v.split(":")[0], id: v.slice(v.indexOf(":") + 1) } : null }); UI.bump(); }}>
-              <option value="">Reliée à… (rien)</option>
-              ${cs.docs.map((d) => html`<option key=${d.id} value=${"doc:" + d.id}>§ ${d.title}</option>`)}
-              ${pinned.map((id) => { const l = CR.lib(id); return html`<option key=${id} value=${"texte:" + id}>${hide && CR.saisieOn(s) && CR.refOfId(id) ? l.titre : l.cite}</option>`; })}
-            </select>
-          </span>`}
-        </li>`)}
+          ${frise.length === 0 ? html`<p className="carnet-empty small">Aucune note datée. Donnez une date des faits à vos notes (« Écrire une note », ou « classer » sur une ligne).</p>` : html`<ol className="frise">${frise.map((f) => html`<li key=${f.id} className=${UI.cx("frise-item", f.proc && "frise-proc-item", f.cat && "ncat-" + f.cat)}><span className="frise-date">${CR.fmtDate(f.day, "short")}${f.min != null ? html`<br />${CR.fmtTime(f.min)}` : ""}</span><span className="frise-txt">${f.text}</span></li>`)}</ol>`}
+        </div>` : html`<ul className="carnet-lines carnet-ctx">
+        ${notes.length === 0 && html`<li className="carnet-empty">${cs.notes.length ? (cherche ? "Aucune note ne contient ces mots." : "Aucune note dans ce classement.") : "Rien de noté pour l'instant."}</li>`}
+        ${groupes.map((g) => [g.k != null && html`<li key=${"g:" + g.k} className="carnet-groupe"><span>${g.k}</span><span className="carnet-groupe-n">${g.notes.length}</span></li>`].concat(g.notes.map(ligne)))}
       </ul>`}
     </div>`;
   };

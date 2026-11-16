@@ -136,6 +136,7 @@ const P = require("./play"); const U = require("./util");
       const avant = cs.notes.length;
       for (const x of [...doc.querySelectorAll(".oral .who-client .oral-t")].filter((x) => !x.disabled)) await click(w, x);
       ok(cs.notes.length > avant, "une réplique ne se note pas");
+      { const n = cs.notes[cs.notes.length - 1]; ok(n.cx && n.cx.ou === "Entretien confidentiel" && n.cx.qui && (n.cx.q || "").length > 10 && n.cx.qqui === "Vous" && n.min != null, "1.2.0 : la réplique notée ne garde pas son contexte", JSON.stringify(n.cx)); }
       ok(CR.hasFact(cs, "G_version"), "la version notée ne donne pas le fait");
       await composer("Vos droits", "Quand");
       // le dernier échange reste lisible : votre question (à droite) et la réponse ; le bouton dit qui parle

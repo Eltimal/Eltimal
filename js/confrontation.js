@@ -182,7 +182,7 @@
       const V = M.vers(cs);
       if (r.refus) { addLog({ who: C.juge || "ji", t: r.refus }); V.qa.push({ q: texte, refus: true }); }
       else {
-        for (const l of r.lignes) { addLog({ who: C.who || "temoin", name: C.nom, t: l.t }); if (l.f) CR.addNote(s, cs, { text: l.t, fact: l.f, src: "court" }); }
+        for (const l of r.lignes) { addLog({ who: C.who || "temoin", name: C.nom, t: l.t }); if (l.f) CR.addNote(s, cs, { text: l.t, fact: l.f, src: "court", cx: { qui: C.nom || "", ou: "Confrontation", q: texte, qqui: "Vous" } }); }
         for (const j of r.juge || []) addLog({ who: C.juge || "ji", t: j });
         V.qa.push({ q: texte, a: r.lignes.map((l) => ({ t: l.t, f: l.f })), juge: r.juge || null });
       }

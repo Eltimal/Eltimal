@@ -410,9 +410,12 @@
   CR.client = (cs) => CR.caseDef(cs).client || cs.vars.client || {};
   CR.activeCases = (s) => s.order.map((id) => s.cases[id]).filter((c) => c && (c.status === "active" || c.status === "prospect"));
 
+  // Le contexte d'une note (1.2.0, « Le carnet ») : note.cx = { qui, ou, q, qqui, piece } — qui parle, dans quelle situation,
+  // en réponse à quelle question (et de qui), ou dans quelle pièce. Purement descriptif, donné à toutes les notes de la même
+  // façon : il ne dit jamais si la phrase est utile. Le tri reste au joueur (titre, catégorie, date, lien).
   CR.addNote = function (s, cs, note) {
     if (cs.notes.some((n) => n.text === note.text)) return null;
-    const n = Object.assign({ id: CR.uid("n"), day: s.day }, note);
+    const n = Object.assign({ id: CR.uid("n"), day: s.day, min: s.min }, note);
     cs.notes.push(n);
     return n;
   };
@@ -614,7 +617,7 @@
       issue(flag) { return CR.hasIssue(cs, flag); },
       card(id) { CR.addCard(cs, id); },
       hasCard(id) { return CR.textInCase(s, cs, id); },
-      note(text, fact, src) { return CR.addNote(s, cs, { text, fact, src: src || "file" }); },
+      note(text, fact, src, cx) { return CR.addNote(s, cs, { text, fact, src: src || "file", cx: cx || null }); },
       schedule(days, key, data, min, extra) { return CR.schedule(s, Object.assign({ day: s.day + days, min, type: "case", caseId: cs.id, key, data }, extra || {})); },
       at(day, key, data, min, extra) { return CR.schedule(s, Object.assign({ day, min, type: "case", caseId: cs.id, key, data }, extra || {})); },
       cancel(key) { CR.unschedule(s, (e) => e.caseId === cs.id && e.key === key); },

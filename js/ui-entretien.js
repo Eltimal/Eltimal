@@ -56,14 +56,27 @@
     useEffect(() => { const el = ref.current; if (el && ecrit) el.scrollTop = el.scrollHeight; });
     return html`<div className="oral" aria-live="polite" ref=${ref}>
       ${oral.lignes.length === 0 && html`<p className="oral-vide">${vide || ""}</p>`}
-      ${oral.lignes.map((L, i) => html`<${Replique} key=${L.id} L=${L} now=${oral.now} nom=${i && oral.lignes[i - 1].who === L.who && oral.now >= oral.lignes[i - 1].born ? "" : noms[L.who] || ""} efface=${oral.efface(L)} onNote=${L.who !== "you" ? onNote : null} notee=${notees.has(L.id)} />`)}
+      ${oral.lignes.map((L, i) => html`<${Replique} key=${L.id} L=${L} now=${oral.now} nom=${i && oral.lignes[i - 1].who === L.who && oral.now >= oral.lignes[i - 1].born ? "" : noms[L.who] || ""} efface=${oral.efface(L)} onNote=${L.who !== "you" && onNote ? (l) => onNote(l, cxDe(oral.lignes, i, noms)) : null} notee=${notees.has(L.id)} />`)}
     </div>`;
   }
   // qui parle, pour le bouton : « Bilal parle… » plutôt qu'un bouton grisé sans explication
   const parleur = (oral, noms) => (!oral.occupe ? null : oral.qui === "you" ? "Vous parlez…" : oral.qui === "sys" || !oral.qui ? "Un instant…" : `${CR.cap((noms[oral.qui] || "").toLowerCase()) || "On"} parle…`);
-  function useNoter(s, cs) {
+  // le contexte d'une phrase notée (1.2.0) : qui la dit, et la dernière question qui l'a amenée (la vôtre ou celle de l'officier)
+  const nomDe = (w, noms) => (w === "opj" ? "L'officier" : w === "you" ? "Vous" : CR.cap(String((noms && noms[w]) || "").toLowerCase()));
+  const POSEUR = { you: 1, opj: 1 };
+  function cxDe(lignes, i, noms) {
+    const L = lignes[i], cx = { qui: nomDe(L.who, noms) };
+    if (!POSEUR[L.who]) for (let k = i - 1; k >= 0; k--) if (POSEUR[lignes[k].who]) { cx.q = lignes[k].t.trim(); cx.qqui = nomDe(lignes[k].who, noms); break; }
+    return cx;
+  }
+  // o : { ou (la situation), src, poses () → les questions posées et leurs réponses, quand la parole s'efface de l'écran }
+  function useNoter(s, cs, o) {
     const [notees, setNotees] = useState(new Set());
-    const noter = (L) => { CR.addNote(s, cs, { text: L.t.trim(), fact: L.f || null, src: "gav" }); setNotees((x) => new Set(x).add(L.id)); bump(); };
+    const noter = (L, cx) => {
+      const t = L.t.trim(), pose = o && o.poses ? (o.poses() || []).find((q) => q.texte && (q.rep || []).some((r) => String(r).trim() === t)) : null;
+      CR.addNote(s, cs, { text: t, fact: L.f || null, src: (o && o.src) || "gav", cx: Object.assign({ ou: (o && o.ou) || "" }, cx, o && o.qui && L.who === "client" ? { qui: o.qui } : null, pose && !(cx && cx.q) ? { q: pose.texte, qqui: "Vous" } : null) });
+      setNotees((x) => new Set(x).add(L.id)); bump();
+    };
     return { notees, noter };
   }
   // le fil de l'entretien (questions → réponses), au niveau assisté seulement : au-delà, on retient ou on note
@@ -78,11 +91,11 @@
   }
   function Notes({ s, cs, M }) {
     const [txt, setTxt] = useState("");
-    const mes = cs.notes.filter((n) => (n.src === "gav" || n.own) && n.day === s.day).slice(-12);
+    const mes = cs.notes.filter((n) => (n.src === "gav" || n.src === "call" || n.own) && n.day === s.day).slice(-12);
     const ajouter = () => { if (!txt.trim()) return; CR.addOwnNote(s, cs, { text: txt }); setTxt(""); bump(); };
     return html`<div className="ent-notes">
       ${M && P.filVisible(s) && html`<${Fil} M=${M} />`}
-      <ol>${mes.map((n) => html`<li key=${n.id} className=${n.own ? "own" : ""}>${n.text}</li>`)}</ol>
+      <ol>${mes.map((n) => html`<li key=${n.id} className=${n.own ? "own" : ""}>${n.cx && n.cx.q ? html`<span className="ent-note-q">${n.cx.qqui || "Question"} : ${n.cx.q}</span>` : null}${n.text}</li>`)}</ol>
       ${mes.length === 0 && html`<p className="small muted">Cliquez une phrase pendant qu'elle est dite pour la noter, ou écrivez la vôtre.</p>`}
       <div className="ent-note-in"><input type="text" value=${txt} placeholder="Votre note…" aria-label="Votre note" onInput=${(e) => setTxt(e.target.value)} onKeyDown=${(e) => { if (e.key === "Enter") { e.stopPropagation(); ajouter(); } }} /><${Btn} small onClick=${ajouter}>Noter</${Btn}></div>
     </div>`;
@@ -132,7 +145,7 @@
   UI.EntretienParole = function EntretienParole({ s, cs, G, ctx, next }) {
     const M = useMemo(() => (ctx.M = ctx.M || P.client(s, cs, G)), []);
     const oral = useOral(false, true);
-    const { notees, noter } = useNoter(s, cs);
+    const { notees, noter } = useNoter(s, cs, { ou: "Entretien confidentiel", qui: M.A.prenom, poses: () => M.poses });
     const [min, setMin] = useState(0);
     const [over, setOver] = useState(false);
     const [onglet, setOnglet] = useState("questions");
@@ -181,7 +194,7 @@
     }, []);
     const [rapide, setRapide] = useState(false);
     const oral = useOral(rapide);
-    const { notees, noter } = useNoter(s, cs);
+    const { notees, noter } = useNoter(s, cs, { ou: "Audition par l'officier", qui: M.A.prenom });
     const [i, setI] = useState(0);
     const nom = (M.A.prenom || "").toUpperCase();
     // l'enquêteur pose, le client répond, puis la question suivante : l'audition se déroule sans attendre l'avocat
@@ -209,7 +222,7 @@
   UI.QuestionsParole = function QuestionsParole({ s, cs, G, ctx, opj, next, rerender }) {
     const M = useMemo(() => (ctx.M = ctx.M || P.client(s, cs, G)), []);
     const oral = useOral(false, true);
-    const { notees, noter } = useNoter(s, cs);
+    const { notees, noter } = useNoter(s, cs, { ou: "Vos questions après l'audition", qui: M.A.prenom, poses: () => M.poses });
     const nom = (M.A.prenom || "").toUpperCase();
     const poser = (q) => {
       const api = CR.api(s, cs);
@@ -268,11 +281,11 @@
       </div></div>
     </div>`;
   }
-  UI.CallLibre = function CallLibre({ s, cs, call, nom, api, fmt, topics, onGeste, onTemps, onPatience, onAsked, closing, onClose, onConseil, adviceOn, patience }) {
+  UI.CallLibre = function CallLibre({ s, cs, call, nom, lieu, api, fmt, topics, onGeste, onTemps, onPatience, onAsked, closing, onClose, onConseil, adviceOn, patience }) {
     const C = CR.CONSULT;
     const K = useMemo(() => C.ouvrir(s, cs, call, { api, fmt }), [cs.id]);
     const oral = useOral(false, true);
-    const { notees, noter } = useNoter(s, cs);
+    const { notees, noter } = useNoter(s, cs, { ou: lieu || "Entretien", src: "call", qui: nom, poses: () => K.poses });
     const [qClient, setQClient] = useState(null);
     const presse = useRef(false);
     useEffect(() => { for (const x of call.opening || []) oral.dire("client", fmt(typeof x === "string" ? x : x.t)); C.corriger(s, cs, K); }, []);

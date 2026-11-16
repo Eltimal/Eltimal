@@ -110,6 +110,10 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
       }
       ok(posees >= 5, `${kind} : moins de cinq questions posées`, posees);
       ok(cs.notes.length > 0 && cs.notes.some((n) => n.fact), `${kind} : aucune phrase notée ne porte un fait`);
+      // 1.2.0 : chaque phrase notée garde son contexte (qui, où, à quelle heure) ; les réponses gardent la question posée
+      { const N = cs.notes.filter((n) => n.src === "call" && !n.own);
+        ok(N.length > 0 && N.every((n) => n.cx && n.cx.qui && n.cx.ou && n.min != null), `${kind} : une note sans contexte`, JSON.stringify(N.find((n) => !(n.cx && n.cx.qui && n.cx.ou))));
+        ok(N.filter((n) => n.cx && n.cx.q && n.cx.qqui === "Vous").length >= N.length * 0.6, `${kind} : les réponses notées ne gardent pas la question`, N.filter((n) => n.cx && n.cx.q).length + " / " + N.length); }
       ok(!cs.notes.some((n) => CR.CONSULT.RENVOI.test(n.text)), `${kind} : « déjà dit » dans les notes`, cs.notes.map((n) => n.text).find((x) => CR.CONSULT.RENVOI.test(x)));
       const fil = doc.querySelector(".ent-fil"); // le fil des questions, au niveau assisté (onglet des notes) : absent de cet écran, sans erreur
       const t = findBtn(doc, /^Terminer l'entretien/); if (t) { await click(w, t); await sleep(80); }

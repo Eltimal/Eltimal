@@ -17,6 +17,21 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "1.2.0", nom: "Le carnet", date: "16 novembre 2026", type: "contenu",
+      resume: "Le carnet refait : chaque phrase notée garde son contexte, et se retrouve vite.",
+      notes: [
+        "Chaque note dit qui parle, dans quelle situation, quel jour et à quelle heure.",
+        "Une réponse notée garde la question qui l'a amenée, la vôtre ou celle de l'officier.",
+        "Une note prise dans une pièce garde sa cote, son feuillet et le titre de la pièce.",
+        "Le carnet se range par situation (entretien, audition, appel, audience), par personne ou par catégorie.",
+        "Une recherche par mot : dans la phrase, la question, le nom de celui qui parle ou votre titre.",
+        "Vous pouvez donner votre propre titre à une note : ce que vous en retenez, en quelques mots.",
+        "À l'audience, chaque note de votre main dit d'où elle vient et porte votre titre.",
+        "Le carnet ne choisit rien à votre place : toutes les notes reçoivent le même contexte, utiles ou non.",
+        "Les notes des parties déjà commencées restent lisibles ; elles n'ont que leur source.",
+      ],
+    },
+    {
       version: "1.1.0", nom: "L'accueil", date: "16 novembre 2026", type: "contenu",
       resume: "Le menu principal retravaillé : une vraie nuit de permanence à la fenêtre du cabinet.",
       notes: [

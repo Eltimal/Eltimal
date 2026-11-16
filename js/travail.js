@@ -80,7 +80,7 @@
     };
     W.annots.push(a);
     // en coulisse : un fait couvert passe en main (comme une note d'avant), sans rien signaler
-    for (const m of cv.marks) if (m.ty === "f" && !CR.hasFact(cs, m.id)) { const n = CR.addNote(s, cs, { text: cv.t, fact: m.id, src: "annot" }); if (n) n.annot = a.id; }
+    for (const m of cv.marks) if (m.ty === "f" && !CR.hasFact(cs, m.id)) { const n = CR.addNote(s, cs, { text: cv.t, fact: m.id, src: "annot", cx: { ou: "Pièce", piece: [a.cote ? a.cote + ", f. " + a.f : "", a.titre].filter(Boolean).join(" — ") } }); if (n) n.annot = a.id; }
     return a;
   };
   T.modifier = (cs, id, patch) => { const a = T.annot(cs, id); if (a) Object.assign(a, patch); return a; };

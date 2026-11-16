@@ -262,7 +262,7 @@
     </div>`;
     return html`<div className="pop" style=${style}>
       ${cs && html`<button onClick=${() => { if (surl) CR.desurligner(cs, text); else CR.surligner(s, cs, seg, refInfo); bump(); onClose(); }}><${Icon} n="pen" /> ${surl ? "Retirer le surlignage" : "Surligner"}</button>`}
-      ${cs && html`<button onClick=${() => { CR.addNote(s, cs, { text, fact: typeof seg === "object" ? seg.f || null : null, src: src || "doc" }); bump(); onClose(); }}><${Icon} n="pen" /> Noter dans le carnet</button>`}
+      ${cs && html`<button onClick=${() => { CR.addNote(s, cs, { text, fact: typeof seg === "object" ? seg.f || null : null, src: src || "doc", cx: { ou: "Pièce", piece: (refInfo && refInfo.titre) || "" } }); bump(); onClose(); }}><${Icon} n="pen" /> Noter dans le carnet</button>`}
       ${cs && !deja && html`<button onClick=${() => setForm(true)}><${Icon} n="flag" /> Relever une irrégularité</button>`}
       ${cs && deja && html`<span className="pop-info small">Irrégularité déjà relevée.</span>`}
       ${go && html`<button onClick=${() => { go.agenda({ caseId: cs && cs.id, title: text.slice(0, 80), ref: refInfo && refInfo.hid }); onClose(); }}><${Icon} n="calendar" /> Inscrire à l'agenda…</button>`}

@@ -145,7 +145,7 @@
     const [pop, setPop] = useState(null);
     return html`<div className="gav-card">
       <p>${CR.fmt("L'officier lit à {prenom} la notification de ses droits.", CR.caseVars(s, cs))} Cliquez une phrase pour la noter ; « relever… » si quelque chose ne va pas, ou manque.</p>
-      <div className="transcript docview" onClick=${(e) => { if (!e.target.closest(".tl-rel") && !e.target.closest(".pop")) setPop(null); }}>${lines.map((l, i) => { const t = segText(l); const noted = cs.notes.some((n) => n.text === t.trim()); return html`<div key=${i} className="tline who-client"><span className="tl-who pix">OPJ</span><span className=${cx("tl-body seg noteable", noted && "seg-noted", CR.isSurl(cs, t.trim()) && "seg-surl", cs.issues.some((x) => x.text === t.trim()) && "seg-flagged")} onClick=${() => { CR.addNote(s, cs, { text: t.trim(), fact: typeof l === "object" ? l.f : null, src: "gav" }); bump(); }}>${t}</span><button type="button" className="link small tl-rel" onClick=${(e) => { const r = e.currentTarget.getBoundingClientRect(); const host = e.currentTarget.closest(".docview").getBoundingClientRect(); setPop({ seg: typeof l === "object" ? Object.assign({}, l, { t: t.trim() }) : t.trim(), x: r.left - host.left - 200, y: r.bottom - host.top + 4 }); }}>relever…</button></div>`; })}
+      <div className="transcript docview" onClick=${(e) => { if (!e.target.closest(".tl-rel") && !e.target.closest(".pop")) setPop(null); }}>${lines.map((l, i) => { const t = segText(l); const noted = cs.notes.some((n) => n.text === t.trim()); return html`<div key=${i} className="tline who-client"><span className="tl-who pix">OPJ</span><span className=${cx("tl-body seg noteable", noted && "seg-noted", CR.isSurl(cs, t.trim()) && "seg-surl", cs.issues.some((x) => x.text === t.trim()) && "seg-flagged")} onClick=${() => { CR.addNote(s, cs, { text: t.trim(), fact: typeof l === "object" ? l.f : null, src: "gav", cx: { qui: "L'officier", ou: "Notification des droits" } }); bump(); }}>${t}</span><button type="button" className="link small tl-rel" onClick=${(e) => { const r = e.currentTarget.getBoundingClientRect(); const host = e.currentTarget.closest(".docview").getBoundingClientRect(); setPop({ seg: typeof l === "object" ? Object.assign({}, l, { t: t.trim() }) : t.trim(), x: r.left - host.left - 200, y: r.bottom - host.top + 4 }); }}>relever…</button></div>`; })}
         ${pop && html`<${UI.SegPop} key=${segText(pop.seg)} s=${s} cs=${cs} seg=${pop.seg} refInfo=${{ key: "droits", titre: "Notification des droits (audition libre)" }} x=${Math.max(0, pop.x)} y=${pop.y} src="gav" onClose=${() => setPop(null)} />`}
       </div>
       <${Btn} kind="primary" onClick=${() => { CR.spend(s, 6, "gav"); bump(); next(); }}>Continuer</${Btn}>
@@ -180,7 +180,7 @@
     return html`<div className="gav-card ent-card">
       <div className="entretien-head"><span className="pix">Entretien confidentiel</span><span className=${cx("chrono", min >= 25 && "urgent")}>${min} / 30 min</span></div>
       <div className="transcript">
-        ${lines.map((L, li) => html`<div key=${li} className=${cx("tline", "who-" + L.who)}><span className="tl-who pix">${L.who === "client" ? (CR.client(cs).prenom || "").toUpperCase() : L.who === "you" ? "VOUS" : ""}</span><span className="tl-body">${L.segs.map((seg, si) => { const t = segText(seg); const noted = cs.notes.some((n) => n.text === t.trim()); return html`<span key=${si} className=${cx("seg", L.who === "client" && "noteable", noted && "seg-noted")} onClick=${() => { if (L.who !== "client") return; CR.addNote(s, cs, { text: t.trim(), fact: typeof seg === "object" ? seg.f : null, src: "gav" }); bump(); }}>${t} </span>`; })}</span></div>`)}
+        ${lines.map((L, li) => html`<div key=${li} className=${cx("tline", "who-" + L.who)}><span className="tl-who pix">${L.who === "client" ? (CR.client(cs).prenom || "").toUpperCase() : L.who === "you" ? "VOUS" : ""}</span><span className="tl-body">${L.segs.map((seg, si) => { const t = segText(seg); const noted = cs.notes.some((n) => n.text === t.trim()); return html`<span key=${si} className=${cx("seg", L.who === "client" && "noteable", noted && "seg-noted")} onClick=${() => { if (L.who !== "client") return; const Q = lines.slice(0, li).reverse().find((x) => x.who === "you"); CR.addNote(s, cs, { text: t.trim(), fact: typeof seg === "object" ? seg.f : null, src: "gav", cx: Object.assign({ qui: CR.client(cs).prenom || "", ou: "Entretien confidentiel" }, Q ? { q: Q.segs.map(segText).join(" ").trim(), qqui: "Vous" } : null) }); bump(); }}>${t} </span>`; })}</span></div>`)}
         <div ref=${endRef}></div>
       </div>
       ${!over && html`<div className="questions">${topics.map((t) => html`<button key=${t.id} className="q-btn" onClick=${() => ask(t)}><span>${CR.fmt(t.q, v)}</span><span className="small muted">${t.cost || 3} min</span></button>`)}</div>`}
@@ -208,7 +208,7 @@
     const endRef = useRef(null);
     useEffect(() => { endRef.current && endRef.current.scrollIntoView && endRef.current.scrollIntoView({ block: "end" }); }, [i]);
     const ans = (st) => (typeof st.a === "object" && !Array.isArray(st.a) ? st.a[ctx.conseil] || st.a.expliquer || "" : st.a);
-    const noteLine = (t, f) => { CR.addNote(s, cs, { text: t.trim(), fact: f || null, src: "gav" }); bump(); };
+    const noteLine = (t, f, q) => { CR.addNote(s, cs, { text: t.trim(), fact: f || null, src: "gav", cx: Object.assign({ qui: q ? CR.client(cs).prenom || "" : "L'officier", ou: "Audition par l'officier" }, q ? { q: q.trim(), qqui: "L'officier" } : null) }); bump(); };
     const done = i >= steps.length - 1;
     // dans la pièce : l'officier pose la question, puis le client répond
     useEffect(() => { CR.dec.cue("opj", 1500); const st = steps[i]; if (!st || !ans(st)) return; const t = setTimeout(() => CR.dec.cue("client", 1200 + Math.min(2600, ans(st).length * 16)), 1500); return () => clearTimeout(t); }, [i]);
@@ -217,7 +217,7 @@
       <div className="transcript">
         ${shown.map((st, k) => html`<div key=${k}>
           <div className="tline who-opj"><span className="tl-who pix">OPJ</span><span className=${cx("tl-body seg noteable", cs.notes.some((n) => n.text === st.q.trim()) && "seg-noted")} onClick=${() => noteLine(st.q, st.fq)}>${st.q}</span></div>
-          ${ans(st) && html`<div className="tline who-client"><span className="tl-who pix">${(CR.client(cs).prenom || "").toUpperCase()}</span><span className=${cx("tl-body seg noteable", cs.notes.some((n) => n.text === ans(st).trim()) && "seg-noted")} onClick=${() => noteLine(ans(st), st.fa)}>${ans(st)}</span></div>`}
+          ${ans(st) && html`<div className="tline who-client"><span className="tl-who pix">${(CR.client(cs).prenom || "").toUpperCase()}</span><span className=${cx("tl-body seg noteable", cs.notes.some((n) => n.text === ans(st).trim()) && "seg-noted")} onClick=${() => noteLine(ans(st), st.fa, st.q)}>${ans(st)}</span></div>`}
         </div>`)}
         <div ref=${endRef}></div>
       </div>
@@ -241,7 +241,7 @@
     };
     return html`<div className="gav-card">
       <p>L'audition est terminée. Vous pouvez poser vos questions. L'officier ne peut s'y opposer que si elles nuisent au bon déroulement de l'enquête ; le refus est mentionné au PV.</p>
-      <div className="transcript">${log.map((l, k) => html`<div key=${k} className=${cx("tline", "who-" + l.who)}><span className="tl-who pix">${l.who === "you" ? "VOUS" : l.who === "opj" ? "OPJ" : (CR.client(cs).prenom || "").toUpperCase()}</span><span className=${cx("tl-body", l.who === "client" && "seg noteable")} onClick=${() => { if (l.who === "client") { CR.addNote(s, cs, { text: l.t, fact: l.f, src: "gav" }); bump(); } }}>${l.t}</span></div>`)}</div>
+      <div className="transcript">${log.map((l, k) => html`<div key=${k} className=${cx("tline", "who-" + l.who)}><span className="tl-who pix">${l.who === "you" ? "VOUS" : l.who === "opj" ? "OPJ" : (CR.client(cs).prenom || "").toUpperCase()}</span><span className=${cx("tl-body", l.who === "client" && "seg noteable")} onClick=${() => { if (l.who === "client") { const Q = log.slice(0, k).reverse().find((x) => x.who === "you"); CR.addNote(s, cs, { text: l.t, fact: l.f, src: "gav", cx: Object.assign({ qui: CR.client(cs).prenom || "", ou: "Vos questions après l'audition" }, Q ? { q: Q.t, qqui: "Vous" } : null) }); bump(); } }}>${l.t}</span></div>`)}</div>
       ${left > 0 && html`<div className="questions">${qs.filter((q) => !ctx.questions.includes(q.id)).map((q) => html`<button key=${q.id} className="q-btn" onClick=${() => ask(q)}><span>${q.q}</span><span className="small muted">4 min</span></button>`)}</div>`}
       <${Btn} kind="primary" onClick=${next}>${left > 0 ? "Ne plus poser de questions" : "Continuer"}</${Btn}>
     </div>`;

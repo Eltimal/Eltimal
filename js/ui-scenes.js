@@ -61,10 +61,13 @@
     const talking = typing.seg < (lines[typing.line] ? lines[typing.line].segs.length : 0);
     const api = CR.api(s, cs);
     const topics = (call.topics || []).filter((t) => unlocked.has(t.id) && !asked.has(t.id) && (!t.need || t.need(api)));
-    const note = (seg) => {
+    // le contexte d'une note (1.2.0) : l'interlocuteur, la situation, la question qui a amené la réponse
+    const cxNote = (q) => Object.assign({ qui: who.nom || c.prenom || "", ou: lieuNote }, q ? { q, qqui: "Vous" } : null);
+    const note = (seg, li) => {
       const t = segText(seg).trim();
       if (!t || phase === "ended") return;
-      CR.addNote(s, cs, { text: t, fact: segFact(seg), src: call.src || "call" });
+      const Q = li == null ? null : lines.slice(0, li).reverse().find((x) => x.who === "you");
+      CR.addNote(s, cs, { text: t, fact: segFact(seg), src: call.src || "call", cx: cxNote(Q ? Q.segs.map(segText).join(" ").trim() : "") });
       if (segFact(seg) && !cs.factsSeen.includes(segFact(seg))) cs.factsSeen.push(segFact(seg));
       force((x) => x + 1);
     };
@@ -123,7 +126,7 @@
       if (t.flag) cs.flags[t.flag] = s.day;
       let answer = (typeof t.a === "function" ? t.a(api) : t.a || []).map(fmtSeg);
       if (np <= 0) answer = [CR.fmt(call.hangup || "Écoutez, excusez-moi, je dois vraiment y aller. On se rappelle ?", v)];
-      for (const x of answer) if (x && x.f) { CR.addNote(s, cs, { text: segText(x).trim(), fact: x.f, src: call.src || "call" }); }
+      for (const x of answer) if (x && x.f) { CR.addNote(s, cs, { text: segText(x).trim(), fact: x.f, src: call.src || "call", cx: cxNote(typeof t.q === "string" ? CR.fmt(t.q, v) : "") }); }
       if (np <= 0 || t.ends) setTimeout(() => setPhase("closing"), 1500);
       return answer;
     };
@@ -135,6 +138,7 @@
     const faceExpr = talking ? (mood === "cry" ? "cry" : "talk") : mood || "neutral";
     const plan = callPlan(s, call);
     const cap = plan === "appel" || plan === "standard" ? "Au téléphone" : plan === "parloir" ? "Parloir avocat" : plan === "entretien" ? "Local avocat" : "Rendez-vous au cabinet";
+    const lieuNote = plan ? cap : call.label || (callKey === "intake" ? "Premier entretien" : callKey === "update" ? "Point sur le dossier" : "Appel");
     return html`<div className=${cx("scene call-scene", plan && "staged")}>
       ${plan && html`<${UI.Plan} key=${plan} name=${plan} opts=${{ min: s.min, rain: CR.dec.rainy(s), look: plan === "standard" ? who.look || CR.px.lookFrom("tiers" + (who.nom || ""), { age: 44 }) : look, expr: mood || "neutral", talk: talking, you: CR.youLook(s) }} />
       <div className="stg-shade"></div>
@@ -148,7 +152,7 @@
         <${UI.DossierSide} s=${s} cs=${cs} ctx="entretien" />
       </div>
       <div className="call-main">
-        ${libreCall && phase !== "advice" && html`<${UI.CallLibre} s=${s} cs=${cs} call=${call} nom=${who.nom || c.prenom} api=${api} fmt=${(x) => CR.fmt(x || "", v)} topics=${topics} onGeste=${geste} onTemps=${(m) => setElapsed((e) => e + m)} onPatience=${patienceLibre} onAsked=${(id) => { setAsked((a) => (a.has(id) ? a : new Set(a).add(id))); const tp = (call.topics || []).find((x) => x.id === id); if (tp && tp.unlock && tp.unlock.length) setUnlocked((u0) => { const n = new Set(u0); tp.unlock.forEach((x) => n.add(x)); return n; }); }} patience=${patience} closing=${phase === "closing"} onClose=${() => setPhase("closing")} onConseil=${() => setPhase("advice")} adviceOn=${adviceOpts.length > 0} />`}
+        ${libreCall && phase !== "advice" && html`<${UI.CallLibre} s=${s} cs=${cs} call=${call} lieu=${lieuNote} nom=${who.nom || c.prenom} api=${api} fmt=${(x) => CR.fmt(x || "", v)} topics=${topics} onGeste=${geste} onTemps=${(m) => setElapsed((e) => e + m)} onPatience=${patienceLibre} onAsked=${(id) => { setAsked((a) => (a.has(id) ? a : new Set(a).add(id))); const tp = (call.topics || []).find((x) => x.id === id); if (tp && tp.unlock && tp.unlock.length) setUnlocked((u0) => { const n = new Set(u0); tp.unlock.forEach((x) => n.add(x)); return n; }); }} patience=${patience} closing=${phase === "closing"} onClose=${() => setPhase("closing")} onConseil=${() => setPhase("advice")} adviceOn=${adviceOpts.length > 0} />`}
         <div className="transcript" aria-live="polite" hidden=${!!libreCall}>
           ${lines.map((L, li) => html`<div key=${li} className=${cx("tline", "who-" + L.who)}>
             <span className="tl-who pix">${L.who === "client" ? (who.nom || c.prenom).toUpperCase() : L.who === "you" ? "VOUS" : ""}</span>
@@ -158,7 +162,7 @@
               const partial = L.who === "client" && li === typing.line && si === typing.seg;
               const shown = partial ? txt.slice(0, typing.ch) : txt;
               const isNoted = cs.notes.some((n) => n.text === txt.trim());
-              return html`<span key=${si} className=${cx("seg", L.who === "client" && "noteable", isNoted && "seg-noted")} onClick=${() => L.who === "client" && note(seg)} tabIndex=${L.who === "client" ? 0 : -1} onKeyDown=${(e) => { if (e.key === "Enter" && L.who === "client") note(seg); }}>${shown}${" "}</span>`;
+              return html`<span key=${si} className=${cx("seg", L.who === "client" && "noteable", isNoted && "seg-noted")} onClick=${() => L.who === "client" && note(seg, li)} tabIndex=${L.who === "client" ? 0 : -1} onKeyDown=${(e) => { if (e.key === "Enter" && L.who === "client") note(seg, li); }}>${shown}${" "}</span>`;
             })}${L.cut ? html`<span className="cut">— vous coupez la parole</span>` : null}</span>
           </div>`)}
           <div ref=${endRef}></div>

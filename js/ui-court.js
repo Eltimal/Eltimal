@@ -14,7 +14,7 @@
   // En saisie des articles, une carte de texte ne montre que son sujet : le numéro se cite de mémoire (n° 11).
   CR.handOf = function (s, cs) {
     const hand = [];
-    for (const n of cs.notes) hand.push({ id: n.fact || "note:" + n.id, label: n.text, kind: "note" });
+    for (const n of cs.notes) { const cx = n.cx || {}; hand.push({ id: n.fact || "note:" + n.id, label: n.text, kind: "note", titre: n.titre || "", d: [cx.qui, cx.ou || cx.piece, n.cx ? CR.fmtDate(n.day, "short") : ""].filter(Boolean).join(" · ") }); }
     const def = CR.caseDef(cs);
     for (const c of cs.cards) { if (CR.lib(c)) continue; const cd = def.cards && def.cards[c]; hand.push({ id: c, label: cd ? cd.label : c, kind: "piece" }); }
     const hide = CR.saisieOn(s);
@@ -71,7 +71,7 @@
     if (fx.flags) Object.assign(st.flags, fx.flags);
     if (fx.cards) fx.cards.forEach((c) => { CR.addCard(cs, c); st.played.add(c); });
     if (fx.play) [].concat(fx.play).forEach((c) => st.played.add(c));
-    if (fx.note) CR.addNote(s, cs, { text: fx.note.t, fact: fx.note.f, src: "court" });
+    if (fx.note) CR.addNote(s, cs, { text: fx.note.t, fact: fx.note.f, src: "court", cx: { ou: "Audience" } });
     if (fx.trust) CR.trust(s, cs, fx.trust);
     if (fx.rep) for (const [k, v] of Object.entries(fx.rep)) CR.rep(s, k, v);
     if (fx.csFlags) Object.assign(cs.flags, fx.csFlags);
@@ -370,7 +370,7 @@
             ${phase !== "card" && html`<button className="parole incident" onClick=${() => setIncOuvert((x) => (x ? null : "menu"))}>Soulever un incident</button>`}
             ${incOuvert === "menu" && phase !== "card" && html`<div className="hand-cards incidents">${INCIDENTS.map((inc) => html`<button key=${inc.id} className="hcard hk-incident" onClick=${() => (inc.motifs ? setIncOuvert("recidive") : soulever(inc))}>${inc.label}</button>`)}</div>`}
             ${incOuvert === "recidive" && phase !== "card" && html`<div className="hand-cards incidents"><p className="small muted">Pourquoi la récidive n'est-elle pas constituée ?</p>${Object.entries((CR.GEN2 && CR.GEN2.VICES) || {}).map(([k, l]) => html`<button key=${k} className="hcard hk-incident" onClick=${() => soulever(INCIDENTS.find((x) => x.id === "recidive"), k)}>${l}</button>`)}</div>`}
-            ${mainOuverte && html`<div className="hand-cards">${hand.length === 0 && html`<p className="small muted">Rien noté, aucun texte enregistré dans ce dossier.</p>`}${hand.map((c, i) => html`<button key=${i} className=${cx("hcard", "hk-" + c.kind)} onClick=${() => geste(c)}><span className="pix">${c.kind === "texte" ? "Texte" : c.kind === "piece" ? "Pièce" : "Note"}</span>${c.label}</button>`)}</div>`}`}
+            ${mainOuverte && html`<div className="hand-cards">${hand.length === 0 && html`<p className="small muted">Rien noté, aucun texte enregistré dans ce dossier.</p>`}${hand.map((c, i) => html`<button key=${i} className=${cx("hcard", "hk-" + c.kind)} onClick=${() => geste(c)}><span className="pix">${c.kind === "texte" ? "Texte" : c.kind === "piece" ? "Pièce" : "Note"}${c.d ? html`<span className="hcard-d"> · ${c.d}</span>` : null}</span>${c.titre ? html`<strong className="hcard-t">${c.titre}</strong>` : null}${c.label}</button>`)}</div>`}`}
           </div>`}
           ${phase === "choose" && cur && html`<div className="choices court-choices">
             ${cur.timer ? html`<div className="window-bar"><div className="wb-fill" style=${{ width: Math.max(0, timer / (cur.timer * 1000 / fatigue)) * 100 + "%" }}></div></div>` : null}
@@ -468,7 +468,7 @@
     const ask = (o) => {
       addLog({ who: "you", t: `${CR.ACT.titre(api)}, je souhaiterais poser une question${Q.to === "client" ? " à mon client" : ""}. — ${o.t}` });
       addLog({ who: Q.who || "client", t: o.a, name: Q.name });
-      if (o.f) CR.addNote(s, cs, { text: o.a, fact: o.f, src: "court" });
+      if (o.f) CR.addNote(s, cs, { text: o.a, fact: o.f, src: "court", cx: { qui: Q.name || (Q.to === "client" ? CR.client(cs).prenom || "" : ""), ou: "Audience", q: o.t, qqui: "Vous" } });
       applyFx(s, cs, st, o.fx);
       if (o.signal) (CR.libre(s) || addLog({ who: "sys", t: CR.ACT.signal(api, o.signal) }));
       st.questions.push(o.id);
