@@ -25,6 +25,8 @@
         "Chaque question a sa réponse et ne se pose qu'une fois : le client ne dit plus « je vous l'ai déjà dit ».",
         "Une réponse ouvre des questions de suite : l'heure, le lieu, le déroulé, les raisons, les témoins, les justificatifs.",
         "Les réactions de caractère ne tombent plus au hasard : le client ne demande « pourquoi vous me demandez ça ? » que sur une question qui s'y prête, et vous pouvez lui répondre.",
+        "Une question ne se propose que si la discussion l'a ouverte : la garde à vue quand le client en a parlé, les preuves et les précisions après son récit ; un thème qui s'ouvre est signalé « nouveau ».",
+        "On ne demande plus « pourquoi avez-vous fait ça ? » à celui qui vient de nier ; celui qui cache son casier le cache à la question sur ses antécédents.",
         "Le client prévient à voix haute avant de perdre patience ; le débrief cite la question qu'il fallait poser.",
       ],
     },

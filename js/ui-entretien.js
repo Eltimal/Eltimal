@@ -241,11 +241,14 @@
   // dispo : les entrées ouvertes à cet instant ; clavier : 1 à 9 posent la question de ce rang dans le thème affiché
   function Questions({ K, dispo, onPoser, desactive, attente }) {
     const C = CR.CONSULT;
-    const themes = K.themes.filter((th) => C.questions(K, th.id, dispo).length > 0);
+    const themes = C.themesVisibles(K, dispo);
     const [theme, setTheme] = useState(null);
+    // un thème que la discussion vient d'ouvrir se signale jusqu'à ce qu'on l'ait regardé
+    const connus = useRef(new Set(K.themesDebut || []));
     const cur = themes.find((th) => th.id === theme) || themes.find((th) => C.restantes(K, th.id, dispo) > 0) || themes[0] || null;
     const qs = cur ? C.questions(K, cur.id, dispo) : [];
     const libres = qs.filter((q) => !C.posee(K, q.id));
+    if (cur) connus.current.add(cur.id);
     useEffect(() => {
       const kd = (e) => {
         if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
@@ -257,7 +260,7 @@
     });
     if (!cur) return html`<div className="compo consult"><p className="small muted">Vous n'avez plus de question à poser.</p></div>`;
     return html`<div className="compo consult">
-      <div className="compo-l"><span className="compo-h">Thème</span><div className="compo-sujets">${themes.map((th) => { const n = C.restantes(K, th.id, dispo); return html`<button type="button" key=${th.id} className=${cx("compo-b", cur.id === th.id && "on", n === 0 && "fait")} title=${n ? `${n} question${n > 1 ? "s" : ""} à poser` : "Toutes les questions de ce thème sont posées"} onClick=${() => setTheme(th.id)}>${th.label}${n ? html`<small className="consult-n">${n}</small>` : null}</button>`; })}</div></div>
+      <div className="compo-l"><span className="compo-h">Thème</span><div className="compo-sujets">${themes.map((th) => { const n = C.restantes(K, th.id, dispo); return html`<button type="button" key=${th.id} className=${cx("compo-b", cur.id === th.id && "on", n === 0 && "fait", !connus.current.has(th.id) && "neuf")} title=${!connus.current.has(th.id) ? "Ce qu'il vient de dire ouvre ce thème" : n ? `${n} question${n > 1 ? "s" : ""} à poser` : "Toutes les questions de ce thème sont posées"} onClick=${() => setTheme(th.id)}>${th.label}${n ? html`<small className="consult-n">${n}</small>` : null}</button>`; })}</div></div>
       <div className="compo-l"><span className="compo-h">Question</span><div className="consult-qs">
         ${qs.map((q) => { const posee = C.posee(K, q.id), n = libres.indexOf(q); return html`<button type="button" key=${q.id} className=${cx("consult-q", posee && "posee", q.parent && "suite")} disabled=${posee || desactive} onClick=${() => onPoser(q)}>${!posee && n >= 0 && n < 9 ? html`<kbd>${n + 1}</kbd>` : html`<kbd aria-hidden="true">${posee ? "✓" : ""}</kbd>`}<span>${q.q}</span>${!posee && html`<small>≈ ${q.cout} min</small>`}</button>`; })}
         ${libres.length === 0 && html`<p className="small muted">Vous avez fait le tour de ce thème.</p>`}

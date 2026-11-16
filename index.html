@@ -1909,6 +1909,8 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .consult-q:disabled:not(.posee) { opacity: 0.55; cursor: default; }
 .consult-n { margin-left: 0.45em; font: 600 calc(10px * var(--tz)) var(--f-mono); opacity: 0.7; }
 .compo-b.fait { opacity: 0.55; }
+.compo-b.neuf { border-color: #c9a45c; border-style: dashed; }
+.compo-b.neuf::before { content: "nouveau"; font: 600 calc(9px * var(--tz)) var(--f-ui); letter-spacing: 0.08em; text-transform: uppercase; color: #c9a45c; margin-right: 0.5em; }
 .call-scene.staged .call-consult { grid-template-rows: auto minmax(0, 1fr) auto auto; }
 .call-scene.staged .call-consult .consult-q { font-size: calc(13px * var(--tz)); padding: 0.3em 0.55em; }
 .call-scene.staged .call-libre .compo-sujets .compo-b, .call-scene.staged .call-libre .compo-b { padding: 0.2em 0.5em; font-size: calc(12px * var(--tz)); }

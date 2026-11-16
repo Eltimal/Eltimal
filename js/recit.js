@@ -150,7 +150,7 @@
     if (t.camera || preuves.includes("video")) E.confirme.push(st === "reconnait" ? "Il y a une caméra. Elle a dû tout filmer, je sais." : "Il y a une caméra, là-bas. Qu'ils regardent : vous verrez que c'est pas comme ils disent.");
     // la victime : il ne l'invoque que s'il reconnaît, ou s'il nie et pense qu'elle le sait ; un policier, jamais
     if (nomV && !absent) {
-      if (agent) { if (st !== "reconnait") E.confirme.push(`${cap(nomV)}, il raconte ce qu'il veut. C'est sa parole contre la mienne.`.replace(/^La policière, il /, "La policière, elle ")); }
+      if (agent) { if (st !== "reconnait") E.confirme.push(`${cap(nomV)}, il raconte ce qu'il veut. C'est sa parole contre la mienne.`.replace(/^La policière, il raconte ce qu'il veut/, "La policière, elle raconte ce qu'elle veut")); }
       else if (st === "nie") E.confirme.push(`${cap(nomV)} ? Demandez-${GV.lui}, ${GV.il} sait très bien que j'ai rien fait.`);
       else if (st === "reconnait") E.confirme.push(`${cap(nomV)} pourra le dire.`);
     }

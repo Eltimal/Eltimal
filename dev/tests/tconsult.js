@@ -12,7 +12,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
     const C = CR.CONSULT;
     const s = (CR.store.s = CR.newGame({ prenom: "Camille", nom: "Durand", mode: "carriere", seed: 7 }));
     const fmtDe = (cs) => { const v = CR.caseVars(s, cs); return (x) => CR.fmt(x || "", v); };
-    let nCons = 0, nQ = 0, nSuites = 0, nFaits = 0, montre = 0; const parTheme = {};
+    let nCasier = 0, nEcartees = 0, nCons = 0, nQ = 0, nSuites = 0, nFaits = 0, montre = 0; const parTheme = {};
     for (const g of ["copj", "al", "op", "pc", "info", "gav", "ci"]) for (let i = 0; i < N; i++) {
       s.day = 20 + i; s.min = 600;
       let cs; try { cs = CR.GEN.open(s, g, { min: s.min, night: false }); } catch (e) { continue; }
@@ -26,11 +26,20 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
         const voir = process.env.VOIR && montre < 2 && ck === "intake" && call.kind === "meet" && g !== "pc" && K.ordre.some((id) => K.Q[id].parent);
         if (voir) { montre++; console.log(`\n===== ${g} · ${CR.caseTitle(s, cs)} · ${call.label}`); }
         // toute entrée interrogative de l'entretien est une question du moteur, rangée dans un thème nommé
-        for (const tp of call.topics) if (C.estQuestion(tp)) ok(K.Q[tp.id] && C.THEMES[K.Q[tp.id].theme], "une question de l'entretien n'est pas reprise", tp.id);
+        for (const id of K.ordre) ok(C.THEMES[K.Q[id].theme], "une question sans thème", id);
+        nEcartees += call.topics.filter((tp) => C.estQuestion(tp) && !K.Q[tp.id]).length;
         ok(K.themes.length >= 1 && K.themes.every((th) => th.label), "consultation sans thème", g + "/" + ck);
         // une suite ne se propose pas avant sa question
         for (const id of K.ordre) { const q = K.Q[id]; if (q.parent) ok(!C.questions(K, q.theme, null).includes(q), "une question de suite est proposée avant sa question", id); }
-        const faitsAttendus = new Set(); for (const tp of call.topics) if (C.estQuestion(tp)) for (const x of (typeof tp.a === "function" ? tp.a(api) : tp.a || [])) if (x && x.f) faitsAttendus.add(x.f);
+        // celui qui cache son casier le cache à la question sur ses antécédents, et ne dit pas le contraire ailleurs
+        { const tt = (s.generated.find((x) => x.id === cs.id) || {}).t, mk = tt && tt.vie && tt.vie.ment && tt.vie.ment.k, ant = K.ordre.map((id) => K.Q[id]).find((q) => q.theme === "antecedents");
+          if (mk === "pas_casier" && ant && K.ordre.some((id) => K.Q[id].a.some((x) => x && x.f === "G_vie_ment"))) { nCasier++; ok(ant.a.some((x) => x && x.f === "G_vie_ment") && !ant.a.some((x) => x && x.f === "G_casier"), "le mensonge sur le casier n'est pas à sa question", g + "/" + ck); } }
+        const faitsAttendus = new Set(); for (const id of K.ordre) for (const x of K.Q[id].a) if (x && x.f) faitsAttendus.add(x.f);
+        // la découverte : au cabinet, ni l'enquête, ni les preuves, ni les précisions du catalogue avant que le client ait parlé
+        const recit0 = K.ordre.map((id) => K.Q[id]).find((q) => q.theme === "faits" && !q.parent);
+        for (const id of K.ordre) { const q = K.Q[id]; if (recit0 && q !== recit0 && !q.parent) ok(!/_x\d+$/.test(id) && !["preuves", "prejudice"].includes(q.theme), "une précision se propose avant le récit des faits", g + "/" + ck + " " + id); }
+        if (call.scene === "conference" && K.ordre.some((id) => K.Q[id].theme === "enquete") && !/garde à vue|commissariat|polic|audition|gendarm|interpell/i.test((call.opening || []).map((x) => fmt(typeof x === "string" ? x : x.t)).join(" "))) ok(!C.themesVisibles(K, null).some((th) => th.id === "enquete"), "l'enquête se propose avant que le client en ait parlé", g + "/" + ck);
+        ok(C.themesVisibles(K, null).length >= 2 || K.ordre.length < 2, "moins de deux thèmes à l'ouverture", g + "/" + ck);
         const faitsLivres = new Set(), dites = new Set();
         // tout poser, thème par thème, jusqu'à épuisement
         for (let tour = 0; tour < 40; tour++) {
@@ -67,7 +76,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
     }
     ok(nCons >= 100, "trop peu de consultations générées", nCons);
     ok(nSuites >= nCons / 4, "trop peu de questions de suite", nSuites);
-    console.log(`moteur — ${nCons} consultations · ${nQ} questions (${(nQ / nCons).toFixed(1)} par entretien, dont ${nSuites} de suite) · ${nFaits} faits livrés · thèmes ${JSON.stringify(parTheme)}`);
+    console.log(`moteur — ${nCons} consultations · ${nQ} questions (${(nQ / nCons).toFixed(1)} par entretien, dont ${nSuites} de suite) · ${nFaits} faits livrés · ${nCasier} casiers cachés · ${nEcartees} questions écartées (elles supposaient ce que le client nie) · thèmes ${JSON.stringify(parTheme)}`);
     if (errors.length) { echecs++; console.log("  ✗ erreurs : " + errors.slice(0, 2).join(" | ")); }
   }
   // ---------------------------------------------------------------- 2. dans l'interface : le rendez-vous au cabinet

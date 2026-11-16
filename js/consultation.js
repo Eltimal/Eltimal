@@ -7,7 +7,9 @@
 //   - une question posée ne se repose pas : rien n'est jamais « déjà dit » ;
 //   - une réponse peut ouvrir des questions de suite (l'heure, le lieu, le déroulé, les raisons, les témoins), tirées du
 //     souvenir des faits (recit.js) et de la fiche de la personne ;
-//   - les questions sont rangées par thème, dans l'ordre où un avocat les aborde.
+//   - les questions sont rangées par thème, dans l'ordre où un avocat les aborde ;
+//   - une question ne se propose que si la discussion l'a ouverte : la garde à vue quand le client en a parlé, les
+//     preuves et les précisions quand il a raconté les faits ; ce qu'il nie ne lui est pas demandé comme acquis.
 // Les déclarations de l'avocat (prendre le dossier, refuser, promettre, expliquer) ne sont pas des questions : elles
 // restent des gestes à part. Tout est déterministe : rien n'est tiré au hasard ici.
 (function () {
@@ -56,7 +58,8 @@
     let x = brut.replace(RENVOI, "").replace(/\s{2,}/g, " ").trim().replace(/^[,;]\s*/, "");
     // la phrase qui suivait la tournure retirée reprend sa majuscule
     if (x !== brut.trim()) x = x.replace(/(^|[.!?…] )([a-zà-ÿ])/g, (m, a, b) => a + b.toUpperCase());
-    return x;
+    // une phrase commence par une majuscule (« Du sursis. huit mois. » : un nombre mis en lettres après coup)
+    return x.replace(/(?<!\bM)(?<!\bart)(?<!etc)(?<!\.)([.!?] )([a-zà-ÿ])/g, (m, a, b) => a + b.toUpperCase());
   };
   C.RENVOI = /déjà dit|déjà répondu|Comme je vous (l')?ai dit|Je vous l'ai dit|Je vous ai tout dit/i;
   // deux phrases sont la même si elles ne diffèrent que par le registre (« je n'ai pas » et « j'ai pas ») ou la ponctuation
@@ -74,16 +77,37 @@
     [/^Je vous raconte tout, comme ça vous savez\.$/, ["faits"]],
     [/^Attendez, je reprends depuis le début\.$/, []],
   ];
-  const admise = (x, theme) => { const tx = segT(x).trim(); const r = REACTIONS.find(([re]) => re.test(tx)); return !r || r[1].includes(theme); };
+  // « Pardon, je parle trop. » ne suit qu'une réponse longue ; « Oui. » n'ouvre que la réponse à une question fermée
+  const TROP = /^(Pardon, je parle trop\.|Enfin, bref\. Je m'égare\.|Excusez-moi, je parle trop\. On me le dit souvent\.)$/;
+  const OUI = /^(Oui\.|Oui, oui\.|Bien sûr\.)$/;
+  const FERMEE = /(^|[.:] )(Avez|Aviez|Êtes|Étiez|Est-ce|A-t-|Y a-t-|Vous |Il |Elle |Ils |Elles |Quelqu'un|On |Les voisins|Ça )[^.?]*\?\s*$/;
+  const admise = (x, theme, i, arr, question) => {
+    const tx = segT(x).trim();
+    if (TROP.test(tx)) return arr.length >= 4;
+    if (OUI.test(tx) && i === 0) return FERMEE.test(question || "");
+    const r = REACTIONS.find(([re]) => re.test(tx));
+    return !r || r[1].includes(theme);
+  };
+
+  // les questions du catalogue qui tiennent les faits pour acquis (« Pourquoi avez-vous fait ça ? », « Il vous a provoqué ? »)
+  const SUPPOSE = /^Pourquoi (avez-vous fait|autant|avoir|le contrôle)|sérieusement|dit d'arrêter|provoqu/i;
+  const INQUIET = /inquiète|peur|compte le plus|empêche de dormir/i;
 
   // ------------------------------------------------------------------ Les questions de suite
   // Sur les faits : le client a raconté (le cadre, le geste, la police) ; chaque question de suite va chercher une autre
   // partie de son souvenir. Une suite n'existe que si elle apporte une phrase qu'il n'a pas dite.
-  function suitesFaits(K, parent, t, ailleurs) {
+  // la version que le client raconte dans cet entretien : après une rétractation, celle de celui qui nie (recit.js)
+  C.version = function (t, a) {
+    const R = CR.RECIT;
+    if (!R || !t) return null;
+    const scene = (a || []).some((x) => x && typeof x === "object" && x.recit === "retracte") ? "cabinet" : "gav";
+    try { return { scene, mode: R.mode(t, { scene }) }; } catch (e) { return null; }
+  };
+  function suitesFaits(K, parent, t, ailleurs, ver) {
     const R = CR.RECIT, G2 = CR.GEN2;
-    if (!R || !G2 || !t) return [];
-    let N = null, E = null, mode = null;
-    try { N = G2.recit(t); E = R.episodes(t, N, { scene: "cabinet" }); mode = R.mode(t, { scene: "cabinet" }); } catch (e) { return []; }
+    if (!R || !G2 || !t || !ver) return [];
+    let N = null, E = null; const mode = ver.mode;
+    try { N = G2.recit(t); E = R.episodes(t, N, { scene: ver.scene }); } catch (e) { return []; }
     if (!E) return [];
     // ce qu'il a dit en racontant, et ce que d'autres questions de l'entretien lui feront dire, ne revient pas dans une suite
     const dits = new Set(E.cadre.concat(E.geste, E.police).map(norme).concat(ailleurs || []));
@@ -92,10 +116,15 @@
     const absent = mode.k === "ment" && mode.ment && mode.ment.k === "absent";
     const oral = (x) => { const o = CR.GEN2.PR.oral; return typeof x === "string" ? o(x, "sout") : Object.assign({}, x, { t: o(x.t, "sout") }); };
     const st = mode.stance;
-    const defaut = /^Il y a (pas de pourquoi|rien à raconter de plus)|^Je vous ai dit l'essentiel|^Il y a pas grand-chose de plus/;
+    // une suite n'existe que si le client a quelque chose à y répondre : les phrases d'attente n'en font pas une
+    const defaut = /^Il y a (pas de pourquoi|rien à raconter de plus)|^Je vous ai dit l'essentiel|^Il y a pas grand-chose de plus|^Ça a duré quelques secondes|^Tout est allé très vite/;
+    // l'heure des faits, pas la suite de l'enquête (déjà racontée) ; un lieu, pas « par téléphone » ou « à distance »
+    const quand = (E.quand || []).filter((x, i) => i === 0 || /arrêté|déjà là|arrivée/.test(segT(x)));
+    const chez = /^chez /i.test(segT((E.ou || [])[0]));
+    const sansLieu = (E.ou || []).some((x) => /téléphone|distance|en ligne|internet|réseau|messagerie|courrier/i.test(segT(x)));
     const LISTE = [
-      ["quand", "À quelle heure était-ce, précisément ?", absent ? [] : E.quand],
-      ["ou", "Où était-ce, exactement ? Vous connaissez l'endroit ?", absent ? [] : E.ou],
+      ["quand", "À quelle heure était-ce, précisément ?", absent ? [] : quand],
+      ["ou", "Où était-ce, exactement ? Vous connaissez l'endroit ?", absent || sansLieu ? [] : chez ? E.ou.slice(0, 1) : E.ou],
       ["comment", "Reprenons dans le détail : comment cela s'est-il déroulé ?", (E.comment || []).filter((x) => !defaut.test(segT(x)))],
       ["pourquoi", st === "reconnait" ? "Pourquoi l'avez-vous fait ?" : "Comment expliquez-vous ce qui s'est passé ?", st === "nie" ? [] : (E.pourquoi || []).filter((x) => !defaut.test(segT(x)))],
       ["confirme", "Qui était présent ? Quelqu'un peut-il confirmer ce que vous dites ?", absent ? [] : E.confirme],
@@ -112,10 +141,11 @@
     const PR = CR.GEN2 && CR.GEN2.PR, A = t && t.A;
     if (!PR || !A || !CR.MONDE) return [];
     const out = [];
+    const r = CR.seeded((t.sig || "") + ":consult:situation"), pk = (a) => a[Math.floor(r() * a.length)];
     const situ = CR.MONDE.situ(A);
     const chezEmployeur = /travail|employeur|vestiaire|caisse|entreprise/.test(String((t.f && t.f.sc) || "")) || t.inf === "abus_confiance";
-    if (["salarie", "independant"].includes(situ) && !chezEmployeur) out.push({ id: parent.id + ":justif", theme: parent.theme, q: "Votre travail, pouvez-vous en justifier ?", cout: 2, parent: parent.id, a: [situ === "salarie" ? "Oui. J'ai mon contrat, mes fiches de paie. Mon patron peut faire une attestation." : "Oui. Je suis à mon compte : j'ai mes factures et mes déclarations."] });
-    if (A.proche) { const p = PR.proche(A), g = PR.gram({ g: p.g }); out.push({ id: parent.id + ":proche", theme: parent.theme, q: "Qui pourrait attester pour vous, ou venir à l'audience ?", cout: 2, parent: parent.id, a: [`${cap(p.ma)}. ${g.Il} me connaît mieux que personne, ${g.il} viendra.`] }); }
+    if (["salarie", "independant"].includes(situ) && !chezEmployeur) out.push({ id: parent.id + ":justif", theme: parent.theme, q: "Votre travail, pouvez-vous en justifier ?", cout: 2, parent: parent.id, a: [situ === "salarie" ? pk(["Oui. J'ai mon contrat, mes fiches de paie. Mon patron peut faire une attestation.", "Oui, j'ai un contrat. Je peux vous apporter mes trois dernières fiches de paie.", "J'ai mes fiches de paie, oui. Et mon patron me connaît, il fera une attestation."]) : pk(["Oui. Je suis à mon compte : j'ai mes factures et mes déclarations.", "J'ai mon numéro d'entreprise, mes factures. Je peux vous apporter tout ça."])] });
+    if (A.proche) { const p = PR.proche(A), g = PR.gram({ g: p.g }); out.push({ id: parent.id + ":proche", theme: parent.theme, q: "Qui pourrait attester pour vous, ou venir à l'audience ?", cout: 2, parent: parent.id, a: [pk([`${cap(p.ma)}. ${g.Il} me connaît mieux que personne, ${g.il} viendra.`, `${cap(p.ma)}, je pense. ${g.Il} est au courant de tout.`, `${cap(p.ma)}. Je peux ${g.lui || "lui"} demander d'écrire quelque chose.`])] }); }
     return out;
   }
 
@@ -132,21 +162,58 @@
     // le client parle-t-il de lui-même ? (la famille, la permanence et le représentant d'une société parlent d'un autre)
     const luiMeme = t && t.client === "A" && !call.who;
     const reponse = (tp) => (typeof tp.a === "function" ? tp.a(o.api) : tp.a || []).map((x) => (typeof x === "string" ? fmt(x) : x && typeof x === "object" ? Object.assign({}, x, { t: fmt(x.t) }) : x)).filter((x) => segT(x));
-    const toutes = (call.topics || []).filter(C.estQuestion).map((tp) => { const theme = C.themeDe(tp); return { tp, a: reponse(tp).filter((x) => admise(x, theme)) }; });
-    for (const { tp, a } of toutes) {
-      const q = { id: tp.id, theme: C.themeDe(tp), q: cap(fmt(tp.q)), cout: tp.cost || 3, tp, a, parent: null };
+    // une entrée en matière qui finit par une virgule (« Pour être tout à fait honnête, ») se dit d'un trait avec la suite
+    const lier = (arr) => arr.reduce((out, x) => { const d = out[out.length - 1]; if (d && /,$/.test(segT(d))) out[out.length - 1] = typeof x === "string" ? segT(d) + " " + x : Object.assign({}, x, { t: segT(d) + " " + x.t }); else out.push(x); return out; }, []);
+    const toutes = (call.topics || []).filter(C.estQuestion).map((tp) => { const theme = C.themeDe(tp), q = cap(fmt(tp.q)); return { tp, theme, q, a: lier(reponse(tp).filter((x, i, arr) => admise(x, theme, i, arr, q))) }; });
+    // un mensonge qui ne porte pas sur les faits se dit à la question qu'il concerne, pas dans le récit : celui qui cache
+    // son casier le cache quand on l'interroge sur ses antécédents (et ne l'avoue pas) ; le préjudice gonflé vient avec le préjudice
+    const mk = t && t.vie && t.vie.ment ? t.vie.ment.k : null, ou = { pas_casier: "antecedents", prejudice: "prejudice" }[mk];
+    if (ou) {
+      const estM = (x) => x && typeof x === "object" && x.f === "G_vie_ment";
+      const src = toutes.find((y) => y.theme !== ou && y.a.some(estM)), dst = toutes.find((y) => y.theme === ou);
+      if (src && dst) {
+        const m = src.a.find(estM);
+        src.a = src.a.filter((x) => !estM(x));
+        dst.a = mk === "pas_casier" ? dst.a.filter((x) => !(x && typeof x === "object" && x.f)).filter((x) => /^[(…]|…$/.test(segT(x))).concat([m]) : dst.a.concat([m]);
+      }
+    }
+    // ce qui a été dit dans l'entretien (l'ouverture, puis chaque réponse) : une question peut en dépendre
+    K.entendu = (call.opening || []).map((x) => fmt(segT(x))).join(" ").toLowerCase();
+    const cabinet = call.scene === "conference";
+    const catalogue = (tp) => /_x\d+$/.test(String(tp.id));
+    // la question qui fait raconter les faits : la première du thème qui ne vient pas du catalogue de l'infraction
+    const recit = toutes.find((y) => y.theme === "faits" && !catalogue(y.tp)) || null;
+    const ver = luiMeme && recit && recit.a.some((x) => x && typeof x === "object" && x.recit) ? C.version(t, recit.a) : null;
+    let inquietude = null;
+    for (const { tp, theme, q: texte, a } of toutes) {
+      const q = { id: tp.id, theme, q: texte, cout: tp.cost || 3, tp, a, parent: null, si: null };
+      // --- ce qui se découvre dans la discussion
+      // une question du catalogue de l'infraction, les preuves, le préjudice : après le récit des faits seulement
+      if (recit && tp !== recit.tp && (catalogue(tp) || theme === "preuves" || theme === "prejudice")) q.parent = recit.tp.id;
+      // une question qui suppose que le client a fait ce qu'on lui reproche ne se pose pas à celui qui vient de le nier
+      if (ver && catalogue(tp) && ver.mode.stance === "nie" && SUPPOSE.test(texte)) continue;
+      // au cabinet, la garde à vue ou l'audition ne s'aborde que si le client en a parlé
+      if (cabinet && theme === "enquete") q.si = (K0) => /garde à vue|commissariat|polic|audition|gendarm|interpell/.test(K0.entendu);
+      // deux questions sur ce qui l'inquiète : la seconde prolonge la première
+      if (theme === "vecu" && INQUIET.test(texte)) { if (inquietude) q.parent = inquietude; else inquietude = tp.id; }
+      // « travail, logement, famille » : s'il n'a rien dit de sa famille, il en dit un mot
+      if (luiMeme && /famille/i.test(texte) && t.A && t.A.proche && !a.some((x) => /enfant|femme|mari|compagn|mère|père|frère|sœur|cousin|oncle|tante|seul/i.test(segT(x)))) { let i = a.length; while (i > 0 && !(a[i - 1] && a[i - 1].f)) i--; q.a = a.slice(0, i || a.length).concat([`Pour la famille, il y a surtout ${CR.GEN2.PR.proche(t.A).ma}.`], i ? a.slice(i) : []); }
       ajouter(q);
       // les suites : sur les faits quand le client les a racontés lui-même, sur la situation quand il parle de lui
-      if (luiMeme && q.theme === "faits" && a.some((x) => x && typeof x === "object" && x.recit)) for (const x of suitesFaits(K, q, t, [].concat(...toutes.filter((y) => y.tp !== tp).map((y) => y.a.map(norme))))) ajouter(x);
+      if (ver && recit.tp === tp) for (const x of suitesFaits(K, q, t, [].concat(...toutes.filter((y) => y.tp !== tp).map((y) => y.a.map(norme))), ver)) ajouter(x);
       if (luiMeme && q.theme === "situation" && /_vie$/.test(String(tp.id))) for (const x of suitesSituation(K, q, t)) ajouter(x);
     }
+    K.themesDebut = C.themesVisibles(K, null).map((th) => th.id);
     return K;
   };
   C.posee = (K, id) => K.poses.some((x) => x.id === id);
   // les questions d'un thème, telles qu'on peut les poser : dispo = les entrées de l'entretien ouvertes à ce moment
+  // une question se propose si la discussion l'a ouverte : sa question d'origine est posée, ce dont elle dépend a été dit
+  C.visible = (K, q, dispo) => C.posee(K, q.id) || ((!q.parent || C.posee(K, q.parent)) && (!q.tp || !dispo || dispo.has(q.id)) && (!q.si || q.si(K)));
   C.questions = function (K, theme, dispo) {
-    return K.ordre.map((id) => K.Q[id]).filter((q) => q.theme === theme && (C.posee(K, q.id) || (q.parent ? C.posee(K, q.parent) : !dispo || dispo.has(q.id))));
+    return K.ordre.map((id) => K.Q[id]).filter((q) => q.theme === theme && C.visible(K, q, dispo));
   };
+  C.themesVisibles = (K, dispo) => K.themes.filter((th) => C.questions(K, th.id, dispo).length > 0);
   C.restantes = (K, theme, dispo) => C.questions(K, theme, dispo).filter((q) => !C.posee(K, q.id)).length;
 
   // ------------------------------------------------------------------ Poser une question
@@ -169,6 +236,7 @@
     const client = (lignes.filter((l) => !l.f).map((l) => l.t).filter((x) => (/\?\s*»?$/.test(x) || /^Dites-moi que/.test(x)) && C.REPONSES.some(([re]) => re.test(x))).pop()) || null;
     const neuve = client && !K.poses.some((x) => x.client === client) ? client : null;
     K.poses.push({ id, texte: q.q, rep: lignes.map((l) => l.t), min: q.cout, client: neuve });
+    K.entendu += " " + lignes.map((l) => l.t).join(" ").toLowerCase();
     return { texte: q.q, lignes, min: q.cout, client: neuve };
   };
 
@@ -197,7 +265,7 @@
     const out = [];
     for (const id of K.ordre) {
       const q = K.Q[id];
-      if (C.posee(K, id)) continue;
+      if (C.posee(K, id) || !C.visible(K, q, null)) continue;
       const f = q.a.map((x) => x && typeof x === "object" && x.f).find(Boolean);
       if (!f) continue;
       out.push({ sujet: C.THEMES[q.theme] || "", question: q.q, fait: (def.facts && def.facts[f] && def.facts[f].label) || "" });
