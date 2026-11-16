@@ -16,8 +16,8 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("ÉCHEC", m
   ok(H && H.length && /^\d+\.\d+\.\d+$/.test(CR.JEU.version) && CR.JEU.version === H[0].version, "version du jeu = première note de mise à jour");
   ok(H.every((h, i) => /^\d+\.\d+\.\d+$/.test(h.version) && (i === 0 || CR.JEU.comparer(H[i - 1].version, h.version) > 0)), "versions toujours croissantes");
   ok(H.every((h) => (h.type === "contenu") === !!h.nom && (h.type !== "contenu" || /\.0$/.test(h.version)) && h.notes.length > 0 && h.date), "contenu nommé (correctif à 0), correctif sans nom, notes et date");
-  ok(CR.JEU.version.startsWith("0.") ? CR.JEU.etat === "bêta" : true, "avant la sortie 1.0, le jeu est en bêta");
-  ok(new RegExp("Version " + CR.JEU.version.replace(/\./g, "\\.") + " bêta « " + CR.JEU.nom + " »").test(texts(doc.body)), "version et nom affichés à l'écran titre : " + (texts(doc.querySelector(".ts-version") || doc.body).slice(0, 80)));
+  ok(CR.JEU.etat === "", "un seul jeu : aucun libellé « bêta »");
+  ok(new RegExp("Version " + CR.JEU.version.replace(/\./g, "\\.") + " « " + CR.JEU.nom + " »").test(texts(doc.body)), "version et nom affichés à l'écran titre : " + (texts(doc.querySelector(".ts-version") || doc.body).slice(0, 80)));
   // notes de mise à jour depuis le menu ; après une mise à jour, elles s'ouvrent une fois
   await click(w, findBtn(doc, /^Notes de mise à jour$/));
   ok(doc.querySelectorAll(".nm-entree").length === H.length && /« La parole »|«/.test(texts(doc.querySelector(".notes-maj"))), "notes de mise à jour listées");

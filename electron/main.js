@@ -46,7 +46,7 @@ function fenetre() {
     win.webContents.executeJavaScript("window.CR && CR.Saves && CR.Saves.vider ? CR.Saves.vider().then(() => true) : true", true).catch(() => {}).then(() => { clearTimeout(garde); fin(); });
   });
   // le numéro de build et le canal, pour l'affichage de la version (js/version.js)
-  win.loadFile(path.join(JEU.dossier, "index.html"), { query: { build: String(JEU.numero || ""), canal: canal() === "essai" ? "beta" : "stable" } });
+  win.loadFile(path.join(JEU.dossier, "index.html"), { query: { build: String(JEU.numero || ""), canal: "stable" } });
   return win;
 }
 
@@ -64,7 +64,6 @@ function menu() {
     ] },
     { label: "Mise à jour", submenu: [
       { label: "Rechercher une mise à jour", click: () => rechercher(true) },
-      { label: "Recevoir aussi les versions d'essai", type: "checkbox", checked: canal() === "essai", click: (item) => { MAJ.ecrireCanal(app.getPath("userData"), item.checked ? "essai" : "stable"); rechercher(true); } },
       { label: "Version du jeu : " + (versionDe(JEU.dossier) ? versionDe(JEU.dossier) + " · build " + JEU.numero : "build " + JEU.numero) + (JEU.source === "telechargee" ? " (téléchargée)" : " (livrée avec l'app)"), enabled: false },
     ] },
     ...(mac ? [] : [{ label: "Fichier", submenu: [{ role: "quit", label: "Quitter" }] }]),

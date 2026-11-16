@@ -7,7 +7,7 @@
    - CORRECTIF : corrections et réglages sans contenu nouveau.
    - Build : le numéro de publication (nombre de commits de la branche) ; c'est lui que l'app compare pour se mettre à jour.
      L'app Mac le transmet à la page (?build=…&canal=…) ; dans le navigateur de développement, il n'est pas connu.
-   - Canal : « bêta » (publications d'essai, branches claude/**) ou stable (branche main).
+   - Canal : un seul (publications « jeu-N »), depuis le commit poussé ; plus de version « bêta ».
    Référence complète affichée : « 0.9.0.167 » (version et build), comme les numéros de build des consoles.
    À chaque publication : le correctif monte pour des corrections ; le mineur monte (correctif à 0) pour du contenu, avec un
    nom et ses notes en tête de HISTORIQUE ; tests/tson.js vérifie la cohérence (version = première entrée, ordre). */
@@ -30,6 +30,7 @@
         "Ordonnance pénale : la question sur les craintes du client n'est plus posée deux fois.",
         "Le courrier de l'Ordre dit où s'inscrire aux permanences : sur la carte, à la Maison du barreau.",
         "Le bandeau « Mini-jeux » quitte l'écran titre ; les jeux restent cachés dans le décor du cabinet.",
+        "Un seul jeu : plus de canal d'essai. Chaque mise à jour publiée se télécharge toute seule au lancement, sans réglage.",
       ],
     },
     {
@@ -75,7 +76,7 @@
       notes: [
         "Sauvegardes fiables : une scène interrompue se rejoue depuis son début, aucune audience « tenue » sans jugement.",
         "Garde-fou d'erreur, fichiers de sauvegarde corrompus refusés proprement, carrières de cinq ans vérifiées.",
-        "Distribution macOS : icône, canaux de mise à jour stable et d'essai, mises à jour signées.",
+        "Distribution macOS : icône, mises à jour signées.",
         "Le dossier de travail ne tombe plus sur un passage sans texte ; la saisie d'un article ne plante plus.",
       ],
     },
@@ -118,12 +119,12 @@
 
   const parametres = (() => { try { return new URLSearchParams(window.location.search); } catch (e) { return new URLSearchParams(""); } })();
   const build = Number(parametres.get("build")) || null;
-  const canal = parametres.get("canal") === "stable" ? "stable" : "beta";
+  const canal = "stable"; // un seul jeu : plus de canal d'essai ni de libellé « bêta »
   const h0 = HISTORIQUE[0];
   CR.JEU = {
     version: h0.version, nom: h0.nom || (HISTORIQUE.find((h) => h.nom) || {}).nom || "", date: h0.date,
     // l'état « bêta » reste tant que le jeu n'est pas sorti (MAJEUR = 0) ou que l'app vient du canal d'essai
-    etat: h0.version.startsWith("0.") || canal === "beta" ? "bêta" : "",
+    etat: "",
     build, canal, historique: HISTORIQUE,
   };
   CR.JEU.libelle = CR.JEU.version + (CR.JEU.etat ? " " + CR.JEU.etat : "");

@@ -107,7 +107,7 @@ function fauxGithub() {
   fs.writeFileSync(path.join(ud, "jeu", "actuel.json"), "{abîmé");
   note("pointeur abîmé : retour à la version livrée", MAJ.jeuACharger(appDir, ud).source === "livree");
 
-  // ---------- 1 bis. sortie 1.0 : canaux (stable, essai) et signature du manifeste
+  // ---------- 1 bis. un seul canal (jeu-N), signature du manifeste
   {
     const ud2 = fs.mkdtempSync(path.join(os.tmpdir(), "lp-maj2-"));
     const v2 = (o) => MAJ.verifier(Object.assign({ cle: etat.cle, userData: ud2, numeroActuel: 100, api, depot: "a/b" }, o));
@@ -118,23 +118,21 @@ function fauxGithub() {
     note("canal stable : une version d'essai n'est jamais installée", r2.etat === "pret" && r2.numero === 110, JSON.stringify(r2));
     r2 = await v2({ canal: "stable", numeroActuel: 110 });
     note("canal stable : à jour malgré une version d'essai plus récente", r2.etat === "a-jour", JSON.stringify(r2));
-    r2 = await v2({ canal: "essai", numeroActuel: 110 });
-    note("canal essai : la version d'essai est installée", r2.etat === "pret" && r2.numero === 120, JSON.stringify(r2));
-    note("canal par défaut : stable ; réglage du joueur relu", MAJ.lireCanal(ud2) === "stable" && MAJ.lireCanal(ud2, "essai") === "essai" && MAJ.ecrireCanal(ud2, "essai") && MAJ.lireCanal(ud2) === "essai" && MAJ.ecrireCanal(ud2, "stable") && MAJ.lireCanal(ud2, "essai") === "stable" && !MAJ.ecrireCanal(ud2, "n'importe quoi"));
+    note("un seul canal : une publication essai-N n'est plus lue", MAJ.lireCanal(ud2) === "stable" && MAJ.lireCanal(ud2, "essai") === "stable" && MAJ.ecrireCanal(ud2, "essai") === false, "");
     const { publicKey, privateKey } = crypto.generateKeyPairSync("ed25519");
     const pem = publicKey.export({ type: "spki", format: "pem" });
     const autre = crypto.generateKeyPairSync("ed25519").privateKey;
     pubT("jeu-130", 130);
-    r2 = await v2({ clePublique: pem, numeroActuel: 120 });
-    note("app à clé publique : publication non signée refusée", r2.etat === "erreur" && /non signée/.test(r2.detail) && MAJ.versionTelechargee(ud2).numero === 120, r2.detail);
+    r2 = await v2({ clePublique: pem, numeroActuel: 110 });
+    note("app à clé publique : publication non signée refusée", r2.etat === "erreur" && /non signée/.test(r2.detail) && MAJ.versionTelechargee(ud2).numero === 110, r2.detail);
     pubT("jeu-131", 131, { signer: autre });
-    r2 = await v2({ clePublique: pem, numeroActuel: 120 });
-    note("signature d'une autre clé refusée", r2.etat === "erreur" && /signature/.test(r2.detail) && MAJ.versionTelechargee(ud2).numero === 120, r2.detail);
+    r2 = await v2({ clePublique: pem, numeroActuel: 110 });
+    note("signature d'une autre clé refusée", r2.etat === "erreur" && /signature/.test(r2.detail) && MAJ.versionTelechargee(ud2).numero === 110, r2.detail);
     pubT("jeu-132", 132, { sig: "pas-une-signature" });
-    r2 = await v2({ clePublique: pem, numeroActuel: 120 });
-    note("signature illisible refusée", r2.etat === "erreur" && MAJ.versionTelechargee(ud2).numero === 120, r2.detail);
+    r2 = await v2({ clePublique: pem, numeroActuel: 110 });
+    note("signature illisible refusée", r2.etat === "erreur" && MAJ.versionTelechargee(ud2).numero === 110, r2.detail);
     pubT("jeu-133", 133, { signer: privateKey });
-    r2 = await v2({ clePublique: pem, numeroActuel: 120 });
+    r2 = await v2({ clePublique: pem, numeroActuel: 110 });
     note("publication signée par la bonne clé installée", r2.etat === "pret" && r2.numero === 133, JSON.stringify(r2));
     note("aucune clé d'accès n'est lue dans l'app", MAJ.lireCle(__dirname) === (process.env.LP_MAJ_CLE || "") && !JSON.stringify(require("../package.json").build.files).includes("maj-cle.txt"));
     etat.publications = [];

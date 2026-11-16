@@ -12,7 +12,7 @@ const http = require("http");
 const https = require("https");
 
 // Version de l'enveloppe. Une publication qui exige une enveloppe plus récente (manifest.enveloppeMin) n'est pas installée.
-const ENVELOPPE = 2; // 2 (sortie 1.0) : canaux stable et essai, signature du manifeste, plus aucune clé d'accès dans l'app
+const ENVELOPPE = 2; // 2 (sortie 1.0) : un seul canal (jeu-N), signature du manifeste, plus aucune clé d'accès dans l'app
 const DEPOT = "eltimal/eltimal";
 const API = "https://api.github.com";
 const PREFIXES = ["index.html", "js/", "lib/", "fonts/"];
@@ -22,7 +22,7 @@ const lireJson = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); }
 // Version livrée dans l'app (écrite au moment du build par electron/paquet-jeu.js --version-livree)
 function versionLivree(appDir) {
   const v = lireJson(path.join(appDir, "electron", "jeu-version.json"));
-  return { numero: v && Number.isInteger(v.numero) ? v.numero : 0, commit: v && v.commit, sons: v && v.sons, canal: v && v.canal === "essai" ? "essai" : "stable", dossier: appDir, source: "livree" };
+  return { numero: v && Number.isInteger(v.numero) ? v.numero : 0, commit: v && v.commit, sons: v && v.sons, canal: "stable", dossier: appDir, source: "livree" };
 }
 
 // Version téléchargée en dernier, si elle est complète
@@ -129,14 +129,12 @@ function nettoyer(userData, garder) {
   for (const n of noms) if (n.endsWith(".partiel")) fs.rmSync(path.join(base, n), { recursive: true, force: true });
 }
 
-// Canal de mise à jour. « stable » : les seules publications « jeu-N », faites depuis la branche principale après la
-// batterie de tests. « essai » : en plus, les publications « essai-N » des branches de travail (elles aussi testées).
-// Une app ne reçoit jamais une version d'essai sans l'avoir demandé : réglage rangé à côté des sauvegardes, sinon le canal
-// de construction de l'app (jeu-version.json).
-const CANAUX = ["stable", "essai"];
+// Canal de mise à jour : un seul jeu. Les publications « jeu-N » sont la seule source ; les anciennes « essai-N » sont
+// ignorées. Le jeu se met à jour tout seul au lancement, sans réglage.
+const CANAUX = ["stable"];
 function lireCanal(userData, defaut) {
   const c = lireJson(path.join(userData, "canal.json"));
-  return c && CANAUX.includes(c.canal) ? c.canal : CANAUX.includes(defaut) ? defaut : "stable";
+  return "stable";
 }
 function ecrireCanal(userData, canal) {
   if (!CANAUX.includes(canal)) return false;
@@ -167,7 +165,7 @@ async function verifier(o) {
     if (r.status === 403 && !cle) return { etat: "erreur", detail: "trop de requêtes, réessai au prochain lancement" };
     if (r.status === 401 || r.status === 403 || r.status === 404) return { etat: "erreur", detail: "clé refusée ou expirée (" + r.status + ")" };
     if (r.status !== 200) return { etat: "erreur", detail: "réponse " + r.status };
-    const motif = o.canal === "essai" ? /^(jeu|essai)-(\d+)$/ : /^(jeu)-(\d+)$/;
+    const motif = /^(jeu)-(\d+)$/;
     const num = (p) => Number(motif.exec(p.tag_name)[2]);
     const pubs = JSON.parse(r.corps.toString("utf8"))
       .filter((p) => !p.draft && motif.test(p.tag_name))

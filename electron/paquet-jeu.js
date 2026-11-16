@@ -61,9 +61,8 @@ if (process.env.LP_MAJ_SIGNATURE) {
   fs.writeFileSync(path.join(sortie, "manifest.sig"), sig.toString("base64"));
   signe = true;
 } else { try { fs.rmSync(path.join(sortie, "manifest.sig")); } catch (e) { /* absent */ } }
-// canal de l'app construite : stable depuis la branche principale, essai depuis une branche de travail (LP_CANAL pour forcer)
-const branche = process.env.GITHUB_REF_NAME || (() => { try { return git("rev-parse --abbrev-ref HEAD"); } catch (e) { return ""; } })();
-const canal = ["stable", "essai"].includes(process.env.LP_CANAL) ? process.env.LP_CANAL : branche === "main" ? "stable" : "essai";
+// un seul canal : toute construction est « stable »
+const canal = "stable";
 if (process.argv.includes("--version-livree")) fs.writeFileSync(path.join(__dirname, "jeu-version.json"), JSON.stringify({ numero, version, commit, date, sons: sons && sons.empreinte, canal }));
 console.log(signe ? "manifeste signé" : "manifeste NON signé (pas de LP_MAJ_SIGNATURE)");
 console.log(`jeu n° ${numero} (${commit.slice(0, 7)}) : ${chemins.length} fichiers, complet ${(paquet.length / 1048576).toFixed(1)} Mo, léger ${(paquetLeger.length / 1048576).toFixed(1)} Mo` + (sons ? ` ; sons : ${sons.fichiers} fichiers, ${(sons.taille / 1048576).toFixed(1)} Mo, empreinte ${sons.empreinte.slice(0, 8)}` : ""));

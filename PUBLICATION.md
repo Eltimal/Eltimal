@@ -1,14 +1,14 @@
 # La Permanence — procédure de publication
 
-## Deux canaux
+## Un seul jeu
 
-| Canal | Branche | Publication | Qui la reçoit |
-|---|---|---|---|
-| stable | `main` | `jeu-<numéro>` | toutes les apps installées |
-| essai | `claude/**` | `essai-<numéro>` (préversion) | les apps construites depuis une branche de travail, et celles où le joueur a coché « Mise à jour → Recevoir aussi les versions d'essai » |
+Depuis la 1.0.1 (16 novembre 2026), il n'y a plus de canal d'essai ni de canal stable : **chaque poussée sur une branche de
+travail ou sur `main`, après la batterie de tests, publie « jeu-<numéro> »**, et chaque app installée télécharge cette
+publication toute seule au lancement. Le numéro est le nombre de commits de la branche : il ne doit jamais redescendre
+(les apps ne reviennent pas en arrière). Les anciennes publications « essai-N » sont ignorées par les apps.
 
-Le numéro est le nombre de commits de la branche. Rien n'est publié si un test échoue : le workflow « Publier le jeu »
-lance d'abord la batterie complète, le test navigateur et le test du module de mise à jour.
+Le paquet de mise à jour contient `index.html`, `js/`, `lib/` et `fonts/`. La coquille de l'app Mac (`electron/`) ne se
+met pas à jour toute seule : une réinstallation est nécessaire pour qu'elle change (menu, icône, signature).
 
 ## Numérotation des versions
 
@@ -22,11 +22,11 @@ mise à jour », ouvertes d'elles-mêmes une fois après chaque mise à jour).
 | MINEUR | une mise à jour de contenu (un lot de la refonte, un pan du jeu) ; elle porte un nom ; le correctif revient à 0 | 9 « La parole » |
 | CORRECTIF | corrections et réglages, sans contenu nouveau, sans nom | 0.8.1 |
 | Build | numéro de publication, nombre de commits de la branche ; c'est lui que l'app compare pour se mettre à jour | 167 |
-| Canal | bêta (branches `claude/**`, publications `essai-N`) ou stable (`main`, `jeu-N`) | bêta |
+| Canal | un seul : publications `jeu-N` (depuis 1.0.1) | — |
 
 Référence complète : « 0.9.0.167 » ; à l'écran : « Version 0.9.0 bêta « La parole » · build 167 ». Le menu Mise à jour
 de l'app Mac affiche la version et le build ; le message de mise à jour nomme la version (« La mise à jour 0.9.0 « La
-parole » est prête »). Les publications GitHub gardent l'étiquette `jeu-N` / `essai-N` (lue par les apps installées) et
+parole » est prête »). Les publications GitHub gardent l'étiquette `jeu-N` (lue par les apps installées) et
 prennent pour titre la version.
 
 **À chaque publication qui change quelque chose pour le joueur** : ajouter l'entrée en tête de `HISTORIQUE` dans

@@ -575,7 +575,7 @@
       ${h.resume && html`<p className="nm-resume">${h.resume}</p>`}
       <ul>${h.notes.map((n, j) => html`<li key=${j}>${n}</li>`)}</ul>
     </details>`)}
-    ${CR.JEU.build ? html`<p className="small muted">Build ${CR.JEU.build} · canal ${CR.JEU.canal === "stable" ? "stable" : "bêta"} · référence ${CR.JEU.complet}</p>` : null}</div>`;
+    ${CR.JEU.build ? html`<p className="small muted">Build ${CR.JEU.build} · référence ${CR.JEU.complet}</p>` : null}</div>`;
   }
 
   // =================================================================== Crédits et licences (sortie 1.0)
