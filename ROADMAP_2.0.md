@@ -2,7 +2,7 @@
 
 16 novembre 2026. Point de départ : la 1.0.0 « Le serment » (`jeu-174`). Sources : `AUDIT_1.0.md` (audit des mécaniques
 et relecture des textes). Cette feuille de route remplace l'ordre de travail de `GAMEPLAY_ROADMAP.md` pour la suite ;
-les lots déjà commencés là-bas (familles d'infractions, dossier criminel) sont repris ici dans les étapes 1.3 et 1.6.
+les lots déjà commencés là-bas (familles d'infractions, dossier criminel) sont repris ici dans les étapes 1.4 et 1.7.
 
 ## Ce que sera la 2.0
 
@@ -22,12 +22,13 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 | Version | Nom | Contenu | Fini quand |
 |---|---|---|---|
 | 1.0.1 | (correctif) | Corrections de texte et filet de sécurité | le script de relecture ne compte plus rien sur les défauts ponctuels |
-| 1.1.0 | Le premier appel | La première semaine conduite | un joueur passif joue une garde à vue avant le troisième jour |
-| 1.2.0 | La garde à vue | Contexte de procédure, parole par situation | moins de 10 % de questions sans effet, aucun « déjà dit » |
-| 1.3.0 | Le dossier juste | Une simulation par famille de faits | zéro contradiction entre pièces sur 1 000 affaires |
-| 1.4.0 | Le palais vous connaît | Réputations qui comptent, fin de carrière | chaque jauge a un effet mesuré ; une carrière a une fin |
-| 1.5.0 | Les comptes | Économie recalée, emplois de l'argent | les deux mesures de trésorerie concordent avec la cible choisie |
-| 1.6.0 | L'audience relue | Relecture de ce qui n'a pas été lu, répétition | audiences, jugements et dossiers criminels passés au script |
+| 1.1.0 | L'accueil | Le menu principal retravaillé | Kevin a choisi une direction sur captures et validé le résultat sur son Mac |
+| 1.2.0 | Le premier appel | La première semaine conduite | un joueur passif joue une garde à vue avant le troisième jour |
+| 1.3.0 | La garde à vue | Contexte de procédure, parole par situation | moins de 10 % de questions sans effet, aucun « déjà dit » |
+| 1.4.0 | Le dossier juste | Une simulation par famille de faits | zéro contradiction entre pièces sur 1 000 affaires |
+| 1.5.0 | Le palais vous connaît | Réputations qui comptent, fin de carrière | chaque jauge a un effet mesuré ; une carrière a une fin |
+| 1.6.0 | Les comptes | Économie recalée, emplois de l'argent | les deux mesures de trésorerie concordent avec la cible choisie |
+| 1.7.0 | L'audience relue | Relecture de ce qui n'a pas été lu, répétition | audiences, jugements et dossiers criminels passés au script |
 | 2.0.0 | (à nommer) | Un seul parcours, distribution achevée | checklist de sortie entièrement cochée |
 
 ### 1.0.1 — corrections et filet de sécurité
@@ -43,7 +44,27 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 - Courrier de l'Ordre : l'inscription est dans Cabinet → L'Ordre. Écran de création qui tient en 1440 × 900.
 - Batterie : `relecture-scan` devient un test ; les 15 tests oubliés y entrent.
 
-### 1.1.0 « Le premier appel » — la première semaine
+### 1.1.0 « L'accueil » — le menu principal retravaillé
+
+Un retravail, pas une refonte : le cabinet, Timon, les entrées du menu et les jeux cachés dans le décor restent. Demande
+de Kevin (16 novembre) : la fenêtre qui bouge avec la souris déplaît ; la vue est paresseuse, pas assez ambitieuse ni
+artistique.
+
+- **Le décor ne suit plus la souris.** Les objets continuent de réagir quand on les survole ou qu'on les clique.
+- **Une vraie vue par la fenêtre**, composée comme une image et non comme un fond : Paris en profondeur (premiers toits,
+  ville, ciel), une lumière qui a une direction, un moment choisi. Le titre dit « nuit de permanence » : la nuit, la
+  pluie sur la vitre, les fenêtres allumées en face sont la piste la plus naturelle ; l'heure réelle peut rester un
+  réglage de la lumière, pas du sujet.
+- **Une pièce qui raconte** : la lampe seule source chaude, le téléphone qu'on attend, la robe à la patère, le dossier
+  ouvert — moins d'objets posés à plat, plus de mise en scène.
+- **Le menu dans l'image** : titre entier à toutes les tailles (il est coupé sur l'écran de création en 1440 × 900),
+  hiérarchie nette entre « Nouvelle partie » ou « Continuer » et le reste.
+- **Bandeau « Mini-jeux » retiré** (fait le 16 novembre, 1.0.1).
+
+Méthode, parce que c'est une affaire de goût : deux ou trois directions montrées en captures avant de construire ;
+Kevin en choisit une ; elle est ensuite menée à terme et vérifiée à 1440 × 900, en petit écran et sur son Mac.
+
+### 1.2.0 « Le premier appel » — la première semaine
 
 - Inscription d'office à la permanence de la première nuit : la promesse de l'écran titre est tenue.
 - Bouton « S'inscrire aux permanences » dans le courrier de l'Ordre.
@@ -52,7 +73,7 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 - « Assisté » coché par défaut à la première carrière, « Libre » ensuite.
 - Test : un automate qui ne fait que cliquer « Avancer » et « Répondre » joue une garde à vue avant le jour 3.
 
-### 1.2.0 « La garde à vue » — parole et procédure
+### 1.3.0 « La garde à vue » — parole et procédure
 
 - **Contexte de procédure** lu par tous les textes : arrêté sur le fait, convoqué, plaignant ; date des faits relative
   au jour où l'on parle.
@@ -62,7 +83,7 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 - Mensonge du client tenu dans la durée d'un entretien (pas de démenti trois réponses plus loin sans confrontation).
 - Mesure de départ : 49 % d'angles sans effet, 12 % de « déjà dit ».
 
-### 1.3.0 « Le dossier juste » — une vérité par famille de faits
+### 1.4.0 « Le dossier juste » — une vérité par famille de faits
 
 Dans l'ordre, chaque famille avec sa simulation, ses pièces tirées de la même vérité et son test de cohérence :
 
@@ -76,21 +97,21 @@ Dans l'ordre, chaque famille avec sa simulation, ses pièces tirées de la même
 Avec elles : un **modèle de témoin** (qui il est, où il était, ce qu'il a vu) et une **fiche de famille** stable par
 personne (avec qui elle vit, qui peut attester).
 
-### 1.4.0 « Le palais vous connaît » — réputations et fin de carrière
+### 1.5.0 « Le palais vous connaît » — réputations et fin de carrière
 
 - Parquet : pèse sur l'orientation (alternative, comparution sur reconnaissance proposée) et bouge selon vos actes.
 - Siège : pèse sur les renvois, l'écoute des incidents, la marge de la peine.
 - Si l'un des deux ne peut pas être branché proprement, la jauge est retirée.
 - Fin de carrière : bilan chiffré, épilogue des clients marquants, un objectif après « Ténor du barreau ».
 
-### 1.5.0 « Les comptes » — économie
+### 1.6.0 « Les comptes » — économie
 
 - Choisir la cible (voir « Décisions à prendre »), puis régler l'arrivée des clients, le prix juste, les impayés.
 - Emplois de l'argent qui changent le jeu : local, documentation, formation, déplacements.
 - Sauvegarde allégée des contacts jamais suivis.
 - Test : `tecono` et `tviabilite` donnent la même réponse à la même question.
 
-### 1.6.0 « L'audience relue » — ce qui n'a pas été lu
+### 1.7.0 « L'audience relue » — ce qui n'a pas été lu
 
 - Relecture, par le même procédé, des audiences, jugements, dossiers criminels et d'instruction, après-jugement.
 - Répétition : ramener les deux mesures à cinq points sous leur seuil (24,3 % pour 25 ; 17,9 % pour 20).
@@ -112,10 +133,11 @@ personne (avec qui elle vit, qui peut attester).
 
 | Décision | Bloque | Proposition |
 |---|---|---|
-| Cible de l'économie : « le jeune avocat vit juste » ou « l'avocat actif s'enrichit » | 1.5.0 | Vit juste la première année, à l'aise ensuite : la pression au début, des choix après. |
+| Cible de l'économie : « le jeune avocat vit juste » ou « l'avocat actif s'enrichit » | 1.6.0 | Vit juste la première année, à l'aise ensuite : la pression au début, des choix après. |
 | Secrets Apple et clé de signature des mises à jour | 2.0.0 (app stable) | À poser dès que possible : rien d'autre n'en dépend. |
-| Bandeau « Mini-jeux » de l'écran titre | 1.0.1 | Le retirer du premier plan, garder les jeux cachés dans le décor. |
-| Relecture juridique : par qui, quand | 2.0.0 | À lancer pendant la 1.3, quand les pièces seront stables. |
+| Bandeau « Mini-jeux » de l'écran titre | — | **Tranché le 16 novembre : retiré.** Les jeux restent cachés dans le décor. |
+| Direction artistique du menu principal | 1.1.0 | Choisir parmi deux ou trois directions montrées en captures. |
+| Relecture juridique : par qui, quand | 2.0.0 | À lancer pendant la 1.4, quand les pièces seront stables. |
 | Accès aux données de la Cour de cassation (jurisprudence) | 2.0.0 | Sans accord, le report est abandonné par écrit. |
 
 ## Ce qui ne changera pas

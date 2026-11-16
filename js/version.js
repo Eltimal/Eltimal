@@ -17,6 +17,13 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "1.0.1", nom: "", date: "16 novembre 2026", type: "correctif",
+      resume: "Écran titre allégé.",
+      notes: [
+        "Le bandeau « Mini-jeux » quitte l'écran titre ; les jeux restent cachés dans le décor du cabinet.",
+      ],
+    },
+    {
       version: "1.0.0", nom: "Le serment", date: "16 novembre 2026", type: "contenu",
       resume: "La sortie officielle : la carrière complète, de la première permanence au jugement et à ses suites.",
       notes: [

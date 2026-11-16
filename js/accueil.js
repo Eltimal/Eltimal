@@ -381,10 +381,6 @@
     const answer = (id) => { if (rep) return; const ok = id === quiz.id; setRep({ id, ok }); setSerie(ok ? serie + 1 : 0); try { CR.son && CR.son.jouer(ok ? "bien" : "erreur"); } catch (e) { /* muet */ } };
     return html`<${React.Fragment}>
       <canvas ref=${ref} className="ts-canvas acc-canvas" aria-hidden="true" />
-      ${!quiz && html`<div className="acc-jeux" role="group" aria-label="Mini-jeux de l'accueil">
-        <span className="acc-jeux-t">Mini-jeux</span>
-        ${[["boulette", "Boulette", "Attrapez la boulette sur le bureau, tirez, lâchez : visez la corbeille"], ["tampon", "Tampon", "24 secondes : cliquez quand une feuille passe sous le tampon"], ["code", "Quiz éclair", "Retrouvez l'article du code"], ["laser", "Timon", "Le point lumineux suit la souris : Timon le chasse. Recliquez sur le pointeur du bureau pour l'éteindre"]].map(([k, nom, aide]) => html`<button key=${k} type="button" className="ts-btn ts-btn-sm" title=${aide} onClick=${() => sref.current && sref.current.start(k)}>${nom}</button>`)}
-      </div>`}
       ${quiz && html`<div className="acc-quiz" role="dialog" aria-label="Quiz éclair du code pénal">
         <p className="acc-quiz-top"><span>Quiz éclair</span>${serie > 1 && html`<b>Série de ${serie}</b>`}</p>
         <p className="acc-quiz-q">« ${quiz.extrait} »</p>
