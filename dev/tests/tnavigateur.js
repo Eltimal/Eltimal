@@ -23,6 +23,13 @@ const ok = (c, k, d) => { if (!c) { echecs++; console.log("  ✗ " + k + (d !== 
 
   await titre();
   ok((await p.evaluate(() => window.CR.Saves.backend)) === "idb", "B2 : le rangement de l'appareil n'est pas IndexedDB");
+  // 1.1.0 « L'accueil » : le titre tient dans sa colonne ; l'écran de création tient en 1440 × 900, titre visible, sans défilement
+  { const m = await p.evaluate(() => { const r = (q) => document.querySelector(q).getBoundingClientRect(), t = document.querySelector(".ts-title"); return { tw: t.scrollWidth, cw: t.clientWidth, pr: Math.round(r(".ts-panel").right), tr: Math.round(r(".ts-title").right), gpu: !!document.querySelector(".acc-gpu") }; });
+    ok(m.tw <= m.cw + 1 && m.tr <= m.pr + 1, "1.1.0 : le titre déborde de sa colonne", m);
+    await p.click("text=Nouvelle partie"); await p.waitForSelector("#nc-nom"); await p.waitForTimeout(200);
+    const c = await p.evaluate(() => { const r = (q) => document.querySelector(q).getBoundingClientRect(), u = document.querySelector(".ts-ui"); return { haut: Math.round(r(".ts-title").top), bas: Math.round(r(".ts-panel").bottom), defile: u.scrollHeight - u.clientHeight }; });
+    ok(c.haut >= 0 && c.bas <= 900 && c.defile <= 0, "1.1.0 : l'écran de création ne tient pas en 1440 × 900", c);
+    await p.click("text=Retour"); await p.waitForSelector(".ts-menu"); }
   ok((await p.evaluate(() => document.documentElement.lang)) === "fr", "la page ne déclare pas sa langue");
 
   // ---------- finitions : crédits et licences à l'écran titre ; niveau d'aide choisi à la création ; focus gardé dans le menu

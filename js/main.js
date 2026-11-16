@@ -691,7 +691,7 @@
     return html`<div className="ts">
       <${UI.TitleArt} />
       <div className="ts-ui">
-        <div className="ts-panel">
+        <div className=${cx("ts-panel", mode !== "menu" && "ts-etroit", mode === "new" && "ts-large")}>
           <header className="ts-head">
             <${UI.PixelBalance} size=${4} />
             <p className="ts-eyebrow">Barreau de Paris · Nuit de permanence</p>
@@ -703,12 +703,14 @@
             <nav className="ts-menu" aria-label="Menu principal">
               ${auto && html`<button type="button" className="ts-btn ts-primary" onClick=${async () => { try { const st = await Saves.load("auto"); if (st) CR.poserPartie(st); } catch (e) { alertMsg(msgLecture(e)); } }}>${auto.meta.over ? "Revoir la fin de carrière" : "Reprendre"}<small>${auto.meta.nom} · ${auto.meta.date}</small></button>`}
               <button type="button" className=${cx("ts-btn", !auto && "ts-primary")} onClick=${() => setMode("new")}>Nouvelle partie</button>
-              <button type="button" className="ts-btn" onClick=${() => setMode("code")}>Jouer une affaire par son code</button>
-              ${others.length > 0 && html`<button type="button" className="ts-btn" onClick=${() => setMode("load")}>Charger une partie</button>`}
-              <button type="button" className="ts-btn" onClick=${() => fileRef.current && fileRef.current.click()}>Importer une sauvegarde</button>
-              <button type="button" className="ts-btn" onClick=${() => setMode("reglages")}>Réglages</button>
-              <button type="button" className="ts-btn" onClick=${() => setMode("notes")}>Notes de mise à jour</button>
-              <button type="button" className="ts-btn" onClick=${() => setMode("credits")}>Crédits et licences</button>
+              <div className="ts-sec">
+                ${others.length > 0 && html`<button type="button" className="ts-btn ts-lien" onClick=${() => setMode("load")}>Charger une partie</button>`}
+                <button type="button" className="ts-btn ts-lien" onClick=${() => setMode("code")}>Jouer une affaire par son code</button>
+                <button type="button" className="ts-btn ts-lien" onClick=${() => fileRef.current && fileRef.current.click()}>Importer une sauvegarde</button>
+                <button type="button" className="ts-btn ts-lien" onClick=${() => setMode("reglages")}>Réglages</button>
+                <button type="button" className="ts-btn ts-lien" onClick=${() => setMode("notes")}>Notes de mise à jour</button>
+                <button type="button" className="ts-btn ts-lien" onClick=${() => setMode("credits")}>Crédits et licences</button>
+              </div>
               <input type="file" accept=".json,application/json" ref=${fileRef} hidden onChange=${importFile} />
             </nav>
             ${err && html`<p className="warn-txt small">${err}</p>`}

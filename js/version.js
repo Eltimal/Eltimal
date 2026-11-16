@@ -17,6 +17,22 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "1.1.0", nom: "L'accueil", date: "16 novembre 2026", type: "contenu",
+      resume: "Le menu principal retravaillé : une vraie nuit de permanence à la fenêtre du cabinet.",
+      notes: [
+        "Le décor du cabinet ne suit plus la souris. Les objets réagissent toujours quand on les survole ou qu'on les clique.",
+        "Une nouvelle vue par la fenêtre : la nuit de pluie sur le 17e, l'immeuble d'en face et ses lucarnes allumées, le tribunal des Batignolles, le Sacré-Cœur et la tour Eiffel au loin.",
+        "C'est toujours la nuit de permanence : dans la journée, la fenêtre montre le crépuscule ; à partir de 21 heures, la nuit pleine.",
+        "La pièce est plus sombre : la lampe du bureau est la seule lumière chaude, le téléphone attend dessous, le dossier est ouvert.",
+        "La fenêtre a deux grands vantaux au lieu de six carreaux.",
+        "Les jeux cachés dans le décor ne sont plus signalés par des flèches : un éclat discret, et leur nom au survol.",
+        "Le titre tient en entier à toutes les tailles d'écran.",
+        "« Reprendre » ou « Nouvelle partie » domine le menu ; les autres entrées se rangent en dessous.",
+        "L'écran de création tient dans l'écran : le titre reste visible, les deux carrières sont côte à côte.",
+        "Sur un écran étroit, le décor n'est plus étiré.",
+      ],
+    },
+    {
       version: "1.0.1", nom: "", date: "16 novembre 2026", type: "correctif",
       resume: "Relecture des textes : les incohérences les plus fréquentes sont corrigées.",
       notes: [

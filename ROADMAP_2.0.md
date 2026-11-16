@@ -22,7 +22,7 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 | Version | Nom | Contenu | Fini quand |
 |---|---|---|---|
 | 1.0.1 | (correctif) | Corrections de texte et filet de sécurité | le script de relecture ne compte plus rien sur les défauts ponctuels |
-| 1.1.0 | L'accueil | Le menu principal retravaillé | Kevin a choisi une direction sur captures et validé le résultat sur son Mac |
+| 1.1.0 | L'accueil | Le menu principal retravaillé | **publiée le 16 novembre** ; reste la validation de Kevin sur son Mac |
 | 1.2.0 | Le premier appel | La première semaine conduite | un joueur passif joue une garde à vue avant le troisième jour |
 | 1.3.0 | La garde à vue | Contexte de procédure, parole par situation | moins de 10 % de questions sans effet, aucun « déjà dit » |
 | 1.4.0 | Le dossier juste | Une simulation par famille de faits | zéro contradiction entre pièces sur 1 000 affaires |
@@ -50,7 +50,26 @@ Fait, et mesuré par `trelecture` (0 défaut ponctuel sur 420 affaires) :
 Écarté : l'enquête sociale « au dépôt » n'était pas une incohérence (elle n'est remise qu'en comparution immédiate).
 Reporté en 1.1.0 : l'écran de création, qui déborde de 1440 × 900 et fait défiler le titre hors de l'écran.
 
-### 1.1.0 « L'accueil » — le menu principal retravaillé
+### 1.1.0 « L'accueil » — le menu principal retravaillé — **publiée le 16 novembre 2026**
+
+Kevin a demandé de faire l'étape et de publier sans passer par le choix sur captures : la direction retenue est celle que
+cette feuille de route donnait pour la plus naturelle (la nuit, la pluie sur la vitre, les fenêtres allumées en face).
+Fait, mesuré par `taccueil` (batterie) et par `tnavigateur` (titre dans sa colonne, création sans défilement en
+1440 × 900) :
+
+- Le décor ne suit plus la souris (`plan-accueil.js`, `accueil.js`).
+- La vue (`ville()` dans `accueil.js`) : trois profondeurs — l'immeuble d'en face (brisis de zinc, lucarnes, mur mitoyen,
+  une silhouette, un téléviseur), la ville (tribunal des Batignolles au tiers gauche, Sacré-Cœur, tour Eiffel au loin),
+  le ciel bas ; la lueur monte de l'horizon derrière le tribunal. Toujours la nuit : crépuscule de 7 h à 21 h, nuit
+  pleine ensuite ; toujours la pluie (la neige en hiver).
+- La pièce : fenêtre à deux vantaux, lampe seule source chaude, téléphone sous la lampe, dossier ouvert ; les flèches
+  des jeux cachés remplacées par un éclat discret (nom au survol).
+- Le menu : titre réglé sur la largeur de sa colonne, une entrée dominante, les autres en liens ; hors du menu,
+  en-tête resserré ; création élargie, les deux carrières côte à côte ; décor non étiré en écran étroit.
+
+Reste : le regard de Kevin sur son Mac (c'est une affaire de goût) ; s'il veut une autre direction, la reprendre ici.
+
+Demande d'origine :
 
 Un retravail, pas une refonte : le cabinet, Timon, les entrées du menu et les jeux cachés dans le décor restent. Demande
 de Kevin (16 novembre) : la fenêtre qui bouge avec la souris déplaît ; la vue est paresseuse, pas assez ambitieuse ni

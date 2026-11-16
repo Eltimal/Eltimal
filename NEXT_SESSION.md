@@ -8,7 +8,7 @@ L'audit de sortie et sa correction sont suivis dans `SORTIE_1.0.md` (plan, journ
 
 **1.0.0 « Le serment » publiée le 16 novembre 2026** (fusion dans `main`). Consigne de Kevin : aucun essai de plus de dix minutes sans retour (le singe se lance par graines courtes : `node tools/singe.js <graine> 100000 4`). Restes après la sortie : fin de `SORTIE_1.0.md`.
 
-**Suite : `ROADMAP_2.0.md`** (feuille de route vers la 2.0, d'après `AUDIT_1.0.md`). 1.0.1 faite le 16 novembre ; prochaine étape : 1.1.0 « L'accueil » (menu principal retravaillé : montrer deux ou trois directions en captures à Kevin avant de construire). Relecture des textes : `node dev/tools/relecture-scan.js`, `node dev/tools/relecture-pieces.js <genre>`.
+**Suite : `ROADMAP_2.0.md`** (feuille de route vers la 2.0, d'après `AUDIT_1.0.md`). 1.0.1 et 1.1.0 « L'accueil » faites le 16 novembre (menu principal : il reste le regard de Kevin sur son Mac) ; prochaine étape : 1.2.0 « Le premier appel » (la première semaine conduite). Relecture des textes : `node dev/tools/relecture-scan.js`, `node dev/tools/relecture-pieces.js <genre>`.
 
 ## Avant toute chose
 

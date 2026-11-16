@@ -17,7 +17,7 @@
   const son = (n) => { try { if (CR.SON && CR.SON.jouer) CR.SON.jouer(n); } catch (e) { /* muet */ } };
   const mem = A0.mem;
   const D = { WALL: 200, GLASS: 204, FURN: 190, CHAIR: 132, DESK: 120, OBJ: 112, FG: 10 };
-  const AMB = { nuit: [0.085, 0.095, 0.155], soir: [0.2, 0.165, 0.2], jour: [0.46, 0.47, 0.5] };
+  const AMB = { nuit: [0.06, 0.07, 0.125], soir: [0.1, 0.1, 0.175], jour: [0.46, 0.47, 0.5] };
 
   // ------------------------------------------------------------------ la pièce (décor fixe)
   function piece(m, g, ph, st) {
@@ -45,8 +45,8 @@
     M(D.WALL, 0, 140, [0, -0.6]); m.r(wx0 - 22, wy0 - 9, wx1 - wx0 + 44, 2, "#c9a24a"); M(D.WALL, 0, 140); m.r(wx0 - 24, wy0 - 10, 3, 4, "#e6c47a"); m.r(wx1 + 21, wy0 - 10, 3, 4, "#e6c47a");
     M(D.WALL - 1, 0, 30); m.r(wx0 - 4, wy0 - 4, wx1 - wx0 + 8, wy1 - wy0 + 8, "#d9d2c0"); M(D.WALL - 1, 0, 30, [0, -0.6]); m.hl(wx0 - 4, wy0 - 4, wx1 - wx0 + 8, "#f6f0e0"); M(D.WALL - 1, 0, 30, [-0.6, 0]); m.vl(wx0 - 4, wy0 - 4, wy1 - wy0 + 8, "#f6f0e0"); M(D.WALL - 1, 0, 30, [0.6, 0]); m.vl(wx1 + 3, wy0 - 4, wy1 - wy0 + 8, "#9a9484");
     g.glass.fill(0); M(D.GLASS, 255); for (let y = wy0; y < wy1; y++) for (let x = wx0; x < wx1; x++) { g.glass[y * W + x] = 1; m.px(x, y, "#000000"); }
-    const pw = Math.round((wx1 - wx0) / 3), tr = wy0 + Math.round((wy1 - wy0) * 0.28), bar = (x, y, w, h) => { M(D.WALL - 1, 0, 30); m.r(x, y, w, h, "#d9d2c0"); for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) g.glass[(y + j) * W + x + i] = 0; };
-    for (const x of [wx0 + pw, wx0 + 2 * pw]) { bar(x - 1, wy0, 3, wy1 - wy0); M(D.WALL - 1, 0, 30, [-0.6, 0]); m.vl(x - 1, wy0, wy1 - wy0, "#f6f0e0"); M(D.WALL - 1, 0, 30, [0.6, 0]); m.vl(x + 1, wy0, wy1 - wy0, "#9a9484"); }
+    const pw = Math.round((wx1 - wx0) / 2), tr = wy0 + Math.round((wy1 - wy0) * 0.22), bar = (x, y, w, h) => { M(D.WALL - 1, 0, 30); m.r(x, y, w, h, "#d9d2c0"); for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) g.glass[(y + j) * W + x + i] = 0; };
+    for (const x of [wx0 + pw]) { bar(x - 1, wy0, 3, wy1 - wy0); M(D.WALL - 1, 0, 30, [-0.6, 0]); m.vl(x - 1, wy0, wy1 - wy0, "#f6f0e0"); M(D.WALL - 1, 0, 30, [0.6, 0]); m.vl(x + 1, wy0, wy1 - wy0, "#9a9484"); }
     bar(wx0, tr - 1, wx1 - wx0, 3); M(D.WALL - 1, 0, 30, [0, 0.6]); m.hl(wx0, tr + 1, wx1 - wx0, "#9a9484");
     M(D.WALL - 1, 0, 160); m.r(wx0 + pw, ((tr + wy1) >> 1) - 4, 1, 9, "#8a7a4a"); m.px(wx0 + pw + 1, (tr + wy1) >> 1, "#e6c47a");
     M(D.WALL - 3, 0, 40, [0, -0.8]); m.r(wx0 - 8, wy1 + 4, wx1 - wx0 + 16, 3, "#ece5d2"); M(D.WALL - 3); m.hl(wx0 - 8, wy1 + 7, wx1 - wx0 + 16, "#8a8474");
@@ -89,7 +89,10 @@
     M(D.OBJ, 0, 120, [-0.3, 0]); m.r(O.plante.x - 4, dy - 8, 8, 8, "#dedad2"); M(D.OBJ, 0, 120, [0, -0.6]); m.hl(O.plante.x - 4, dy - 8, 8, "#f6f3ec"); M(D.OBJ, 0, 120, [0.6, 0]); m.vl(O.plante.x + 3, dy - 7, 7, "#a8a49c"); M(D.OBJ); m.hl(O.plante.x - 3, dy - 9, 6, "#3a2a1c");
     M(D.OBJ, 0, 30, [0, -0.5]); m.ell(O.plante.x - 4, dy - 11, 4, 1.6, "#3f7a3f"); m.ell(O.plante.x + 4, dy - 12, 4, 1.6, "#4f9a4f"); M(D.OBJ); m.line(O.plante.x, dy - 9, O.plante.x + 1, dy - 34, "#3a5a2c");
     M(D.OBJ, 0, 160, [0, -0.4]); m.r(O.tel.x, dy - 5, 13, 5, "#1e1e22"); m.hl(O.tel.x, dy - 5, 13, "#44444c"); m.r(O.tel.x + 1, dy - 8, 11, 3, "#26262c"); m.r(O.tel.x, dy - 9, 3, 3, "#33333a"); m.r(O.tel.x + 10, dy - 9, 3, 3, "#33333a"); M(D.OBJ); for (let i = 0; i < 3; i++) m.px(O.tel.x + 4 + i * 2, dy - 3, "#7a7a82");
-    for (let k = 0; k < 4; k++) { const c = ["#d8ccb4", "#c8443a", "#e6dcc6", "#5a86b0"][k]; M(D.OBJ, 0, 20, [0, -0.7]); m.r(O.pile.x - (k & 1), dy - 2 - k * 2, 20, 1, c); M(D.OBJ); m.r(O.pile.x - (k & 1), dy - 1 - k * 2, 20, 1, sh(c, -30)); }
+    // le dossier ouvert sous la lampe : deux chemises, la cote du dessus dépliée, les feuillets, le stylo
+    { const x = O.pile.x; M(D.OBJ, 0, 20, [0, -0.7]); m.r(x - 1, dy - 2, 22, 1, "#c8443a"); M(D.OBJ); m.r(x - 1, dy - 1, 22, 1, "#8a2a24"); M(D.OBJ, 0, 20, [0, -0.7]); m.r(x, dy - 4, 21, 1, "#d8c69a"); M(D.OBJ); m.r(x, dy - 3, 21, 1, "#a8946a");
+      M(D.OBJ, 0, 40, [0, -0.8]); m.r(x + 2, dy - 5, 18, 1, "#f6f0e2"); for (let i = 4; i < 18; i += 3) m.px(x + i, dy - 5, "#b8b0a0"); M(D.OBJ, 0, 40, [-0.5, -0.5]); m.line(x + 2, dy - 5, x - 4, dy - 10, "#d8c69a"); m.line(x + 2, dy - 6, x - 3, dy - 10, "#f0e2bc"); M(D.OBJ, 0, 40, [0, -0.8]); m.r(x + 8, dy - 6, 11, 1, "#fffaf0"); m.px(x + 19, dy - 6, "#c8c0b0");
+      M(D.OBJ, 0, 200, [0, -0.6]); m.r(x + 11, dy - 7, 7, 1, "#1e2434"); m.px(x + 18, dy - 7, "#e6c47a"); }
     M(D.OBJ, 0, 60); m.r(O.tampon.x - 2, dy - 2, 9, 2, "#2a2a30"); m.r(O.tampon.x - 1, dy - 2, 7, 1, "#a02630");
     for (let i = 0; i < 6; i++) { m.set({ D: D.OBJ, E: 0, S: 70, n: [(i / 5 - 0.5) * 1.2, 0] }); m.vl(O.code.x + i, dy - 15, 15, i === 0 ? "#d8443a" : i === 5 ? "#7a1612" : "#b3261e"); } M(D.OBJ, 0, 120); m.r(O.code.x, dy - 11, 6, 3, "#f2ecdc"); m.hl(O.code.x + 1, dy - 10, 4, "#b3261e");
     for (let i = 0; i < 6; i++) { m.set({ D: D.OBJ, E: 0, S: 190, n: [(i / 5 - 0.5) * 1.4, 0] }); m.vl(O.tasse.x + i, dy - 6, 6, i > 4 ? "#b8b2a4" : "#efeade"); } M(D.OBJ, 0, 190); m.hl(O.tasse.x, dy - 6, 6, "#3a2414"); m.px(O.tasse.x + 6, dy - 4, "#e9e4d8"); m.px(O.tasse.x + 7, dy - 3, "#e9e4d8"); m.px(O.tasse.x + 6, dy - 2, "#e9e4d8"); m.r(O.tasse.x + 1, dy - 3, 3, 1, "#27407a");
@@ -104,8 +107,8 @@
   }
 
   function lights(g, ph, st, OXL) {
-    const L = [], O = g.obj, n = ph === "nuit" ? 1 : ph === "soir" ? 0.8 : 0.3, mid = (g.wx0 + g.wx1) / 2;
-    const cw = ph === "jour" ? [1, 0.97, 0.9] : ph === "soir" ? [1, 0.62, 0.48] : [0.36, 0.5, 0.9];
+    const L = [], O = g.obj, n = ph === "nuit" ? 1 : ph === "soir" ? 0.94 : 0.3, mid = (g.wx0 + g.wx1) / 2;
+    const cw = ph === "jour" ? [1, 0.97, 0.9] : ph === "soir" ? [0.58, 0.5, 0.95] : [0.34, 0.48, 0.92];
     if (st.lampe) L.push({ x: O.lampe.x, y: g.dy - 12, d: D.OBJ - 8, r: 200, c: [1, 0.74, 0.4], i: 2.6 * (0.45 + n * 0.55), wrap: 0.35, haze: 0.3 * n, hr: 34 }, { x: O.lampe.x - 6, y: g.dy - 34, d: D.WALL - 26, r: 150, c: [1, 0.76, 0.44], i: 1.25 * n, wrap: 0.6 }, { x: O.lampe.x + 10, y: g.FY + 6, d: 90, r: 110, c: [1, 0.78, 0.5], i: 0.7 * n, wrap: 0.5 }, { x: O.lampe.x - 28, y: g.dy - 46, d: 40, r: 320, c: [1, 0.78, 0.5], i: 0.42 * n, wrap: 0.7 });
     L.push({ x: mid, y: g.wy1 - 34, d: D.WALL - 14, r: 260, c: cw, i: ph === "jour" ? 1.1 : 0.62, wrap: 0.7, haze: ph === "jour" ? 0.03 : 0.05, hr: 60 }, { x: mid, y: g.FY + 22, d: 110, r: 150, c: cw, i: ph === "jour" ? 0.55 : 0.36, wrap: 0.5 }, { x: g.W + 30, y: 50, d: -60, r: 520, c: [0.5, 0.6, 1], i: 0.2 + (ph === "jour" ? 0.25 : 0), wrap: 0.7 });
     if (st.radio && g.radio) L.push({ x: g.radio.x + 16, y: g.radio.y + 6, d: D.FURN - 8, r: 34, c: [1, 0.7, 0.3], i: 1.1, wrap: 0.7, haze: 0.14, hr: 10 });
@@ -115,19 +118,19 @@
   // ------------------------------------------------------------------ la scène
   function Scene2(W, H, panel) {
     const ax = panel ? Math.round(panel + (W - panel) / 2) : Math.round(W / 2), FY = H - 62;
-    const wy1 = FY - 70, wy0 = Math.max(18, wy1 - 92), wx0 = ax - 64, wx1 = ax + 60, dy = FY - 38, dx0 = ax - 58, dx1 = ax + 62;
+    const wy1 = FY - 70, wy0 = Math.max(14, wy1 - 96), wx0 = ax - 64, wx1 = ax + 60, dy = FY - 38, dx0 = ax - 58, dx1 = ax + 62;
     const g = { W, H, ax, FY, wx0, wx1, wy0, wy1, dx0, dx1, dy, glass: new Uint8Array(W * H), chaise: { x: Math.min(W - 16, ax + 92), y: FY - 23 }, bin: { x: ax - 80, y: FY - 4, w: 13, h: 15 },
-      obj: { plante: { x: ax - 48 }, tel: { x: ax - 37 }, pile: { x: ax - 18 }, tampon: { x: ax + 8 }, code: { x: ax + 20 }, tasse: { x: ax + 30 }, laser: { x: ax + 40 }, lampe: { x: ax + 52 } } };
+      obj: { plante: { x: ax - 50 }, code: { x: ax - 40 }, tampon: { x: ax - 30 }, laser: { x: ax - 21 }, pile: { x: ax - 9 }, tasse: { x: ax + 15 }, tel: { x: ax + 26 }, lampe: { x: ax + 47 } } };
     const stat = new G.Mat(W, H), m = new G.Mat(W, H), now = new Date(), S = { W, H, mat: m, G: g };
     const st = { lampe: true, radio: false, laser: false, cadre: 0, livres: [], sips: 0, flash: 0, sparkle: 0, robe: 0, spin: 0, petals: [], notes: [], steam: 0, ring: 0, nextRing: 14 + Math.random() * 20, bulle: null, score: null, typed: "" };
-    let ph = A0.phaseOf(now), saison = A0.seasonOf(now), pluie = (now.getDate() * 7 + now.getMonth() * 3) % 5 < 3 || ph === "nuit", V = null, fixes = [];
+    let ph = A0.phaseOf(now), saison = A0.seasonOf(now), pluie = true, V = null, fixes = [];
     const EW = wx1 - wx0 + 14, EH = wy1 - wy0;
-    const monde = { x0: Math.max(panel ? panel - 30 : 12, 12), x1: W - 14, sol: FY + 10, chaise: g.chaise, appui: { x0: wx0 + 12, x1: wx1 - 12, y: wy1 + 4 }, plante: { x: g.obj.plante.x }, perches: [{ id: "bureau", x: g.obj.pile.x + 34, y: dy, app: dx0 - 14 }], pluie };
+    const monde = { x0: Math.max(panel ? panel - 30 : 12, 12), x1: W - 14, sol: FY + 10, chaise: g.chaise, appui: { x0: wx0 + 12, x1: wx1 - 12, y: wy1 + 4 }, plante: { x: g.obj.plante.x }, perches: [{ id: "bureau", x: g.obj.pile.x + 10, y: dy, app: dx0 - 14 }], pluie };
     const cat = TM.create(monde);
     const birds = [0, 1, 2].map((i) => ({ hx: wx0 + 18 + i * 38 + (i === 1 ? 12 : 0), x: 0, y: 0, fly: 0, vx: 0, vy: 0, back: 0, i }));
     for (const b of birds) { b.x = b.hx; b.y = wy1 - 1; }
     const ball = { x: 0, y: 0, vx: 0, vy: 0, rest: true, home: true, held: false, t: 0 };
-    const homeBall = () => { ball.x = g.obj.pile.x + 24; ball.y = dy - 2; ball.vx = ball.vy = 0; ball.rest = true; ball.home = true; ball.held = false; };
+    const homeBall = () => { ball.x = ax + 58; ball.y = dy - 2; ball.vx = ball.vy = 0; ball.rest = true; ball.home = true; ball.held = false; };
     homeBall();
     const jeu = { on: false, t: 0, feuilles: [], n: 0, slam: 0, next: 0, serie: 0 };
     const best = mem.get();
@@ -179,19 +182,20 @@
       m.copy(stat); m.G = 0;
       const dyn = [], O = g.obj, on = ph !== "jour", Mo = mouse;
       inp.moved = !!(Mo && inp.mouse && (Math.abs(Mo.x - inp.mouse.x) + Math.abs(Mo.y - inp.mouse.y)) > 0.4); inp.mouse = Mo;
-      // ---- la ville derrière les vitres : parallaxe selon la souris, puis ce qui bouge dehors
-      const par = Mo ? Math.round((Mo.x - W / 2) / W * -6) : 0, ex0 = 7 + par, EV = ph === "jour" ? 92 : ph === "soir" ? 135 : 185;
+      // ---- la ville derrière les vitres : elle ne suit plus la souris (1.1.0) ; puis ce qui bouge dehors
+      const par = 0, ex0 = 7, EV = ph === "jour" ? 92 : ph === "soir" ? 135 : 185;
       const flash = st.flash > 0 ? (st.flash > 0.42 || (st.flash < 0.3 && st.flash > 0.24) ? 1 : 0.15) : 0; st.flash = Math.max(0, st.flash - dt);
       for (let y = 0; y < EH; y++) for (let x = 0; x < wx1 - wx0; x++) { const q = (wy0 + y) * W + wx0 + x; if (!g.glass[q]) continue; const e = (y * EW + cl(x + ex0, 0, EW - 1)) * 3, j = q * 4; m.c[j] = Math.min(255, V.E.c[e] + flash * 150); m.c[j + 1] = Math.min(255, V.E.c[e + 1] + flash * 160); m.c[j + 2] = Math.min(255, V.E.c[e + 2] + flash * 190); m.c[j + 3] = EV; }
       const gl = (x, y, c, a, e) => { x = Math.round(x); y = Math.round(y); if (x < wx0 || x >= wx1 || y < wy0 || y >= wy1) return; const q = y * W + x; if (!g.glass[q]) return; const cc = typeof c === "string" ? rgb(c) : c, k = a == null ? 1 : a, j = q * 4; m.c[j] += (cc[0] - m.c[j]) * k; m.c[j + 1] += (cc[1] - m.c[j + 1]) * k; m.c[j + 2] += (cc[2] - m.c[j + 2]) * k; if (e) m.c[j + 3] = Math.max(m.c[j + 3], e * k); };
       const tX = wx0 + V.tx - ex0, tY = wy0 + V.ty;
       if (on) {
         const heure = d.getMinutes() < 5 && ph === "nuit"; st.sparkle = Math.max(0, st.sparkle - dt);
-        if (heure || st.sparkle > 0) for (let i = 0; i < 26; i++) { const u = h01(i * 3.3 + Math.floor(t * 9) * 1.7), yy = Math.round(u * V.th), hw = 0.6 + Math.pow(u, 2.3) * 9.5; gl(tX + (h01(i * 7.1 + Math.floor(t * 9)) - 0.5) * 2 * hw, tY + yy, "#ffffff", 1, 255); }
+        if (heure || st.sparkle > 0) for (let i = 0; i < 26; i++) { const u = h01(i * 3.3 + Math.floor(t * 9) * 1.7), yy = Math.round(u * V.th), hw = 0.6 + Math.pow(u, 2.3) * V.tk; gl(tX + (h01(i * 7.1 + Math.floor(t * 9)) - 0.5) * 2 * hw, tY + yy, "#ffffff", 1, 255); }
         const a = t * 0.9, bx2 = Math.cos(a), len = 46; if (Math.abs(bx2) > 0.15) for (let i = 2; i < len; i++) gl(tX + bx2 * i, tY - 4 - Math.abs(Math.sin(a)) * i * 0.12, "#fff6d0", 0.34 * (1 - i / len), 230);
         if ((t % 2.2) < 1.1) gl(tX, tY - 6, "#ff4a3a", 1, 255);
         const px = wx0 + ((t * 7) % (wx1 - wx0 + 60)) - 30; if (Math.floor(t * 2) % 2) gl(px, wy0 + 16 + Math.sin(t * 0.2) * 4, "#ff5a4a", 1, 255); gl(px + 2, wy0 + 16 + Math.sin(t * 0.2) * 4, "#e8eeff", 0.8, 255);
-        if (Math.floor(t * 1.4) % 3) for (let i = 0; i < 12; i++) gl(wx0 + Math.round(EW * 0.5) - ex0 - 1 + i, wy0 + V.HZ - 3 + 2, "#ff5a4a", 0.25, 220);
+        if (V.tv) { const k = h01(Math.floor(t * 4.3) * 1.9), c = k < 0.3 ? "#a8c8f4" : k < 0.62 ? "#5f88cc" : k < 0.8 ? "#d8e6fa" : "#7fa4e0"; for (let j = 0; j < V.tv.h; j++) for (let i = 0; i < V.tv.w; i++) if (i !== 3) gl(wx0 + V.tv.x - ex0 + i, wy0 + V.tv.y + j, c, 0.55 + 0.25 * (1 - j / V.tv.h), 190); }
+        for (let i = 0; i < 7; i++) { const u = ((t * 0.16 + i / 7) % 1); gl(wx0 + V.fumee.x - ex0 + u * 9 + Math.sin(u * 7 + i) * 1.5, wy0 + V.fumee.y - u * 12, "#8a8fa8", 0.3 * (1 - u)); }
       }
       for (const b of birds) {
         if (!b.fly && Mo && Math.hypot(Mo.x - b.x, Mo.y - b.y) < 20) { b.fly = 1; b.vx = (b.x < Mo.x ? -1 : 1) * (36 + b.i * 6); b.vy = -40 - b.i * 5; b.back = t + 12 + b.i * 3; }
@@ -272,9 +276,8 @@
         const reps = [["tampon", O.tampon.x + 2, dy - 15, "TAMPON"], ["code", O.code.x + 3, dy - 19, "QUIZ"], ["laser", O.laser.x + 4, dy - 8, "TIMON"]];
         if (ball.rest && !ball.held) reps.push(["boulette", ball.x, ball.y - 7, "BOULETTE"]);
         reps.forEach(([k, x, y, nom], i) => {
-          const b = Math.round(Math.abs(Math.sin(t * 3 + i * 0.9)) * 3), yy = y - 3 - b, c = Math.floor(t * 4 + i) % 2 ? "#ffd97a" : "#f3b23c";
-          SET(5, 255); m.r(x - 2, yy - 3, 5, 1, c); m.r(x - 1, yy - 2, 3, 1, c); m.px(x, yy - 1, c); m.px(x, yy - 5, c); m.px(x, yy - 4, c);
-          dyn.push({ x, y: y + 4, d: D.OBJ - 10, r: 22, c: [1, 0.8, 0.4], i: 0.5 + 0.3 * Math.sin(t * 3 + i * 0.9), wrap: 0.7 });
+          const u = ((t / 2.2 + i) % reps.length), yy = y - 3, ey = y + 2;
+          if (u < 0.5) { const k = Math.sin(u * 2 * Math.PI); SET(5, 255); m.px(x, ey, "#fff2c4", k); if (k > 0.55) { m.px(x - 1, ey, "#f6c96d", k * 0.8); m.px(x + 1, ey, "#f6c96d", k * 0.8); m.px(x, ey - 1, "#f6c96d", k * 0.8); m.px(x, ey + 1, "#f6c96d", k * 0.8); } }
           if (Mo && Math.hypot(Mo.x - x, Mo.y - (y + 4)) < 10) { const w = nom.length * 4 + 3; SET(5, 200); m.r(x - (w >> 1), yy - 14, w, 7, "#0b0f1e"); SET(5, 255); m.txt(nom, x - (w >> 1) + 2, yy - 13, "#ffd97a"); }
         });
       }
@@ -298,8 +301,8 @@
       const reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
       let S = null, raf = 0, alive = true, to = 0, lastMat = -1, params = null; const t0 = performance.now(), mouse = { v: null };
       const layout = () => {
-        const vw = Math.max(320, window.innerWidth || 1024), vh = Math.max(320, window.innerHeight || 768), dpr = Math.min(2, window.devicePixelRatio || 1), H = 240, W = Math.max(300, Math.min(640, Math.ceil(H * vw / vh / 2) * 2));
-        c.width = Math.round(vw * dpr); c.height = Math.round(vh * dpr); c.style.width = vw + "px"; c.style.height = vh + "px";
+        const vw = Math.max(320, window.innerWidth || 1024), vh = Math.max(320, window.innerHeight || 768), dpr = Math.min(2, window.devicePixelRatio || 1), H = 240, W = Math.max(300, Math.min(640, Math.ceil(H * vw / vh / 2) * 2)), cw = Math.max(vw, Math.round(vh * W / H));
+        c.width = Math.round(cw * dpr); c.height = Math.round(vh * dpr); c.style.width = cw + "px"; c.style.height = vh + "px"; c.style.left = Math.round((vw - cw) / 2) + "px";
         const panel = vw >= 900 ? (56 + Math.min(470, vw * 0.4)) * W / vw : 0;
         try { S = Scene2(W, H, panel); } catch (e) { console.error(e); S = null; return; }
         sref.current = S; S.quiz = (q) => { if (q) { setRep(null); setQuiz(q); } }; params = null; lastMat = -1;

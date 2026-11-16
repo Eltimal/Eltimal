@@ -1589,6 +1589,37 @@ h3 { font: 700 calc(13.5px * var(--tz))/1.35 var(--f-ui); letter-spacing: .08em;
 .ts:has(.acc-gpu) .ts-ui::before { inset: 0 auto 0 0; width: min(46vw, 640px); height: auto; background: linear-gradient(90deg, rgba(4,6,14,.82), rgba(4,6,14,.55) 62%, rgba(4,6,14,0)); }
 .ts:has(.acc-gpu) .ts-btn:not(.ts-primary) { background: rgba(10,14,26,.72); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); box-shadow: inset 0 0 0 1px rgba(176,198,236,.28), inset 3px 0 0 rgba(176,198,236,.4); }
 .ts:has(.acc-gpu) .ts-btn:not(.ts-primary):hover, .ts:has(.acc-gpu) .ts-btn:not(.ts-primary):focus-visible { background: rgba(232,170,60,.16); box-shadow: inset 0 0 0 1px var(--amber), inset 3px 0 0 var(--amber); }
+/* ---------- 1.1.0 « L'accueil » : le titre tient toujours dans sa colonne, une entrée domine, le reste se range ---------- */
+.ts-ui { align-items: flex-start; }
+.ts-panel { container-type: inline-size; margin-block: auto; }
+.ts-title { font-size: clamp(2rem, 4.4vw, 4.6rem); font-size: min(4.6rem, 11.2cqw); white-space: nowrap; }
+.ts-menu { gap: 12px; width: 100%; }
+.ts:has(.acc-gpu) .ts-ui::before { background: linear-gradient(90deg, rgba(4,6,14,.78), rgba(4,6,14,.44) 62%, rgba(4,6,14,0)); }
+.ts-menu .ts-btn.ts-primary { font-size: calc(17px * var(--tz)); padding: 19px 18px 21px 42px; }
+.ts-menu .ts-btn.ts-primary::before { top: 21px; left: 17px; }
+.ts-sec { display: flex; flex-direction: column; align-items: flex-start; gap: 0; margin-top: 6px; padding-top: 10px; border-top: 1px solid rgba(176,198,236,.22); }
+.ts .ts-menu .ts-sec .ts-btn.ts-lien { width: auto; background: none; box-shadow: none; clip-path: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  font-size: calc(11.5px * var(--tz)); letter-spacing: .1em; color: #b4c0d8; padding: 7px 10px 7px 18px; text-shadow: 0 1px 0 #000, 0 0 10px rgba(4,6,16,.9); }
+.ts .ts-menu .ts-sec .ts-btn.ts-lien::before { left: 2px; top: 8px; width: 6px; height: 9px; }
+.ts .ts-menu .ts-sec .ts-btn.ts-lien:hover, .ts .ts-menu .ts-sec .ts-btn.ts-lien:focus-visible { background: none; box-shadow: none; color: #f6c96d; }
+.ts .ts-menu .ts-sec .ts-btn.ts-lien:focus-visible { outline: 1px solid var(--amber); outline-offset: 1px; }
+@media (max-width: 899px) { .ts:has(.acc-gpu) .ts-ui::before { inset: 0; width: auto; height: auto; background: linear-gradient(180deg, rgba(4,6,14,.84), rgba(4,6,14,.66) 60%, rgba(4,6,14,.5)); } }
+@media (max-height: 700px) and (min-width: 900px) { .ts-panel { gap: 12px; } .ts-head .ts-emblem { display: none; } }
+/* hors du menu (création, réglages, notes) : l'en-tête se resserre pour que la boîte tienne dans l'écran, titre visible */
+.ts-etroit { gap: 12px; }
+.ts-etroit .ts-head { flex-direction: row; align-items: center; gap: 12px; }
+.ts-etroit .ts-head .ts-eyebrow, .ts-etroit .ts-head .ts-clock, .ts-etroit .ts-note { display: none; }
+.ts-etroit .ts-emblem { width: 34px; height: 26px; flex: none; }
+.ts-etroit .ts-title { font-size: clamp(1.2rem, 2.2vw, 1.7rem); display: flex; align-items: baseline; gap: .5em; text-shadow: 0 .08em 0 #c27a22, 0 .16em 0 #2b1607; }
+.ts-etroit .ts-title span { display: inline; font-size: .7em; margin: 0; letter-spacing: .2em; }
+.ts-etroit .ts-box { padding: 14px 16px; gap: 10px; }
+.ts-etroit .aide-pick { margin: 2px 0 4px; }
+.ts-etroit .mode-pick { margin-top: 0; }
+@media (min-width: 900px) {
+  .ts-panel.ts-large { width: min(660px, 47vw); }
+  .ts-large .mode-pick { display: grid; grid-template-columns: 1fr 1fr; }
+  .ts:has(.acc-gpu) .ts-ui:has(.ts-large)::before { width: min(60vw, 860px); }
+}
 
 /* ---- Vidéosurveillance dans une pièce (ui-video.js) ---- */
 .vx { margin: 4px 0 18px; display: grid; gap: 8px; font-family: var(--f-ui); }

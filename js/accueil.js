@@ -15,40 +15,82 @@
   const son = (n) => { try { if (CR.son && CR.son.jouer) CR.son.jouer(n); } catch (e) { /* muet */ } };
   const mem = { get() { try { return JSON.parse(localStorage.getItem("lp-accueil") || "{}"); } catch (e) { return {}; } }, set(o) { try { localStorage.setItem("lp-accueil", JSON.stringify(o)); } catch (e) { /* tant pis */ } } };
 
-  const phaseOf = (d) => { const h = d.getHours() + d.getMinutes() / 60; return h >= 8.5 && h < 17.5 ? "jour" : (h >= 7 && h < 8.5) || (h >= 17.5 && h < 21) ? "soir" : "nuit"; };
+  // le sujet est toujours la nuit de permanence (1.1.0) : l'heure réelle ne règle que la lumière, heure bleue ou nuit pleine
+  const phaseOf = (d) => { const h = d.getHours() + d.getMinutes() / 60; return h >= 7 && h < 21 ? "soir" : "nuit"; };
   const seasonOf = (d) => { const m = d.getMonth() + 1; return m === 12 || m <= 2 ? "hiver" : m >= 10 ? "automne" : m >= 6 && m <= 8 ? "ete" : "printemps"; };
   const AMB = { nuit: [0.2, 0.22, 0.36], soir: [0.4, 0.33, 0.4], jour: [0.74, 0.76, 0.8] };
 
   // ------------------------------------------------------------------ la ville derrière la vitre (déjà éclairée)
+  // Une image composée, pas un fond (1.1.0) : la nuit de pluie sur le 17e. Trois profondeurs — l'immeuble d'en face, ses
+  // lucarnes et ses cheminées ; la ville, le tribunal des Batignolles au tiers gauche, la tour Eiffel au loin à droite ;
+  // le ciel bas. La lumière a une direction : la lueur de la ville monte de l'horizon, derrière le tribunal.
+  // ph : « nuit » (la nuit pleine) ou « soir » (l'heure bleue) ; l'heure réelle règle la lumière, pas le sujet.
   function ville(EW, EH, ph, pluie) {
-    const E = new PL.Buf(EW, EH), on = ph !== "jour", R = rng(77);
-    const sky = { nuit: ["#060a18", "#0b1330", "#152046", "#24305c", "#3c3c66", "#5a4a68"], soir: ["#252a5e", "#473f7e", "#7d4b86", "#c26872", "#ea8f66", "#f4bf80"], jour: pluie ? ["#6f7a86", "#808b96", "#939ea8", "#a6b0b8", "#b8c0c6", "#c8ced2"] : ["#5b8fc4", "#74a3d0", "#8fb6da", "#abc8e2", "#c6d9e8", "#dfe6e6"] }[ph].map(rgb);
-    const HZ = Math.round(EH * 0.74);
-    for (let y = 0; y < EH; y++) for (let x = 0; x < EW; x++) { const t = Math.min(4.999, (y / HZ) * 5), k = t | 0; E.px(x, y, (t - k) > PL.bayer(x, y) ? sky[k + 1] : sky[k]); }
-    if (ph === "nuit" && !pluie) for (let i = 0; i < 40; i++) E.px((h01(i * 3.1) * EW) | 0, (h01(i * 5.7) * HZ * 0.6) | 0, i % 7 ? "#8f9ac0" : "#e8eeff", 0.8);
-    const cc = { nuit: ["#2c3050", "#1c2240"], soir: ["#f0a888", "#8a587e"], jour: pluie ? ["#a4adb6", "#8a949e"] : ["#ffffff", "#d2dce6"] }[ph];
-    for (let i = 0; i < (pluie ? 12 : 5); i++) { const cx = h01(i * 9.3) * EW, cy = 6 + h01(i * 4.1) * HZ * 0.5; for (let k = 0; k < 4; k++) { E.ell(cx + k * 8 - 12, cy + 1, 9, 2.6, cc[1], 0.7); E.ell(cx + k * 8 - 13, cy - 1, 7, 2, cc[0], ph === "nuit" ? 0.4 : 0.8); } }
-    const hz = sky[5], tone = (hex, k) => { const c = rgb(hex), a = ph === "nuit" ? 0.3 : ph === "soir" ? 0.62 : 1; return mix([c[0] * a, c[1] * a, c[2] * (a + (ph === "nuit" ? 0.14 : 0))], hz, k); };
-    // lointain : une ligne de toits
-    for (let x = 0; x < EW;) { const w = 5 + (R() * 9 | 0), h = 4 + (R() * 9 | 0); E.r(x, HZ - h, w, h + 2, tone("#55606e", 0.55)); if (on && R() < 0.7) E.px(x + 1 + (R() * (w - 2) | 0), HZ - h + 2 + (R() * (h - 2) | 0), "#f2c878"); x += w; }
-    // la tour Eiffel, dorée la nuit
-    const tx = Math.round(EW * 0.76), th = Math.round(EH * 0.5), ty = HZ - th, gold = on ? rgb("#e2a04a") : tone("#5a4a3e", 0.3), goldD = on ? rgb("#a86a2a") : tone("#3e342c", 0.3);
-    for (let y = 0; y < th; y++) { const u = y / th, hw = 0.6 + Math.pow(u, 2.3) * 9.5; for (let x = -Math.ceil(hw); x <= Math.ceil(hw); x++) { if (Math.abs(x) > hw) continue; const inner = Math.abs(x) < hw - 1.6 && u > 0.5; if (inner && u > 0.78 && Math.abs(x) < hw * 0.55) continue; E.px(tx + x, ty + y, (x + y) % 2 && inner ? goldD : gold); } }
-    for (const u of [0.42, 0.68]) { const hw = 1.5 + Math.pow(u, 2.3) * 9.5; E.r(tx - hw - 1, ty + th * u, hw * 2 + 3, 1, on ? rgb("#ffd88a") : gold); }
-    E.r(tx, ty - 5, 1, 5, gold);
-    // le tribunal des Batignolles : trois blocs de verre en gradins
-    const bx = Math.round(EW * 0.2), glass = tone("#7f9ab0", 0.35), glassD = tone("#4f6880", 0.35);
-    let by = HZ;
-    for (const [w, h] of [[26, 9], [19, 15], [15, 15], [11, 14]]) { by -= h; E.r(bx - (w >> 1), by, w, h, glass); for (let y = by + 1; y < by + h; y += 2) for (let x = bx - (w >> 1) + 1; x < bx + (w >> 1); x += 2) E.px(x, y, on && h2(x, y) < 0.42 ? (h2(x + 3, y) < 0.5 ? "#dff0ff" : "#f6dc9a") : glassD); E.r(bx - (w >> 1), by, w, 1, tone("#b8c8d4", 0.3)); if (w < 26) { E.px(bx - (w >> 1) - 1, by + h - 1, tone("#3f6a44", 0.3)); E.px(bx + (w >> 1) + 1, by + h - 1, tone("#3f6a44", 0.3)); } }
-    E.r(bx + 2, by - 6, 1, 6, glassD);
-    // les toits de zinc, tout près
-    const zinc = tone("#66707c", 0.12), zincD = tone("#4a535e", 0.12), stone = tone("#b5a68a", 0.12);
-    for (let x = -4; x < EW;) { const w = 22 + (R() * 20 | 0), top = HZ + 4 + (R() * 9 | 0); E.r(x, top, w, EH - top, zinc); E.r(x, top, w, 1, tone("#9aa4ae", 0.1)); for (let k = x + 3; k < x + w; k += 5) E.r(k, top + 1, 1, EH - top, zincD); E.r(x + w - 1, top, 1, EH - top, zincD);
-      for (let k = x + 4; k < x + w - 6; k += 9) { E.r(k, top + 5, 6, 8, stone); const lit = on && R() < 0.5; E.r(k + 1, top + 6, 4, 6, lit ? rgb(R() < 0.3 ? "#cfe4f2" : "#f6c878") : tone("#26303c", 0)); E.r(k + 3, top + 6, 1, 6, lit ? rgb("#8a5a2a") : stone); }
-      const cx = x + 3 + (R() * (w - 12) | 0); E.r(cx, top - 7, 7, 8, tone("#8c6a58", 0.12)); for (let p = 0; p < 3; p++) E.r(cx + 1 + p * 2, top - 10, 1, 3, tone("#b5653f", 0.1)); if (R() < 0.4) { E.r(cx + 12, top - 12, 1, 12, zincD); E.r(cx + 10, top - 11, 5, 1, zincD); E.r(cx + 11, top - 9, 3, 1, zincD); }
+    const E = new PL.Buf(EW, EH), nuit = ph !== "soir", R = rng(77), s = EH / 92;
+    const HZ = Math.round(EH * 0.66), gx = EW * 0.34;
+    const sky = (nuit ? ["#060914", "#0a1024", "#111a38", "#1c2248", "#30284e", "#4d3350", "#6e4450"] : ["#0d1338", "#182052", "#2a2f70", "#4a3c86", "#834a86", "#c8626e", "#f09a62"]).map(rgb);
+    const lueur = (x, y) => { const g = 1 - Math.hypot((x - gx) / (EW * 0.62), (y - HZ) / (HZ * 0.8)); return g > 0 ? g * g : 0; };
+    const ciel = (x, y) => { const t = cl(y / HZ * 0.86 + lueur(x, y) * 0.24, 0, 0.999) * 6, k = t | 0; return (t - k) > PL.bayer(x, y) ? sky[k + 1] : sky[k]; };
+    for (let y = 0; y < EH; y++) for (let x = 0; x < EW; x++) E.px(x, y, ciel(x, Math.min(y, HZ)));
+    // nuages bas : le dessus sombre, le ventre éclairé par la ville
+    const nu = rng(5);
+    for (let i = 0; i < 9; i++) { const cy = Math.round(HZ * (0.1 + 0.085 * i) + nu() * 4), cx = nu() * EW, len = 26 + nu() * 44, ep = 1.6 + nu() * 2.2;
+      for (let k = 0; k < 5; k++) { const x = cx + (k - 2) * len / 5 + nu() * 6, w = len / 4 + nu() * 6, g = lueur(x, cy + 2), sous = mix(sky[Math.min(6, 2 + (cy / HZ * 5 | 0))], sky[6], 0.25 + g * 0.6);
+        E.ell(x, cy + 1.4, w, ep * 0.7, sous, 0.5 + g * 0.3); E.ell(x + 2, cy - 0.4, w * 0.9, ep * 0.7, mix(sky[0], sky[2], cy / HZ), 0.78); } }
+    const hz = sky[5], A = nuit ? 0.32 : 0.5, tone = (hex, k) => { const c = rgb(hex); return mix([c[0] * A, c[1] * A, c[2] * (A + 0.1)], hz, k); };
+    const chaud = ["#f2b860", "#f6cf8a", "#e8a04a"], pLum = nuit ? 0.6 : 1;
+    // ---- le lointain : une ligne de toits dans la brume, le Sacré-Cœur
+    for (let x = 0; x < EW;) { const w = 4 + (R() * 8 | 0), h = 2 + (R() * 7 | 0); E.r(x, HZ - h, w, h + 3, tone("#4a5262", 0.74)); if (R() < 0.55 * pLum) E.px(x + (R() * w | 0), HZ - h + 1 + (R() * h | 0), "#e8b868", 0.75); x += w; }
+    { const cx = Math.round(EW * 0.66), b = HZ - 6, c = mix([206, 198, 190], hz, 0.3), d = mix([126, 120, 134], hz, 0.4);
+      E.r(cx - 6, b - 3, 13, 6, d); E.ell(cx, b - 6, 2.6, 4, c); E.px(cx, b - 11, c); E.ell(cx - 5, b - 4, 1.4, 2, c); E.ell(cx + 5, b - 4, 1.4, 2, c); E.r(cx + 9, b - 9, 2, 12, d); E.px(cx + 9, b - 10, c); }
+    // ---- la tour Eiffel, au loin : dorée, dans son halo
+    const tx = Math.round(EW * 0.8), th = Math.round(EH * 0.44), ty = HZ - th + 1, tk = th * 0.19, gold = rgb("#dc9a48"), goldD = rgb("#9a6228");
+    for (let y = -6; y < th; y++) for (let x = -16; x <= 16; x++) { const g = 1 - Math.hypot(x / 16, (y - th * 0.5) / (th * 0.62)); if (g > 0 && PL.bayer(tx + x, ty + y) < g * 0.7) E.px(tx + x, ty + y, "#c8804a", 0.2); }
+    for (let y = 0; y < th; y++) { const u = y / th, hw = 0.6 + Math.pow(u, 2.3) * tk; for (let x = -Math.ceil(hw); x <= Math.ceil(hw); x++) { if (Math.abs(x) > hw) continue; const inner = Math.abs(x) < hw - 1.4 && u > 0.5; if (inner && u > 0.76 && Math.abs(x) < hw * 0.6) continue; E.px(tx + x, ty + y, (x + y) % 2 && inner ? goldD : gold); } }
+    for (const u of [0.42, 0.68]) { const hw = 1.2 + Math.pow(u, 2.3) * tk; E.r(tx - hw - 1, ty + th * u, hw * 2 + 3, 1, "#ffd88a"); }
+    E.r(tx, ty - 4, 1, 4, gold);
+    // ---- le tribunal des Batignolles : quatre blocs de verre en gradins, à contre-jour de la lueur
+    const bx = Math.round(EW * 0.34), glass = tone("#6f8aa6", 0.46), glassD = tone("#33445c", 0.42);
+    let by = HZ + 2;
+    for (const [w0, h0] of [[30, 11], [20, 17], [16, 17], [12, 16]]) { const w = Math.round(w0 * s), h = Math.round(h0 * s), x0 = bx - (w >> 1); by -= h; E.r(x0, by, w, h, glassD);
+      for (let y = by + 1; y < by + h; y += 2) { const etage = h2(y, w), plein = etage < 0.12 * pLum; for (let x = x0 + 1; x < x0 + w - 1; x++) { if (plein ? h2(x, y) < 0.86 : h2(x, y) < (0.2 + etage * 0.22) * pLum) E.px(x, y, h2(x + 3, y) < 0.55 ? "#cfe2f6" : "#f2d898", plein ? 0.8 : 0.92); else if ((x - x0) % 2) E.px(x, y, glass); } }
+      E.r(x0, by, w, 1, tone("#a8bccc", 0.4)); E.r(x0 + w - 1, by + 1, 1, h - 1, tone("#1c2638", 0.4));
+      if (w0 < 30) for (let k = 0; k < 3; k++) { E.px(x0 - 1 - k, by + h - 1, tone("#3f6a44", 0.36)); E.px(x0 + w + k, by + h - 1, tone("#3f6a44", 0.36)); } }
+    E.r(bx + 1, by - 6, 1, 6, glassD);
+    // ---- la ville : un rang d'immeubles haussmanniens, toits et souches
+    for (let x = -3; x < EW;) { const w = 13 + (R() * 13 | 0), top = HZ + 1 - (R() * 5 | 0), mur = tone("#7a746a", 0.56), toit = tone("#525c6c", 0.52);
+      E.r(x, top + 3, w, EH - top, mur); E.r(x, top, w, 3, toit); E.r(x, top, w, 1, tone("#8c98ac", 0.46)); E.r(x + w - 1, top, 1, EH - top, tone("#2a2e3c", 0.5));
+      const cx = x + 2 + (R() * Math.max(1, w - 7) | 0); E.r(cx, top - 3, 4, 3, tone("#6a5248", 0.5)); E.px(cx + 1, top - 4, tone("#a8603c", 0.46)); E.px(cx + 3, top - 4, tone("#a8603c", 0.46));
+      for (let k = x + 2; k < x + w - 2; k += 3) for (let y = top + 5; y < HZ + 14; y += 4) { if (R() < 0.17 * pLum) E.r(k, y, 1, 2, chaud[(R() * 3) | 0], 0.85); else E.r(k, y, 1, 2, tone("#1c2230", 0.46)); }
       x += w; }
-    if (on) { E.r(Math.round(EW * 0.5), HZ + 2, 9, 3, "#3a1418"); E.txt("BAR", Math.round(EW * 0.5) - 1, HZ - 3, "#ff5a4a"); }
-    return { E, HZ, tx, ty, th, bx, top: by };
+    // ---- l'immeuble d'en face : brisis de zinc mouillé, lucarnes, mur mitoyen et ses mitrons
+    const zinc = tone("#5c6878", 0.08), zincD = tone("#3a4452", 0.06), zincL = tone("#a8b8d8", 0.04), pierre = tone("#b8aa90", 0.06), ombre = tone("#141a26", 0.02);
+    const xm = Math.round(EW * 0.55), yA = HZ + Math.round(8 * s), yB = HZ + Math.round(14 * s), fen = [];
+    const toit = (x0, x1, top, graine) => { const Rt = rng(graine);
+      E.r(x0, top, x1 - x0, EH - top, zinc); E.r(x0, top, x1 - x0, 2, zincD); E.r(x0, top - 1, x1 - x0, 1, zincL);
+      for (let x = x0; x < x1; x++) { const g = lueur(x, top) * 0.5; for (let y = top + 2; y < Math.min(EH, top + 7); y++) if (PL.bayer(x, y) < g * (1 - (y - top - 2) / 5)) E.px(x, y, mix(zinc, sky[6], 0.45)); }
+      for (let k = x0 + 3; k < x1; k += 5) E.r(k, top + 2, 1, EH - top, zincD);
+      for (let k = x0 + 5, i = 0; k < x1 - 9; k += 14, i++) { const y = top + Math.round(4 * s), h = Math.min(11, EH - y - 1), t = Rt(), lit = t < 0.34 * pLum + 0.1;
+        E.r(k - 1, y - 2, 10, 2, zincD); E.r(k, y - 3, 8, 1, zincL); E.r(k, y, 8, h + 1, pierre); E.r(k + 7, y, 1, h + 1, tone("#6a6052", 0.06));
+        const c = lit ? rgb(chaud[i % 3]) : ombre; E.r(k + 1, y + 1, 6, h - 1, c);
+        if (lit) { E.r(k + 1, y + 1, 2, h - 1, mix(c, [120, 60, 30], 0.45)); E.r(k + 1, y + 1, 6, 1, mix(c, [255, 240, 200], 0.4)); for (let j = 1; j < 5 && y + h + j < EH; j++) E.r(k, y + h + j, 8, 1, c, 0.2 - j * 0.035); }
+        else E.px(k + 2, y + 2, mix(ombre, sky[4], 0.5));
+        E.r(k + 4, y + 1, 1, h - 1, lit ? mix(c, [70, 40, 20], 0.7) : pierre); fen.push({ x: k + 1, y: y + 1, w: 6, h: h - 1, lit }); }
+    };
+    toit(-4, xm, yA, 21); toit(xm + 9, EW + 4, yB, 43);
+    // une silhouette à une fenêtre allumée, un téléviseur derrière une autre
+    const allum = fen.filter((f) => f.lit && f.x > 10 && f.x < EW - 14), eteint = fen.filter((f) => !f.lit && f.x > 10 && f.x < EW - 14);
+    if (allum[0]) { const f = allum[0]; E.r(f.x + 3, f.y + 3, 2, 2, "#2a1a14"); E.r(f.x + 2, f.y + 5, 4, f.h - 5, "#2a1a14"); }
+    const tv = eteint[1] || eteint[0] || null; if (tv) E.r(tv.x, tv.y, tv.w, tv.h, "#28406a");
+    // le mur mitoyen : la brique prend la lueur à gauche, quatre mitrons contre le ciel
+    { const top = yA - Math.round(13 * s); E.r(xm, top, 9, EH - top, tone("#6e4a3e", 0.05)); E.r(xm, top, 2, EH - top, tone("#a8705a", 0.08)); E.r(xm + 8, top, 1, EH - top, ombre); E.r(xm - 1, top - 1, 11, 2, tone("#8a8478", 0.06));
+      for (let y = top + 3; y < EH; y += 3) E.r(xm + 2, y, 6, 1, tone("#4e3228", 0.04));
+      for (let k = 0; k < 4; k++) { E.r(xm + k * 2 + (k > 1 ? 1 : 0), top - 5 + (k % 2), 1, 4 - (k % 2), tone("#c26a40", 0.06)); }
+      // l'antenne râteau
+      const ax = xm + 22; E.r(ax, yB - 13, 1, 13, ombre); E.r(ax - 3, yB - 12, 7, 1, ombre); E.r(ax - 2, yB - 10, 5, 1, ombre); E.r(ax - 1, yB - 8, 3, 1, ombre); }
+    // une souche basse sur le toit de gauche, sa fumée
+    { const cx = Math.round(EW * 0.16); E.r(cx, yA - 7, 6, 7, tone("#6e4a3e", 0.05)); E.r(cx, yA - 7, 1, 7, tone("#a8705a", 0.08)); E.r(cx - 1, yA - 8, 8, 1, tone("#8a8478", 0.06)); E.r(cx + 1, yA - 11, 1, 3, tone("#c26a40", 0.06)); E.r(cx + 4, yA - 10, 1, 2, tone("#c26a40", 0.06)); }
+    return { E, HZ, tx, ty, th, tk, bx, top: by, tv, fumee: { x: Math.round(EW * 0.16) + 1, y: yA - 12 } };
   }
 
   // ------------------------------------------------------------------ la pièce
@@ -183,7 +225,7 @@
     const R = PL.Renderer(W, H); G.wet = R.wet;
     const now = new Date(), S = { W, H, sc, G };
     const st = { lampe: true, radio: false, laser: false, cadre: 0, livres: [], sips: 0, flash: 0, sparkle: 0, robe: 0, spin: 0, petals: [], notes: [], steam: 0, ring: 0, nextRing: 14 + Math.random() * 20, bulle: null, score: null, typed: "" };
-    let ph = phaseOf(now), saison = seasonOf(now), pluie = (now.getDate() * 7 + now.getMonth() * 3) % 5 < 3 || ph === "nuit", V = null;
+    let ph = phaseOf(now), saison = seasonOf(now), pluie = true, V = null;
     const EW = wx1 - wx0 + 14, EH = wy1 - wy0;
     const monde = { x0: Math.max(panel ? panel - 30 : 12, 12), x1: W - 14, sol: FY + 10, chaise: G.chaise, appui: { x0: wx0 + 10, x1: wx1 - 10, y: wy1 + 4 }, plante: { x: G.obj.plante.x } };
     const cat = TM.create(monde);
@@ -243,18 +285,17 @@
       const dyn = [], O = G.obj, on = ph !== "jour", M = mouse;
       inp.moved = !!(M && inp.mouse && (Math.abs(M.x - inp.mouse.x) + Math.abs(M.y - inp.mouse.y)) > 0.4); inp.mouse = M;
       // ---- la ville : parallaxe selon la souris, puis ce qui bouge dehors
-      const par = M ? Math.round((M.x - W / 2) / W * -6) : 0, ex0 = 7 + par;
+      const par = 0, ex0 = 7;
       const flash = st.flash > 0 ? (st.flash > 0.42 || (st.flash < 0.3 && st.flash > 0.24) ? 1 : 0.15) : 0; st.flash = Math.max(0, st.flash - dt);
       for (let y = 0; y < EH; y++) for (let x = 0; x < wx1 - wx0; x++) { const q = (wy0 + y) * W + wx0 + x; if (B.z[q] !== Z.GLASS) continue; const e = (y * EW + cl(x + ex0, 0, EW - 1)) * 3; B.c[q * 3] = V.E.c[e] + flash * 150; B.c[q * 3 + 1] = V.E.c[e + 1] + flash * 160; B.c[q * 3 + 2] = V.E.c[e + 2] + flash * 190; }
       const gl = (x, y, c, a) => { x = Math.round(x); y = Math.round(y); if (x < wx0 || x >= wx1 || y < wy0 || y >= wy1) return; const q = y * W + x; if (B.z[q] !== Z.GLASS) return; const cc = rgb(c), k = a == null ? 1 : a; B.c[q * 3] += (cc[0] - B.c[q * 3]) * k; B.c[q * 3 + 1] += (cc[1] - B.c[q * 3 + 1]) * k; B.c[q * 3 + 2] += (cc[2] - B.c[q * 3 + 2]) * k; };
       const tX = wx0 + V.tx - ex0, tY = wy0 + V.ty;
       if (on) {
         const heure = d.getMinutes() < 5 && ph === "nuit"; st.sparkle = Math.max(0, st.sparkle - dt);
-        if (heure || st.sparkle > 0) for (let i = 0; i < 26; i++) { const u = h01(i * 3.3 + Math.floor(t * 9) * 1.7), yy = Math.round(u * V.th), hw = 0.6 + Math.pow(u, 2.3) * 9.5; gl(tX + (h01(i * 7.1 + Math.floor(t * 9)) - 0.5) * 2 * hw, tY + yy, "#ffffff"); }
+        if (heure || st.sparkle > 0) for (let i = 0; i < 26; i++) { const u = h01(i * 3.3 + Math.floor(t * 9) * 1.7), yy = Math.round(u * V.th), hw = 0.6 + Math.pow(u, 2.3) * V.tk; gl(tX + (h01(i * 7.1 + Math.floor(t * 9)) - 0.5) * 2 * hw, tY + yy, "#ffffff"); }
         const a = t * 0.9, bx2 = Math.cos(a), len = 46; if (Math.abs(bx2) > 0.15) for (let i = 2; i < len; i++) gl(tX + bx2 * i, tY - 4 - Math.abs(Math.sin(a)) * i * 0.12, "#fff6d0", 0.34 * (1 - i / len));
         if ((t % 2.2) < 1.1) gl(tX, tY - 6, "#ff4a3a");
         const px = wx0 + ((t * 7) % (wx1 - wx0 + 60)) - 30; if (Math.floor(t * 2) % 2) gl(px, wy0 + 16 + Math.sin(t * 0.2) * 4, "#ff5a4a"); gl(px + 2, wy0 + 16 + Math.sin(t * 0.2) * 4, "#e8eeff", 0.8);
-        if (Math.floor(t * 1.4) % 3) for (let i = 0; i < 12; i++) gl(wx0 + Math.round(EW * 0.5) - ex0 - 1 + i, wy0 + V.HZ - 3 + 2, "#ff5a4a", 0.25);
       }
       // pigeons sur l'appui, dehors
       for (const b of birds) {
