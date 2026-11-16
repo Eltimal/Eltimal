@@ -131,3 +131,70 @@ en deux minutes ; `tboucle` en mode libre sur plus de graines.
 3. Réputations siège et parquet : brancher ou retirer ; fin de carrière (point 3).
 4. Cible de l'économie, puis réglage et emplois de l'argent (point 2).
 5. Batterie élargie et singe sans rendu (point 6), puis fusion des moteurs en double.
+
+## Relecture des textes du jeu (16 novembre 2026, seconde passe)
+
+**Ce qui a été lu.** Les textes sont composés par le générateur : il n'existe pas de liste finie à relire. J'ai donc fait
+produire au jeu ses propres textes et je les ai lus : 15 affaires en entretiens complets (permanence, dépôt, garde à vue,
+audition, famille), 12 consultations au cabinet, 7 dossiers de pièces. Puis chaque défaut relevé à la lecture a été
+compté par un script sur 420 affaires (60 par genre) : `node dev/tools/relecture-scan.js [n] [graine]` ; les pièces d'un
+dossier se lisent avec `node dev/tools/relecture-pieces.js <genre> [n] [graine]`.
+
+**Ce qui n'a pas été lu** : les audiences et les jugements, les dossiers criminels et d'instruction, l'après-jugement,
+la garde à vue au compositeur du mode libre. Les entretiens lus sont ceux du mode assisté (liste) ; la consultation est
+celle du mode libre.
+
+Les fautes de frappe des procès-verbaux (« personnne », « présense ») sont voulues (`docs.js`, `FAUTES`) : non comptées.
+
+### Incohérences comptées (sur 420 affaires)
+
+| # | Incohérence | Fréquence |
+|---|---|---|
+| 1 | Au dépôt, après une nuit de garde à vue, le client dit « c'était ce matin » : le récit de la garde à vue est repris tel quel. | 25 dépôts sur 126 |
+| 2 | L'avocat demande à l'officier « sur quel fondement le contrôle d'identité a-t-il eu lieu ? » dans une affaire sans contrôle (intrusion, arrachage, extorsion). | 50 sur 72 |
+| 3 | Dans le même entretien : « jamais eu affaire à la justice, jamais », puis une condamnation avouée trois réponses plus loin. Le mensonge est voulu, pas la contradiction dans la même conversation. | 36 entretiens |
+| 4 | Convoqué des mois après les faits, le client raconte « la police est arrivée quelques minutes après ». | 10 sur 60 auditions libres |
+| 5 | « Si je rate des jours, je perds ma place » dit par un commerçant, un gérant, un auto-entrepreneur. | 28 sur 110 |
+| 6 | Geste visible (« Elle fixe ses mains ») dans un appel téléphonique. | 5 |
+| 7 | Client détenu qui s'impatiente : « j'ai laissé mon téléphone sonner trois fois », « on se rappelle ? ». | 12 |
+| 8 | Heure à moitié en chiffres : « 15 heures quarante-cinq », « 20 heures et quart ». | 159 répliques |
+| 9 | « Je fumais avec un ami » pour 1 g de MDMA ou de cocaïne. | 10 |
+| 10 | Ordonnance pénale : la question sur les craintes est posée deux fois, avec deux réponses différentes (le permis, puis l'emploi). | 52 |
+| 11 | Témoin entendu sans déclaration : « juste à côté », « non », rien d'autre. | 31 auditions sur 152 |
+| 12 | Accords : témoin femme « prêt à revenir » (9) ; « Je soussignée, Dr Hugo… » (22). | 31 |
+| 13 | Enquête sociale « au dépôt du tribunal » pour un client laissé libre avec une convocation. | 48 sur 120 |
+| 14 | Âge annoncé différent de l'âge calculé d'après la date de naissance (anniversaire proche). | 4 sur 163 |
+| 15 | Escroquerie : « je n'en ai parlé à personne pendant une semaine », plainte du lendemain. | 3 |
+| 16 | Prénom identique au nom (« Nicolas Nicolas »). | 1 |
+
+### Incohérences lues, non comptées
+
+- **Escroquerie à la fausse plombière** : la victime habite Clichy-sous-Bois et dit qu'on a sonné chez elle ; les faits
+  sont situés avenue Jean-Jaurès, Paris 19e. Elle dit avoir payé « 500 € par carte » ; le relevé montre quatre virements,
+  puis 510 € de retraits. La téléphonie relève 19 contacts entre l'auteur et la victime, avec des activations hors de
+  l'ordre des heures. Le dossier part en comparution immédiate pour 500 € et un casier vierge.
+- **Intrusion chez un ancien compagnon** : « le bail est au seul nom de la plaignante » (la victime est un homme) ; les
+  policiers « en patrouille » constatent sans avoir été appelés ; le témoin habite un autre arrondissement.
+- **Violences conjugales** : l'auteur, un homme, déclare « je vis avec mon compagnon » ; au cabinet, les faits sont « chez
+  elle », puis « on était à la maison », et on lui demande où il ira si le juge lui interdit un domicile qui n'est pas le sien.
+- **Arrachage** : le client dit « je l'ai ramassé », puis « ils ont rien trouvé sur moi », puis reconnaît l'avoir eu en main.
+- **Trafic** : « je faisais une livraison, en scooter. Je faisais que guetter. »
+- **Faits sans instant** (abus de biens sociaux, faux, usurpation en ligne, escroquerie à distance) : le client les date
+  « vers neuf heures quarante-cinq », répond à « à quelle heure précisément ? », et « rentre chez lui après ».
+- **Conduite malgré suspension** : le client répond « j'ai un permis, je l'ai laissé chez moi » ; récidive légale retenue
+  pour une condamnation « il y a six ans ».
+- **Comparution immédiate** : pour refuser le dossier, « je ne tiendrai pas une garde à vue » ; l'avocat dit « Capitaine »
+  à un lieutenant ; un client « qui parle un peu seulement le français » s'exprime ensuite sans difficulté.
+- **La famille** : « pour la famille, il y a surtout mon oncle », puis « ma compagne » et « mes trois enfants » ; un homme de
+  60 ans dont « la mère paie l'autre avocat » ; 37 ans, « chez ma grand-mère ».
+
+### D'où viennent ces incohérences
+
+Presque toutes ont l'une de ces trois causes, et aucune n'est une faute de rédaction isolée :
+
+1. **Un seul récit pour toutes les situations.** Le même texte sert en garde à vue, au dépôt le lendemain, au cabinet
+   trois mois après : d'où « ce matin », l'arrestation racontée par un convoqué, le téléphone du détenu.
+2. **Des pièces composées chacune de son côté** quand l'affaire n'a pas de simulation : la plainte, le relevé, la
+   téléphonie et le lieu ne partagent pas la même vérité.
+3. **Des phrases de remplissage sans condition** : la question sur le contrôle, le témoin vide, l'enquête sociale au
+   dépôt, « je perds ma place ».
