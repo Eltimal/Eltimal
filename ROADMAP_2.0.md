@@ -32,7 +32,7 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 | 1.1.0 | L'accueil | Le menu principal retravaillé | **publiée le 16 novembre** ; reste la validation de Kevin sur son Mac |
 | 1.2.0 | Le carnet | Le carnet refait autour du contexte de chaque note | **publiée le 16 novembre** ; reste le regard de Kevin |
 | 1.2.1 | (correctif) | Publication fiable, retours sur le menu et le carnet | trois publications de suite vertes du premier coup |
-| 1.3.0 | Les visages | L'avocat du joueur se compose pièce par pièce ; une banque de visages bien plus grande pour tout le jeu | chaque pièce choisie se voit dans le portrait et en scène ; au moins quatre fois plus de visages distincts |
+| 1.3.0 | Les visages et les noms | L'avocat du joueur se compose pièce par pièce ; une banque de visages bien plus grande ; bien plus de noms de famille, des prénoms et des noms qui vont ensemble | chaque pièce choisie se voit dans le portrait et en scène ; quatre fois plus de visages distincts ; dix fois plus d'identités, aucun prénom hors de sa génération |
 | 1.4.0 | Le premier appel | La première semaine conduite | un joueur passif joue une garde à vue avant le troisième jour |
 | 1.5.0 | La garde à vue | La parole en garde à vue sur le modèle de la consultation | moins de 10 % de questions sans effet, aucun « déjà dit » |
 | 1.6.0 | Les autres voix | Dépôt, parloir, téléphone, victime, famille, témoin | aucune phrase d'une situation dite dans une autre, sur 420 affaires |
@@ -145,7 +145,7 @@ conservées telles quelles — à revoir si Kevin veut que plus rien ne se note 
 - Carnet : un seul nom dans tout le jeu (aujourd'hui « Carnet », « Bloc-notes du dossier », « Vos notes »).
 - Fini quand : trois publications de suite passent du premier coup sur GitHub.
 
-### 1.3.0 « Les visages » — l'avocat sur mesure, une banque de visages pour tout le jeu
+### 1.3.0 « Les visages et les noms » — l'avocat sur mesure, des personnes qu'on distingue
 
 Demande de Kevin (16 novembre) : personnaliser l'avocat et son visage, avec une banque de visages beaucoup plus grande,
 utilisée en jeu, et des menus : cheveux, yeux, nez, accessoires, etc.
@@ -176,6 +176,36 @@ Fini quand : un test compose un visage pièce par pièce et retrouve chaque choi
 silhouette de scène ; sur 1 000 personnes tirées, au moins quatre fois plus de visages distincts qu'aujourd'hui, et
 moins de 1 % de paires identiques dans une même affaire ; planches de contrôle (`shotvisages.js`) relues pour chaque
 menu ; une sauvegarde d'avant la 1.3.0 rend le même portrait au pixel près.
+
+#### Les noms (demande de Kevin, 16 novembre : plus de noms de famille, plus de cohérence entre noms et prénoms)
+
+Point de départ, mesuré le 16 novembre : 70 noms de famille, 50 prénoms d'hommes et 36 de femmes (`gen-monde.js`),
+tirés chacun de son côté, sans lien avec l'âge ni avec la famille ; sur 3 000 personnes tirées, 2 269 identités
+distinctes, et des assemblages qui sonnent faux (un « Jean-Marc » de dix-neuf ans, un « Dylan » retraité). Les listes
+sont en plusieurs exemplaires : `generator.js`, `equipe.js`, les magistrats de `gen-moteur.js`, les voisins écrits en
+dur de `crim-dossier.js`.
+
+- **Bien plus de noms de famille** : plusieurs centaines, à l'image de l'Île-de-France d'aujourd'hui (noms courants et
+  noms rares, noms composés, à particule, à trait d'union), avec leur fréquence : « Martin » revient, pas « Kowalski ».
+- **Bien plus de prénoms, rangés par génération** : le prénom se tire d'après l'année de naissance (Josiane et Gérard
+  ont soixante-dix ans, Léa et Rayan en ont vingt), prénoms composés compris.
+- **Le prénom et le nom se tirent ensemble**, dans des ensembles qui vont ensemble, avec une part d'assemblages mixtes
+  comme dans la vie : la règle devient l'exception, elle ne disparaît pas. Rien de cela ne règle la peau du visage au
+  nom de façon mécanique : la banque de visages reste libre, pour ne pas fabriquer de stéréotype.
+- **La famille tient** : parents, enfants, frères et sœurs portent le même nom ; les époux parfois ; les prénoms d'une
+  même fratrie viennent de la même génération et du même ensemble ; le nom d'usage et le nom de naissance se distinguent
+  dans les pièces qui le demandent (procès-verbal d'identité, casier).
+- **Une seule source de noms pour tout le jeu** : clients, victimes, témoins, voisins, équipe du cabinet, confrères,
+  magistrats, policiers, médecins et experts. Les listes en double sont retirées.
+- **Pas d'homonymes gênants** : jamais deux personnes du même nom complet dans une affaire, jamais le nom d'un
+  personnage récurrent ni celui du joueur donné à un inconnu, sauf lien de famille voulu ; pas de prénom égal au nom.
+- **Le genre suit** : civilité, accords et métier s'accordent au prénom tiré (prénoms épicènes rangés à part).
+- Les carrières en cours gardent tous les noms déjà donnés.
+
+Fini quand, sur 3 000 personnes tirées : au moins dix fois plus d'identités possibles qu'aujourd'hui et moins de 2 %
+de doublons ; aucun prénom à plus d'une génération de l'âge de la personne ; 100 % des liens de famille cohérents sur
+1 000 affaires (`tgen`) ; plus aucune liste de noms hors de la source commune ; `trelecture` compte zéro accord faux
+sur la civilité.
 
 ### 1.4.0 « Le premier appel » — la première semaine
 
@@ -320,6 +350,7 @@ Fini quand : zéro contradiction entre pièces sur 1 000 affaires ; plus aucune 
 | Assignation devant le juge civil : module ou abandon | 1.14.0 | Abandon : c'est un autre métier que celui du jeu. |
 | Tenue de l'avocat : la robe seulement, ou aussi la tenue de ville au cabinet | 1.3.0 | La robe à l'audience, une tenue de ville choisie au cabinet et en garde à vue. |
 | Les visages des personnes déjà rencontrées changent-ils avec la nouvelle banque ? | 1.3.0 | Non : seuls les nouveaux venus en profitent, pour ne dérouter personne. |
+| Part d'assemblages mixtes prénom/nom | 1.3.0 | Environ un sur six : assez pour être vrai, pas assez pour sonner faux. |
 | Nom de la 2.0 | 2.0.0 | À choisir quand le contenu sera arrêté. |
 
 ## Ce qui ne changera pas
