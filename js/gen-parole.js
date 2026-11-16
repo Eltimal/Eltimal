@@ -396,7 +396,7 @@
     const cat = PR.categorie(t, N);
     const tri = PR.trier(N.plainte || [N.resume]);
     const rel = PR.relation(t);
-    const connu = !!rel || ["violences_conj", "harcelement_moral", "harcelement_sexuel", "abus_confiance"].includes(t.inf) && t.f.sc !== "transport";
+    const connu = !!rel || ["violences_conj", "harcelement_moral", "harcelement_sexuel", "abus_confiance", "non_representation", "abandon_famille", "ordonnance_protection"].includes(t.inf) && t.f.sc !== "transport";
     const nomA = Ga.nom;
     // ouverture
     const opening = deces
@@ -828,11 +828,11 @@
       absent: [`Moi ? Je n'étais même pas là. J'étais chez moi, à ce moment-là. Demandez à ${PR.proche(t.A).ma}.`, "Je n'y étais pas. Je vous le jure : je n'étais pas dans le quartier.", "Ce n'est pas moi. Ils se trompent de personne, je n'étais pas là."],
       volant: ["Ce n'est pas moi qui conduisais. C'était un ami, il avait ma voiture.", "Je n'étais pas au volant. J'avais prêté la voiture, ce jour-là."],
       pas_bu: [t.inf === "stups_volant" ? "Je n'avais rien pris. Rien. Peut-être la veille, et encore." : "J'avais bu un verre. Un seul, au repas.", t.inf === "stups_volant" ? "Rien fumé, rien pris. Leur test ne vaut rien." : "Un verre de vin, c'est tout. Je n'étais pas ivre."],
-      jamais_touche: ["Cet argent, je n'y ai jamais touché. Je ne sais même pas de quoi ils parlent.", "Je n'ai rien fait avec ce compte. On a dû utiliser mon nom.", "Ce n'est pas moi. Je n'ai jamais rien eu entre les mains."],
+      jamais_touche: ["fin", "num"].includes(PR.categorie(t)) ? ["Cet argent, je n'y ai jamais touché. Je ne sais même pas de quoi ils parlent.", "Je n'ai rien fait avec ce compte. On a dû utiliser mon nom.", "Ce n'est pas moi. Je n'ai jamais rien eu entre les mains."] : ["Je n'y ai jamais touché. Je ne sais même pas de quoi ils parlent.", "Ce n'est pas moi. Je n'ai jamais rien eu entre les mains."],
       pas_frappe: [`Je ne ${Gv.pl ? "les " : "l'"}ai pas touché${Gv.e}. Pas une fois. On s'est disputés, c'est tout.`, `Je ne ${Gv.pl ? "les " : "l'"}ai jamais frappé${Gv.e}. ${Gv.Il} est tombé${Gv.e} tout${Gv.e} seul${Gv.e}.`],
       pas_casier: ["Je n'ai jamais eu affaire à la justice. Jamais.", "Rien. Casier vierge, je vous assure."],
       provocation: [`Je n'ai rien fait, rien dit. ${PR.gram(PR.auteur(t)).Il} s'est jeté${PR.gram(PR.auteur(t)).e} sur moi sans raison.`, "Je passais, c'est tout. Je n'ai rien dit, rien provoqué."],
-      prejudice: ["Et l'argent… j'ai perdu au moins le double de ce qu'ils disent. Peut-être plus.", "Ce qu'on m'a pris, ça vaut bien plus que ce qui est écrit. J'ai tout perdu."],
+      prejudice: ["personnes", "route"].includes((CAT.INF[t.inf] || {}).fam) ? ["Le médecin n'a pas tout noté. C'est bien plus grave que ce qui est écrit.", "Je ne peux plus rien faire, depuis. Plus rien du tout."] : ["Et l'argent… j'ai perdu au moins le double de ce qu'ils disent. Peut-être plus.", "Ce qu'on m'a pris, ça vaut bien plus que ce qui est écrit. J'ai tout perdu."],
     }[m.k] || ["Ce n'est pas ce qui s'est passé."];
     return V.oral(V.pk("ment:" + m.k, L));
   };

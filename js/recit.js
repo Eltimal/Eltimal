@@ -39,6 +39,8 @@
   R.lieu = (N, t) => {
     let l = String((N && N.lieu) || t.rue || "").trim().replace(/, Paris \d+e$/, "");
     if (!l) return null;
+    // son propre domicile : « chez moi », sans se nommer
+    if (t.A && t.A.nom && new RegExp("^au domicile de (M\\. |Mme )?([^,]* )?" + t.A.nom + "(,|$)").test(l) && !(t.V && t.V.nom === t.A.nom)) return "chez moi";
     l = l.replace(/^au domicile du couple/, "chez nous").replace(/^dans l'appartement du /, "dans l'appartement, au ");
     // la victime proche (conjoint, famille) : « chez elle », pas son nom complet
     const V = t.V;
@@ -85,7 +87,7 @@
     // la simulation d'abord : composer le dossier peut recaler l'heure des faits (SIM.caler)
     const Sx = R.simDe(t, N);
     const A = t.A, G = PR().gram(A), V = t.V, GV = V ? PR().gram(V) : null;
-    const nomV = V ? (/(^|_)(conj|couple)/.test(t.inf + "_" + (t.f && t.f.sc)) ? (V.g === "f" ? "elle" : "lui") : V.agent || /pdap|rebellion|outrage/.test(t.inf) ? (V.g === "f" ? "la policière" : "le policier") : `${V.g === "f" ? "la dame" : "le monsieur"}`) : null;
+    const nomV = V ? (/(^|_)(conj|couple|ordonnance|non_repr|abandon)/.test(t.inf + "_" + (t.f && t.f.sc)) ? (V.g === "f" ? "elle" : "lui") : V.agent || /pdap|rebellion|outrage/.test(t.inf) ? (V.g === "f" ? "la policière" : "le policier") : `${V.g === "f" ? "la dame" : "le monsieur"}`) : null;
     const E = { cadre: [], geste: [], police: [], pourquoi: [], confirme: [], quand: [], ou: [], comment: [] };
     const absent = M.k === "ment" && M.ment.k === "absent";
     // la police est là dès le début : contrôle routier, contrôle d'identité, rébellion, outrage, violences sur policier
@@ -101,7 +103,7 @@
       // « ce matin, vers 7 heures 45 » : le moment dit déjà le matin
       const h = t.d && t.d.h != null ? R.heure(t.d.h) : null, dep = R.depuis(t);
       E.cadre.push(`C'était ${dep}${h ? ", vers " + (/^il y a/.test(dep) ? h : h.replace(/ du matin$/, "")) : ""}${lieu ? ", " + lieu : ""}.`);
-      const av = avantDe(t);
+      const av = lieu === "chez moi" && !/conj/.test(t.inf) ? "J'étais chez moi, tranquille." : t.inf === "alcool" && t.d && t.d.h != null && t.d.h % 1440 > 6 * 60 && t.d.h % 1440 < 20 * 60 ? "Je rentrais chez moi en voiture, après un repas." : avantDe(t);
       if (av) E.cadre.push(av.replace(/(arrêté|arrivé|sorti|parti|venu)(?=[\s.,;!?]|$)/g, "$1" + G.e));
     }
     // 2. le geste : la version (fait G_version), le mensonge, puis les explications qu'il a données ou qu'il donnera
@@ -135,7 +137,7 @@
     }
     // 3. la police : ce qu'on a trouvé, l'interpellation ou la convocation
     // ce qu'on a saisi : il le reconnaît, le relativise ou en conteste le sens (sans démentir sa propre version)
-    if (N.saisie && !absent) E.police.push({ reconnait: `Ils ont trouvé ${N.saisie}. Oui, c'est à moi.`, minimise: `Ils ont trouvé ${N.saisie}. Ils en font toute une histoire, ça veut pas dire ce qu'ils croient.`, nie: `Ils ont saisi ${N.saisie}. Ils en font une affaire, mais ça prouve rien.` }[st]);
+    if (N.saisie && !absent) E.police.push({ reconnait: `Ils ont trouvé ${N.saisie}. Je le conteste pas.`, minimise: `Ils ont trouvé ${N.saisie}. Ils en font toute une histoire, ça veut pas dire ce qu'ils croient.`, nie: `Ils ont saisi ${N.saisie}. Ils en font une affaire, mais ça prouve rien.` }[st]);
     if (t.flagrance && !absent && controle) E.police.push(st === "nie" ? "Ils m'ont emmené" + G.e + " au commissariat sans rien vouloir entendre." : resiste ? "Ils m'ont menotté" + G.e + " et ils m'ont emmené" + G.e + " au commissariat." : "Ils m'ont emmené" + G.e + " au commissariat. J'ai pas fait d'histoire.");
     else if (t.flagrance && !absent) E.police.push(pkr(r, st === "nie" ? ["Les policiers sont arrivés d'un coup, ils ont pris le premier qu'ils ont vu : moi.", "La police est arrivée, ils ont rien voulu entendre. Ils m'ont mis par terre."] : ["La police est arrivée quelques minutes après. J'ai pas cherché à partir.", "Les policiers sont arrivés très vite. Je suis resté" + G.e + " là, j'ai pas résisté."]));
     else if (!t.flagrance) E.police.push(pkr(r, ["Après, je suis rentré" + G.e + " chez moi. J'en ai plus entendu parler, jusqu'à ce que la police m'appelle.", "Après, rien. La vie normale. Et puis un jour, ils sont venus me chercher.", "J'ai pensé que c'était fini. Et puis il y a eu la convocation."]));
@@ -153,10 +155,10 @@
     // la victime : il ne l'invoque que s'il reconnaît, ou s'il nie et pense qu'elle le sait ; un policier, jamais
     if (nomV && !absent) {
       if (agent) { if (st !== "reconnait") E.confirme.push(`${cap(nomV)}, il raconte ce qu'il veut. C'est sa parole contre la mienne.`.replace(/^La policière, il raconte ce qu'il veut/, "La policière, elle raconte ce qu'elle veut")); }
-      else if (st === "nie") E.confirme.push(`${cap(nomV)} ? Demandez-${GV.lui}, ${GV.il} sait très bien que j'ai rien fait.`);
-      else if (st === "reconnait") E.confirme.push(`${cap(nomV)} pourra le dire.`);
+      else if (st === "nie") { if (/violences|conj|agress|outrage|exhib|rebellion/.test(t.inf)) E.confirme.push(`${cap(nomV)} ? Demandez-${GV.lui}, ${GV.il} sait très bien que j'ai rien fait.`); }
+      else if (st === "reconnait" && /violences|conj|agress|outrage|exhib|rebellion/.test(t.inf)) E.confirme.push(`${cap(nomV)} pourra le dire.`);
     }
-    if (!E.confirme.length) E.confirme.push("Personne. J'étais seul" + G.e + ".");
+    if (!E.confirme.length) E.confirme.push(E.cadre.some((x) => /avec (des|un) amis?/.test(typeof x === "string" ? x : x.t)) ? "J'étais avec des amis. Je préfère pas les mêler à ça." : pkr(r, ["Personne. J'étais seul" + G.e + ".", "Non. Il y avait que moi.", "Personne que je connaisse."]));
     // 6. les précisions, quand l'avocat y revient : l'heure, le lieu, le déroulé
     const hum = (PR().voix && PR().voix(t, A, "garde").hum) || "calme";
     const flou = ["anxieux", "abattu"].includes(hum);
@@ -169,7 +171,7 @@
     if (!absent && lieu) {
       E.ou.push(`${cap(lieu.replace(/^(à|au|aux|dans|chez|devant|sur|sous|par|en) /, (x) => x))}${/\.$/.test(lieu) ? "" : "."}`);
       const chez = A && A.adresse && t.rue && A.adresse.includes(String(t.rue).replace(/^(rue|avenue|boulevard|place|quai) /, ""));
-      if (!/^chez /i.test(lieu)) E.ou.push(chez ? "C'est à côté de chez moi. Je connais tout le monde, là-bas." : pkr(r, ["Je connais un peu le coin. J'y passe souvent.", "Je connais pas trop ce quartier. J'étais de passage."]));
+      if (!/^chez |rame|métro|bus |tramway|train|RER/i.test(lieu)) E.ou.push(chez ? "C'est à côté de chez moi. Je connais tout le monde, là-bas." : pkr(r, ["Je connais un peu le coin. J'y passe souvent.", "Je connais pas trop ce quartier. J'étais de passage."]));
     } else if (absent) E.ou.push("Chez moi. Je vous l'ai dit, j'étais pas là-bas.");
     // le déroulé : les explications données à l'enquêteur que le récit n'a pas reprises, puis l'objet ou la saisie
     for (const a of N.audition || []) { const x = a.a && a.a.expliquer; if (M.k === t.stance && x && !vus.has(x) && ![...vus].some((y) => y.includes(x)) && !/première fois|déjà été|antécédent|condamn/i.test(a.q || "") && seule(x)) { E.comment.push(x); vus.add(x); } }

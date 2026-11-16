@@ -87,7 +87,7 @@
       arg: (G, met) => ({ label: "Exclure la mention au bulletin n° 2 (art. 775-1 CPP)", say: `S'il devait y avoir condamnation, je vous demande d'en exclure la mention au bulletin n° 2 : sans cela, ${G.il} perd son métier de ${met}.` }),
       sauve: (cs, dec, joue) => !dec.coupable || joue },
     enfants: { label: "Rester auprès de ses enfants",
-      dit: () => ["Mes enfants. Si je vais en prison, qui s'en occupe ?", "Ce qui me fait peur, c'est les enfants. Je ne peux pas les laisser."],
+      dit: (A) => (A && A.enfants === 1 ? ["Mon enfant. Si je vais en prison, qui s'en occupe ?", "Ce qui me fait peur, c'est mon enfant. Je ne peux pas le laisser."] : ["Mes enfants. Si je vais en prison, qui s'en occupe ?", "Ce qui me fait peur, c'est les enfants. Je ne peux pas les laisser."]),
       arg: (G) => ({ label: "Ses enfants : une peine qui ne l'en sépare pas", say: `${G.Il} élève ses enfants. Si une peine doit être prononcée, qu'elle ne ${G.le} sépare pas d'eux : sursis, ou peine aménagée.` }),
       sauve: (cs, dec) => !dec.coupable || !(cs.vars.peine && cs.vars.peine.ferme > 0 && !cs.vars.peine.amenagement) },
     emploi: { label: "Garder son emploi",

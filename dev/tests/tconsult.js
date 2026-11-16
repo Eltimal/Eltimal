@@ -59,7 +59,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
           // la réponse répond à la question : ce que chaque question de suite va chercher
           const k = q.parent ? q.id.split(":").pop() : null;
           if (k === "quand") ok(/heure|\d h |minuit|midi|matin|soir|journée|minutes|après|venus|convocation|déjà là/i.test(tout), "« à quelle heure » : la réponse ne parle pas du moment", tout);
-          if (k === "ou") ok(/rue|avenue|boulevard|place|quai|chez|quartier|coin|station|magasin|bar|métro|parking|domicile|appartement|square|impasse|allée|passage|gare|centre|là-bas|côté|route|pont|cité|immeuble|hall|marché|parc/i.test(tout), "« où » : la réponse ne parle pas du lieu", tout);
+          if (k === "ou") ok(/chez moi|station|attrapé|arrêté/i.test(tout) || /rue|avenue|boulevard|place|quai|chez|quartier|coin|station|magasin|bar|métro|parking|domicile|appartement|square|impasse|allée|passage|gare|centre|là-bas|côté|route|pont|cité|immeuble|hall|marché|parc|bus|rame|ligne|arrêt|quai|tram|train/i.test(tout), "« où » : la réponse ne parle pas du lieu", tout);
           if (k === "justif") ok(/attestation|factures|fiches de paie/.test(tout), "« justifier du travail » : la réponse n'en dit rien", tout);
           if (voir) console.log(`  [${C.THEMES[q.theme]}]${q.parent ? " ↳" : ""} ${q.q}\n      ${tout}${r.client ? "\n      (question du client : " + r.client + " → " + C.repondreClient(K, r.client, true).t + ")" : ""}`);
           if (r.client) ok(!!C.repondreClient(K2, r.client, true).t, "une question du client sans réponse de l'avocat", r.client);

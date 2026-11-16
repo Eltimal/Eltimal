@@ -639,7 +639,7 @@
     absent: { camp: "defense", preuves: ["video", "temoin", "telephonie", "adn"], cond: (t) => t.stance !== "reconnait" && !["route"].includes(CAT.INF[t.inf].fam) },
     volant: { camp: "defense", preuves: ["video", "temoin", "fichier"], cond: (t) => t.stance !== "reconnait" && CAT.INF[t.inf].fam === "route" && !["alcool", "stups_volant"].includes(t.inf) },
     pas_bu: { camp: "defense", preuves: ["ethylo", "labo"], cond: (t) => ["alcool", "stups_volant"].includes(t.inf) && t.stance !== "reconnait" },
-    jamais_touche: { camp: "defense", preuves: ["releve", "telephonie", "ecrits", "saisie"], cond: (t) => ["biens", "numerique", "affaires", "stups"].includes(CAT.INF[t.inf].fam) && t.stance !== "reconnait" },
+    jamais_touche: { camp: "defense", preuves: ["releve", "telephonie", "ecrits", "saisie"], cond: (t) => ["biens", "numerique", "affaires", "stups"].includes(CAT.INF[t.inf].fam) && t.stance !== "reconnait" && t.inf !== "recel" },
     pas_frappe: { camp: "defense", preuves: ["certificat", "temoin", "video"], cond: (t) => CAT.INF[t.inf].fam === "personnes" && t.stance !== "reconnait" },
     pas_casier: { camp: "defense", preuves: ["casier"], cond: (t) => t.A && t.A.casier > 0 },
     provocation: { camp: "pc", preuves: ["temoin", "video"], cond: (t) => ["violences", "menaces"].includes(t.inf) && t.client === "V" },

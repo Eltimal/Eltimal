@@ -76,17 +76,21 @@
     [/^Je vais aller en prison \?$/, ["faits", "antecedents", "procedure", "vecu"]],
     [/^Je vous raconte tout, comme ça vous savez\.$/, ["faits"]],
     [/^Attendez, je reprends depuis le début\.$/, []],
+    [/^Vous voulez vraiment savoir \?$/, ["faits"]],
   ];
   // « Pardon, je parle trop. » ne suit qu'une réponse longue ; « Oui. » n'ouvre que la réponse à une question fermée
-  const TROP = /^(Pardon, je parle trop\.|Enfin, bref\. Je m'égare\.|Excusez-moi, je parle trop\. On me le dit souvent\.)$/;
+  const TROP = /^(Pardon, je parle trop\.|Enfin, bref\. Je m'égare\.|Excusez-moi, je parle trop\. On me le dit souvent\.|Je ne sais pas si c'est important, mais je vous le dis quand même\.)$/;
   const OUI = /^(Oui\.|Oui, oui\.|Bien sûr\.)$/;
   const FERMEE = /(^|[.:] )(Avez|Aviez|Êtes|Étiez|Est-ce|A-t-|Y a-t-|Vous |Il |Elle |Ils |Elles |Quelqu'un|On |Les voisins|Ça )[^.?]*\?\s*$/;
   const admise = (x, theme, i, arr, question) => {
     const tx = segT(x).trim();
-    if (TROP.test(tx)) return arr.length >= 4;
+    if (TROP.test(tx)) return arr.length >= 5;
     if (OUI.test(tx) && i === 0) return FERMEE.test(question || "");
     const r = REACTIONS.find(([re]) => re.test(tx));
-    return !r || r[1].includes(theme);
+    if (!r) return true;
+    // une seule réaction par réponse : la première
+    if (arr.slice(0, i).some((y) => REACTIONS.some(([re]) => re.test(segT(y).trim())))) return false;
+    return r[1].includes(theme);
   };
 
   // les questions du catalogue qui tiennent les faits pour acquis (« Pourquoi avez-vous fait ça ? », « Il vous a provoqué ? »)
@@ -117,18 +121,21 @@
     const oral = (x) => { const o = CR.GEN2.PR.oral; return typeof x === "string" ? o(x, "sout") : Object.assign({}, x, { t: o(x.t, "sout") }); };
     const st = mode.stance;
     // une suite n'existe que si le client a quelque chose à y répondre : les phrases d'attente n'en font pas une
-    const defaut = /^Il y a (pas de pourquoi|rien à raconter de plus)|^Je vous ai dit l'essentiel|^Il y a pas grand-chose de plus|^Ça a duré quelques secondes|^Tout est allé très vite/;
+    const defaut = /^Il y a (pas de pourquoi|rien à raconter de plus)|^Je vous ai dit l'essentiel|^Il y a pas grand-chose de plus|^Ça a duré quelques secondes|^Tout est allé très vite|^Je sais pas\. C'est parti tout seul|^J'ai pas pensé que c'était si grave|^J'ai pas réfléchi\. Sur le moment|^J'étais pas bien, à ce moment-là/;
     // l'heure des faits, pas la suite de l'enquête (déjà racontée) ; un lieu, pas « par téléphone » ou « à distance »
     const quand = (E.quand || []).filter((x, i) => i === 0 || /arrêté|déjà là|arrivée/.test(segT(x)));
     // chez lui, chez elle, chez eux : il l'a dit en racontant, et il connaît l'endroit
     const chez = /^chez /i.test(segT((E.ou || [])[0]));
-    const sansLieu = (E.ou || []).some((x) => /téléphone|distance|en ligne|internet|réseau|messagerie|courrier/i.test(segT(x)));
+    // le lieu : il l'a donné en racontant ; la suite ne vaut que s'il en dit davantage (c'est près de chez lui, où on l'a arrêté)
+    const ouNeuf = (E.ou || []).slice(1).filter((x) => !/^Je connais (un peu le coin|pas trop ce quartier)/.test(segT(x)));
+    let cat = null; try { cat = CR.GEN2.PR.categorie(t, N); } catch (e) { cat = null; }
+    const sansLieu = ["msg", "num"].includes(cat) || (E.ou || []).some((x) => /téléphone|distance|en ligne|internet|réseau|messagerie|courrier/i.test(segT(x)));
     const LISTE = [
       ["quand", "À quelle heure était-ce, précisément ?", absent ? [] : quand],
-      ["ou", "Où était-ce, exactement ? Vous connaissez l'endroit ?", absent || sansLieu || chez ? [] : E.ou],
+      ["ou", "Cet endroit, vous le connaissez ?", absent || sansLieu || chez ? [] : ouNeuf],
       ["comment", "Reprenons dans le détail : comment cela s'est-il déroulé ?", (E.comment || []).filter((x) => !defaut.test(segT(x)))],
       ["pourquoi", st === "reconnait" ? "Pourquoi l'avez-vous fait ?" : "Comment expliquez-vous ce qui s'est passé ?", st === "nie" ? [] : (E.pourquoi || []).filter((x) => !defaut.test(segT(x)))],
-      ["confirme", "Qui était présent ? Quelqu'un peut-il confirmer ce que vous dites ?", absent ? [] : E.confirme],
+      ["confirme", "Qui était présent ? Quelqu'un peut-il confirmer ce que vous dites ?", absent ? [] : sansLieu ? (E.confirme || []).filter((x) => !/^Personne\. J'étais seule?\.$|^Non\. Il y avait que moi\.$|^Personne que je connaisse\.$/.test(segT(x))) : E.confirme],
     ];
     const out = [];
     for (const [k, q, arr] of LISTE) {
@@ -172,7 +179,13 @@
     if (ou) {
       const estM = (x) => x && typeof x === "object" && x.f === "G_vie_ment";
       const src = toutes.find((y) => y.theme !== ou && y.a.some(estM)), dst = toutes.find((y) => y.theme === ou);
-      if (src && dst) {
+      if (src && !dst && mk === "pas_casier") {
+        // l'entretien n'interroge pas sur les antécédents (ordonnance pénale) : la question s'ajoute, il y ment
+        const m = src.a.find(estM);
+        src.a = src.a.filter((x) => !estM(x));
+        const G0 = CR.GEN2.PR.gram(t.A);
+        toutes.push({ tp: { id: "consult_casier", q: "Avez-vous déjà été condamné" + (G0.e || "") + " ?", cost: 2 }, theme: "antecedents", q: "Avez-vous déjà été condamné" + (G0.e || "") + " ?", a: [m], ajoutee: true });
+      } else if (src && dst) {
         const m = src.a.find(estM);
         src.a = src.a.filter((x) => !estM(x));
         dst.a = mk === "pas_casier" ? dst.a.filter((x) => !(x && typeof x === "object" && x.f)).filter((x) => /^[(…]|…$/.test(segT(x))).concat([m]) : dst.a.concat([m]);
@@ -186,8 +199,11 @@
     const recit = toutes.find((y) => y.theme === "faits" && !catalogue(y.tp)) || null;
     const ver = luiMeme && recit && recit.a.some((x) => x && typeof x === "object" && x.recit) ? C.version(t, recit.a) : null;
     let inquietude = null;
-    for (const { tp, theme, q: texte, a } of toutes) {
-      const q = { id: tp.id, theme, q: texte, cout: tp.cost || 3, tp, a, parent: null, si: null };
+    for (const { tp, theme, q: texte0, a, ajoutee } of toutes) {
+      let texte = texte0;
+      // deux questions sur ce qui l'inquiète : la seconde ne répète pas la première
+      if (theme === "vecu" && INQUIET.test(texte) && inquietude) texte = "Et à part cela, qu'avez-vous peur de perdre ?";
+      const q = { id: tp.id, theme, q: texte, cout: tp.cost || 3, tp: ajoutee ? null : tp, a, parent: null, si: null };
       // --- ce qui se découvre dans la discussion
       // une question du catalogue de l'infraction, les preuves, le préjudice : après le récit des faits seulement
       if (recit && tp !== recit.tp && (catalogue(tp) || theme === "preuves" || theme === "prejudice")) q.parent = recit.tp.id;
@@ -253,6 +269,7 @@
     [/^Dites-moi que/i, "Je ne peux pas vous le promettre. Je vous promets de faire tout ce qui peut être fait."],
     [/entre nous/i, "Tout ce que vous me dites ici est couvert par le secret professionnel. Rien ne sort de ce bureau."],
     [/Pourquoi vous me demandez|ça se voit/i, "Parce que le juge l'aura sous les yeux. Je dois le savoir avant lui, pas le découvrir à l'audience."],
+    [/Je dois venir|devoir (le|la|les) voir/i, "Rien ne vous y oblige : je peux vous représenter. Et si vous venez, je serai à côté de vous."],
     [/C'est normal, ça|Ça veut dire quoi/i, "Je vous l'explique dans un instant. D'abord, j'ai besoin de comprendre ce qui s'est passé."],
   ];
   C.repondreClient = function (K, q, oui) {
