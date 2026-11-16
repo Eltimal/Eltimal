@@ -1,4 +1,5 @@
-// Refonte, lot 3 : les entretiens hors garde à vue (cabinet, permanence, victime) au compositeur, en mode libre.
+// Les entretiens hors garde à vue (cabinet, permanence, victime) en mode libre : la consultation (consultation.js),
+// un thème puis une question écrite en entier. Le détail du moteur est dans tconsult.js.
 // node tests/tappel.js   « échecs: 0 » attendu.
 const { boot, sleep, texts, findBtn, click } = require("./harness");
 (async () => {
@@ -7,12 +8,13 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
   await sleep(100);
   await click(w, findBtn(doc, "Nouvelle partie")); await sleep(80); await click(w, findBtn(doc, /^Carrière/)); await sleep(200);
   const s = CR.store.s; s.settings.coach = false; s.settings.saisie = "assiste"; CR.PAROLE.ACCEL = 60; CR.store.bump(); await sleep(60);
-  const attendre = async () => { for (let k = 0; k < 400 && (doc.querySelector(".oral .oral-caret") || !findBtn(doc, /^Terminer l'entretien|^Poser la question/)); k++) await sleep(20); await sleep(40); };
-  const composer = async (sujet, angle) => {
-    const b = (re) => [...doc.querySelectorAll(".compo .compo-b")].find((x) => re.test(texts(x)) && !x.disabled);
-    const bs = b(sujet); if (!bs) return false; await click(w, bs); await click(w, b(angle));
-    let go = null; for (let k = 0; k < 150 && !(go = findBtn(doc, /^Poser la question/)); k++) await sleep(20);
-    if (!go) return false; await click(w, go); await attendre(); return true;
+  const attendre = async () => { for (let k = 0; k < 400 && (doc.querySelector(".oral .oral-caret") || !findBtn(doc, /^Terminer l'entretien/)); k++) await sleep(20); await sleep(40); };
+  // poser la première question libre d'un thème
+  const composer = async (theme) => {
+    const th = [...doc.querySelectorAll(".consult .compo-sujets .compo-b")].find((x) => theme.test(texts(x)));
+    if (!th) return false; await click(w, th); await sleep(30);
+    const q = [...doc.querySelectorAll(".consult-q")].find((x) => !x.disabled);
+    if (!q) return false; await click(w, q); await attendre(); return true;
   };
   for (const [kind, sujetRe] of [["copj", /^Les faits/], ["pc", /^Les faits/]]) {
     const cs = CR.GEN.open(s, kind, {});
@@ -20,17 +22,17 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
     CR.store.bump(); await sleep(60);
     CR.UI._setScene({ type: "call", caseId: cs.id, call: "intake" }); await sleep(250);
     const lib = doc.querySelector(".call-libre");
-    ok(!!lib, `${kind} : l'entretien n'est pas au compositeur`, texts(doc.querySelector(".call-scene") || doc.body).slice(0, 200));
+    ok(!!lib && !!doc.querySelector(".consult"), `${kind} : l'entretien n'est pas une consultation`, texts(doc.querySelector(".call-scene") || doc.body).slice(0, 200));
     if (!lib) continue;
     ok(!doc.querySelector(".call-scene .patience"), `${kind} : la jauge de patience s'affiche`);
     ok(!doc.querySelector(".call-main .questions .q-btn"), `${kind} : la liste de questions subsiste`);
     await attendre();
-    ok(await composer(sujetRe, /Ce qui s'est passé/), `${kind} : impossible de poser une question`);
+    ok(await composer(sujetRe), `${kind} : impossible de poser une question`);
     for (const x of [...doc.querySelectorAll(".oral .who-client .oral-t")].filter((x) => !x.disabled)) await click(w, x);
     ok(cs.notes.length > 0, `${kind} : rien n'a pu être noté`);
     const fv = kind === "pc" ? "V_faits" : "G_version";
     ok(CR.hasFact(cs, fv) || cs.notes.some((n) => n.fact), `${kind} : la version notée ne donne aucun fait`, cs.notes.map((n) => n.fact).join(","));
-    await composer(/^Le casier|^La procédure|^Le préjudice/, /Ce qui s'est passé/);
+    await composer(/^Les antécédents|^La procédure|^Le préjudice/);
     await click(w, findBtn(doc, /^Terminer l'entretien/)); await sleep(80);
     const fin = findBtn(doc, /^Terminer$/, doc.querySelector(".closing"));
     ok(!!fin, `${kind} : pas de fin d'entretien`); if (fin) await click(w, fin);

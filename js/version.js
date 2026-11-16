@@ -17,6 +17,18 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "0.10.0", nom: "La consultation", date: "16 novembre 2026", type: "contenu",
+      resume: "Au cabinet, on pose une question écrite en entier, et le client répond à cette question.",
+      notes: [
+        "Rendez-vous au cabinet, appels, dépôt, parloir : un moteur de consultation remplace la composition sujet, angle, forme, réservée à la garde à vue.",
+        "On choisit un thème (la procédure, les faits, l'enquête, les antécédents, la situation…), puis une question rédigée : on sait ce qu'on demande.",
+        "Chaque question a sa réponse et ne se pose qu'une fois : le client ne dit plus « je vous l'ai déjà dit ».",
+        "Une réponse ouvre des questions de suite : l'heure, le lieu, le déroulé, les raisons, les témoins, les justificatifs.",
+        "Les réactions de caractère ne tombent plus au hasard : le client ne demande « pourquoi vous me demandez ça ? » que sur une question qui s'y prête, et vous pouvez lui répondre.",
+        "Le client prévient à voix haute avant de perdre patience ; le débrief cite la question qu'il fallait poser.",
+      ],
+    },
+    {
       version: "0.9.0", nom: "La parole", date: "15 novembre 2026", type: "contenu",
       resume: "Le client parle comme une vraie personne : il raconte, se tait, ment, et l'audition se joue en entier.",
       notes: [

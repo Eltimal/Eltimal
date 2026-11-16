@@ -27,7 +27,7 @@ const P = require("./play"); const U = require("./util"); const { runAudience } 
     // la permanence : on s'informe au compositeur, puis le geste de prendre le dossier
     if (doc.querySelector(".call-libre")) {
       await attendre();
-      await composer(/^Les faits|^Le contexte|^Un autre point/, /Ce qui s'est passé/);
+      { let q = null; for (let k = 0; k < 200 && !(q = [...doc.querySelectorAll(".consult-q")].find((x) => !x.disabled)); k++) await sleep(20); ok(!!q, "l'appel de permanence n'offre aucune question"); if (q) { await click(w, q); await attendre(); } }
       let prendre = null;
       for (let k = 0; k < 200 && !(prendre = [...doc.querySelectorAll(".gestes .geste")].find((x) => /prends le dossier|J'y vais/.test(texts(x)) && !x.disabled)); k++) await sleep(20);
       ok(!!prendre, "l'appel de permanence n'offre pas le geste de prendre le dossier", texts(doc.querySelector(".call-libre")).slice(0, 300));
