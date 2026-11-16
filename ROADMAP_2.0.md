@@ -2,8 +2,10 @@
 
 16 novembre 2026. Point de départ : la 1.0.0 « Le serment » (`jeu-174`). Sources : `AUDIT_1.0.md` (audit des mécaniques
 et relecture des textes). Cette feuille de route remplace l'ordre de travail de `GAMEPLAY_ROADMAP.md` pour la suite ;
-les lots déjà commencés là-bas (familles d'infractions, dossier criminel) sont repris ici dans les étapes 1.5 et 1.8.
-Le 16 novembre, à la demande de Kevin, la refonte du carnet a pris la place de la 1.2.0 : tout le reste est décalé d'un cran.
+les lots déjà commencés là-bas (familles d'infractions, dossier criminel, actes par clauses, après-jugement) sont repris
+ici dans les étapes 1.6, 1.7, 1.8, 1.12 et 1.13.
+Le 16 novembre, à la demande de Kevin : la refonte du carnet a pris la place de la 1.2.0 (tout le reste décalé d'un
+cran), puis la feuille de route a été détaillée en étapes plus nombreuses et plus courtes jusqu'à la 2.0.
 
 ## Ce que sera la 2.0
 
@@ -15,7 +17,10 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 
 - Une étape n'est finie que si son critère est mesuré par un test de la batterie.
 - Aucun essai de plus de dix minutes sans retour.
-- Chaque étape passe par le canal d'essai avant `main`.
+- Une seule publication (`jeu-N`, voir `PUBLICATION.md`) : chaque poussée testée part chez tous les joueurs. Une étape
+  se publie donc entière, jamais à moitié ; ce qui n'est pas fini reste derrière son ancien comportement.
+- Une étape tient en une à trois séances. Si elle déborde, elle se coupe en deux versions plutôt que de s'étirer.
+- Avant d'ajouter du texte fixe, écrire ses variantes : les mesures de répétition sont près de leur seuil.
 - Pas de moteur de gameplay par type d'affaire : une simulation par famille de faits, un moteur de parole par situation.
 
 ## Les étapes
@@ -25,13 +30,28 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 | 1.0.1 | (correctif) | Corrections de texte et filet de sécurité | le script de relecture ne compte plus rien sur les défauts ponctuels |
 | 1.1.0 | L'accueil | Le menu principal retravaillé | **publiée le 16 novembre** ; reste la validation de Kevin sur son Mac |
 | 1.2.0 | Le carnet | Le carnet refait autour du contexte de chaque note | **publiée le 16 novembre** ; reste le regard de Kevin |
+| 1.2.1 | (correctif) | Publication fiable, retours sur le menu et le carnet | trois publications de suite vertes du premier coup |
 | 1.3.0 | Le premier appel | La première semaine conduite | un joueur passif joue une garde à vue avant le troisième jour |
-| 1.4.0 | La garde à vue | Contexte de procédure, parole par situation | moins de 10 % de questions sans effet, aucun « déjà dit » |
-| 1.5.0 | Le dossier juste | Une simulation par famille de faits | zéro contradiction entre pièces sur 1 000 affaires |
-| 1.6.0 | Le palais vous connaît | Réputations qui comptent, fin de carrière | chaque jauge a un effet mesuré ; une carrière a une fin |
-| 1.7.0 | Les comptes | Économie recalée, emplois de l'argent | les deux mesures de trésorerie concordent avec la cible choisie |
-| 1.8.0 | L'audience relue | Relecture de ce qui n'a pas été lu, répétition | audiences, jugements et dossiers criminels passés au script |
-| 2.0.0 | (à nommer) | Un seul parcours, distribution achevée | checklist de sortie entièrement cochée |
+| 1.4.0 | La garde à vue | La parole en garde à vue sur le modèle de la consultation | moins de 10 % de questions sans effet, aucun « déjà dit » |
+| 1.5.0 | Les autres voix | Dépôt, parloir, téléphone, victime, famille, témoin | aucune phrase d'une situation dite dans une autre, sur 420 affaires |
+| 1.6.0 | Le dossier juste | Une vérité par famille : fraudes à distance, faits qui durent | zéro contradiction entre pièces sur 1 000 affaires de ces familles |
+| 1.7.0 | Chez soi, sur la route | Une vérité par famille : domicile et couple, route, stupéfiants | idem ; le second moteur des violences est fondu |
+| 1.8.0 | Le dossier en main | Lecteur de pièces, carnet et actes : un seul geste de travail | une note rouvre sa source ; aucun blanc d'acte devinable |
+| 1.9.0 | Le palais vous connaît | Réputations du siège et du parquet qui comptent | chaque jauge affichée a un effet mesuré, ou n'est plus affichée |
+| 1.10.0 | La robe et les années | Fin de carrière, objectifs après « Ténor » | une carrière jouée par l'automate se termine par un bilan |
+| 1.11.0 | Les comptes | Économie recalée, emplois de l'argent | les deux mesures de trésorerie concordent avec la cible choisie |
+| 1.12.0 | Les assises | Le dossier criminel au volume réel | un dossier criminel a ses sous-dossiers complets et se tient d'une pièce à l'autre |
+| 1.13.0 | Les suites | Après le jugement, bibliothèque : reports levés ou abandonnés | plus aucun report ouvert dans les documents du projet |
+| 1.14.0 | L'audience relue | Relecture de ce qui n'a pas été lu, répétition | audiences, jugements et dossiers criminels passés au script ; cinq points sous les seuils |
+| 1.15.0 | Au clavier | Parcours complet au clavier, fluidité, écrans étroits | une carrière d'une semaine jouée sans souris par un test |
+| 1.16.0 | Un seul parcours | Le mode liste disparaît, les tests jouent le vrai jeu | plus aucun test ne dépend du mode liste |
+| 2.0.0 | (à nommer) | Distribution achevée, relectures, ménage | checklist de sortie entièrement cochée |
+
+Ordre et dépendances : 1.4 avant 1.5 (le moteur de parole se règle d'abord sur la scène la plus jouée) ; 1.6 et 1.7
+avant 1.12 (la simulation criminelle reprend le modèle de témoin et la fiche de famille) ; 1.9 avant 1.10 (le bilan de
+carrière lit les réputations) ; 1.10 avant 1.11 (les emplois de l'argent donnent des objectifs de fin) ; 1.16 après tout
+ce qui ajoute du contenu (on ne retire le mode liste qu'une fois le parcours libre complet). Les étapes 1.8, 1.13 et
+1.15 ne dépendent de rien et peuvent passer devant si Kevin le demande.
 
 ### 1.0.1 — corrections et filet de sécurité — **fait le 16 novembre 2026**
 
@@ -113,81 +133,158 @@ Restes possibles, à la demande : rouvrir depuis une note l'échange entier ou l
 d'office par le jeu en mode assisté (réponses à fait des appels en liste, questions d'audience, confrontation) sont
 conservées telles quelles — à revoir si Kevin veut que plus rien ne se note sans lui.
 
+### 1.2.1 — publication fiable et retours — correctif
+
+- **Tests fragiles sous charge** : `tincidents` (build 180 et 182 en échec sur la machine de publication) et
+  `tnavigateur` (export sans fichier) attendent un affichage lettre à lettre ; leur donner un affichage immédiat en test
+  (réglage du harnais), au lieu d'allonger les attentes.
+- Les 15 tests jusque-là hors batterie y sont (fait en 1.0.1) : vérifier qu'aucun autre ne traîne dans `dev/tests`.
+- Retours de Kevin sur la 1.1.0 (menu, vue de nuit, éclats des jeux cachés) et la 1.2.0 (carnet) : corrections ici.
+- Carnet : un seul nom dans tout le jeu (aujourd'hui « Carnet », « Bloc-notes du dossier », « Vos notes »).
+- Fini quand : trois publications de suite passent du premier coup sur GitHub.
+
 ### 1.3.0 « Le premier appel » — la première semaine
 
 - Inscription d'office à la permanence de la première nuit : la promesse de l'écran titre est tenue.
 - Bouton « S'inscrire aux permanences » dans le courrier de l'Ordre.
 - Me Varenne appelle si rien n'est fait au troisième jour.
 - Bandeau des messages sans réponse au bureau ; « Avancer » s'arrête sur tout contact en attente et le dit.
+- Un contact qui va se fermer prévient la veille ; une ligne au journal ne suffit pas.
 - « Assisté » coché par défaut à la première carrière, « Libre » ensuite.
+- Les quatre courriers d'ouverture ramenés à ce qu'il faut pour la première nuit ; le reste arrive quand il sert.
 - Test : un automate qui ne fait que cliquer « Avancer » et « Répondre » joue une garde à vue avant le jour 3.
 
-### 1.4.0 « La garde à vue » — parole et procédure
+### 1.4.0 « La garde à vue » — la parole de la scène la plus jouée
 
 - **Contexte de procédure** lu par tous les textes : arrêté sur le fait, convoqué, plaignant ; date des faits relative
   au jour où l'on parle.
-- **Un moteur de parole par situation**, sur le modèle de la consultation : garde à vue, dépôt, téléphone, parloir,
-  victime, famille. Chaque situation a ses questions, ses gestes permis, sa façon de dater.
-- Garde à vue : questions écrites en entier, une réponse par question, suites ouvertes par la discussion.
-- Mensonge du client tenu dans la durée d'un entretien (pas de démenti trois réponses plus loin sans confrontation).
-- Mesure de départ : 49 % d'angles sans effet, 12 % de « déjà dit ».
+- Garde à vue sur le moteur de la consultation : questions écrites en entier, une réponse par question, suites ouvertes
+  par la discussion, découverte des questions par l'échange.
+- Mensonge du client tenu dans la durée d'un entretien (pas de démenti trois réponses plus loin sans confrontation) :
+  36 entretiens concernés à la relecture.
+- Le client convoqué ne raconte plus une arrestation (10 auditions libres concernées).
+- Mesure de départ : 49 % d'angles sans effet, 12 % de « déjà dit ». Outil : `consultations.js` étendu à la garde à vue.
 
-### 1.5.0 « Le dossier juste » — une vérité par famille de faits
+### 1.5.0 « Les autres voix » — une parole par situation
 
-Dans l'ordre, chaque famille avec sa simulation, ses pièces tirées de la même vérité et son test de cohérence :
+- Le même moteur pour le dépôt, le parloir, le téléphone, la victime, la famille, le témoin : chaque situation a ses
+  questions, ses gestes permis (rien de visible au téléphone), sa façon de dater, son impatience propre.
+- Victime : le récit de la plainte par épisodes. Antécédents : la peine prononcée, son exécution.
+- Visages branchés sur les réponses (gêne, colère, fatigue) là où l'on se voit.
+- Test : `trelecture` étendu ; aucune phrase marquée d'une situation n'est dite dans une autre, sur 420 affaires.
+
+### 1.6.0 « Le dossier juste » — une vérité par famille de faits, première moitié
+
+Chaque famille avec sa simulation, ses pièces tirées de la même vérité et son test de cohérence :
 
 1. Fraudes à distance (faux conseiller, fausse annonce, faux artisan) : lieu, mode de paiement, téléphonie, délai de plainte.
 2. Faits qui durent (abus de biens sociaux, faux, harcèlement, usurpation en ligne) : une période, pas une heure ; pas
    d'arrestation ; plus de « à quelle heure précisément ? ».
-3. Domicile et couple : qui habite où, qui a appelé, qui a vu.
-4. Route, puis stupéfiants (produit, mode de consommation, rôle tenu).
-5. Fusion du second moteur des violences dans `sim.js`.
 
-Avec elles : un **modèle de témoin** (qui il est, où il était, ce qu'il a vu) et une **fiche de famille** stable par
-personne (avec qui elle vit, qui peut attester).
+Avec elles : le **modèle de témoin** (qui il est, où il était, ce qu'il a vu), repris ensuite par toutes les familles.
 
-### 1.6.0 « Le palais vous connaît » — réputations et fin de carrière
+### 1.7.0 « Chez soi, sur la route » — une vérité par famille de faits, seconde moitié
+
+3. Domicile et couple : qui habite où, qui a appelé, qui a vu ; la **fiche de famille** stable par personne (avec qui
+   elle vit, qui peut attester).
+4. Route (alcoolémie et toxicologie simulées, plus seulement composées), puis stupéfiants (produit, mode de
+   consommation, rôle tenu ; livraison, usage).
+5. Vol chez l'employeur, vol au préjudice d'une personne vulnérable (restes du lot 1 ter).
+6. Fusion du second moteur des violences (`sim-violences.js`, `docs-violences.js`) dans `sim.js`.
+
+Fini quand : zéro contradiction entre pièces sur 1 000 affaires ; plus aucune pièce ancienne au catalogue (1 % aujourd'hui).
+
+### 1.8.0 « Le dossier en main » — lire, noter, écrire d'un seul geste
+
+- Depuis une note du carnet, rouvrir l'échange entier ou la pièce au bon feuillet (reste de la 1.2.0).
+- Annotation dans le lecteur de pièces ; carnet et dossier de travail présentés comme un seul outil.
+- Notes prises d'office en mode assisté : les garder, les signaler comme telles, ou les retirer (décision de Kevin).
+- Actes par clauses menés à terme (B2 : blancs à valeur propre) ; PLEX pour les pièces jointes ; aide réglée par compétence.
+- Fini quand : `tplcheck` refait ne trouve aucune option devinable par l'ordre ou la longueur ; un test rouvre la
+  source de chaque note.
+
+### 1.9.0 « Le palais vous connaît » — réputations
 
 - Parquet : pèse sur l'orientation (alternative, comparution sur reconnaissance proposée) et bouge selon vos actes.
 - Siège : pèse sur les renvois, l'écoute des incidents, la marge de la peine.
 - Si l'un des deux ne peut pas être branché proprement, la jauge est retirée.
-- Fin de carrière : bilan chiffré, épilogue des clients marquants, un objectif après « Ténor du barreau ».
+- La mémoire des magistrats et des confrères (`memoire.js`) se voit à l'audience suivante, pas seulement au répertoire.
+- Test : une même affaire jugée avec une réputation haute et basse donne des issues mesurablement différentes.
 
-### 1.7.0 « Les comptes » — économie
+### 1.10.0 « La robe et les années » — une carrière a une fin
+
+- Fin de carrière : bilan chiffré, épilogue des clients marquants.
+- Des objectifs après « Ténor du barreau » : bâtonnat, association, enseignement, grand procès — à choisir, pas tous.
+- La promotion (les confrères de serment) vieillit avec vous et sert de point de comparaison.
+- Test : l'automate « joueur moyen » termine une carrière par un écran de bilan, sans radiation ni faillite.
+
+### 1.11.0 « Les comptes » — économie
 
 - Choisir la cible (voir « Décisions à prendre »), puis régler l'arrivée des clients, le prix juste, les impayés.
-- Emplois de l'argent qui changent le jeu : local, documentation, formation, déplacements.
-- Sauvegarde allégée des contacts jamais suivis.
+- Emplois de l'argent qui changent le jeu : local, documentation, formation, déplacements en province.
+- Sauvegarde allégée des contacts jamais suivis (2,8 Mo sur 6,7 Mo à cinq ans).
 - Test : `tecono` et `tviabilite` donnent la même réponse à la même question.
 
-### 1.8.0 « L'audience relue » — ce qui n'a pas été lu
+### 1.12.0 « Les assises » — le dossier criminel au volume réel
+
+- Une simulation de l'affaire criminelle sur le modèle de `sim.js` : chronologie de l'enquête, transport sur les
+  lieux, constatations, voisinage, commission rogatoire.
+- Second témoin (`pv_temoin2`), expertises détaillées (balistique, génétique, toxicologique, psychiatrique), enquête
+  de personnalité et synthèse développées.
+- Phrases d'enjeu du catalogue revues pour tous les contextes.
+- Fini quand : `tcrimdossier` mesure le volume visé et la cohérence d'une pièce à l'autre ; `tcatalogue` couvre les crimes.
+
+### 1.13.0 « Les suites » — reports levés ou abandonnés
+
+- Requête en exclusion du bulletin n° 2 après jugement (D-86) : faite si la source est trouvée, sinon abandonnée par écrit.
+- Assignation devant le juge civil : cadrée comme un module, ou abandonnée par écrit.
+- Jurisprudence sous les articles (D-83) : selon l'accord de Kevin sur les données de la Cour de cassation.
+- Codes publiés dans un paquet de mise à jour à part, comme les sons (D-89).
+- Autres décors de vidéosurveillance, s'ils servent une famille de faits déjà simulée.
+
+### 1.14.0 « L'audience relue » — ce qui n'a pas été lu
 
 - Relecture, par le même procédé, des audiences, jugements, dossiers criminels et d'instruction, après-jugement.
-- Répétition : ramener les deux mesures à cinq points sous leur seuil (24,3 % pour 25 ; 17,9 % pour 20).
-- Suites de contenu déjà notées : récit de la victime par épisodes, annotation dans le lecteur de pièces, second témoin
-  et expertises détaillées du dossier criminel.
+- Répétition : ramener les deux mesures à cinq points sous leur seuil (24,3 % pour 25 ; 17,9 % pour 20) ; trois
+  affaires de même difficulté d'affilée (14,2 %) sous 10 %.
+- Les incohérences « lues, non comptées » de l'audit deviennent des compteurs de `trelecture`.
 
-### 2.0.0 — un seul parcours, distribution achevée
+### 1.15.0 « Au clavier » — confort et fluidité
 
-- Le mode liste disparaît comme parcours séparé : l'aide se règle par compétence, les tests jouent le vrai jeu.
+- Parcours complet au clavier, décors cliquables du bureau compris ; focus toujours visible.
+- Fluidité mesurée sur le Mac le plus modeste (bureau, audience, menu) ; réglage des effets si elle ne tient pas.
+- Écrans étroits et petites fenêtres : chaque scène vérifiée en 1024 × 640.
+- Taille du texte : aucun écran ne déborde au réglage le plus grand.
+
+### 1.16.0 « Un seul parcours » — le vrai jeu partout
+
+- Le mode liste disparaît comme parcours séparé : l'aide se règle par compétence.
+- Les parties automatiques jouent le mode libre ; `tboucle` sur plus de graines.
 - Singe sans rendu, qui joue des semaines de carrière en deux minutes, dans la batterie.
-- App Mac signée et notarisée, mise à jour signée, nouvelle icône livrée à tous.
-- Parcours complet au clavier ; fluidité mesurée sur le Mac le plus modeste.
+- Les écrans de l'ancien parcours (`ui-gav.js` en liste, appels en liste) sont retirés une fois sans appelant.
+
+### 2.0.0 — distribution achevée
+
+- App Mac signée et notarisée, mise à jour signée, nouvelle icône livrée à tous ; fermeture de la fenêtre vérifiée.
 - Relecture juridique datée ; licence du code choisie.
-- Ancien écran d'accueil retiré s'il ne sert plus de repli.
-- Reports levés ou abandonnés par écrit : jurisprudence sous les articles, requête en exclusion du bulletin n° 2 après
-  jugement, assignation devant le juge civil.
+- Ancien écran d'accueil (`accueil.js`, `title.js`) retiré s'il ne sert plus de repli sans carte graphique.
+- Documents du projet remis à jour : un seul fichier d'état, les feuilles de route closes archivées.
+- Nom de la 2.0 choisi par Kevin.
 
 ## Décisions à prendre (Kevin)
 
 | Décision | Bloque | Proposition |
 |---|---|---|
-| Cible de l'économie : « le jeune avocat vit juste » ou « l'avocat actif s'enrichit » | 1.7.0 | Vit juste la première année, à l'aise ensuite : la pression au début, des choix après. |
+| Cible de l'économie : « le jeune avocat vit juste » ou « l'avocat actif s'enrichit » | 1.11.0 | Vit juste la première année, à l'aise ensuite : la pression au début, des choix après. |
 | Secrets Apple et clé de signature des mises à jour | 2.0.0 (app stable) | À poser dès que possible : rien d'autre n'en dépend. |
 | Bandeau « Mini-jeux » de l'écran titre | — | **Tranché le 16 novembre : retiré.** Les jeux restent cachés dans le décor. |
-| Direction artistique du menu principal | 1.1.0 | Choisir parmi deux ou trois directions montrées en captures. |
-| Relecture juridique : par qui, quand | 2.0.0 | À lancer pendant la 1.5, quand les pièces seront stables. |
-| Accès aux données de la Cour de cassation (jurisprudence) | 2.0.0 | Sans accord, le report est abandonné par écrit. |
+| Direction artistique du menu principal | 1.1.0 | **Faite le 16 novembre sans choix sur captures** (nuit de pluie) ; retours attendus en 1.2.1. |
+| Relecture juridique : par qui, quand | 2.0.0 | À lancer après la 1.7, quand les pièces seront stables. |
+| Accès aux données de la Cour de cassation (jurisprudence) | 1.13.0 | Sans accord, le report est abandonné par écrit. |
+| Notes prises d'office par le jeu en mode assisté | 1.8.0 | Les garder mais les marquer « notée pour vous », pour que le carnet reste le vôtre. |
+| Objectifs après « Ténor du barreau » | 1.10.0 | Deux au choix du joueur : le bâtonnat et le grand procès. |
+| Assignation devant le juge civil : module ou abandon | 1.13.0 | Abandon : c'est un autre métier que celui du jeu. |
+| Nom de la 2.0 | 2.0.0 | À choisir quand le contenu sera arrêté. |
 
 ## Ce qui ne changera pas
 
