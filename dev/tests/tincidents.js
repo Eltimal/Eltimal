@@ -34,7 +34,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
   ok(a, "pas d'affaire en récidive viciée");
   if (a) {
     CR.addNote(s, a.cs, { text: "Bulletin n° 1 : dates de la condamnation.", fact: "G_ant", src: "dossier" });
-    const tx = await jouer(a, [/L'état de récidive légale n'est pas constitué/, new RegExp(CR.GEN2.VICES[a.t.recid.vice].slice(0, 25))], /état de récidive légale est écarté/);
+    const tx = await jouer(a, [/L'état de récidive légale n'est pas constitué/, new RegExp(CR.GEN2.VICES[a.t.recid.vice].slice(0, 25))], /état de récidive légale est écarté des débats/); // la phrase entière : sur une machine lente, l'affichage lettre à lettre n'avait pas fini
     ok(a.cs.vars.recEcartee && /écarté des débats/.test(tx), `${a.cs.id} : la récidive viciée n'est pas écartée`, tx.slice(-500));
   }
   // 2. le même incident sans pièce au dossier : sur quoi repose-t-il ?
