@@ -22,7 +22,7 @@ Phase A : A1 à A4 faits (parole en garde à vue, tribunal qui raisonne, procès
 
 ## La consultation (D-99, 16 novembre 2026)
 
-Demande de Kevin : les rendez-vous au cabinet donnaient des réponses sans rapport avec la question et des « je vous l'ai déjà dit ». Fait : `js/consultation.js` (`CR.CONSULT`), branché sur `UI.CallLibre` (`ui-entretien.js`) pour tous les entretiens hors garde à vue en mode libre ; test `tconsult`. Version 0.10.0 « La consultation ». Restes possibles : des suites pour la victime (le récit de la plainte par épisodes) et pour les antécédents (peine, exécution) ; les questions de l'article 120 chez le juge d'instruction (`gen-instruction.js`, « Je l'ai déjà dit » écrit en dur) ; le même traitement pour la garde à vue si Kevin le demande (mesure du 16 novembre : 49 % d'angles sans effet, 12 % de « déjà dit »).
+Demande de Kevin : les rendez-vous au cabinet donnaient des réponses sans rapport avec la question et des « je vous l'ai déjà dit ». Fait : `js/consultation.js` (`CR.CONSULT`), branché sur `UI.CallLibre` (`ui-entretien.js`) pour tous les entretiens hors garde à vue en mode libre ; test `tconsult`. Version 0.10.0 « La consultation ». Découverte des questions par la discussion, puis textes repris (famille du détenu, escroqueries vues par la victime, récit au domicile, plus aucun « déjà dit » écrit en dur) : faits le 16 novembre. Outil de relecture : `node tools/consultations.js <genre> [n] [graine] [appel]`. Restes possibles : des suites pour la victime (le récit de la plainte par épisodes) et pour les antécédents (peine, exécution) ; le même traitement pour la garde à vue si Kevin le demande (mesure du 16 novembre : 49 % d'angles sans effet, 12 % de « déjà dit »).
 
 ## Lot 1 ter — plan de départ
 

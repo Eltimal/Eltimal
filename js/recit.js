@@ -145,7 +145,9 @@
     if (!E.pourquoi.length) E.pourquoi.push(st === "nie" ? "Il y a pas de pourquoi. J'ai rien fait, je vous dis." : st === "minimise" ? (geste ? "Je sais pas. C'est parti tout seul. C'était pas prévu." : "J'ai pas pensé que c'était si grave. Sur le moment, ça me paraissait rien.") : pkr(r, ["J'ai pas réfléchi. Sur le moment, j'ai pas réfléchi.", "J'étais pas bien, à ce moment-là. C'est pas une excuse."]));
     // 5. qui peut confirmer : témoin, complice, caméra
     const preuves = t.preuves || [];
-    if (t.T && preuves.includes("temoin")) E.confirme.push(st === "reconnait" ? "Il y avait quelqu'un, une personne qui a tout vu. Elle dira la même chose que moi." : "Il y avait des gens autour. Qu'on leur demande, ils diront que c'est pas comme ça que ça s'est passé.");
+    const domicile = /^chez /i.test(lieu || "") || /conj/.test(t.inf);
+    if (t.T && preuves.includes("temoin") && domicile) E.confirme.push(st === "reconnait" ? "Les voisins ont dû entendre. Ils diront la même chose que moi." : "Il y a les voisins. Qu'on leur demande ce qu'ils ont vraiment entendu.");
+    else if (t.T && preuves.includes("temoin")) E.confirme.push(st === "reconnait" ? "Il y avait quelqu'un, une personne qui a tout vu. Elle dira la même chose que moi." : "Il y avait des gens autour. Qu'on leur demande, ils diront que c'est pas comme ça que ça s'est passé.");
     if (t.f && (t.f.agg || []).includes("reunion")) E.confirme.push(st === "nie" ? "J'étais avec personne." : "J'étais avec un ami. Son nom, je le donnerai pas.");
     if (t.camera || preuves.includes("video")) E.confirme.push(st === "reconnait" ? "Il y a une caméra. Elle a dû tout filmer, je sais." : "Il y a une caméra, là-bas. Qu'ils regardent : vous verrez que c'est pas comme ils disent.");
     // la victime : il ne l'invoque que s'il reconnaît, ou s'il nie et pense qu'elle le sait ; un policier, jamais
@@ -167,7 +169,7 @@
     if (!absent && lieu) {
       E.ou.push(`${cap(lieu.replace(/^(à|au|aux|dans|chez|devant|sur|sous|par|en) /, (x) => x))}${/\.$/.test(lieu) ? "" : "."}`);
       const chez = A && A.adresse && t.rue && A.adresse.includes(String(t.rue).replace(/^(rue|avenue|boulevard|place|quai) /, ""));
-      E.ou.push(chez ? "C'est à côté de chez moi. Je connais tout le monde, là-bas." : pkr(r, ["Je connais un peu le coin. J'y passe souvent.", "Je connais pas trop ce quartier. J'étais de passage."]));
+      if (!/^chez /i.test(lieu)) E.ou.push(chez ? "C'est à côté de chez moi. Je connais tout le monde, là-bas." : pkr(r, ["Je connais un peu le coin. J'y passe souvent.", "Je connais pas trop ce quartier. J'étais de passage."]));
     } else if (absent) E.ou.push("Chez moi. Je vous l'ai dit, j'étais pas là-bas.");
     // le déroulé : les explications données à l'enquêteur que le récit n'a pas reprises, puis l'objet ou la saisie
     for (const a of N.audition || []) { const x = a.a && a.a.expliquer; if (M.k === t.stance && x && !vus.has(x) && ![...vus].some((y) => y.includes(x)) && !/première fois|déjà été|antécédent|condamn/i.test(a.q || "") && seule(x)) { E.comment.push(x); vus.add(x); } }
@@ -205,7 +207,7 @@
     // l'heure et le délai réels
     if (t.flagrance && d != null && d >= 0) {
       E.quand.splice(1, E.quand.length, o.controle ? "Les policiers, ils étaient déjà là. C'est eux qui m'ont arrêté" + G.e + "." : `Ils m'ont arrêté${G.e} ${duree(d)} après, à peu près.`);
-      if (!o.controle) remplace(E.police, /arrivée|arrivés/, st === "nie" ? `Ils m'ont arrêté${G.e} ${duree(d)} après, au hasard, parce que j'étais dans le coin.` : `Ils m'ont arrêté${G.e} ${duree(d)} après. J'ai pas cherché à leur échapper.`);
+      if (!o.controle) remplace(E.police, /arrivée|arrivés/, st === "nie" ? (/^chez /i.test(R.lieu(N, t) || "") || /conj/.test(t.inf) ? `Ils m'ont arrêté${G.e} ${duree(d)} après. Ils avaient déjà décidé que c'était moi.` : `Ils m'ont arrêté${G.e} ${duree(d)} après, au hasard, parce que j'étais dans le coin.`) : `Ils m'ont arrêté${G.e} ${duree(d)} après. J'ai pas cherché à leur échapper.`);
     }
     if (S.prelim && Ev.interp != null) {
       const jour = jourDit(t, S.jf + Math.floor(Ev.interp / 1440));

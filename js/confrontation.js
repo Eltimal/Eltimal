@@ -158,7 +158,7 @@
     if (q.forme === "fermee") return dire([L(M.f(E.fort && en.fort ? "Oui." : "Oui… enfin, oui."))]);
     if (q.angle !== E.angle && q.angle !== "recit") return dire([L("Je ne comprends pas la question, maître.")]);
     // un client que personne n'a préparé cherche ses mots : il faut le relancer
-    if (!M.prep && !dejaSujet && q.forme !== "relance") return dire([L("Je… je ne sais plus par où commencer. Je l'ai déjà dit aux policiers.")]);
+    if (!M.prep && !dejaSujet && q.forme !== "relance") return dire([L("Je… je ne sais plus par où commencer. Tout se mélange.")]);
     if (en.fort) { M.appuis.push(K.factEnjeu(en.id)); return dire([L(M.f(E.fort), K.factEnjeu(en.id))]); }
     M.contredit++;
     return dire([L(M.f(E.faible))], [`Ce n'est pas ce que dit le dossier, maître : ${String(en.faible || "").replace(/^« |»$/g, "")}`]);

@@ -120,11 +120,12 @@
     const defaut = /^Il y a (pas de pourquoi|rien à raconter de plus)|^Je vous ai dit l'essentiel|^Il y a pas grand-chose de plus|^Ça a duré quelques secondes|^Tout est allé très vite/;
     // l'heure des faits, pas la suite de l'enquête (déjà racontée) ; un lieu, pas « par téléphone » ou « à distance »
     const quand = (E.quand || []).filter((x, i) => i === 0 || /arrêté|déjà là|arrivée/.test(segT(x)));
+    // chez lui, chez elle, chez eux : il l'a dit en racontant, et il connaît l'endroit
     const chez = /^chez /i.test(segT((E.ou || [])[0]));
     const sansLieu = (E.ou || []).some((x) => /téléphone|distance|en ligne|internet|réseau|messagerie|courrier/i.test(segT(x)));
     const LISTE = [
       ["quand", "À quelle heure était-ce, précisément ?", absent ? [] : quand],
-      ["ou", "Où était-ce, exactement ? Vous connaissez l'endroit ?", absent || sansLieu ? [] : chez ? E.ou.slice(0, 1) : E.ou],
+      ["ou", "Où était-ce, exactement ? Vous connaissez l'endroit ?", absent || sansLieu || chez ? [] : E.ou],
       ["comment", "Reprenons dans le détail : comment cela s'est-il déroulé ?", (E.comment || []).filter((x) => !defaut.test(segT(x)))],
       ["pourquoi", st === "reconnait" ? "Pourquoi l'avez-vous fait ?" : "Comment expliquez-vous ce qui s'est passé ?", st === "nie" ? [] : (E.pourquoi || []).filter((x) => !defaut.test(segT(x)))],
       ["confirme", "Qui était présent ? Quelqu'un peut-il confirmer ce que vous dites ?", absent ? [] : E.confirme],
@@ -192,6 +193,8 @@
       if (recit && tp !== recit.tp && (catalogue(tp) || theme === "preuves" || theme === "prejudice")) q.parent = recit.tp.id;
       // une question qui suppose que le client a fait ce qu'on lui reproche ne se pose pas à celui qui vient de le nier
       if (ver && catalogue(tp) && ver.mode.stance === "nie" && SUPPOSE.test(texte)) continue;
+      // « Pourquoi avez-vous fait ça ? » suppose davantage : qu'il le reconnaisse (celui qui minimise dit autre chose)
+      if (ver && catalogue(tp) && ver.mode.stance !== "reconnait" && /^Pourquoi avez-vous fait/i.test(texte)) continue;
       // au cabinet, la garde à vue ou l'audition ne s'aborde que si le client en a parlé
       if (cabinet && theme === "enquete") q.si = (K0) => /garde à vue|commissariat|polic|audition|gendarm|interpell/.test(K0.entendu);
       // deux questions sur ce qui l'inquiète : la seconde prolonge la première

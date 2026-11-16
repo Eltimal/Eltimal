@@ -244,7 +244,7 @@
   PH.TEMPERAMENTS = {
     mutique: { label: "mutique", cout: 1, tics: ["(Un long silence.)", "(Un haussement d'épaules.)", "(Il faut attendre la réponse.)", "(Les yeux baissés.)", "(Un temps.)"], ou: "avant" },
     bavard: { label: "bavard", cout: 1, tics: ["Pardon, je parle trop.", "Je vous raconte tout, comme ça vous savez.", "Enfin, bref. Je m'égare.", "Attendez, je reprends depuis le début.", "Je ne sais pas si c'est important, mais je vous le dis quand même."], ou: "apres" },
-    agressif: { label: "sur la défensive", cout: 0, tics: ["Vous êtes avec moi ou avec eux ?", "Pourquoi vous me demandez ça ?", "Je l'ai déjà dit cent fois.", "Ça sert à quoi, tout ça ?", "Vous me croyez, au moins ?"], ou: "apres" },
+    agressif: { label: "sur la défensive", cout: 0, tics: ["Vous êtes avec moi ou avec eux ?", "Pourquoi vous me demandez ça ?", "Je vois pas ce que ça change.", "Ça sert à quoi, tout ça ?", "Vous me croyez, au moins ?"], ou: "apres" },
     angoisse: { label: "angoissé", cout: 0, tics: ["Pardon, je… je n'arrive pas à réfléchir.", "Je vais aller en prison ?", "Excusez-moi, j'ai les mains qui tremblent.", "Je ne dors plus depuis.", "Dites-moi que ça va s'arranger."], ou: "apres" },
     pose: { label: "posé", cout: 0, tics: [], ou: "apres" },
   };
