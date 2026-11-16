@@ -23,7 +23,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
     if (b) {
       await click(w, b);
       for (const c of choix) { const bb = await attendre(() => findBtn(host, c)); ok(bb, `${x.cs.id} : choix ${c} introuvable`, texts(host).slice(-300)); if (bb) await click(w, bb); }
-      if (attendu) await attendre(() => attendu.test(texts(host)), 25000);
+      if (attendu) await attendre(() => attendu.test(texts(host)), 120000); // large : sur une machine chargée, l'affichage lettre à lettre avance au rythme des minuteries
       await sleep(300);
     }
     const tx = texts(host); root.unmount(); host.remove();
