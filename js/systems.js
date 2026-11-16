@@ -723,7 +723,8 @@
     try { if (CR.RETOURNEMENT) deb = deb.concat(CR.RETOURNEMENT.debrief(s, cs)); } catch (e) { console.error(e); }
     if (def.facts) for (const [fid, f] of Object.entries(def.facts)) {
       if (!f.key) continue;
-      deb.push({ kind: "clue", text: f.label, ok: CR.hasFact(cs, fid), why: f.why || "" });
+      // le casier se sait par le client ou par le bulletin n° 1 : un client qui le cache ne le dit pas (consultation.js)
+      deb.push({ kind: "clue", text: f.label, ok: CR.hasFact(cs, fid) || (fid === "G_casier" && CR.hasFact(cs, "G_casier_b1")), why: f.why || "" });
     }
     let epi = null;
     try { if (def.epilogue) epi = def.epilogue(api, cs.outcome); } catch (e) { console.error(e); }
