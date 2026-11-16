@@ -251,7 +251,7 @@
         ],
         audition: (a, ctx) => { const all = N.audition.map((qq) => ({ q: qq.q, a: { silence: qq.a.silence, partiel: qq.a.partiel, expliquer: qq.a.expliquer, quitter: "…" } })); return ctx.conseil === "quitter" ? all.slice(0, 1) : all; },
         questions: [
-          { id: "q_plainte", q: "Capitaine, quelles sont les pièces qui fondent la convocation ?", a: "(L'officier) : Vous les verrez si le parquet poursuit, maître.", sensible: true },
+          { id: "q_plainte", q: `${(/^(Capitaine|Lieutenant|Commandant|Major|Brigadier-chef|Brigadier|Adjudant-chef|Adjudant)(?= )/.exec((CR.acteur(t.opj) || {}).nom || "") || ["Capitaine"])[0]}, quelles sont les pièces qui fondent la convocation ?`, a: "(L'officier) : Vous les verrez si le parquet poursuit, maître.", sensible: true },
           { id: "q_contexte", q: `${GEN2.PR.Civ(A)} ${A.nom}, souhaitez-vous ajouter un élément de contexte ?`, a: (N.qA && N.qA[0] && N.qA[0].a[0]) || "Je n'ai rien à ajouter.", anodine: true },
         ],
         observations: (quitter ? [{ id: "obs_al_quitter", t: "Le droit de quitter à tout moment les locaux n'a pas été notifié à la personne entendue (art. 61-1, 2°).", flag: "al_quitter" }] : []).concat([{ id: "obs_contexte", t: "Mon client s'est présenté librement et a répondu aux convocations ; il dispose d'attaches stables." }]),

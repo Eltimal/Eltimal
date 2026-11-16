@@ -18,8 +18,17 @@
   const HISTORIQUE = [
     {
       version: "1.0.1", nom: "", date: "16 novembre 2026", type: "correctif",
-      resume: "Écran titre allégé.",
+      resume: "Relecture des textes : les incohérences les plus fréquentes sont corrigées.",
       notes: [
+        "Au dépôt, le lendemain de la garde à vue, le client dit « hier matin » et non plus « ce matin ».",
+        "Les heures se disent comme on les dit : « quatre heures moins le quart de l'après-midi ».",
+        "En garde à vue, le client ne revient plus sur des aveux qu'il n'a pas encore faits.",
+        "L'avocat n'interroge sur un contrôle d'identité que s'il y en a eu un, et donne à l'officier son vrai grade.",
+        "Un client retenu ne parle plus de son téléphone qui sonne ; au téléphone, plus de gestes qu'on ne peut pas voir.",
+        "Témoins : plus d'audition sans déclaration. Accords corrigés dans les certificats et les procès-verbaux.",
+        "L'âge annoncé s'accorde à la date de naissance ; un indépendant ne « perd » plus « sa place ».",
+        "Ordonnance pénale : la question sur les craintes du client n'est plus posée deux fois.",
+        "Le courrier de l'Ordre dit où s'inscrire aux permanences : sur la carte, à la Maison du barreau.",
         "Le bandeau « Mini-jeux » quitte l'écran titre ; les jeux restent cachés dans le décor du cabinet.",
       ],
     },

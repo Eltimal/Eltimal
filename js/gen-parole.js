@@ -497,11 +497,19 @@
     const close = classe ? V.pk("clo", ["Combien de temps il nous reste, maître ?", "On a encore le temps de faire quelque chose ?", "Il n'est pas trop tard, hein ?"]) : V.pk("clo", ["Je dois venir au tribunal, moi aussi ?", "Et maintenant, qu'est-ce qu'on fait ?", "Vous serez là, le jour du procès ?"]);
     return { opening: [opening], topics, close: V.oral(close), impatient: PR.impatient(V), hangup: PR.hangup(V) };
   };
-  PR.impatient = (V) => V.oral(V.pk("imp", [
+  // une personne retenue (garde à vue, dépôt, détention) n'a ni téléphone qui sonne, ni travail à reprendre, ni rappel possible
+  const retenu = (V) => V.role === "garde" || (V.t && V.P === V.t.A && (V.t.genre === "ci" || V.t.entree === "detenu" || V.t.entree === "deferement"));
+  PR.impatient = (V) => V.oral(retenu(V) ? V.pk("imp", ["…Pardon, ça va être encore long ? Je tiens plus debout.", "Excusez-moi… je suis fatigué" + V.e + ". On en a encore pour longtemps ?"]) : V.pk("imp", [
     V.P && V.P.enfants && V.age < 50 ? "…Pardon, ça va être encore long ? Je dois aller chercher les enfants." : "…Pardon, ça va être encore long ? J'ai laissé mon téléphone sonner trois fois.",
     V.P && V.P.emploi ? "Excusez-moi, je reprends le travail tout à l'heure. On en a encore pour longtemps ?" : "Excusez-moi… je suis fatigué" + V.e + ". On en a encore pour longtemps ?",
   ]));
-  PR.hangup = (V) => V.oral(V.pk("hang", ["Écoutez, excusez-moi, je dois vraiment y aller. On se rappelle ?", "Je n'en peux plus, maître. On reprendra une autre fois.", "Je suis désolé" + V.e + ", il faut que je parte."]));
+  PR.hangup = (V) => V.oral(retenu(V) ? V.pk("hang", ["Je n'en peux plus, maître. On reprendra une autre fois.", "Je suis épuisé" + V.e + ", maître. J'arrive plus à réfléchir."]) : V.pk("hang", ["Écoutez, excusez-moi, je dois vraiment y aller. On se rappelle ?", "Je n'en peux plus, maître. On reprendra une autre fois.", "Je suis désolé" + V.e + ", il faut que je parte."]));
+  // au téléphone, on n'entend pas un geste : les indications visibles deviennent un silence
+  PR.auTelephone = (call) => {
+    const sans = (x) => String(x).replace(/\((Il|Elle) fixe ses mains\.\)|\(Les yeux baissés\.\)|\(Un haussement d'épaules\.\)/g, "(Un silence.)");
+    const seg = (x) => (typeof x === "string" ? sans(x) : x && typeof x.t === "string" ? Object.assign({}, x, { t: sans(x.t) }) : x);
+    return Object.assign(call, { topics: (call.topics || []).map((tp) => (Array.isArray(tp.a) ? Object.assign({}, tp, { a: tp.a.map(seg) }) : tp)) });
+  };
 
   // ================================================================== LE PRÉVENU CONVOQUÉ (COPJ, CPPV, citation), L'AUDITION LIBRE, L'ORDONNANCE PÉNALE
   // « Il y a un an et demi » : le temps écoulé depuis un jugement, dit à l'oral
@@ -913,7 +921,7 @@
       { id: "vf_decide", q: `C'est ${C.prenom} qui décide de sa défense, avec moi. Personne d'autre.`, a: V.rep("vf4", [V.pk("vf4b", ["On verra bien.", "Je vous préviens, je ne lâcherai pas.", "Bon. Si c'est la loi…"])], { intro: false, reac: false }), cost: 2, tag: "good", fx: { flags: { vieStrategieTenue: true } } },
       { id: "vf_confie", q: `Entre nous : ${C.prenom} m'a dit des choses que le dossier ne contient pas.`, a: V.rep("vf5", [V.pk("vf5b", ["Quoi ? Dites-moi tout.", "Je le savais. Racontez-moi."])], { intro: false, reac: false }), cost: 2, tag: "bad", fx: { flags: { vieSecretViole: true } } },
     ];
-    return { label: `Appel de ${G.civ} ${fam.prenom} ${fam.nom}`, kind: "call", who: { nom: `${fam.prenom} ${fam.nom}` }, opening: [opening], topics, close: V.oral(V.pk("fam:clo", ["Tenez-moi au courant, au moins.", "Bon. Au revoir, maître."])), impatient: PR.impatient(V), hangup: PR.hangup(V), start: topics.map((x) => x.id) };
+    return PR.auTelephone({ label: `Appel de ${G.civ} ${fam.prenom} ${fam.nom}`, kind: "call", who: { nom: `${fam.prenom} ${fam.nom}` }, opening: [opening], topics, close: V.oral(V.pk("fam:clo", ["Tenez-moi au courant, au moins.", "Bon. Au revoir, maître."])), impatient: PR.impatient(V), hangup: PR.hangup(V), start: topics.map((x) => x.id) });
   };
   // 5. La presse
   VIE.presse = function (t, o) {

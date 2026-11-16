@@ -186,7 +186,7 @@
         titre: S.titre, lieu: f.sc === "annonce" || f.sc === "faux_conseiller" ? "à distance, par téléphone et sur internet" : `${X.rue}, ${X.lieu}`, montant: f.montant,
         resume: `${X.n(A)} est soupçonné${X.e(A)} d'avoir obtenu ${m} de ${X.nf(V)}, ${S.moyen.split(",")[0]}.`,
         constat: [`Plainte de ${X.nf(V)}${f.agg.includes("vulnerable") ? `, ${V.age} ans` : ""}. Réquisitions bancaires : les fonds ont été versés sur un compte ouvert au nom de ${X.n(A)}, puis retirés en espèces dans les quarante-huit heures.`],
-        plainte: [S.plainte, "J'ai honte. Je n'en ai parlé à personne pendant une semaine."],
+        plainte: [S.plainte, "J'ai honte. J'ai failli ne pas venir déposer plainte."],
         ecrits: f.sc === "annonce" ? ["« Bonjour, toujours dispo, envoi rapide »", "« Virement instantané svp, autre acheteur intéressé »"] : f.sc === "faux_conseiller" ? ["SMS : « Votre code de validation : 482 913. Ne le communiquez à personne. »"] : null,
         version: { nie: "Ce compte, on me l'a volé. J'ai prêté ma carte à quelqu'un.", minimise: "J'ai juste prêté mon compte à un ami. On m'a donné 300 euros. Je savais pas d'où venait l'argent.", reconnait: "Oui, c'était moi. Je rembourserai." },
         audition: [{ q: `${m} sont arrivés sur votre compte puis ont été retirés en espèces. Qui a fait ces retraits ?`, a: { silence: "Je ne souhaite pas répondre.", expliquer: null, partiel: "J'ai fait des retraits, oui." } }],

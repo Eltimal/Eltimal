@@ -28,7 +28,7 @@ plusieurs mécaniques affichées n'ont pas d'effet. Les trois premiers points ci
 | Un joueur qui clique « Avancer » passe 63 jours sans jouer une seule scène : neuf contacts laissent un message, sept se ferment seuls, le compte tombe à 0 € avec 1 526 € de découvert. | partie jouée, graine par défaut |
 | Un contact non rappelé disparaît après trois jours, avec une ligne au journal pour seul signal. « Avancer » a sauté du jour 4 au jour 21 par-dessus deux contacts en attente. | `engine.js` (`_leadExpire`, `skipAhead`) |
 | La confirmation d'« Avancer » couvre audiences, permanences et agenda, pas les messages à rappeler. | `CR.resteAujourdhui` |
-| Le courrier de l'Ordre envoie s'inscrire « à la Maison du barreau » ; l'inscription se fait en réalité dans Cabinet → L'Ordre. | courrier d'ouverture, `ui-desk.js:614` |
+| Le courrier de l'Ordre envoie s'inscrire « à la Maison du barreau » sans dire que cela se fait sur la carte (Carte → Maison du barreau → « S'inscrire aux permanences pénales »). *Rectifié le 16 novembre : j'avais écrit à tort que l'inscription était dans Cabinet → L'Ordre ; le courrier est précisé en 1.0.1.* | courrier d'ouverture, `ui-desk.js:614` |
 | L'écran titre promet « le téléphone sonnera cette nuit » ; sans inscription, il ne sonne pas. Le bureau dit « Le téléphone va sonner ». | partie jouée |
 | Le niveau « Libre » est coché par défaut et présenté comme « le jeu tel qu'il est pensé » ; « Assisté » est dit « pour une première carrière » mais il faut le choisir. | écran de création |
 | Plus aucun tutoriel (D-84) : quatre courriers à lire tiennent lieu de prise en main. | boîte de réception du jour 1 |
@@ -162,7 +162,7 @@ Les fautes de frappe des procès-verbaux (« personnne », « présense ») sont
 | 10 | Ordonnance pénale : la question sur les craintes est posée deux fois, avec deux réponses différentes (le permis, puis l'emploi). | 52 |
 | 11 | Témoin entendu sans déclaration : « juste à côté », « non », rien d'autre. | 31 auditions sur 152 |
 | 12 | Accords : témoin femme « prêt à revenir » (9) ; « Je soussignée, Dr Hugo… » (22). | 31 |
-| 13 | Enquête sociale « au dépôt du tribunal » pour un client laissé libre avec une convocation. | 48 sur 120 |
+| 13 | ~~Enquête sociale « au dépôt du tribunal » pour un client laissé libre.~~ **Retiré : erreur de mon comptage.** La pièce n'est remise au joueur qu'avec le dossier de comparution immédiate. | 0 |
 | 14 | Âge annoncé différent de l'âge calculé d'après la date de naissance (anniversaire proche). | 4 sur 163 |
 | 15 | Escroquerie : « je n'en ai parlé à personne pendant une semaine », plainte du lendemain. | 3 |
 | 16 | Prénom identique au nom (« Nicolas Nicolas »). | 1 |
@@ -198,3 +198,11 @@ Presque toutes ont l'une de ces trois causes, et aucune n'est une faute de réda
    téléphonie et le lieu ne partagent pas la même vérité.
 3. **Des phrases de remplissage sans condition** : la question sur le contrôle, le témoin vide, l'enquête sociale au
    dépôt, « je perds ma place ».
+
+### Après la 1.0.1 (16 novembre 2026)
+
+Recomptage sur les mêmes 420 affaires : les défauts 1, 2, 5 à 12 et 14 à 16 sont à zéro ; `dev/tests/trelecture.js` les
+surveille dans la batterie. Restent, pour les étapes suivantes de `ROADMAP_2.0.md` : le mensonge démenti dans le même
+entretien (36), l'arrestation racontée par un client convoqué (10), et les incohérences « lues, non comptées », qui
+demandent une vérité commune par famille de faits. Deux corrections vont au-delà de la liste : la rétractation
+n'apparaît plus pendant la garde à vue, et un témoin qui n'avait rien à déclarer dit désormais qu'il a peu vu.

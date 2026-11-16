@@ -31,18 +31,24 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 | 1.7.0 | L'audience relue | Relecture de ce qui n'a pas été lu, répétition | audiences, jugements et dossiers criminels passés au script |
 | 2.0.0 | (à nommer) | Un seul parcours, distribution achevée | checklist de sortie entièrement cochée |
 
-### 1.0.1 — corrections et filet de sécurité
+### 1.0.1 — corrections et filet de sécurité — **fait le 16 novembre 2026**
 
-- Accords (« Je soussignée, Dr Hugo », témoin « prêt à revenir », « la plaignante » pour un homme, « mon compagnon »).
-- Heures parlées d'une seule façon (plus de « 15 heures quarante-cinq »).
-- Dépôt : les faits sont « hier », pas « ce matin ». Détenu : plus de téléphone qui sonne ni de « on se rappelle ».
+Fait, et mesuré par `trelecture` (0 défaut ponctuel sur 420 affaires) :
+
+- Accords : médecin et témoin au bon genre, « du plaignant », compagne de l'auteur de violences conjugales.
+- Heures parlées d'une seule façon (« quatre heures moins le quart de l'après-midi »).
+- Dépôt : les faits sont « hier ». Client retenu : plus de téléphone qui sonne ni de « on se rappelle ».
 - Appel téléphonique : plus de gestes visibles.
-- Question sur le contrôle d'identité seulement s'il y a eu un contrôle ; « Capitaine » selon le grade.
-- Enquête sociale « au dépôt » seulement pour un déféré ; témoin sans déclaration retiré ou rempli.
+- Question sur le contrôle d'identité seulement s'il y a eu un contrôle ; grade réel de l'officier.
+- Témoin sans déclaration : il dit qu'il a peu vu. Rétractation : plus avant l'audition.
 - Ordonnance pénale : une seule question sur les craintes. « Je perds ma place » réservé aux salariés.
-- Âge calculé d'après la date de naissance ; prénom différent du nom.
-- Courrier de l'Ordre : l'inscription est dans Cabinet → L'Ordre. Écran de création qui tient en 1440 × 900.
-- Batterie : `relecture-scan` devient un test ; les 15 tests oubliés y entrent.
+- Âge accordé à la date de naissance ; prénom différent du nom ; plainte pour escroquerie sans « pendant une semaine ».
+- Courrier de l'Ordre : l'inscription se fait sur la carte, à la Maison du barreau.
+- Bandeau « Mini-jeux » retiré.
+- Batterie : `trelecture` et les 15 tests oubliés y sont (107 tests, verts).
+
+Écarté : l'enquête sociale « au dépôt » n'était pas une incohérence (elle n'est remise qu'en comparution immédiate).
+Reporté en 1.1.0 : l'écran de création, qui déborde de 1440 × 900 et fait défiler le titre hors de l'écran.
 
 ### 1.1.0 « L'accueil » — le menu principal retravaillé
 

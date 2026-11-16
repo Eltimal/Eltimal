@@ -341,7 +341,7 @@
         depot: {
           scene: "parloir", kind: "meet", label: "Entretien au dépôt", baseCost: 20,
           opening: [`Le dépôt du tribunal, sous la salle d'audience. ${nomc} a passé la nuit en garde à vue. « Il va se passer quoi ? »`],
-          topics: entretien.topics.concat([{ id: "g_renvoi", q: "Je vous explique : vous pouvez être jugé aujourd'hui, ou demander un délai.", a: ["Si je demande un délai, je reste en prison ?", "D'accord. On fait ce que vous pensez."], cost: 4, tag: "good", fx: { trust: 4 } }]),
+          topics: (ci || !CR.RECIT ? entretien.topics : CR.RECIT.lendemain(entretien.topics)).concat([{ id: "g_renvoi", q: "Je vous explique : vous pouvez être jugé aujourd'hui, ou demander un délai.", a: ["Si je demande un délai, je reste en prison ?", "D'accord. On fait ce que vous pensez."], cost: 4, tag: "good", fx: { trust: 4 } }]),
           start: entretien.start.concat(["g_renvoi"]), patience: 60, advice: false, close: "« À tout à l'heure, maître. »",
           onEnd: (api) => { api.cs.flags.depotVu = api.s.day; api.cs.flags.prepClient = api.s.day; },
         },

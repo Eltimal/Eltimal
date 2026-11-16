@@ -214,7 +214,7 @@
         const rr = CR.seeded(t.sig + ":d:cgav");
         return DOCS.forme({ title: "Certificat médical — examen d'une personne gardée à vue", kind: "courrier", cote: cote("certificat_gav"), entete: [SF.paris ? TJ.umj : "Médecin requis", `Réquisition de l'officier de police judiciaire — procédure n° ${t.proc}`],
           blocs: [
-            p(`Je soussigné${pk(rr, ["", "e"])}, Dr ${pk(rr, ["Hugo Lemaire", "Amina Saïdi", "Paul Ferrand", "Claire Bouvier"])}, certifie avoir examiné ${at(S.medecin.examen)}, dans les locaux du ${commLong}, ${n(A)}, ${A.age} ans.`),
+            p(`Je soussigné${(() => { pk(rr, ["", "e"]); const d = pk(rr, ["Hugo Lemaire", "Amina Saïdi", "Paul Ferrand", "Claire Bouvier"]); return (/^(Amina|Claire|Élise|Nora|Sarah|Julie|Léa|Camille|Sophie|Anne|Marie|Inès|Fatima|Hélène) /.test(d) ? "e" : "") + ", Dr " + d; })()}, certifie avoir examiné ${at(S.medecin.examen)}, dans les locaux du ${commLong}, ${n(A)}, ${A.age} ans.`),
             p(`Antécédents déclarés : ${pk(rr, ["aucun", "asthme dans l'enfance, sans traitement", "consommation occasionnelle de cannabis"])}. Traitement en cours : ${pk(rr, ["aucun", "aucun déclaré"])}.`),
             p(`Examen : personne consciente, orientée, calme. ${pk(rr, ["Aucune lésion traumatique récente.", "Égratignure superficielle de la paume gauche, que l'intéressé attribue à une chute antérieure aux faits.", "Aucune trace de coup."])}`),
             p("Conclusion : état de santé compatible avec la garde à vue dans les locaux du service."),
@@ -322,7 +322,7 @@
         const les = S.blessures.length ? S.blessures : ["pas de lésion traumatique récente objectivée"];
         return DOCS.forme({ title: "Certificat médical — unité médico-judiciaire", kind: "courrier", cote: cote("certificat"), schema: S.blessures.length ? S.blessures : null, entete: [`${TJ.umj} · AP-HP`, `Réquisition de l'officier de police judiciaire — procédure n° ${t.proc}`],
           blocs: [
-            p(`Je soussigné${pk(rr, ["", "e"])}, Dr ${pk(rr, ["Élise Vannier", "Marc Dubreuil", "Nora Belhadj"])}, médecin légiste, certifie avoir examiné ${at(E.umj.examen)}, sur réquisition de ${OPJ.signe.toLowerCase().replace(OPJ.nom.toLowerCase(), OPJ.nom)} du ${DOCS.date(j(E.umj.req))}, une personne qui me dit s'appeler ${n(V)}, ${V.age} ans.`),
+            p(`Je soussigné${(() => { pk(rr, ["", "e"]); const d = pk(rr, ["Élise Vannier", "Marc Dubreuil", "Nora Belhadj"]); return (/^(Amina|Claire|Élise|Nora|Sarah|Julie|Léa|Camille|Sophie|Anne|Marie|Inès|Fatima|Hélène) /.test(d) ? "e" : "") + ", Dr " + d; })()}, médecin légiste, certifie avoir examiné ${at(E.umj.examen)}, sur réquisition de ${OPJ.signe.toLowerCase().replace(OPJ.nom.toLowerCase(), OPJ.nom)} du ${DOCS.date(j(E.umj.req))}, une personne qui me dit s'appeler ${n(V)}, ${V.age} ans.`),
             titre("COMMÉMORATIFS"), p(`La personne déclare avoir été victime, le ${DOCS.date(jf)} vers ${hm(S.T0)}, de l'arrachage de ${objet} par un individu qui l'aurait ${S.dit.violence ? "entraîné" + e(V) + " au sol" : "surpris" + (V.g === "f" ? "e" : "") + " par derrière"}.`),
             titre("DOLÉANCES"), p(`« ${pk(rr, ["J'ai mal au genou quand je marche.", "J'ai du mal à dormir, je revois la scène.", "Mon épaule me fait mal quand je lève le bras."])} » ; appréhension à sortir seul${e(V)}.`),
             titre("EXAMEN CLINIQUE"), ...les.map((l) => p(Maj(l) + ".")), p("Pas d'autre lésion. Retentissement psychologique modéré, à réévaluer."),
@@ -547,11 +547,15 @@
           t.quoi === "violence" ? decl({ t: "« Il a pris le téléphone et il est parti en courant. Il ne l'a pas touchée. »", f: "G_sans_violence" }) : null,
           t.quoi === "mort" ? decl({ t: `« Il a crié : “Je vais te casser les jambes.” Je n'ai pas entendu parler de tuer. »`, f: "G_mots" }) : null,
           t.inf === "blessures_routieres" && t.quoi ? decl({ t: `« ${t.quoi === "r_telephone" ? "Je crois qu'il avait son téléphone, mais je ne suis pas sûr." : t.quoi === "r_vitesse" ? "Il roulait vite, mais je ne saurais pas dire combien." : "Je ne sais pas s'il avait bu."} »`, f: "G_circ_doute" }) : null,
+          "__VIDE__",
           titre("QUESTIONS ET RÉPONSES"),
           q("Où vous trouviez-vous exactement ?"), rep(pk(rr, ["À une dizaine de mètres.", "Juste à côté.", "De l'autre côté de la rue.", "Chez moi, juste à côté."])),
           q("Connaissez-vous les personnes en cause ?"), rep(pk(rr, ["Non, aucune.", "De vue seulement.", "Non."])),
-          q("Avez-vous quelque chose à ajouter ?"), rep(pk(rr, ["Non.", "Non, c'est tout ce que j'ai vu.", "Je suis prêt à revenir si besoin."])),
-        ];
+          q("Avez-vous quelque chose à ajouter ?"), rep(pk(rr, ["Non.", "Non, c'est tout ce que j'ai vu.", `Je suis prêt${T.g === "f" ? "e" : ""} à revenir si besoin.`])),
+        ].filter(Boolean);
+        // un témoin qui n'a rien à déclarer n'est pas entendu : celui-ci a peu vu, et le dit
+        { const iv = blocs.indexOf("__VIDE__"), dit = blocs.slice(1, iv).length > 0;
+          blocs.splice(iv, 1, ...(dit ? [] : [decl(`« ${t.flagrance ? `J'ai entendu du bruit et je me suis retourné${T.g === "f" ? "e" : ""}. Je n'ai pas vu le début ; quand j'ai regardé, c'était presque fini, et la police est arrivée peu après.` : "Je n'ai pas assisté aux faits moi-même. Je peux seulement dire ce que j'ai su ensuite, le jour même ou le lendemain."} »`)])); }
         return DOCS.pv({ cote: cote("pv_temoin"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition de témoin", qualite: "Témoin", numPV: "00" + int(rr, 101, 899), jour: j(E.temoin), heure: E.temoin, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
           identite: { nom: T.nom, prenom: T.prenom, g: T.g, adresse: T.adresse, metier: T.metier }, blocs, cloture: DOCS.clotureAudition(ville, j(E.temoinFin), E.temoinFin, T.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
       });
@@ -803,7 +807,7 @@
           const les = S.blessures.length ? S.blessures : ["pas de lésion traumatique récente objectivée"];
           return DOCS.forme({ title: "Certificat médical — unité médico-judiciaire", kind: "courrier", cote: cote("certificat"), schema: S.blessures.length ? S.blessures : null, entete: [`${TJ.umj} · AP-HP`, `Réquisition de l'officier de police judiciaire — procédure n° ${t.proc}`],
             blocs: [
-              p(`Je soussigné${pk(rr, ["", "e"])}, Dr ${pk(rr, ["Élise Vannier", "Marc Dubreuil", "Nora Belhadj"])}, médecin légiste, certifie avoir examiné ${at(E.umj.examen)}, sur réquisition du ${DOCS.date(j(E.umj.req))}, une personne qui me dit s'appeler ${n(V)}, ${V.age} ans.`),
+              p(`Je soussigné${(() => { pk(rr, ["", "e"]); const d = pk(rr, ["Élise Vannier", "Marc Dubreuil", "Nora Belhadj"]); return (/^(Amina|Claire|Élise|Nora|Sarah|Julie|Léa|Camille|Sophie|Anne|Marie|Inès|Fatima|Hélène) /.test(d) ? "e" : "") + ", Dr " + d; })()}, médecin légiste, certifie avoir examiné ${at(E.umj.examen)}, sur réquisition du ${DOCS.date(j(E.umj.req))}, une personne qui me dit s'appeler ${n(V)}, ${V.age} ans.`),
               titre("COMMÉMORATIFS"), p(`La personne déclare avoir été victime de violences le ${DOCS.date(jf)}${/^violences_conj/.test(t.inf) ? ", de la part de son conjoint ou ancien conjoint" : ""}.`),
               titre("DOLÉANCES"), p(`« ${pk(rr, ["J'ai mal quand je bouge.", "J'ai du mal à dormir depuis.", "J'ai des maux de tête."])} »`),
               titre("EXAMEN CLINIQUE"), ...les.map((l) => p(Maj(l) + ".")),

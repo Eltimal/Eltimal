@@ -73,7 +73,7 @@
     const ment = v.ment && docPreuve && (def.docs || {})[docPreuve] ? v.ment : null;
 
     // 1. La version du premier entretien : un mensonge, ou des aveux de garde à vue rétractés
-    const patchVersion = (call) => {
+    const patchVersion = (call, o) => {
       if (!call || !call.topics) return call;
       // un proche reçu à la place du client rapporte ses mots, entre guillemets (anti-répétition, lot 1 : défaut révélé par le directeur)
       const GA = PR.gram(t.A);
@@ -84,7 +84,7 @@
         if (CR.RECIT && CR.RECIT.porteVie(tp.a)) continue;
         const i = tp.a.findIndex((sg) => sg && typeof sg === "object" && sg.f === "G_version");
         if (i >= 0 && ment && defense) tp.a = tp.a.slice(0, i + 1).concat([{ t: rapporte(PR.vie.mensonge(t, ment)), f: "G_vie_ment" }], tp.a.slice(i + 1));
-        else if (i >= 0 && v.retracte && defense) tp.a = tp.a.slice(0, i).concat([{ t: rapporte(PR.vie.retractation(t)), f: "G_version" }], tp.a.slice(i + 1));
+        else if (i >= 0 && v.retracte && defense && !(o && o.avantAudition)) tp.a = tp.a.slice(0, i).concat([{ t: rapporte(PR.vie.retractation(t)), f: "G_version" }], tp.a.slice(i + 1));
         if (tp.id === "v_quoi" && ment && !defense) tp.a = tp.a.concat([{ t: PR.vie.mensonge(t, ment), f: "G_vie_ment" }]);
       }
       return call;
@@ -96,7 +96,8 @@
       const kind = t.revenant.role === "V" ? "a2v" : t.ant && t.ant.jug && revQ.casier === 2 && t.recid ? "recidive" : "v2a";
       def.calls.intake.opening = [PR.vie.revenant(t, kind)].concat(def.calls.intake.opening || []);
     }
-    if (def.gav) { const g0 = def.gav; def.gav = (api, o) => { const g = g0(api, o); if (g && g.entretien) patchVersion(g.entretien); return g; }; }
+    if (def.gav) { const g0 = def.gav; def.gav = (api, o) => { const g = g0(api, o); // pendant la garde à vue, il n'a encore rien avoué : la rétractation ne se dit qu'après
+      if (g && g.entretien) patchVersion(g.entretien, { avantAudition: t.mesure === "gav" }); return g; }; }
 
     // 2. Le premier rendez-vous manqué
     if (v.absent === "rdv" && def.leadTask) {

@@ -513,7 +513,7 @@
         depot: {
           scene: "parloir", kind: "meet", label: "Entretien au dépôt", baseCost: 20,
           opening: [EG.depot.opening],
-          topics: entretien.topics.concat([EG.depot.renvoi]),
+          topics: (ci || !CR.RECIT ? entretien.topics : CR.RECIT.lendemain(entretien.topics)).concat([EG.depot.renvoi]),
           start: entretien.start.concat(["g_renvoi"]), patience: 60, advice: false, close: EG.depot.close,
           onEnd: (api) => { api.cs.flags.depotVu = api.s.day; api.cs.flags.prepClient = api.s.day; },
         },
@@ -615,7 +615,7 @@
         questions: [
           { id: "q_heure", q: `À quelle heure les droits de ${GA.client} lui ont-ils été notifiés ?`, a: t.irr.includes("gav_notif") ? `(L'officier, agacé) : C'est au procès-verbal, maître. ${hm(notifMin)}.` : "(L'officier) : Dès le placement, maître, c'est au procès-verbal.", f: t.irr.includes("gav_notif") ? "G_q_heure" : null, sensible: true },
           { id: "q_logement", q: "Avez-vous vérifié son adresse ?", a: A.heberg ? "Oui, sa famille a confirmé par téléphone." : `${GA.Il} n'a pas d'adresse vérifiable.`, anodine: true },
-          t.flagrance ? { id: "q_motif", q: `Pourquoi ${GA.client} a-t-${GA.il} été contrôlé${GA.e} ?`, a: t.irr.includes("controle_identite") ? `(L'officier) : ${GA.Il} avait un comportement suspect, maître. C'est au procès-verbal.` : "(L'officier) : C'est au procès-verbal, maître.", sensible: true } : { id: "q_plainte", q: "Une plainte a-t-elle été déposée ?", a: "(L'officier) : Je ne peux pas vous répondre, maître.", sensible: true },
+          t.flagrance && (t.irr.includes("controle_identite") || ["alcool", "stups_volant", "defaut_permis", "refus_obtemperer", "rebellion", "outrage", "violences_pdap", "stups_usage", "stups_detention"].includes(t.inf) || /controle|barrage/.test((t.f && t.f.sc) || "")) ? { id: "q_motif", q: `Pourquoi ${GA.client} a-t-${GA.il} été contrôlé${GA.e} ?`, a: t.irr.includes("controle_identite") ? `(L'officier) : ${GA.Il} avait un comportement suspect, maître. C'est au procès-verbal.` : "(L'officier) : C'est au procès-verbal, maître.", sensible: true } : t.flagrance ? { id: "q_motif", q: `Dans quelles conditions ${GA.client} a-t-${GA.il} été interpellé${GA.e} ?`, a: "(L'officier) : C'est au procès-verbal d'interpellation, maître.", sensible: true } : { id: "q_plainte", q: "Une plainte a-t-elle été déposée ?", a: "(L'officier) : Je ne peux pas vous répondre, maître.", sensible: true },
         ],
         observations,
         get relecture() {

@@ -22,8 +22,25 @@
 
   // l'heure comme on s'en souvient : au quart d'heure près, en mots
   R.heure = (m) => {
-    const x = Math.round((((m % 1440) + 1440) % 1440) / 15) * 15, h = Math.floor(x / 60) % 24, mn = x % 60;
-    return h === 0 && !mn ? "minuit" : h === 12 && !mn ? "midi" : `${h} heure${h > 1 ? "s" : ""}${mn === 15 ? " et quart" : mn === 30 ? " et demie" : mn === 45 ? " quarante-cinq" : ""}${h < 12 ? " du matin" : ""}`;
+    const x = (Math.round((((m % 1440) + 1440) % 1440) / 15) * 15) % 1440, mn = x % 60;
+    // « quatre heures moins le quart de l'après-midi » : l'heure parlée, sur douze heures, jamais à moitié en chiffres
+    const h = (Math.floor(x / 60) + (mn === 45 ? 1 : 0)) % 24;
+    const MOTS = ["", "une", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix", "onze"];
+    const base = h === 0 ? "minuit" : h === 12 ? "midi" : `${MOTS[h % 12]} heure${h % 12 > 1 ? "s" : ""}`;
+    const part = mn === 15 ? " et quart" : mn === 30 ? (h % 12 === 0 ? " et demi" : " et demie") : mn === 45 ? " moins le quart" : "";
+    return base + part + (h % 12 === 0 ? "" : h < 12 ? " du matin" : h < 18 ? " de l'après-midi" : " du soir");
+  };
+  // après « ce matin », « hier soir » : le moment est déjà dit
+  R.heureNue = (m) => R.heure(m).replace(/ (du matin|de l'après-midi|du soir)$/, "");
+  // le même récit redit le lendemain (au dépôt, après la nuit de garde à vue) : « ce matin » devient « hier matin »
+  R.lendemain = (topics) => {
+    const dec = (x) => String(x)
+      .replace(/^((?:[^.?!]*[.?!»] )*?)(C'était |)(tard hier soir|hier (matin|soir|après-midi|dans la nuit|à l'heure du déjeuner)|ce matin|cet après-midi|ce soir|cette nuit|à l'heure du déjeuner)/i, (m0, av, c, q) => {
+        const Q = q.toLowerCase();
+        const n = Q === "ce matin" ? "hier matin" : Q === "cet après-midi" ? "hier après-midi" : Q === "ce soir" ? "hier soir" : Q === "cette nuit" ? "la nuit d'avant-hier" : Q === "à l'heure du déjeuner" ? "hier, à l'heure du déjeuner" : Q === "tard hier soir" ? "avant-hier, tard le soir" : "avant-" + Q;
+        return av + c + (c || !/^[A-Z]/.test(q) ? n : n[0].toUpperCase() + n.slice(1));
+      });
+    return (topics || []).map((tp) => (tp && tp.id === "g_faits" && Array.isArray(tp.a) ? Object.assign({}, tp, { a: tp.a.map((sg) => (typeof sg === "string" ? dec(sg) : sg && typeof sg.t === "string" ? Object.assign({}, sg, { t: dec(sg.t) }) : sg)) }) : tp));
   };
   R.moment = (m) => { const h = (((m % 1440) + 1440) % 1440) / 60; return h < 6 ? "dans la nuit" : h < 12 ? "le matin" : h < 14 ? "à l'heure du déjeuner" : h < 18 ? "l'après-midi" : h < 22 ? "le soir" : "tard le soir"; };
   // depuis quand : le jour des faits vu du jour de l'entretien
@@ -95,15 +112,15 @@
     const resiste = ["rebellion", "violences_pdap", "refus_obtemperer"].includes(t.inf);
     const agent = V && (V.agent || /pdap|rebellion|outrage/.test(t.inf));
     // 1. le cadre : quand, où, ce que je faisais
-    const dep0 = R.depuis(t), h0 = t.d && t.d.h != null ? R.heure(t.d.h) : null;
-    const quand = h0 ? `${cap(dep0)}, vers ${/^il y a/.test(dep0) ? h0 : h0.replace(/ du matin$/, "")}` : cap(dep0);
+    const dep0 = R.depuis(t), h0 = t.d && t.d.h != null ? R.heure(t.d.h) : null, h0n = h0 && R.heureNue(t.d.h);
+    const quand = h0 ? `${cap(dep0)}, vers ${/^il y a/.test(dep0) ? h0 : h0n}` : cap(dep0);
     const lieu = R.lieu(N, t);
     if (absent) E.cadre.push(`${quand} ? J'étais chez moi. Je suis pas sorti${G.e}.`);
     else {
       // « ce matin, vers 7 heures 45 » : le moment dit déjà le matin
       const h = t.d && t.d.h != null ? R.heure(t.d.h) : null, dep = R.depuis(t);
-      E.cadre.push(`C'était ${dep}${h ? ", vers " + (/^il y a/.test(dep) ? h : h.replace(/ du matin$/, "")) : ""}${lieu ? ", " + lieu : ""}.`);
-      const av = lieu === "chez moi" && !/conj/.test(t.inf) ? "J'étais chez moi, tranquille." : t.inf === "alcool" && t.d && t.d.h != null && t.d.h % 1440 > 6 * 60 && t.d.h % 1440 < 20 * 60 ? "Je rentrais chez moi en voiture, après un repas." : avantDe(t);
+      E.cadre.push(`C'était ${dep}${h ? ", vers " + (/^il y a/.test(dep) ? h : R.heureNue(t.d.h)) : ""}${lieu ? ", " + lieu : ""}.`);
+      const av = lieu === "chez moi" && !/conj/.test(t.inf) ? "J'étais chez moi, tranquille." : t.inf === "alcool" && t.d && t.d.h != null && t.d.h % 1440 > 6 * 60 && t.d.h % 1440 < 20 * 60 ? "Je rentrais chez moi en voiture, après un repas." : t.inf === "stups_usage" && N.saisie && !/cannabis|résine|herbe/i.test(String(N.saisie)) ? (avantDe(t) || "").replace("je fumais avec un ami", "avec un ami") : avantDe(t);
       if (av) E.cadre.push(av.replace(/(arrêté|arrivé|sorti|parti|venu)(?=[\s.,;!?]|$)/g, "$1" + G.e));
     }
     // 2. le geste : la version (fait G_version), le mensonge, puis les explications qu'il a données ou qu'il donnera

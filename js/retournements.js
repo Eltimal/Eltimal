@@ -91,7 +91,7 @@
       arg: (G) => ({ label: "Ses enfants : une peine qui ne l'en sépare pas", say: `${G.Il} élève ses enfants. Si une peine doit être prononcée, qu'elle ne ${G.le} sépare pas d'eux : sursis, ou peine aménagée.` }),
       sauve: (cs, dec) => !dec.coupable || !(cs.vars.peine && cs.vars.peine.ferme > 0 && !cs.vars.peine.amenagement) },
     emploi: { label: "Garder son emploi",
-      dit: (A, met) => [`Mon boulot. Je suis ${met} ; si je rate des jours, je perds ma place.`, `Mon travail. Je ne peux pas me permettre de le perdre.`],
+      dit: (A, met) => [A && CR.MONDE.situ && CR.MONDE.situ(A) === "independant" ? `Mon activité. Je suis ${met}, à mon compte ; si je ne suis pas là, plus rien ne rentre.` : `Mon boulot. Je suis ${met} ; si je rate des jours, je perds ma place.`, `Mon travail. Je ne peux pas me permettre de le perdre.`],
       arg: (G, met) => ({ label: `Son poste de ${met}`, say: `Une peine ferme exécutée lui coûterait son poste de ${met}. Tout le reste en dépend.` }),
       sauve: (cs, dec) => !dec.coupable || !(cs.vars.peine && cs.vars.peine.ferme > 0 && !cs.vars.peine.amenagement) },
   };
@@ -128,7 +128,7 @@
         const c = def.calls[k];
         if (!c || typeof c !== "object" || !Array.isArray(c.topics) || /Permanence/.test(c.label || "") || (k === "intake" && def.famille && c.who)) continue;
         if (c.topics.some((tp) => tp && tp.id === "c_enjeu")) continue;
-        def.calls[k] = Object.assign({}, c, { topics: c.topics.concat([{ id: "c_enjeu", q: ["Qu'est-ce qui vous inquiète le plus ?", "Dans tout ça, qu'est-ce qui compte le plus pour vous ?", "Qu'est-ce que vous avez peur de perdre ?", "Au fond, qu'est-ce qui vous empêche de dormir ?"][h(key + ":enjeuQ") % 4], a: [{ t: E.dit(A, met)[h(key + ":enjeuDit") % 2], f: "E_enjeu" }], cost: 3, tag: "good" }]) });
+        def.calls[k] = Object.assign({}, c, { topics: c.topics.concat([{ id: "c_enjeu", q: c.topics.some((tp) => tp && tp.id === "o_enjeu") ? "Et à part cela, qu'avez-vous peur de perdre ?" : ["Qu'est-ce qui vous inquiète le plus ?", "Dans tout ça, qu'est-ce qui compte le plus pour vous ?", "Qu'est-ce que vous avez peur de perdre ?", "Au fond, qu'est-ce qui vous empêche de dormir ?"][h(key + ":enjeuQ") % 4], a: [{ t: E.dit(A, met)[h(key + ":enjeuDit") % 2], f: "E_enjeu" }], cost: 3, tag: "good" }]) });
       }
     }
     return def;

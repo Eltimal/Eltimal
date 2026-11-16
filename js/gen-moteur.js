@@ -96,6 +96,7 @@
       const r = CR.seeded(seed + (k ? "~" + k : ""));
       const t = tirer1(r, genre, day, Object.assign({}, o, { _graine: seed + (k ? "~" + k : "") }));
       if (!t) continue;
+      if (CR.MONDE.caler) CR.MONDE.caler(t, day);
       t.sig = GEN2.signature(t);
       if (o.sigs && (o.sigs.has(t.sig) || o.sigs.has(CR.hash(t.sig)))) continue;
       t.essai = k;

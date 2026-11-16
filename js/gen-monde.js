@@ -251,12 +251,30 @@
     return { F, A, V, T, milA: M.milieu(r, A, o.fam), milV: M.milieu(r, V), milT: M.milieu(r, T) };
   };
 
+  // Après le tirage d'une affaire, au jour de l'affaire : l'année de naissance s'accorde à l'âge annoncé (l'anniversaire
+  // est passé ou non), et l'auteur de violences conjugales qui vit avec la victime vit avec « sa compagne », pas un tiers.
+  M.caler = function (t, day) {
+    if (!t) return t;
+    const now = CR.ymd(day || 0);
+    const une = (P) => {
+      if (!P || typeof P !== "object" || typeof P.naissance !== "string" || !P.age) return;
+      const m = /^le (\d+)(?:er)? (\S+) (\d{4})( à .*)?$/.exec(P.naissance); if (!m) return;
+      const mois = M.MOIS.indexOf(m[2]); if (mois < 0) return;
+      const passe = now.m - 1 > mois || (now.m - 1 === mois && now.d >= +m[1]);
+      P.naissance = `le ${m[1] === "1" ? "1er" : m[1]} ${m[2]} ${now.y - P.age - (passe ? 0 : 1)}${m[4] || ""}`;
+    };
+    for (const k of Object.keys(t)) { const x = t[k]; if (Array.isArray(x)) x.forEach(une); else une(x); }
+    if (t.A && t.V && t.inf === "violences_conj" && !/(^|_)ex|separ/.test((t.f && t.f.sc) || "") && /compagn/.test(t.A.proche || "")) t.A.proche = t.V.g === "f" ? "sa compagne" : "son compagnon";
+    return t;
+  };
+
   // Une personne : identité, âge, métier, logement, casier, entourage
   // o : { g, minAge, maxAge, metier, casier, majeur, lieu (secteur du domicile), milieu }
   M.personne = function (r, o = {}) {
     const g = o.g || (r() < (o.pf != null ? 1 - o.pf : 0.78) ? "m" : "f");
     const prenom = pk(r, g === "m" ? M.PM : M.PF);
-    const nom = pk(r, M.NOMS);
+    let nom = pk(r, M.NOMS);
+    if (nom === prenom) nom = M.NOMS[(M.NOMS.indexOf(nom) + 1) % M.NOMS.length]; // « Nicolas Nicolas »
     const age = int(r, Math.max(18, o.minAge || 19), o.maxAge || 52);
     let [metier, emploi] = o.metier ? [o.metier, M.enEmploi(o.metier)] : pk(r, M.METIERS_MIL[o.milieu] || M.METIERS);
     if (metier === "retraité" && age < 60) [metier, emploi] = ["sans emploi", false];

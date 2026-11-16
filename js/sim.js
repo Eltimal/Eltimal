@@ -326,7 +326,7 @@
     if (t && t.inf === "violation_domicile" && t.f && t.f.sc === "ex") {
       const rv = CR.seeded(t.sig + ":viol");
       S.violation = { cotitulaire: rv() < 0.3 };
-      S.constat = S.constat.concat([S.violation.cotitulaire ? "Vérification faite auprès du bailleur : le bail de l'appartement est toujours établi aux deux noms ; aucun congé n'a été donné." : "Vérification faite auprès du bailleur : le bail est au seul nom de la plaignante depuis la séparation."]);
+      S.constat = S.constat.concat([S.violation.cotitulaire ? "Vérification faite auprès du bailleur : le bail de l'appartement est toujours établi aux deux noms ; aucun congé n'a été donné." : `Vérification faite auprès du bailleur : le bail est au seul nom ${t.V && t.V.g === "m" ? "du plaignant" : "de la plaignante"} depuis la séparation.`]);
     }
     // recel : ce que l'intéressé a payé, au regard de la valeur ; pour une boutique, le registre des achats d'occasion
     if (t && t.inf === "recel" && t.f && t.flagrance !== undefined) {
