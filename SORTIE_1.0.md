@@ -119,7 +119,7 @@ moteurs de violences, autres décors de vidéosurveillance.
 | Carrière de cinq ans : place, durée d'enregistrement, échec signalé | **Fait** sur modèle (6,6 Mo, 46 ms) ; 9 Mo écrits et relus dans IndexedDB ; échec signalé | `tviabilite`, `tnavigateur` |
 | Vingt fichiers corrompus : zéro écran blanc | **Fait** (19 en jsdom, 10 importés dans Chromium) | `tsauvegardes`, `tnavigateur` |
 | Automate « joueur moyen » solvable à 12 mois dans 70 % des graines ; aucun revenu sans activité | **Fait** sur modèle (20/20) ; l'équilibrage fin reste ouvert (économie très généreuse) | `tviabilite` |
-| 100 000 clics aléatoires dont des parties menées au jugement : zéro erreur | **Non fait** : 20 000 clics à l'audit, peu profonds ; à refaire sur le code corrigé | — |
+| 100 000 clics aléatoires dont des parties menées au jugement : zéro erreur | **Fait à échelle réduite** (16 novembre) : 2 510 clics, 3 graines, 5 audiences ouvertes dont une jugée, zéro erreur ; l'essai à 100 000 clics est abandonné (3,5 clics par seconde en rendu logiciel : plusieurs heures) | `dev/tools/singe.js <graine> 100000 4` |
 | 60 images par seconde sur le Mac cible le plus modeste | **Non vérifiable ici** (rendu logiciel) | à mesurer sur matériel |
 | App signée, notarisée, icône, aucune clé embarquée, mise à jour signée | Icône et retrait de la clé **faits** ; signature, notarisation et clé de signature **en attente des secrets** | `PUBLICATION.md` |
 | Crédits et licences ; attestation de relecture juridique | Crédits **faits** ; licence du code à choisir ; relecture juridique **non faite** | `LICENCES.md` |
@@ -129,3 +129,18 @@ moteurs de violences, autres décors de vidéosurveillance.
 **Conclusion à cette date : La Permanence n'est pas prête pour la 1.0.** Restent : les secrets de signature et la branche
 `main`, la mesure sur matériel réel, l'essai d'endurance au clic, la relecture juridique, le réglage de l'économie, la
 vérification de l'app Mac construite.
+
+## Sortie 1.0.0 « Le serment » — 16 novembre 2026
+
+Décision de Kevin : la V1 est publiée. Version 1.0.0 dans `js/version.js` et `package.json`, fusion dans `main` (canal
+stable, `jeu-N`). Vérifié ce jour : batterie complète (90 tests), test navigateur, module de mise à jour, essai
+d'endurance réduit (aucun essai de plus de dix minutes, consigne de Kevin).
+
+Publié sans être vérifié, à faire après la sortie :
+
+- signature « Developer ID » et notarisation Apple, clé de signature des mises à jour (secrets du dépôt, voir
+  `PUBLICATION.md`) : sans eux, le workflow « Construire l'app » refuse l'app stable ; les apps d'essai déjà installées
+  reçoivent le jeu par leur canal ;
+- fermeture de la fenêtre de l'app Mac et fluidité sur matériel réel ;
+- relecture juridique datée, licence du code ;
+- réglage de l'économie (très généreuse pour un joueur actif) ; parcours complet au clavier.

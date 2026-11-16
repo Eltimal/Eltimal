@@ -6,6 +6,8 @@
 
 L'audit de sortie et sa correction sont suivis dans `SORTIE_1.0.md` (plan, journal, checklist) ; la publication suit `PUBLICATION.md` : les branches `claude/**` publient sur le canal d'essai (`essai-N`), seule `main` publie aux joueurs (`jeu-N`), et rien n'est publié sans la batterie. Tout nouveau lot ajoute son test à `dev/tools/batterie.js`.
 
+**1.0.0 « Le serment » publiée le 16 novembre 2026** (fusion dans `main`). Consigne de Kevin : aucun essai de plus de dix minutes sans retour (le singe se lance par graines courtes : `node tools/singe.js <graine> 100000 4`). Restes après la sortie : fin de `SORTIE_1.0.md`.
+
 ## Avant toute chose
 
 1. `git fetch --all` ; partir de la branche la plus avancée entre `claude/keen-heisenberg-nk0cv3` et `claude/permanence-mac-app-graphics-wege0b` (fusionner l'autre dedans s'il le faut ; les deux publient le jeu sur le Mac, numéro = nombre de commits).

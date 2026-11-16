@@ -36,7 +36,7 @@ prennent pour titre la version.
 Historique reconstitué le 15 novembre 2026 : 0.5.0 « Le cabinet » (version de référence, 11 novembre), 0.6.0 « Le
 dossier réel » (lot 1), 0.7.0 « Le dossier de travail » (lot 2), 0.8.0 « Le palais » (après jugement, codes, décisions
 au format réel), 0.8.1 (fiabilité de la sortie 1.0), 0.10.0 « La consultation » (moteur de consultation au cabinet), 0.9.0 « La parole » (lot 3 : entretien, audition, récit du
-client). Le libellé « 1.0 bêta » affiché jusque-là était prématuré : la 1.0 sera la sortie officielle.
+client). 1.0.0 « Le serment » (16 novembre 2026) : sortie officielle, décidée par Kevin (bilan dans `SORTIE_1.0.md`). Le libellé « 1.0 bêta » affiché jusque-là était prématuré : la 1.0 sera la sortie officielle.
 
 ## Mise en place, une seule fois (propriétaire du dépôt)
 

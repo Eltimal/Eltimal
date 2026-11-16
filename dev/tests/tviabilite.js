@@ -23,7 +23,9 @@ const A = require("../tools/carriere-auto.js");
   // carrière de cinq ans
   const t0 = Date.now(); const long = A.carriere(CR, 3, 60, "moyen"); const s = long.s;
   ok(long.fin === "en activité" && long.jour >= 1820, "la carrière de cinq ans ne va pas au bout", long.fin);
-  let t = Date.now(); const json = CR.serialize(s); const ser = Date.now() - t;
+  // la meilleure de trois mesures : la batterie tourne sur tous les cœurs, une mesure isolée dépend de la charge
+  let t = Date.now(); const json = CR.serialize(s); let ser = Date.now() - t;
+  for (let k = 0; k < 2; k++) { t = Date.now(); CR.serialize(s); ser = Math.min(ser, Date.now() - t); }
   ok(ser < 100, "sérialiser cinq ans de carrière prend plus de 100 ms", ser);
   ok(json.length < 30 * 1024 * 1024, "la sauvegarde de cinq ans dépasse 30 Mo", Math.round(json.length / 1048576));
   t = Date.now(); let relu = null; try { relu = CR.deserialize(json); } catch (e) { ok(false, "la carrière de cinq ans ne se recharge pas", e.message); }

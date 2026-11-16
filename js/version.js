@@ -17,6 +17,17 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "1.0.0", nom: "Le serment", date: "16 novembre 2026", type: "contenu",
+      resume: "La sortie officielle : la carrière complète, de la première permanence au jugement et à ses suites.",
+      notes: [
+        "La Permanence sort de la bêta : toutes les affaires viennent du générateur, de la garde à vue au jugement, à l'appel et à l'application des peines.",
+        "Consultation au cabinet, parole du client, audition intégrale, plaidoirie, délibéré : les mises à jour « La parole » et « La consultation » sont comprises.",
+        "Sauvegardes fiables à tout instant, fichiers abîmés refusés proprement, carrières de cinq ans vérifiées.",
+        "Essai d'endurance : des milliers de clics au hasard dans un vrai navigateur, audiences comprises, sans une erreur.",
+        "Mises à jour par deux canaux : le canal stable pour jouer, le canal d'essai pour les versions en préparation.",
+      ],
+    },
+    {
       version: "0.10.0", nom: "La consultation", date: "16 novembre 2026", type: "contenu",
       resume: "Au cabinet, on pose une question écrite en entier, et le client répond à cette question.",
       notes: [

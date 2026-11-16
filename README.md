@@ -1,6 +1,6 @@
 # La Permanence
 
-Jeu d'avocat pénaliste, hors ligne. Version 1.0 en préparation (bêta) : l'état de la sortie est dans `SORTIE_1.0.md`.
+Jeu d'avocat pénaliste, hors ligne. Version 1.0.0 « Le serment » (16 novembre 2026) : le bilan de la sortie est dans `SORTIE_1.0.md`.
 
 - **Jouer depuis les sources** : ouvrir `index.html` dans un navigateur récent, ou `npm install` puis `npm start` (app Electron).
 - **Tests** : `cd dev && npm install`, puis `node tools/batterie.js` (rapide) ou `node tools/batterie.js complete` ;

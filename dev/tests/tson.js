@@ -47,7 +47,7 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("ÉCHEC", m
   ok(CR.SON.voulu.nom === "salle" && CR.SON.log.includes("cloche"), "audience : la salle et la sonnette");
   CR.SON.sync(s, { type: "gav", caseId: "x" }); ok(CR.SON.voulu.nom === "commissariat" && CR.SON.log.includes("porte"), "garde à vue : commissariat et porte");
   CR.SON.sync(s, { type: "call", caseId: "x" }); CR.SON.sync(s, null); ok(CR.SON.log.includes("decroche") && CR.SON.log.includes("raccroche"), "téléphone décroché, raccroché");
-  CR.SON.log.length = 0; CR.SON.pret = true; CR.mail(s, { from: "Test", subj: "Test", body: "Test", kind: "courriel" }); ok(CR.SON.log.includes("mail"), "un courriel s'entend");
+  CR.SON.log.length = 0; CR.SON.pret = true; CR.mail(s, { from: "Test", subject: "Test", body: "Test", kind: "courriel" }); ok(CR.SON.log.includes("mail"), "un courriel s'entend");
   CR.toast(s, "erreur", "bad"); ok(CR.SON.log.includes("erreur"), "une erreur s'entend");
   await click(w, [...doc.querySelectorAll(".rail-btn")].find((x) => /Dossiers/.test(texts(x)))); ok(CR.SON.log.includes("onglet"), "navigation sonore");
   console.log("ambiances vérifiées, sons joués :", [...new Set(CR.SON.log)].join(", "));
