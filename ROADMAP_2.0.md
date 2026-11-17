@@ -34,7 +34,7 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 | 1.2.1 | (correctif) | Publication fiable, retours sur le menu et le carnet | trois publications de suite vertes du premier coup |
 | 1.3.0 | Les visages et les noms | L'avocat du joueur se compose pièce par pièce ; une banque de visages bien plus grande ; bien plus de noms de famille, des prénoms et des noms qui vont ensemble | **faite le 17 novembre** (`tvisages`, `tnoms`, `tanciens`) ; reste le regard de Kevin sur l'atelier |
 | 1.4.0 | Le premier appel | La première semaine conduite | **faite le 17 novembre** (`tpremier`) : l'automate « Avancer / Répondre » joue sa garde à vue la première nuit |
-| 1.5.0 | La garde à vue | La parole en garde à vue sur le modèle de la consultation | moins de 10 % de questions sans effet, aucun « déjà dit » |
+| 1.5.0 | La garde à vue | La parole en garde à vue sur un moteur propre, inspiré de la consultation (D-100) | moins de 10 % de questions sans effet, aucun « déjà dit » |
 | 1.6.0 | Les autres voix | Dépôt, parloir, téléphone, victime, famille, témoin | aucune phrase d'une situation dite dans une autre, sur 420 affaires |
 | 1.7.0 | Le dossier juste | Une vérité par famille : fraudes à distance, faits qui durent | zéro contradiction entre pièces sur 1 000 affaires de ces familles |
 | 1.8.0 | Chez soi, sur la route | Une vérité par famille : domicile et couple, route, stupéfiants | idem ; le second moteur des violences est fondu |
@@ -262,8 +262,10 @@ contact en attente est le dossier « lead » ; « Avancer » n'avance plus que d
 
 - **Contexte de procédure** lu par tous les textes : arrêté sur le fait, convoqué, plaignant ; date des faits relative
   au jour où l'on parle.
-- Garde à vue sur le moteur de la consultation : questions écrites en entier, une réponse par question, suites ouvertes
-  par la discussion, découverte des questions par l'échange.
+- Garde à vue sur un moteur propre, inspiré de la consultation mais distinct (D-100, demande de Kevin du 17 novembre) :
+  questions écrites en entier, une réponse par question, suites ouvertes par la discussion, découverte des questions par
+  l'échange ; ses thèmes et ses règles sont ceux de la garde à vue (trente minutes, pas de dossier, l'audition qui suit,
+  parler ou se taire), et `js/consultation.js` n'est ni appelé ni modifié pour elle.
 - Mensonge du client tenu dans la durée d'un entretien (pas de démenti trois réponses plus loin sans confrontation) :
   36 entretiens concernés à la relecture.
 - Le client convoqué ne raconte plus une arrestation (10 auditions libres concernées).
