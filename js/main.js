@@ -374,13 +374,16 @@
       skip: (force) => {
         const reste = CR.resteAujourdhui(s);
         if (!force && reste.length) { setModal({ type: "confirmSkip", reste }); return; }
-        const n = CR.skipAhead(s); CR.autosave(); CR.toast(s, n > 1 ? `${n} jours ont passé.` : "Une journée a passé.", "info"); bump(); setUi(Object.assign({}, ui, { panel: "bureau", caseId: null })); },
+        const n = CR.skipAhead(s); CR.autosave(); CR.toast(s, n > 1 ? `${n} jours ont passé.` : "Une journée a passé.", "info");
+        if (CR.PREMIERE && CR.PREMIERE.arret) CR.toast(s, "Avancer s'arrête : " + CR.PREMIERE.arret, "warn"); bump(); setUi(Object.assign({}, ui, { panel: "bureau", caseId: null })); },
     };
     const answer = (yes) => {
       const r = s.ring;
       if (!r) return;
       s.ring = null;
       if (!yes) { CR.voicemail(s, r); bump(); return; }
+      // Me Varenne (premiere.js) : elle dit ce qu'elle a à dire, puis le service des permanences s'ouvre
+      if (r.mentor) { CR.spend(s, 5, "call"); CR.toast(s, `${r.from} : « ${r.vmText} »`, "info"); setScene({ type: "permanences" }); bump(); return; }
       const cs = r.caseId ? s.cases[r.caseId] : null;
       if (r.onAnswer && cs) { const res = CR.runHook(s, cs, r.onAnswer, r.data || {}); if (res && res.scene) setScene(Object.assign({ caseId: cs.id, type: res.scene }, res)); bump(); return; }
       if (r.kind === "greffe" && cs && r.data && r.data.hid) {
@@ -662,7 +665,8 @@
     const [nom, setNom] = useState("");
     const [cabinet, setCabinet] = useState("");
     const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1e6));
-    const [aide, setAide] = useState(CR.prefs.aide === "assiste" ? "assiste" : "libre");
+    // 1.4.0 : « Assisté » coché par défaut à la première carrière, « Libre » ensuite
+    const [aide, setAide] = useState(CR.prefs.dejaCarriere ? "libre" : "assiste");
     const [saves, setSaves] = useState(null);
     const fileRef = useRef(null);
     useEffect(() => { Saves.list().then(setSaves); }, [Saves.backend]);
@@ -677,6 +681,9 @@
       const n = nom.trim() || "Durand";
       const st = CR.newGame({ prenom: p, nom: n, cabinet: cabinet.trim() || `Cabinet ${n}`, look, mode: m });
       if (debut === "collab" && CR.CAR) CR.CAR.demarrerCollab(st);
+      // 1.4.0 : la première nuit de permanence, d'office (la promesse de l'écran titre)
+      if (m === "carriere" && CR.premiereSemaine) CR.premiereSemaine(st);
+      CR.prefsSet("dejaCarriere", true);
       // le niveau d'aide choisi à la prestation de serment (D-57 : l'aide est un choix du joueur) ; il se change dans le menu
       if (aide === "assiste") { st.settings.parole = "assiste"; st.settings.indices = true; }
       CR.prefsSet("aide", aide);

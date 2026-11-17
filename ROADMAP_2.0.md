@@ -33,7 +33,7 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 | 1.2.0 | Le carnet | Le carnet refait autour du contexte de chaque note | **publiée le 16 novembre** ; reste le regard de Kevin |
 | 1.2.1 | (correctif) | Publication fiable, retours sur le menu et le carnet | trois publications de suite vertes du premier coup |
 | 1.3.0 | Les visages et les noms | L'avocat du joueur se compose pièce par pièce ; une banque de visages bien plus grande ; bien plus de noms de famille, des prénoms et des noms qui vont ensemble | **faite le 17 novembre** (`tvisages`, `tnoms`, `tanciens`) ; reste le regard de Kevin sur l'atelier |
-| 1.4.0 | Le premier appel | La première semaine conduite | un joueur passif joue une garde à vue avant le troisième jour |
+| 1.4.0 | Le premier appel | La première semaine conduite | **faite le 17 novembre** (`tpremier`) : l'automate « Avancer / Répondre » joue sa garde à vue la première nuit |
 | 1.5.0 | La garde à vue | La parole en garde à vue sur le modèle de la consultation | moins de 10 % de questions sans effet, aucun « déjà dit » |
 | 1.6.0 | Les autres voix | Dépôt, parloir, téléphone, victime, famille, témoin | aucune phrase d'une situation dite dans une autre, sur 420 affaires |
 | 1.7.0 | Le dossier juste | Une vérité par famille : fraudes à distance, faits qui durent | zéro contradiction entre pièces sur 1 000 affaires de ces familles |
@@ -238,7 +238,16 @@ de doublons ; aucun prénom à plus d'une génération de l'âge de la personne 
 1 000 affaires (`tgen`) ; plus aucune liste de noms hors de la source commune ; `trelecture` compte zéro accord faux
 sur la civilité.
 
-### 1.4.0 « Le premier appel » — la première semaine
+### 1.4.0 « Le premier appel » — la première semaine — **faite le 17 novembre 2026**
+
+Bilan (`tpremier`, batterie) : un automate qui ne clique que « Avancer » et « Répondre » joue sa garde à vue dès la
+première nuit (jour 1, entre 1 h et 5 h, en deux clics). Tout ce qui est ci-dessous est fait, dans `js/premiere.js`
+(inscription d'office et appel sûr de la première nuit, Me Varenne au troisième jour, contacts en attente, courriers qui
+arrivent quand ils servent), `js/systems.js` (courriers d'ouverture), `js/ui-desk.js` (bandeau, bouton du courrier) et
+`js/main.js` (écran de création, « Avancer », réponse à Me Varenne). L'inscription d'office passe par la prestation de
+serment (`CR.premiereSemaine`) : `CR.newGame` seul ne la fait pas, pour que les tests gardent leurs parties. Le
+contact en attente est le dossier « lead » ; « Avancer » n'avance plus que d'un jour tant qu'il y en a un. Tests ajustés :
+`tlibre`, `tappel`, `tconsult` cochent « Libre » (ils testent ce mode) ; `tequipe` garde le moral bas jusqu'à la démission.
 
 - Inscription d'office à la permanence de la première nuit : la promesse de l'écran titre est tenue.
 - Bouton « S'inscrire aux permanences » dans le courrier de l'Ordre.

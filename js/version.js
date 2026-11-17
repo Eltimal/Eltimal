@@ -17,6 +17,20 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "1.4.0", nom: "Le premier appel", date: "17 novembre 2026", type: "contenu",
+      resume: "La première semaine est conduite : le téléphone sonne dès la première nuit, et plus aucun client n'attend sans que vous le sachiez.",
+      notes: [
+        "Le service des permanences inscrit d'office le nouvel avocat à la garde à vue de la première nuit : le téléphone sonne, comme l'écran titre le promet.",
+        "Le courrier de l'Ordre porte un bouton « S'inscrire aux permanences ».",
+        "Au troisième jour, si vous n'avez pris aucune permanence, Me Varenne vous appelle.",
+        "Au bureau, un bandeau dit qui attend votre réponse et jusqu'à quand, et combien de messages vocaux restent à écouter.",
+        "« Avancer » s'arrête sur tout client qui attend d'être rappelé, et dit pourquoi il s'arrête.",
+        "La veille du jour où il prendra un autre avocat, le client laisse un message : une ligne au journal ne suffisait pas.",
+        "« Assisté » est coché par défaut à la première carrière, « Libre » ensuite.",
+        "Au premier jour, deux courriers seulement : l'Ordre et Me Varenne. La banque écrit la veille des premières charges, la note sur le cabinet arrive avec le premier dossier.",
+      ],
+    },
+    {
       version: "1.3.0", nom: "Les visages et les noms", date: "17 novembre 2026", type: "contenu",
       resume: "Votre avocat se compose pièce par pièce, et les gens que vous croisez ont des visages et des noms qu'on distingue.",
       notes: [

@@ -136,6 +136,16 @@
       ${s.lastMonthly && s.lastMonthly.day === s.day && html`<div className="banner">Les charges du mois sont parties ce matin : ${CR.money(s.lastMonthly.total)}. Compte professionnel : ${CR.money(s.cash)}.</div>`}
       ${s.lastDayStats && s.min === CR.DAY_START && !s.night && html`<p className="muted small">Vous avez dormi et récupéré ${Math.round(s.lastDayStats.rec)} points d'énergie.</p>`}
       ${duty.length > 0 && html`<div className="banner">${duty.map((d) => CR.DUTY_LABEL[d.type]).join(" · ")} : gardez votre téléphone à portée de main.</div>`}
+      ${(() => {
+        // 1.4.0 : les messages sans réponse, au bureau — qui attend, jusqu'à quand
+        const attente = CR.contactsEnAttente ? CR.contactsEnAttente(s) : [];
+        const vm = s.voicemails.filter((v) => !v.heard).length;
+        if (!attente.length && !vm) return null;
+        return html`<div className=${cx("banner", "attente", attente.some((c) => c.expire != null && c.expire <= s.day + 1) && "warn")} role="status">
+          <strong>${attente.length ? `${attente.length} ${attente.length > 1 ? "personnes attendent" : "personne attend"} votre réponse` : "Messages vocaux"}</strong>${vm ? html` · <button className="link" onClick=${() => go.nav("telephone")}>${vm} message${vm > 1 ? "s" : ""} vocal${vm > 1 ? "aux" : ""} non écouté${vm > 1 ? "s" : ""}</button>` : ""}
+          ${attente.length > 0 && html`<ul className="attente-list">${attente.map((c) => html`<li key=${c.cs.id}>${CR.PREMIERE.phraseContact(s, c)} <button className="link" onClick=${() => go.openCase(c.cs.id)}>Ouvrir le dossier</button></li>`)}</ul>`}
+        </div>`;
+      })()}
       ${UI.CassationBandeau && html`<${UI.CassationBandeau} s=${s} go=${go} />`}
       <div className="grid2">
         <${UI.Section} title="Aujourd'hui">
@@ -231,6 +241,7 @@
           <${Btn} small icon="calendar" onClick=${() => go.agenda({ caseId: m.caseId, title: m.subject, ref: doc && doc.hid })}>Inscrire à l'agenda</${Btn}>
           ${cs && html`<${Btn} small icon="cases" onClick=${() => go.openCase(cs.id)}>Ouvrir le dossier</${Btn}>`}
           ${m.grievance && s.disc.open.find((g) => g.id === m.grievance && !g.response) && html`<${Btn} small kind="primary" onClick=${() => go.scene({ type: "grievance", gid: m.grievance })}>Répondre au bâtonnier</${Btn}>`}
+          ${m.action && m.action.go && go[m.action.go] && html`<${Btn} small kind="primary" onClick=${() => go[m.action.go]()}>${m.action.label}</${Btn}>`}
           ${m.action && cs && html`<${Btn} small kind="primary" onClick=${() => { const r = CR.runHook(s, cs, m.action.hook, m.action.data || {}); if (r && r.scene) go.scene(Object.assign({ caseId: cs.id, type: r.scene }, r)); bump(); }}>${m.action.label}</${Btn}>`}
         </div>
       </div>

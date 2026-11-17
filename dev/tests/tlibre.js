@@ -4,7 +4,7 @@ const { boot, sleep, findBtn, click, texts } = require("./harness");
   let echecs = 0; const ok = (c, k, d) => { if (!c) { echecs++; console.log("  ✗ " + k + (d ? " — " + String(d).slice(0, 200) : "")); } };
   const { w, doc, CR, errors } = boot();
   await sleep(100);
-  await click(w, findBtn(doc, "Nouvelle partie")); await sleep(80); await click(w, findBtn(doc, /^Carrière/)); await sleep(200);
+  await click(w, findBtn(doc, "Nouvelle partie")); await sleep(80); { const lib = [...doc.querySelectorAll('input[name="nc-aide"]')].find((r) => /Libre/.test(r.closest("label").textContent)); if (lib) await click(w, lib); } /* 1.4.0 : « Assisté » est coché à la première carrière ; ce test joue en libre */ await click(w, findBtn(doc, /^Carrière/)); await sleep(200);
   const s = CR.store.s; s.settings.coach = false;
   const jauges = () => [...doc.querySelectorAll(".hud .meter, .hud [role=meter], .hud progress")].filter((m) => !m.closest("[hidden]")).length;
   for (const [mode, libre] of [["assiste", true], ["liste", false]]) {

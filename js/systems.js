@@ -693,15 +693,20 @@
   // =================================================================== INTRODUCTION
   CR.initIntro = function (s) {
     if (s.mode === "carriere") {
-      CR.mail(s, { from: "Banque du Palais", subject: "Votre prêt d'installation et votre découvert", kind: "courrier",
-        body: [["Nous vous confirmons votre prêt d'installation de 15 000 € au taux de 3,5 % sur 60 mois (273 € par mois) et une autorisation de découvert de 5 000 € au taux de 9 %."], ["Les fonds de vos clients ne transitent jamais par ce compte : ils passent par la CARPA."]] });
-      CR.mail(s, { from: "Ordre des avocats de Paris", subject: "Inscription au tableau — permanences pénales", kind: "ordre",
-        body: [["Mon cher confrère, vous êtes inscrit au tableau de l'Ordre depuis votre prestation de serment."], ["Vous pouvez vous inscrire aux permanences pénales (garde à vue de jour et de nuit, comparutions immédiates) auprès du service des permanences, à la Maison du barreau : sur la carte, choisissez la Maison du barreau, puis « S'inscrire aux permanences pénales ». Les missions sont rétribuées au titre de l'aide juridictionnelle."]] });
+      // 1.4.0 : au premier jour, seulement ce qui sert la première nuit. La banque écrit la veille des premières charges
+      // (premiere.js, « introBanque »), la note sur le cabinet arrive avec le premier dossier.
+      s.flags.introCourte = true;
+      let d = s.day + 1; while (CR.ymd(d).d !== 1) d++;
+      CR.schedule(s, { day: d - 1, type: "fn", key: "introBanque" });
+      CR.mail(s, { from: "Ordre des avocats de Paris", subject: "Inscription au tableau — permanences pénales", kind: "ordre", action: { label: "S'inscrire aux permanences", go: "permanences" },
+        body: [["Mon cher confrère, vous êtes inscrit au tableau de l'Ordre depuis votre prestation de serment."], ["Vous pouvez vous inscrire aux permanences pénales (garde à vue de jour et de nuit, comparutions immédiates) auprès du service des permanences, à la Maison du barreau : le bouton ci-dessus, ou sur la carte, la Maison du barreau, puis « S'inscrire aux permanences pénales ». Les missions sont rétribuées au titre de l'aide juridictionnelle."]] });
+      CR.mail(s, { from: CR.MENTOR.nom, subject: "Pour votre première garde à vue", kind: "email",
+        body: [["Mon cher confrère,"], ["Trente-huit ans de barre m'ont appris deux choses qui vous serviront dès la première nuit :"], ["1. Ce que le client vous dit au premier entretien est de l'or. Notez-le : cliquez sur ses phrases, elles iront dans votre carnet. Vous ne l'entendrez plus jamais de la même façon."], ["2. Lisez les procès-verbaux heure par heure. Les nullités se cachent dans les horaires."], ["Le reste viendra avec les dossiers. Appelez-moi quand vous voulez un conseil de méthode. Pour les réponses, il faudra chercher vous-même."]] });
+    } else {
+      CR.mail(s, { from: CR.MENTOR.nom, subject: "Quelques conseils d'une vieille pénaliste", kind: "email",
+        body: [["Mon cher confrère,"], ["Trente-huit ans de barre m'ont appris quelques choses :"], ["1. Personne ne vous rappellera un délai. Ni le greffe, ni le client, ni le confrère d'en face. Lisez chaque pièce deux fois : une fois pour ce qu'elle dit, une fois pour sa date. Et notez-le dans votre agenda."], ["2. Ce que le client vous dit au premier entretien est de l'or. Notez-le. Vous ne l'entendrez plus jamais de la même façon."], ["3. Lisez les procès-verbaux heure par heure. Les nullités se cachent dans les horaires."], ["4. Les fonds des clients passent par la CARPA. Toujours."], ["Appelez-moi quand vous voulez un conseil de méthode. Pour les réponses, il faudra chercher vous-même."]] });
+      CR.mail(s, CR.PREMIERE.NOTE);
     }
-    CR.mail(s, { from: CR.MENTOR.nom, subject: "Quelques conseils d'une vieille pénaliste", kind: "email",
-      body: [["Mon cher confrère,"], ["Trente-huit ans de barre m'ont appris quelques choses :"], ["1. Personne ne vous rappellera un délai. Ni le greffe, ni le client, ni le confrère d'en face. Lisez chaque pièce deux fois : une fois pour ce qu'elle dit, une fois pour sa date. Et notez-le dans votre agenda."], ["2. Ce que le client vous dit au premier entretien est de l'or. Notez-le. Vous ne l'entendrez plus jamais de la même façon."], ["3. Lisez les procès-verbaux heure par heure. Les nullités se cachent dans les horaires."], ["4. Les fonds des clients passent par la CARPA. Toujours."], ["Appelez-moi quand vous voulez un conseil de méthode. Pour les réponses, il faudra chercher vous-même."]] });
-    CR.mail(s, { from: "Vous (note pour vous-même)", subject: "Comment fonctionne le cabinet", kind: "note",
-      body: [["• Pendant un appel ou un entretien, cliquez sur une phrase pour la noter dans votre carnet. Quand l'entretien se termine, il n'en reste que vos notes."], ["• Vos actes se rédigent à partir de gabarits ; les blancs se remplissent avec les lignes de votre carnet. Ce que vous n'avez pas noté ne peut pas y figurer."], ["• Dans une pièce, cliquez sur une phrase pour la noter, la relever comme irrégularité ou l'inscrire à l'agenda."], ["• L'agenda ne contient que ce que vous y mettez. Rien ne vous rappellera un délai."], ["• Chaque action coûte du temps et de l'énergie ; le soir et le week-end fatiguent davantage. Déposer un acte suppose d'aller au greffe, aux heures d'ouverture."], ["• Le loyer et les charges partent le 1er du mois. L'aide juridictionnelle est versée par la CARPA le mois suivant."]] });
     CR.refreshApplicants(s);
   };
 

@@ -6,7 +6,7 @@ const { boot, sleep, texts, findBtn, click } = require("./harness");
   let echecs = 0; const ok = (c, k, d) => { if (!c) { echecs++; console.log("  ✗ " + k + (d ? " — " + String(d).slice(0, 300) : "")); } };
   const { w, doc, CR, errors } = boot();
   await sleep(100);
-  await click(w, findBtn(doc, "Nouvelle partie")); await sleep(80); await click(w, findBtn(doc, /^Carrière/)); await sleep(200);
+  await click(w, findBtn(doc, "Nouvelle partie")); await sleep(80); { const lib = [...doc.querySelectorAll('input[name="nc-aide"]')].find((r) => /Libre/.test(r.closest("label").textContent)); if (lib) await click(w, lib); } /* 1.4.0 : « Assisté » est coché à la première carrière ; ce test joue en libre */ await click(w, findBtn(doc, /^Carrière/)); await sleep(200);
   const s = CR.store.s; s.settings.coach = false; s.settings.saisie = "assiste"; CR.PAROLE.ACCEL = 60; CR.store.bump(); await sleep(60);
   const attendre = async () => { for (let k = 0; k < 400 && (doc.querySelector(".oral .oral-caret") || !findBtn(doc, /^Terminer l'entretien/)); k++) await sleep(20); await sleep(40); };
   // poser la première question libre d'un thème

@@ -6,7 +6,7 @@
 const { spawn } = require("child_process");
 const os = require("os");
 const path = require("path");
-const RAPIDE = ["tanciens", "tvisages", "tnoms", "t1", "t20", "tgenjeu", "tparole", "ttribunal", "tplaidoirie", "tappel", "tconsult", "taccueil", "tcarnet", "tcanaux", "tebarreau", "tplex", "tlibre", "tclauses", "tpeines", "tcomp", "tdossier", "tbill", "tcarriere", "tcoherence",
+const RAPIDE = ["tpremier", "tanciens", "tvisages", "tnoms", "t1", "t20", "tgenjeu", "tparole", "ttribunal", "tplaidoirie", "tappel", "tconsult", "taccueil", "tcarnet", "tcanaux", "tebarreau", "tplex", "tlibre", "tclauses", "tpeines", "tcomp", "tdossier", "tbill", "tcarriere", "tcoherence",
   "tmagasin", "ttransport", "ttire", "t2roues", "tdeal", "tdetention", "toutrage", "trebellion", "tconjugal", "tappels", "tcambriolage", "tobtemperer", "tfuite", "trecel", "tlabo", "timages", "ttelephonie", "tcaptures", "treleve", "tadn", "tpermis", "texpertise", "tdegradations", "tviolation", "tabus", "tvestiaire", "tharcelement", "tcatalogue", "tcrimes", "tpeinescrime", "tmemoirechins", "tcrimdossier", "tconfront", "tinterro", "tethylo", "tautopsie", "turgences", "tidempotence", "tjap", "tvictimes", "tb2", "tic", "tbiblio", "tlivre", "tintegral", "tarrets", "tjld", "tchins", "tirresp", "tvideomag", "tdebats", "tincidents", "tsauvegardes", "tmajeurs", "tson", "trelecture", "t17", "t18", "t19", "tcas", "tdial_lot1", "tdial_lot2", "tdialogues", "tenseignes", "tequipe", "tmetro", "tplcheck", "trecit", "tsimv", "ttravail", "tvideo"];
 const LONGS = ["tviabilite", "tinterruption", "tgen", "tsim", "trepetition", "tecono", "tcite", "tplaid", "tassises", "t15", "t16", "tp3", "tcassation", "tmemoire", ["tboucle", "7"], ["tboucle", "9"], ["tboucle", "5"]];
 const arg = process.argv.slice(2);

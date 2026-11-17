@@ -96,7 +96,8 @@ const ok = (c, m) => { if (!c) { echecs++; console.log("ÉCHEC", m); } };
         if (s.voicemails.length > n) ok(s.voicemails[0].taken === ast.id && /Qui : Mme Leclerc/.test(s.voicemails[0].text) && /Urgence/.test(s.voicemails[0].text), "message précis pris par l'assistante");
       }
       // départ si le moral est bas : l'assistante, au cinquième mois
-      if (!departTeste && s.day > debut + 120 && s.staff.includes(ast)) { departTeste = true; ast.morale = 5; ast.perso.loyaute = 25; }
+      // (le moral reste bas jusqu'à l'annonce : la démission se tire chaque lundi, elle ne doit pas dépendre d'un seul tirage)
+      if (s.day > debut + 120 && s.staff.includes(ast) && !ast.depart) { departTeste = true; ast.morale = 5; ast.perso.loyaute = 25; }
     } else cashSamedi.push(s.cash);
     jour();
   }
