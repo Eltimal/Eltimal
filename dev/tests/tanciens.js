@@ -1,6 +1,7 @@
 // 1.3.0 — ce qui existait avant ne change pas.
 // 1. Les visages : un look d'avant la 1.3.0 (sans champ « b ») rend le même portrait au pixel près (toutes expressions).
-// 2. Les affaires : un code de la version 4 du générateur (anciens noms) se rejoue à l'identique — tirage et pièces.
+// 2. Les affaires : un code de la version 4 (anciens noms) ou de la version 5 (avant la preuve filmée) se rejoue à
+//    l'identique — tirage et pièces.
 // Référence : tests/visages-or.json et tests/affaires-or.json, écrites avant la 1.3.0 (node tests/tanciens.js ecrire :
 // à ne refaire que si une différence est voulue et relue).
 const fs = require("fs"), path = require("path");
@@ -21,11 +22,12 @@ const FV = path.join(__dirname, "visages-or.json"), FA = path.join(__dirname, "a
   const h = (x) => CR.hash(typeof x === "string" ? x : JSON.stringify(x)).toString(36);
   const s = CR.newGame({ prenom: "Camille", nom: "Durand", mode: "carriere", seed: 7 }); s.pending = [];
   let i = 0;
-  for (const genre of Object.keys(G.GENRES)) for (let k = 0; k < (genre === "info" ? 24 : 16); k++) {
+  // version 4 (avant la 1.3.0) et version 5 (avant la 1.5.0) : chaque version garde ses affaires à l'identique
+  for (const v of [4, 5]) for (const genre of Object.keys(G.GENRES)) for (let k = 0; k < (genre === "info" ? 24 : 16); k++) {
     i++;
     let day = 100 + ((k * 3) % 40); while (!CR.isBusinessDay(day)) day++;
-    const c = { v: 4, lie: false, genre, day, slot: genre === "gav" ? 60 + (k * 5) % 40 : 66, n: (k * 37 + i * 11) % 1024 };
-    const cle = `${genre}:${c.day}:${c.slot}:${c.n}`;
+    const c = { v, lie: false, genre, day, slot: genre === "gav" ? 60 + (k * 5) % 40 : 66, n: (k * 37 + i * 11) % 1024 };
+    const cle = `${v === 4 ? "" : "v" + v + ":"}${genre}:${c.day}:${c.slot}:${c.n}`;
     try {
       const p = G.paramsCode(s, c); CR.GEN.build(p); const cs = CR.openCase(s, p.id), def = CR.caseDef(cs);
       const docs = {};
@@ -38,8 +40,8 @@ const FV = path.join(__dirname, "visages-or.json"), FA = path.join(__dirname, "a
   const orV = JSON.parse(fs.readFileSync(FV, "utf8")), orA = JSON.parse(fs.readFileSync(FA, "utf8"));
   ok(Object.keys(orV).length > 900, "référence des visages trop courte", Object.keys(orV).length);
   for (const k of Object.keys(orV)) ok(vis[k] === orV[k], "un visage d'avant la 1.3.0 a changé", k);
-  ok(Object.keys(orA).length >= 100, "référence des affaires trop courte", Object.keys(orA).length);
-  for (const k of Object.keys(orA)) { const a = aff[k] || []; ok(a[2] === orA[k][2], "les noms d'une affaire de la version 4 ont changé", [k, a[2], orA[k][2]]); ok(a[0] === orA[k][0], "le tirage d'une affaire de la version 4 a changé", k); ok(a[1] === orA[k][1], "les pièces d'une affaire de la version 4 ont changé", k); }
+  ok(Object.keys(orA).length >= 240, "référence des affaires trop courte", Object.keys(orA).length);
+  for (const k of Object.keys(orA)) { const a = aff[k] || []; ok(a[2] === orA[k][2], "les noms d'une affaire ancienne ont changé", [k, a[2], orA[k][2]]); ok(a[0] === orA[k][0], "le tirage d'une affaire ancienne a changé", k); ok(a[1] === orA[k][1], "les pièces d'une affaire ancienne ont changé", k); }
   if (errors.length) { echecs++; console.log("  ✗ erreurs : " + errors.slice(0, 2).join(" | ").slice(0, 600)); }
   console.log("échecs:", echecs);
   process.exit(echecs ? 1 : 0);

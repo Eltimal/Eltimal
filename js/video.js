@@ -853,7 +853,7 @@
   // o : { faits: "arrache", graine, mode: "ir" | "soir" | "jour", date: "12-11-2026", heure: "22:41:07", cam: "CAM 04", fps, sauts }
   V.extrait = function (o) {
     o = o || {};
-    const F_ = FAITS[o.faits || "arrache"], D = DECORS[F_.decor];
+    const F_ = FAITS[o.faits || "arrache"], D = DECORS[o.decor || F_.decor]; // 1.5.0 : un même fait se joue dans plusieurs décors
     const graine = String(o.graine != null ? o.graine : "1");
     const r = rng("video:" + graine);
     const mode = o.mode || "ir";
@@ -1107,4 +1107,6 @@
   V.rng = rng;
   V.squelette = squelette;
   V.Camera = Camera;
+  // 1.5.0 : les outils du metteur en scène, pour les décors et les faits écrits ailleurs (video-rue.js, video-pieton.js)
+  V.outils = { rng, pick, lerp, clamp, smooth, frac, h2, add, sub, mul, P, mix, marche, course, tenue, PEAU, CHEV, COUCHE, preparer, etat, squelette };
 })();
