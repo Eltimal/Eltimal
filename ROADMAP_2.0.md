@@ -321,6 +321,14 @@ code de procédure pénale. Mesure sur 1 000 affaires de la version 7 : 51 % ont
 atteintes aux personnes 39 % (22 % avant). Reste aux personnes : les transports (bus, RER : 1.5.2), le travail, la
 voiture.
 
+**Bilan de la livraison 1.5.2 (17 novembre).** Générateur en version 8 : `js/video-interieur.js` (décors « hall »,
+« parking », « bus » ; scènes `hall_passage` — enregistrement au mouvement, l'horloge saute entre deux séquences
+(`scn.ellipses`) —, `parking_dispute`, `bus_coups`, `bus_harcelement` ; gestes « assis », « assis_penche », « barre ») ;
+`VPLAN.interieur` (graine à part) ; faille nouvelle `G_vid_horloge` (horloge de l'enregistreur décalée) ; le recel
+découvert lors d'un contrôle filmé par la caméra-piéton. Le RER et le bar intérieur ne sont pas faits. Mesure sur
+1 000 affaires de la version 8 : 53 % ont une pièce vidéo, 45 % un extrait joué ; personnes 46 %, biens 54 %,
+stupéfiants 67 %, route 87 %, autorité 77 % ; numérique et affaires 0 % (1.5.3 : banque, guichet, domicile).
+
 ### 1.6.0 « La garde à vue » — la parole de la scène la plus jouée
 
 - **Contexte de procédure** lu par tous les textes : arrêté sur le fait, convoqué, plaignant ; date des faits relative

@@ -17,6 +17,19 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "1.5.2", nom: "", date: "17 novembre 2026", type: "correctif", // livraison de la 1.5 « La preuve filmée » (D-101)
+      resume: "La preuve filmée, troisième livraison : les caméras intérieures — le hall d'un immeuble, un parking souterrain, un bus.",
+      notes: [
+        "Le hall d'immeuble : la caméra s'éveille au mouvement. Quelqu'un entre, monte, et ressort vingt minutes plus tard un sac à la main : cambriolage, faux policier ou faux plombier, vol au préjudice d'une personne âgée.",
+        "Le parking souterrain : la dispute près de la voiture, le bras saisi, la poussée (violences conjugales).",
+        "Le bus : des coups dans l'allée ; une personne qui s'assoit contre une autre alors que des places sont libres (harcèlement, outrage sexiste). Les passagers assis font face à la caméra.",
+        "Une faille nouvelle : l'horloge de l'enregistreur avance ou retarde de quelques minutes sur l'heure légale. Toute comparaison d'horaires (un appel, un témoignage, un alibi) doit en tenir compte.",
+        "Les images d'un hall, d'un parking ou d'un bus sont écrasées au bout d'un mois : une réquisition tardive ne trouve plus rien.",
+        "Le recel découvert lors d'un contrôle de police est filmé par la caméra-piéton.",
+        "Les affaires tirées avant cette version gardent leurs vidéos et leurs pièces.",
+      ],
+    },
+    {
       version: "1.5.1", nom: "", date: "17 novembre 2026", type: "correctif", // livraison de la 1.5 « La preuve filmée » (D-101) : un nom seulement pour la x.y.0
       resume: "La preuve filmée, deuxième livraison : les témoins et les victimes filment au téléphone : dans la rue, et chez soi, où aucune caméra ne voyait rien.",
       notes: [

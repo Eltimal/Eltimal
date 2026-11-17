@@ -39,7 +39,7 @@ const D = require("../tests/dial");
       if (cl.prenom && cl.prenom === cl.nom) hit("14 prénom identique au nom", id, cl.prenom + " " + cl.nom);
       for (const [k, x] of Object.entries(docs)) {
         if (/^pv_temoin/.test(k)) { base("auditions de témoin"); if (/qui nous déclare : ¶ QUESTIONS/.test(x)) hit("15 témoin entendu sans aucune déclaration (« juste à côté », « non »)", id, k); if (/Prénom : (Nadia|Samia|Marine|Jessica|Émilie|Pauline|Assia|Inès|Nora|Élodie|Sarah|Léa|Julie|Fatima|Aïcha)[^¶]*¶.*Je suis prêt à revenir/.test(x)) hit("16 accord : une femme « prêt à revenir »", id, k); }
-        const m = x.match(/Je soussignée, Dr (Hugo|Karim|Thomas|Julien|Nicolas|Mehdi|Antoine|Pierre|Paul|Marc|Yanis|Damien|Stéphane|Cédric|Olivier)/); if (m) hit("17 accord : « Je soussignée, Dr " + "<prénom masculin> »", id, m[0]);
+        const m = x.match(/Je soussignée, Dr (Hugo|Karim|Thomas|Julien|Nicolas|Mehdi|Antoine|Pierre|Paul|Marc|Yanis|Damien|Stéphane|Cédric|Olivier)(?![a-zà-ÿ-])/); // pas « Paule », « Pauline » if (m) hit("17 accord : « Je soussignée, Dr " + "<prénom masculin> »", id, m[0]);
       }
       // l'enquête sociale rapide n'est remise qu'avec le dossier de comparution immédiate : rien à vérifier ici
       if (V && V.g === "m" && /la plaignante|de la plaignante/.test(tout)) hit("19 « la plaignante » pour une victime masculine", id, (tout.match(/[^¶]*la plaignante[^¶]*/) || [""])[0]);

@@ -1138,6 +1138,8 @@
   function horo(S, t) {
     const [hh, mm, ss] = S.heure.split(":").map(Number);
     let s = hh * 3600 + mm * 60 + ss + Math.floor(t);
+    // 1.5.2 : enregistrement déclenché par le mouvement : entre deux séquences, l'horloge saute (scn.ellipses)
+    for (const e of S.scn.ellipses || []) if (t >= e.t) s += e.s;
     s %= 86400;
     const p = (n) => String(n).padStart(2, "0");
     return `${S.date} ${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
