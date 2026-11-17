@@ -594,6 +594,10 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .title-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .new-career { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: start; }
 .nc-portrait { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+/* sous-titres de la caméra-piéton (1.5.0) */
+.vx-sous { min-height: 3.2em; margin: 4px 0; padding: 4px 8px; background: #000; color: #f4f2ea; font: 14px/1.35 var(--f-ui); text-align: center; border-radius: 3px; }
+.vx-sous p { margin: 0; }
+.vx-sous .vx-sous-vide { color: #555; }
 .banner.attente .attente-list { margin: 6px 0 0; padding-left: 18px; }
 .banner.attente .attente-list li { margin: 2px 0; }
 /* atelier du visage (1.3.0) */
@@ -2095,6 +2099,7 @@ button.eb-tuile { cursor: pointer; } .eb-tuile b { font-size: 1.6em; }
 <script src="js/pixel.js"></script>
 <script src="js/video.js"></script>
 <script src="js/video-rue.js"></script>
+<script src="js/video-pieton.js"></script>
 <script src="js/docs.js"></script>
 <script src="js/sim.js"></script>
 <script src="js/trames-flagrance.js"></script>

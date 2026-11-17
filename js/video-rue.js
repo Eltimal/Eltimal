@@ -41,8 +41,10 @@
     const D = {
       nom: { commerce: "Rue commerçante", bar: "Rue, devant un bar", place: "Place" }[variante],
       variante,
-      camera: { pos: [0.4, 5.2, 1.0], yaw: 0.14, pitch: 0.56, fov: 70 },
-      zf: 20, bord: 9.5, route: 16.5,
+      // la caméra municipale est sur un mât du trottoir d'en face, tournée vers le trottoir filmé et sa façade (zn) :
+      // +x part vers la GAUCHE de l'image
+      camera: { pos: [2.6, 6.0, 17.4], yaw: Math.PI + 0.06, pitch: 0.45, fov: 56 },
+      zf: 20, zn: 4.0, bord: 9.5, route: 16.5,
       // cibles des faits : la vitrine (commerce), la terrasse (bar), le banc (place)
       vitrine: { x0: 2.0, x1: 6.2, z: 4.0 },
       prims(r) {
@@ -67,17 +69,15 @@
         if (variante === "commerce") {
           // la vitrine du trottoir filmé, éclairée la nuit, et son store
           const v = this.vitrine;
-          box([v.x0 - 0.3, 0, v.z], [v.x1 + 0.3, 3.2, v.z + 0.12], { c: [0.4, 0.37, 0.33] });
-          box([v.x0, 0.45, v.z - 0.02], [v.x1, 2.6, v.z + 0.02], { c: [0.05, 0.06, 0.07], e: [0.75, 0.66, 0.5], eNuit: true, s: 0.9 }, { vitre: true });
-          box([v.x0 - 0.2, 2.75, v.z - 0.9], [v.x1 + 0.2, 2.85, v.z], { c: pick(r, [[0.35, 0.05, 0.05], [0.05, 0.2, 0.1], [0.08, 0.1, 0.3]]) });
-          // un abribus plus loin
-          box([-3.2, 0, 8.6], [-0.4, 2.3, 8.7], { c: [0.25, 0.3, 0.33], s: 0.8 });
-          box([-3.3, 2.3, 7.6], [-0.3, 2.4, 8.75], { c: [0.1, 0.11, 0.12] });
+          // le store au-dessus de la vitrine (la vitrine elle-même est peinte sur la façade proche)
+          box([v.x0 - 0.2, 2.75, v.z], [v.x1 + 0.2, 2.85, v.z + 0.9], { c: pick(r, [[0.35, 0.05, 0.05], [0.05, 0.2, 0.1], [0.08, 0.1, 0.3]]) });
+          // l'arrêt de bus : un poteau et son panneau (un abribus vitré masquerait le trottoir à la caméra d'en face)
+          PR.push({ k: "cyl", x: -2.4, z: 9.0, r: 0.04, y0: 0, y1: 2.6, m: { c: [0.2, 0.22, 0.24] } });
+          box([-2.65, 2.2, 8.97], [-2.15, 2.6, 9.03], { c: [0.1, 0.3, 0.45], e: [0.1, 0.3, 0.5], eNuit: true });
         } else if (variante === "bar") {
           // la façade du bar, l'enseigne allumée, la terrasse : tables rondes et chaises
-          box([-1.5, 0, 3.95], [7.5, 3.4, 4.05], { c: [0.18, 0.12, 0.08] });
-          box([-0.8, 0.5, 3.92], [6.8, 2.5, 3.95], { c: [0.06, 0.05, 0.04], e: [0.95, 0.62, 0.3], eNuit: true, s: 0.9 });
-          box([0.5, 2.7, 3.8], [5.5, 3.1, 3.9], { c: [0.1, 0.1, 0.1], e: pick(r, [[1.4, 0.2, 0.2], [0.2, 0.9, 1.2], [1.3, 0.9, 0.2]]), eNuit: true });
+          // l'enseigne lumineuse, en saillie sur la façade proche (le bar lui-même est peint sur la façade)
+          box([0.5, 2.7, 4.0], [5.5, 3.1, 4.12], { c: [0.1, 0.1, 0.1], e: pick(r, [[1.4, 0.2, 0.2], [0.2, 0.9, 1.2], [1.3, 0.9, 0.2]]), eNuit: true });
           for (const [x, z] of [[0.2, 5.0], [1.8, 5.1], [3.4, 5.0], [5.0, 5.1]]) {
             PR.push({ k: "cyl", x, z, r: 0.04, y0: 0, y1: 0.72, m: { c: [0.1, 0.1, 0.1] } });
             PR.push({ k: "cyl", x, z, r: 0.33, y0: 0.72, y1: 0.76, m: { c: [0.5, 0.48, 0.44] } });
@@ -132,13 +132,32 @@
         if (fx > 0.3 && fx < 0.7 && fy > 0.22 && fy < 0.82) { const on = nuit && h2(col, fl + 11) > 0.62; return { c: [0.03, 0.03, 0.035], e: on ? [0.7, 0.5, 0.26] : null }; }
         return { c: stone };
       },
+      // la façade du trottoir filmé, vue de face : la vitrine (commerce), le bar, ou des immeubles (place)
+      facadeN(x, y, nuit) {
+        const stone = [0.44, 0.4, 0.34];
+        if (y < 3.4) {
+          if (y < 0.3) return { c: mul(stone, 0.7) };
+          const v = this.vitrine;
+          if (variante === "commerce" && x > v.x0 && x < v.x1 && y > 0.45 && y < 2.6) return { c: [0.05, 0.06, 0.07], e: nuit ? [0.75, 0.66, 0.5] : null, s: 0.9 };
+          if (variante === "bar" && x > -0.8 && x < 6.8 && y > 0.5 && y < 2.5) return { c: [0.06, 0.05, 0.04], e: nuit ? [0.95, 0.62, 0.3] : [0.12, 0.09, 0.06], s: 0.9 };
+          if (variante === "bar" && x > -1.5 && x < 7.5) return { c: [0.18, 0.12, 0.08] };
+          // portes cochères et autres boutiques, rideau baissé
+          const i = Math.floor((x + 100) / 5.5), u = (x + 100) - i * 5.5;
+          if (u < 0.5) return { c: stone };
+          if (y < 2.6 && u > 1 && u < 4.6) return h2(i, 3) > 0.5 ? { c: [0.32, 0.33, 0.34] } : { c: [0.03, 0.035, 0.04], e: nuit && h2(i, 9) > 0.6 ? [0.7, 0.55, 0.35] : null, s: 0.8 };
+          return { c: stone };
+        }
+        const fx = frac((x + 100) / 3.2), fy = frac((y - 3.4) / 3.1), fl = Math.floor((y - 3.4) / 3.1), col = Math.floor((x + 100) / 3.2);
+        if (fx > 0.3 && fx < 0.7 && fy > 0.22 && fy < 0.82) { const on = nuit && h2(col + 50, fl) > 0.6; return { c: [0.03, 0.03, 0.035], e: on ? [0.7, 0.5, 0.26] : null }; }
+        return { c: stone };
+      },
       lumieres(mode) {
         const L = [];
         if (mode === "jour") return L;
         L.push({ p: [-4.6, 4.95, 10.3], c: [3.4, 2.3, 1.2], r: 2.6 });
         L.push({ p: [9.4, 4.95, 10.3], c: [3.4, 2.3, 1.2], r: 2.6 });
-        if (variante === "commerce") L.push({ p: [4.1, 1.6, 3.6], c: [0.9, 0.8, 0.6], r: 2.4 });
-        if (variante === "bar") { L.push({ p: [3, 1.8, 3.6], c: [1.6, 1.0, 0.5], r: 3.2 }); L.push({ p: [3, 3.0, 3.7], c: [0.8, 0.3, 0.3], r: 1.6 }); }
+        if (variante === "commerce") L.push({ p: [4.1, 1.6, 4.4], c: [0.9, 0.8, 0.6], r: 2.4 });
+        if (variante === "bar") { L.push({ p: [3, 1.8, 4.4], c: [1.6, 1.0, 0.5], r: 3.2 }); L.push({ p: [3, 3.0, 4.3], c: [0.8, 0.3, 0.3], r: 1.6 }); }
         for (let x = -14; x < 18; x += 6.5) if (h2(Math.floor((x + 100) / 6.5), 7) > 0.25) L.push({ p: [x + 3, 1.6, 19.2], c: [0.6, 0.48, 0.32], r: 3 });
         return L;
       },
@@ -168,7 +187,7 @@
       Object.assign(acteur(r, "P3", "passant", { pos: [-9, 8.6], t0: 0.3 }), { beats: [{ a: "marche", d: Math.max(6, (tAvant || 6)), to: [12, 8.8] }], sort: true }),
     ];
   }
-  // l'interpellation : deux fonctionnaires arrivent en courant par la gauche, l'individu est amené au sol et menotté
+  // l'interpellation : deux fonctionnaires arrivent en courant (par la droite de l'image), l'individu est amené au sol et menotté
   function interpellation(r, scn, cibleId, t, quelle) {
     const C = scn.acteurs.find((a) => a.id === cibleId);
     const fin = C.beats.reduce((s, b) => s + b.d, C.t0 || 0);
@@ -188,7 +207,7 @@
       pol.push(Pk);
     }
     scn.acteurs.push(...pol);
-    scn.moments.push({ t: t + 1.2, cle: "interpellation", txt: `Deux fonctionnaires de police arrivent en courant par la gauche de l'image et amènent «${cibleId}» au sol, où ${quelle || "il est maintenu"}.` });
+    scn.moments.push({ t: t + 1.2, cle: "interpellation", txt: `Deux fonctionnaires de police arrivent en courant par la droite de l'image et amènent «${cibleId}» au sol, où ${quelle || "il est maintenu"}.` });
     scn.duree = Math.max(scn.duree, Math.ceil(t + 8));
   }
 
@@ -249,7 +268,7 @@
       }
       if (o.fuite !== false && !o.police) {
         Aa.beats.push({ a: "court", d: 3.4, to: [-13, zA + 0.8], fondu: 0.15 }); Aa.sort = true;
-        moments.push({ t: t + 1.6, cle: "fuite", txt: "«A» s'éloigne en courant et sort du champ par la gauche." });
+        moments.push({ t: t + 1.6, cle: "fuite", txt: "«A» s'éloigne en courant et sort du champ par la droite." });
       } else Aa.beats.push({ a: "attend", d: 12, face: Math.PI });
       const duree = Math.max(22, Math.ceil(t + 9));
       const scn = { acteurs: acteurs.concat(passants(r, duree, tG)), objet: null, objetAt: objetRien, moments, duree, tG };
@@ -275,8 +294,8 @@
       const n = geste === "tag" ? 1 : 2 + Math.floor(r() * 2);
       for (let k = 0; k < n; k++) A.beats.push(geste === "tag" ? { a: "tag", d: 7, face, cible: [to[0], 1.6, D.vitrine.z] } : { a: "coup_pied", d: 0.55, face }, { a: "attend", d: geste === "tag" ? 0.5 : 0.35, face });
       const tFin = tG + (geste === "tag" ? 7.5 : n * 0.9);
-      const moments = [{ t: tG - 1.5, cle: "arrivee", txt: "«A» arrive par la droite de l'image et s'arrête." }, { t: tG + 0.4, cle: "geste", txt }];
-      if (!o.police) { A.beats.push({ a: "regarde", d: 1, face: 0 }, { a: "court", d: 3.5, to: [-13, 7.8] }); A.sort = true; moments.push({ t: tFin + 1.8, cle: "fuite", txt: "«A» s'éloigne en courant vers la gauche de l'image." }); }
+      const moments = [{ t: tG - 1.5, cle: "arrivee", txt: "«A» arrive par la gauche de l'image et s'arrête." }, { t: tG + 0.4, cle: "geste", txt }];
+      if (!o.police) { A.beats.push({ a: "regarde", d: 1, face: 0 }, { a: "court", d: 3.5, to: [-13, 7.8] }); A.sort = true; moments.push({ t: tFin + 1.8, cle: "fuite", txt: "«A» s'éloigne en courant vers la droite de l'image." }); }
       const duree = Math.max(20, Math.ceil(tFin + 7));
       const scn = { acteurs: [A].concat(passants(r, duree, tG)), objet: null, objetAt: objetRien, moments, duree, tG, cible };
       if (o.police) interpellation(r, scn, "A", tFin + 0.8);
@@ -297,9 +316,9 @@
       A.beats = [{ a: "marche", d: tG - 0.2 - 0, to: [xG + 0.15, zV + 0.35] }, { a: "prend", d: 0.5, face: Math.PI, cible: [-1.6 + 0.1, 0.95, zV + 0.12] }, { a: "glisse", d: 0.5, cible: [xG + 0.1, 1.0, zV + 0.3] }, { a: "marche", d: 6, to: [-12, zV + 0.6] }];
       A.sort = true;
       const moments = [
-        { t: tG - 2, cle: "approche", txt: "«A» arrive par la droite, au pas, le long de la file de personnes qui attendent." },
+        { t: tG - 2, cle: "approche", txt: "«A» arrive par la gauche, au pas, près de l'arrêt de bus." },
         { t: tG + 0.2, cle: "geste", txt: "En passant derrière «V», «A» porte la main droite à la hauteur de la poche arrière de «V», puis à sa propre poche." },
-        { t: tG + 3, cle: "depart", txt: "«A» poursuit son chemin au pas et sort du champ par la gauche." },
+        { t: tG + 3, cle: "depart", txt: "«A» poursuit son chemin au pas et sort du champ par la droite." },
         { t: tG + 4.8, cle: "constat", txt: "«V» se retourne, tâte ses poches et montre la direction prise par «A»." },
       ];
       const duree = Math.max(22, Math.ceil(tG + 12));
@@ -350,9 +369,9 @@
       A.beats = [{ a: "marche", d: tG, to: [3.5, zV + 0.1] }, { a: "menace", d: 4.2, to: [2.0, zV], face: Math.PI }, { a: "menace", d: 2.4, face: Math.PI }, { a: "marche", d: 6, to: [12, zV + 0.4] }];
       A.sort = true;
       const moments = [
-        { t: tG - 1, cle: "approche", txt: "«A» arrive par la droite et se dirige droit vers «V»." },
+        { t: tG - 1, cle: "approche", txt: "«A» arrive par la gauche et se dirige droit vers «V»." },
         { t: tG + 0.8, cle: "geste", txt: "«A», le bras tendu et l'index pointé vers «V», avance sur «V», qui recule ; il n'y a pas de contact." },
-        { t: tG + 7.5, cle: "depart", txt: "«A» repart par la droite de l'image." },
+        { t: tG + 7.5, cle: "depart", txt: "«A» repart par la gauche de l'image." },
       ];
       const duree = Math.max(20, Math.ceil(tG + 14));
       const scn = { acteurs: [Vv, A].concat(passants(r, duree, tG)), objet: null, objetAt: objetRien, moments, duree, tG };

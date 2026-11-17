@@ -349,6 +349,11 @@
       if (T && x > T.x0 && x < T.x1 && z > T.z0 && z < T.z1) { const h = traceTrou(D, T, o, d, t, nuit); if (h) { best = h.t; hit = h; } }
       else { best = t; hit = { t, n: UP, p: [x, 0, z], m: D.sol(x, z, nuit), sol: true }; }
     }
+    // 1.5.0 : une façade proche (zn), vue de face par une caméra posée de l'autre côté de la rue ; sans zn, rien ne change
+    if (D.zn != null && d[2] < 0) {
+      const t = (D.zn - o[2]) / d[2];
+      if (t > 0 && t < best) { const x = o[0] + d[0] * t, y = o[1] + d[1] * t; if (y >= 0 && y < 40) { best = t; hit = { t, n: [0, 0, 1], p: [x, y, D.zn], m: D.facadeN(x, y, nuit) }; } }
+    }
     if (d[2] > 0) {
       const t = (D.zf - o[2]) / d[2];
       if (t < best) { const x = o[0] + d[0] * t, y = o[1] + d[1] * t; if (y >= 0 && y < 40) { best = t; hit = { t, n: [0, 0, -1], p: [x, y, D.zf], m: D.facade(x, y, nuit) }; } }
