@@ -311,6 +311,16 @@ trottoirs, passage piéton, voitures, ombres portées du soleil) ; caméra de ru
 livraisons suivantes : la même qualité pour les décors du métro et du magasin ; un rendu plus rapide de la
 caméra-piéton (≈ 130 ms par image en Node).
 
+**Bilan de la livraison 1.5.1 (17 novembre).** Générateur en version 7 : `js/video-telephone.js` (décor
+« appartement » ; scènes `tel_rue` — une scène de rue vue par un témoin ou par la victime — et `tel_dispute` — la
+victime filme chez elle) ; `VPLAN.telephone` choisit avec une graine à part (les affaires de la version 6 ne bougent
+pas ; `tanciens` les garde depuis cette livraison). Moteur : la personne qui filme est cachée (`cache`), format vertical
+(`style: "telephone"`, bande centrale de 152 points, côtés flous), capteur propre à la scène (`scn.capteur`). Failles :
+`G_tel_debut`, `G_tel_coupe`, `G_tel_copie` ; recevabilité d'une preuve apportée par une personne privée : art. 427 du
+code de procédure pénale. Mesure sur 1 000 affaires de la version 7 : 51 % ont une pièce vidéo, 40 % un extrait joué ;
+atteintes aux personnes 39 % (22 % avant). Reste aux personnes : les transports (bus, RER : 1.5.2), le travail, la
+voiture.
+
 ### 1.6.0 « La garde à vue » — la parole de la scène la plus jouée
 
 - **Contexte de procédure** lu par tous les textes : arrêté sur le fait, convoqué, plaignant ; date des faits relative

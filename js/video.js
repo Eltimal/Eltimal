@@ -13,8 +13,8 @@
   const root = typeof window !== "undefined" ? window : globalThis;
   const CR = (root.CR = root.CR || {});
   const V = (CR.video = {});
-  const W = 480, H = 270, N = W * H, REF = 320 / W; // REF : les seuils de lisibilité restent ceux d'une image de 320 points
-  V.W = W; V.H = H;
+  const W = 480, H = 270, N = W * H, REF = 320 / W, WV = Math.round((H * 9) / 16), XV = (W - WV) >> 1; // REF : les seuils de lisibilité restent ceux d'une image de 320 points
+  V.W = W; V.H = H; V.WV = WV; V.XV = XV; // bande verticale des vidéos de téléphone
 
   // ---------------------------------------------------------------- hasard et vecteurs
   function hash(s) { let h = 2166136261 >>> 0; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -1074,11 +1074,18 @@
     A.coupe = f ? (r() < 0.6 && !A.agee ? "long" : "court") : pick(r, A.agee ? ["chauve", "court", "court"] : ["court", "court", "ras", "ras", "chauve"]);
     A.barbe = !f && r() < 0.3; A.lunettes = r() < (A.agee ? 0.5 : 0.12);
     A.look = (o.looks && o.looks[A.id]) || null;
+    A._age = A.agee ? 74 : 22 + Math.floor(r() * 30); A._graineVisage = graine + ":" + A.id;
+  }
+  // le portrait n'est peint qu'à la première image : écrire le procès-verbal (rechargement d'une partie) n'en a pas besoin
+  function portraits(S) {
+    if (S._portraits) return; S._portraits = true;
     if (!V.texturer) return;
-    try {
-      const v = V.texturer(A.look, { g: A.g || "m", age: A.agee ? 74 : 22 + Math.floor(r() * 30), graine: graine + ":" + A.id });
-      if (v) for (const k of ["tex", "peau", "chev", "coupe", "barbe", "lunettes"]) if (v[k] != null) A[k] = v[k];
-    } catch (e) { /* pas de portrait : le visage modelé reste */ }
+    for (const A of S.scn.acteurs) {
+      try {
+        const v = V.texturer(A.look, { g: A.g || "m", age: A._age || 30, graine: A._graineVisage || A.id });
+        if (v) for (const k of ["tex", "peau", "chev", "coupe", "barbe", "lunettes"]) if (v[k] != null) A[k] = v[k];
+      } catch (e) { /* pas de portrait : le visage modelé reste */ }
+    }
   }
 
   // fond : lancé une fois, à la première image (construire l'extrait reste léger : texte du procès-verbal, tests)
@@ -1086,8 +1093,9 @@
     const { cam, D, mode } = S, nuit = S.nuit;
     const bg = new Float32Array(N * 3), bz = new Float32Array(N), gx = new Float32Array(N), gz = new Float32Array(N);
     // caméra mobile : le fond change à chaque image ; on le lance un point sur deux, puis on comble (image bougée et douce)
-    const pas = S.camAt ? 2 : 1;
+    const tel = S.style === "telephone" && !S.agrandi, pas = S.camAt ? 2 : 1, xa = tel ? XV - 4 : 0, xb = tel ? XV + WV + 4 : W;
     for (let y = 0; y < H; y += pas) for (let x = 0; x < W; x += pas) {
+      if (x < xa || x > xb) { const i = y * W + x; bg[i * 3] = bg[i * 3 + 1] = bg[i * 3 + 2] = 0; bz[i] = 1e9; gx[i] = NaN; gz[i] = NaN; continue; }
       const i = y * W + x, d = cam.ray(x + 0.5, y + 0.5), h = trace(D, S.prims, cam.C, d, nuit);
       gx[i] = NaN; gz[i] = NaN;
       if (!h) { bz[i] = 1e9; const s = mode === "jour" ? [0.5, 0.55, 0.62] : [0.01, 0.012, 0.02]; bg[i * 3] = s[0]; bg[i * 3 + 1] = s[1]; bg[i * 3 + 2] = s[2]; continue; }
@@ -1186,12 +1194,13 @@
   function rendre(S, t, out) {
     out = out || new Uint8ClampedArray(N * 4);
     placer(S, t);
+    portraits(S);
     if (!S.bg) fond(S);
     const F = { c: S.bg.slice(), z: S.bz.slice() };
     const E = etats(S, t);
-    const js = S.scn.acteurs.map((A) => E[A.id] && E[A.id].j);
+    const js = S.scn.acteurs.map((A) => !A.cache && E[A.id] && E[A.id].j);
     ombres(S, F, js);
-    for (const A of S.scn.acteurs) { const e = E[A.id]; if (e) dessinerActeur(S, F, A, e.j, e); }
+    for (const A of S.scn.acteurs) { const e = E[A.id]; if (e && !A.cache) dessinerActeur(S, F, A, e.j, e); }
     if (E._objet) dessinerObjet(S, F, E._objet, S.scn.objet);
     if (S.bloc > 1) pixeliser(F.c, S.bloc);
     post(S, F.c, t, out);
@@ -1256,6 +1265,22 @@
       out[o + 3] = 255;
     }
     if (S.agrandi) return out;
+    if (S.style === "telephone") {
+      // vidéo de téléphone, tenue verticale : la bande filmée au centre, les côtés remplis de sa copie floue et sombre
+      // (comme quand on la montre sur un écran large) ; pas d'incrustation : l'heure est dans les métadonnées du fichier
+      const row = new Float32Array(WV * 3);
+      for (let y = 0; y < H; y++) {
+        for (let k = 0; k < WV; k++) { const o = (y * W + XV + k) * 4; row[k * 3] = out[o]; row[k * 3 + 1] = out[o + 1]; row[k * 3 + 2] = out[o + 2]; }
+        for (let x = 0; x < W; x++) {
+          if (x >= XV && x < XV + WV) continue;
+          const c = clamp(Math.floor(((x + 0.5) / W) * WV), 0, WV - 1), o = (y * W + x) * 4;
+          let a = 0, b = 0, d = 0, n = 0;
+          for (let k = Math.max(0, c - 6); k <= Math.min(WV - 1, c + 6); k += 2) { a += row[k * 3]; b += row[k * 3 + 1]; d += row[k * 3 + 2]; n++; }
+          out[o] = (a / n) * 0.32; out[o + 1] = (b / n) * 0.32; out[o + 2] = (d / n) * 0.32;
+        }
+      }
+      return out;
+    }
     if (S.style === "pieton") {
       // caméra individuelle : horodatage en haut, identifiant de la caméra en bas, voyant d'enregistrement rouge
       ecrire(out, 6, 6, S.horodatage(t));
@@ -1276,15 +1301,17 @@
     const ir = S.mode === "ir";
     const res = {};
     for (const A of S.scn.acteurs) {
+      if (A.cache) continue; // la personne qui filme : hors de l'image
       const T = A.tenue, H_ = HAUTS[T.haut], cH = COUL[T.hautC], cB = COUL[T.basC], cC = CHAUSS[T.chauss];
       // plus grande taille de la tête à l'écran sur tout l'extrait
       let tete = 0, vu = 0;
+      const x0v = S.style === "telephone" ? XV : 0, x1v = S.style === "telephone" ? XV + WV : W;
       for (let i = 0; i < S.frames.length; i += 2) {
         if (S.camAt) placer(S, S.frames[i]);
         const e = etat(A, S.frames[i], S); if (!e) continue;
         const j = squelette(e.pos, e.gy, e.cap, e.pose, A.sc), p = S.cam.proj(j.head);
-        if (!p || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
-        vu++; tete = Math.max(tete, (2 * S.cam.F * REF * (S.D.capteur || 1) * 0.105 * A.sc) / p[2]);
+        if (!p || p[0] < x0v || p[0] > x1v || p[1] < 0 || p[1] > H) continue;
+        vu++; tete = Math.max(tete, (2 * S.cam.F * REF * capteur(S) * 0.105 * A.sc) / p[2]);
       }
       const teinte = (c, g) => (ir ? (c.ir >= 0.66 ? "de teinte claire" : c.ir <= 0.48 ? "de teinte foncée" : "de teinte moyenne") : c[g]);
       const fem = H_.g === "f";
@@ -1346,9 +1373,10 @@
     placer(S, t);
     const E = etats(S, t), res = [];
     for (const A of S.scn.acteurs) {
-      const e = E[A.id]; if (!e) continue;
-      const p = S.ecran(e.j.head); if (!p || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
-      res.push({ id: A.id, role: A.role, x: p[0], y: p[1], tete: (2 * S.cam.F * REF * (S.D.capteur || 1) * 0.105 * A.sc) / p[2] });
+      const e = E[A.id]; if (!e || A.cache) continue;
+      const p = S.ecran(e.j.head), x0v = S.style === "telephone" ? XV : 0, x1v = S.style === "telephone" ? XV + WV : W;
+      if (!p || p[0] < x0v || p[0] > x1v || p[1] < 0 || p[1] > H) continue;
+      res.push({ id: A.id, role: A.role, x: p[0], y: p[1], tete: (2 * S.cam.F * REF * capteur(S) * 0.105 * A.sc) / p[2] });
     }
     return res.sort((a, b) => a.x - b.x);
   };
@@ -1356,6 +1384,7 @@
   // ramenée au grain réel du capteur (CAPTEUR fois plus fin que l'image de référence de 320 points) : de près, le visage
   // se lit ; de loin, il reste une tache. → { data (RGBA W × H), bloc, tete }
   const CAPTEUR = 2.5;
+  function capteur(S) { return S.scn.capteur || S.D.capteur || 1; }
   V.agrandir = function (S, t, id, out) {
     t = S.frames[S.indexA(t)];
     placer(S, t);
@@ -1364,7 +1393,7 @@
     const cible = lerp3(e.j.head, e.j.chest, 0.3), v = sub(cible, S.cam.C), dist = len(v), f = mul(v, 1 / dist);
     const fov = (2 * Math.atan(1.1 / 2 / dist) * 180) / Math.PI;
     const cam = Camera({ pos: S.cam.C, yaw: Math.atan2(f[0], f[2]), pitch: Math.asin(-f[1]), fov });
-    const Fref = S.cam.F * REF * (S.D.capteur || 1), bloc = cam.F / (Fref * CAPTEUR);
+    const Fref = S.cam.F * REF * capteur(S), bloc = cam.F / (Fref * CAPTEUR);
     const Z = Object.assign({}, S, { cam, lum: Eclairage(S.D, S.mode, cam), bg: null, camAt: null, k: 0, agrandi: true, bloc });
     const data = rendre(Z, t, out);
     return { data, bloc, tete: (2 * Fref * 0.105 * A.sc) / dist };

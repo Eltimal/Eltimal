@@ -43,6 +43,8 @@ const { boot, sleep, texts } = require("./harness");
     T0.run();
     try { CR.runHook(s, cs, "_reglement", {}); } catch (e) { ok(false, `${cs.id} : ${e.message}`); continue; }
     const R0 = cs.vars.reglement;
+    // la partie civile demande : le juge peut ne pas retenir l'abolition (une chance sur cinq, gen-instruction.js) ; il règle alors au fond
+    if (camp === "pc" && R0 && R0.type !== "transmission" && R0.type !== "irresp") continue;
     ok(R0 && R0.type === "transmission" && CR.hasDoc(cs, "ordo_transmission"), `${cs.id} : pas d'ordonnance de transmission de pièces`, JSON.stringify(R0));
     const O = tx(def.docs.ordo_transmission({ s, cs, def, api }));
     ok(/706-120, al\. 1/.test(O) && /raisons plausibles d'appliquer le premier alinéa de l'article 122-1/.test(O) && (!cs.vars.dpAuReglement || /706-121/.test(O)), `${cs.id} : ordonnance de transmission incomplète`, O);

@@ -17,6 +17,19 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "1.5.1", nom: "", date: "17 novembre 2026", type: "correctif", // livraison de la 1.5 « La preuve filmée » (D-101) : un nom seulement pour la x.y.0
+      resume: "La preuve filmée, deuxième livraison : les témoins et les victimes filment au téléphone : dans la rue, et chez soi, où aucune caméra ne voyait rien.",
+      notes: [
+        "La vidéo d'un témoin qui filme une bagarre, souvent une fois qu'elle a commencé : le premier coup manque, et avec lui la réponse à « qui a commencé ? ».",
+        "La victime filme chez elle : la dispute, les menaces, les insultes ; parfois un geste, et le téléphone part vers le sol. Violences conjugales, harcèlement et menaces dans le couple, ordonnance de protection non respectée.",
+        "La victime filme dans la rue le voisin ou l'inconnu qui la menace.",
+        "Le « happy slapping » retrouvé sur un réseau social, filmé par celui qui accompagne l'auteur.",
+        "Vidéo verticale, tenue à la main, avec le son en sous-titres ; la personne qui filme n'est pas à l'image. La position dans le fichier remplace l'horodatage.",
+        "Les failles : le début manque, l'enregistrement s'arrête pendant la scène, seule une copie a été exploitée (l'original et ses métadonnées ne sont pas vérifiés).",
+        "Les affaires tirées avant cette version gardent leurs vidéos et leurs pièces.",
+      ],
+    },
+    {
       version: "1.5.0", nom: "La preuve filmée", date: "17 novembre 2026", type: "contenu",
       resume: "Les affaires de rue et les contrôles de police ont leur vidéo : on la regarde, on l'arrête, on agrandit un visage, et on la confronte au procès-verbal.",
       notes: [

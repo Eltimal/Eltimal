@@ -104,7 +104,7 @@
       if (CR.MONDE.caler) CR.MONDE.caler(t, day);
       t.sig = GEN2.signature(t);
       // 1.5.0 (version 6) : les vidéos de l'affaire, d'une graine propre (le reste du tirage ne change pas)
-      if ((mv ? +mv[1] : GEN2.VERSION) >= 6 && CR.VPLAN) CR.VPLAN.planifier(t);
+      if ((mv ? +mv[1] : GEN2.VERSION) >= 6 && CR.VPLAN) CR.VPLAN.planifier(t, mv ? +mv[1] : GEN2.VERSION);
       if (o.sigs && (o.sigs.has(t.sig) || o.sigs.has(CR.hash(t.sig)))) continue;
       t.essai = k;
       // phase 3 : une graine de code (« v3:copj:120:66:517 ») donne son code d'affaire
@@ -578,9 +578,9 @@
   // Version du générateur : elle entre dans le code d'affaire. Toute modification du tirage (gen-moteur, gen-monde, cat-*,
   // gen-instruction) qui change une affaire tirée d'une graine doit l'incrémenter, et GEN2.VERSIONS_LISIBLES dire si les
   // codes d'avant se rejouent encore à l'identique.
-  GEN2.VERSION = 6; // 2 : anti-répétition, lot 3 (scènes nouvelles, ordonnances pénales élargies) ; 3 : infractions du lot 1 (variantes des fiches) ; 4 : infractions du lot 2 (nouvelles fiches, concours trafic et refus du code) ; 5 : noms et visages de la 1.3.0 (js/noms.js, banque de visages 2) ; 6 : la preuve filmée de la 1.5.0 (js/video-plan.js : vidéos planifiées au tirage, graine propre)
+  GEN2.VERSION = 7; // 2 : anti-répétition, lot 3 (scènes nouvelles, ordonnances pénales élargies) ; 3 : infractions du lot 1 (variantes des fiches) ; 4 : infractions du lot 2 (nouvelles fiches, concours trafic et refus du code) ; 5 : noms et visages de la 1.3.0 (js/noms.js, banque de visages 2) ; 6 : la preuve filmée de la 1.5.0 (js/video-plan.js : vidéos planifiées au tirage, graine propre) ; 7 : la vidéo filmée au téléphone de la 1.5.1 (js/video-telephone.js)
   // la version 4 se rejoue à l'identique : ses noms viennent des listes d'avant (CR.NOMS.ANCIENS), ses visages de la banque 1
-  GEN2.VERSIONS_LISIBLES = { 4: true, 5: true, 6: true };
+  GEN2.VERSIONS_LISIBLES = { 4: true, 5: true, 6: true, 7: true };
   GEN2.codeSecteur = (S) => (S.paris ? String(parseInt(S.arr, 10)) : S.cp.slice(0, 2));
   // Les sommes en jeu suivent le milieu de la victime (un cambriolage à Neuilly, une escroquerie à Clichy-sous-Bois),
   // sans jamais changer la qualification

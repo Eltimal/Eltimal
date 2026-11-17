@@ -115,13 +115,14 @@
     };
     const vitesse = (v) => { if (l) l.vitesse(v); setSt((x) => Object.assign({}, x, { v })); };
     const aller = (t) => { if (!l) return; l.pause(); l.aller(t); };
-    const horo = S.horodatage(S.frames[st.i] || 0);
+    // une vidéo de téléphone n'a pas d'horodatage incrusté : on montre la position dans le fichier
+    const horo = S.style === "telephone" && CR.VTEL ? CR.VTEL.pos(S.frames[st.i] || 0) : S.horodatage(S.frames[st.i] || 0);
     // 1.5.0 : la caméra-piéton enregistre le son ; les paroles de l'instant s'affichent sous l'image
     const QUI = { agent: "Agent", agent2: "Second agent", A: "Personne contrôlée" };
     const sous = S.sous ? S.sous(st.t) : [];
-    return html`<figure className="vx" aria-label=${S.style === "pieton" ? "Enregistrement de caméra-piéton" : "Extrait de vidéosurveillance"}>
+    return html`<figure className="vx" aria-label=${S.style === "pieton" ? "Enregistrement de caméra-piéton" : S.style === "telephone" ? "Vidéo filmée au téléphone" : "Extrait de vidéosurveillance"}>
       <div className="vx-ecran"><canvas ref=${ref} width="960" height="540" onClick=${clic}></canvas></div>
-      ${S.paroles && S.paroles.length > 0 && html`<div className="vx-sous">${sous.length ? sous.map((p, k) => html`<p key=${k}><b>${QUI[p.qui] || p.qui} :</b> ${p.texte}</p>`) : html`<p className="vx-sous-vide">—</p>`}</div>`}
+      ${S.paroles && S.paroles.length > 0 && html`<div className="vx-sous">${sous.length ? sous.map((p, k) => html`<p key=${k}><b>${p.nom || QUI[p.qui] || p.qui} :</b> ${p.texte}</p>`) : html`<p className="vx-sous-vide">—</p>`}</div>`}
       <div className="vx-frise">
         <input type="range" min="0" max="1000" step="1" value=${Math.round((st.t / S.duree) * 1000)} aria-label="Position dans l'extrait"
           onInput=${(e) => aller((e.target.value / 1000) * S.duree)} />
