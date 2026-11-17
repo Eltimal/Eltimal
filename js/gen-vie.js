@@ -65,7 +65,7 @@
     // la famille qui s'en mêle : la même personne que celle de l'entretien d'une information, sinon celle du tirage
     if (v.fam) {
       if (def.famille) { const F = def.famille; v.fam = Object.assign({}, v.fam, { g: F.g, prenom: F.prenom, nom: F.nom, age: F.age, rel: F.rel || PR.proche(t.A).nu || v.fam.rel }); Object.assign(F, { rel: v.fam.rel, paie: v.fam.paie, pousse: v.fam.pousse, secret: v.fam.secret }); }
-      if (v.fam.prenom === C.prenom) v.fam = Object.assign({}, v.fam, { prenom: (v.fam.g === "f" ? M.PF : M.PM).find((x) => x !== C.prenom && x[0] !== C.prenom[0]) });
+      if (v.fam.prenom === C.prenom) v.fam = Object.assign({}, v.fam, { prenom: (t.ver || 0) >= 5 ? CR.NOMS.prenom(CR.seeded("fam:" + C.prenom + C.nom), v.fam.g, 2026 - (v.fam.age || 45), C.ens || "france", { sauf: [C.prenom], sansEpicene: true }).prenom : (v.fam.g === "f" ? M.PF : M.PM).find((x) => x !== C.prenom && x[0] !== C.prenom[0]) });
       if (!def.famille) def.famille = Object.assign({ metier: "", casier: 0 }, v.fam);
       PR.id(def.famille, "F");
     }
@@ -302,7 +302,9 @@
     const r = CR.seeded(t.sig + ":presse");
     const g = r() < 0.5 ? "f" : "m";
     const pk = (a) => a[Math.floor(r() * a.length)];
-    return { g, prenom: pk(g === "f" ? ["Claire", "Inès", "Margaux", "Sonia", "Léa"] : ["Hugo", "Karim", "Julien", "Thomas", "Romain"]), nom: pk(["Lemercier", "Benhamou", "Ravier", "Ollivier", "Tessier", "Mbaye"]), journal: (t.vie && t.vie.journal) || "Paris Matin" };
+    const J = CR.NOMS.ANCIENS.journalistes;
+    if (CR.NOMS.v5(t)) { const P = CR.NOMS.identite(r, { g, an: 2026 - 26 - Math.floor(r() * 30), eviter: CR.NOMS.eviterDe(t) }); return { g, prenom: P.prenom, nom: P.nom, journal: (t.vie && t.vie.journal) || "Paris Matin" }; }
+    return { g, prenom: pk(g === "f" ? J.F : J.M), nom: pk(J.NOMS), journal: (t.vie && t.vie.journal) || "Paris Matin" };
   };
   VIE.texteProposition = (P0) => (P0.type === "compo" ? `une amende de composition de ${CR.money(P0.peine.amende || 300)}${P0.peine.stage ? " et un stage de citoyenneté" : ""} (art. 41-2 CPP)` : CR.ACT.requisTexte(P0.peine).replace(/^./, (c) => c.toLowerCase()));
 

@@ -56,9 +56,8 @@
   const HOPITAUX = { 1: "Hôtel-Dieu", 2: "Hôtel-Dieu", 3: "Hôtel-Dieu", 4: "Hôtel-Dieu", 5: "Cochin", 6: "Cochin", 7: "Georges-Pompidou", 8: "Bichat", 9: "Lariboisière", 10: "Lariboisière", 11: "Saint-Antoine", 12: "Saint-Antoine", 13: "la Pitié-Salpêtrière", 14: "Cochin", 15: "Georges-Pompidou", 16: "Ambroise-Paré", 17: "Bichat", 18: "Bichat", 19: "Lariboisière", 20: "Tenon" };
   const HOP_DEP = { 93: "Avicenne, à Bobigny", 94: "Henri-Mondor, à Créteil", 92: "Beaujon, à Clichy" };
   const UMJ = { 75: "unité médico-judiciaire de l'Hôtel-Dieu, à Paris 4e", 93: "unité médico-judiciaire de l'hôpital Jean-Verdier, à Bondy", 94: "unité médico-judiciaire du centre hospitalier intercommunal de Créteil", 92: "unité médico-judiciaire de l'hôpital Raymond-Poincaré, à Garches" };
-  const MEDECINS = ["Claire Aubry", "Mehdi Slimani", "Antoine Vasseur", "Hélène Marchetti", "Olivier Deschamps", "Samia Khelifi", "Bertrand Lemaire", "Julie Nguyen", "François Carlier", "Nora Benhamou"];
-  const AGENTS = ["Nadia Ferhat", "Thomas Vasseur", "Inès Bouchard", "Mickaël Tessier", "Karim Ouali", "Léa Perret", "Yann Kervella", "Sophie Marin"];
-  const AVOCATS = ["Me Caroline Besnard", "Me Idriss Hamdi", "Me Paul Etcheverry", "Me Sonia Guerrier", "Me Vincent Laroque", "Me Fatou Diallo"];
+  // noms des intervenants : les listes d'avant la 1.3.0 pour la version 4, la source commune ensuite (js/noms.js)
+  const MEDECINS = CR.NOMS.ANCIENS.medecins, AGENTS = CR.NOMS.ANCIENS.agents, AVOCATS = CR.NOMS.ANCIENS.avocats;
   const HAUTS = [["une doudoune", "noire", "#1c1d22"], ["une doudoune", "bleu marine", "#1f2a44"], ["un sweat à capuche", "gris", "#77797e"], ["un sweat à capuche", "noir", "#1b1b1e"], ["une veste en jean", "bleue", "#4f6a8c"], ["un blouson", "kaki", "#5a5f3c"], ["un manteau", "beige", "#b9a888"], ["une parka", "bordeaux", "#6b2630"], ["un blouson en cuir", "marron", "#4a3323"], ["une veste de survêtement", "blanche", "#d8d8d4"], ["un pull", "vert foncé", "#2f4a39"], ["un manteau", "noir", "#18181b"]];
   const BAS = [["un jean", "bleu", "#3b4e6b"], ["un jean", "noir", "#1e1f24"], ["un pantalon de survêtement", "gris", "#6d6f73"], ["un pantalon de survêtement", "noir", "#1c1c20"], ["un pantalon", "beige", "#a89878"], ["un pantalon", "noir", "#19191c"]];
   const CHAUSS = ["des baskets blanches", "des baskets noires", "des chaussures de ville", "des bottines", "des baskets rouges"];
@@ -164,15 +163,16 @@
     const act = CR.acteur(CR.GEN2.acteurBase(t.opj)) || { nom: "Lieutenant Damien Rocher", profil: "opj_formaliste" };
     const mo = /^(\S+)\s+(.*)$/.exec(act.nom);
     const OPJ = (S.P.OPJ = personne("OPJ", "officier de police judiciaire", nomDe(mo[2]), { grade: mo[1].toLowerCase(), qual: "officier de police judiciaire", mat: rp.int(380000, 409999), profil: act.profil, acteur: act.id }));
-    const autre = rp.sh(AGENTS.filter((n) => !g.includes(n)));
+    const v5 = CR.NOMS.v5(t), nv = v5 ? CR.NOMS.liste(t, t.sig + ":intervenants", 5).map((P) => `${P.prenom} ${P.nom}`) : null;
+    const autre = v5 ? [nv[0]] : rp.sh(AGENTS.filter((n) => !g.includes(n)));
     S.P.B1 = personne("B1", "enquêteur", nomDe(autre[0]), { grade: rp.pk(["brigadier-chef", "brigadier", "gardien de la paix"]), qual: "agent de police judiciaire", mat: rp.int(410000, 489999) });
     const pq = CR.acteur(CR.GEN2.acteurBase(t.parquet)) || { nom: "Mme Yasmine Haddou" };
     S.P.PQ = personne("PQ", "magistrat du parquet", Object.assign(nomDe(pq.nom.replace(/^(M\.|Mme)\s+/, "")), { civ: /^Mme/.test(pq.nom) ? "Mme" : "M.", g: /^Mme/.test(pq.nom) ? "f" : "m" }), { qual: "substitut du procureur de la République", acteur: pq.id });
-    const med = rp.sh(MEDECINS);
+    const med = v5 ? nv.slice(1, 4) : rp.sh(MEDECINS);
     S.P.MED = personne("MED", "médecin requis", nomDe(med[0]), { qual: "docteur en médecine" });
     S.P.URG = personne("URG", "urgentiste", nomDe(med[1]), { qual: "praticien hospitalier, service d'accueil des urgences" });
     S.P.LEG = personne("LEG", "médecin légiste", nomDe(med[2]), { qual: "médecin légiste" });
-    S.P.AV = personne("AV", "avocat", { nom: t.genre === "gav" ? "(vous)" : rp.pk(AVOCATS) }, { joueur: t.genre === "gav" });
+    S.P.AV = personne("AV", "avocat", { nom: t.genre === "gav" ? "(vous)" : (v5 ? "Me " + nv[4] : rp.pk(AVOCATS)) }, { joueur: t.genre === "gav" });
     // style de l'auteur des procès-verbaux
     OPJ.style = { bavard: act.profil === "opj_bavard", formaliste: act.profil === "opj_formaliste", pressant: act.profil === "opj_pressant", coquilles: act.profil === "opj_formaliste" ? 0.01 : rp.pk([0.03, 0.05, 0.08]) };
     for (const k of ["G1", "G2", "B1"]) S.P[k].style = { coquilles: rp.pk([0.02, 0.04, 0.06]) };

@@ -25,6 +25,7 @@
   // ---------------------------------------------------------------- variations d'écriture
   // Fautes de frappe plausibles, seulement dans le texte courant (jamais dans un passage qui porte un fait ou une irrégularité)
   const FAUTES = [[/interpellé/, "interpelé"], [/téléphone/, "télephone"], [/procédons/, "procédont"], [/déclare/, "délcare"], [/présence/, "présense"], [/officier/, "oficier"], [/immédiatement/, "immédiatemment"], [/personne/, "personnne"], [/trottoir/, "trotoir"], [/apercevons/, "appercevons"], [/rapportons/, "raportons"], [/conformément/, "conformémént"]];
+  DOCS.FAUTES = FAUTES; // pour les tests : une faute de frappe voulue n'est pas un moment absent
   DOCS.style = function (r, o) {
     o = o || {};
     return { bavard: o.bavard != null ? o.bavard : r() < 0.5, fautes: o.fautes != null ? o.fautes : 0.06 + r() * 0.16, graine: Math.floor(r() * 1e9) };
@@ -99,7 +100,8 @@
     ];
     if (o.objet) ouv.unshift(DOCS.titre(o.objet));
     const id = o.identite ? [
-      DOCS.ligne("Nom", o.identite.nom.toUpperCase()), DOCS.ligne("Prénom", o.identite.prenom),
+      // 1.3.0 : le nom d'usage et le nom de naissance, quand ils diffèrent (une épouse qui porte le nom de son mari)
+      ...(o.identite.nomNaiss && o.identite.nomNaiss !== o.identite.nom ? [DOCS.ligne("Nom d'usage", o.identite.nom.toUpperCase()), DOCS.ligne("Nom de naissance", o.identite.nomNaiss.toUpperCase())] : [DOCS.ligne("Nom", o.identite.nom.toUpperCase())]), DOCS.ligne("Prénom", o.identite.prenom),
       o.identite.naissance ? DOCS.ligne("Né" + (o.identite.g === "f" ? "e" : ""), o.identite.naissance.replace(/^le /, "")) : null,
       o.identite.adresse ? DOCS.ligne("Demeurant", o.identite.adresse) : null,
       o.identite.tel ? DOCS.ligne("Téléphone", o.identite.tel) : null,

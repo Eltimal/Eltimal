@@ -566,6 +566,9 @@
     return p;
   };
   GEN2.def = function (p) {
+    // l'heure tirée d'abord (gen-pieces la recale ensuite sur la garde à vue) : une affaire rechargée se reconstruit comme
+    // une affaire neuve, même pour ce qui lit l'heure avant la chronologie (sortie 1.3.0 : dialogues d'une embuscade)
+    if (p.t && p.t.d && p.t.d.h0 != null) p.t.d.h = p.t.d.h0;
     GEN2.prepare(p);
     if (GEN2.PR.traceOn()) GEN2.PR.marquer(p.t);
     const def = p.kind === "info" ? B.info(p) : p.kind === "op" ? B.op(p) : p.kind === "copj" ? B.copj(p) : p.kind === "al" ? B.al(p) : p.kind === "pc" ? B.pc(p) : B.penal(p);
@@ -652,7 +655,9 @@
     const { t, c, ts } = choisi;
     if (rev) GEN2.appliquerRevenant(t, rev, s.day);
     t.code = GEN2.encoderCode(c);
-    const sig = GEN2.signature(t);
+    const sig = GEN2.signature(t); // la signature du tirage brut : c'est elle que redonne le rejeu par le code
+    // 1.3.0 : aucun inconnu ne porte le nom du joueur (avant toute préparation, qui lit les noms)
+    if (CR.NOMS.eloignerJoueur) CR.NOMS.eloignerJoueur(t, s.player);
     t.q = allege(t.q); t.q2 = allege(t.q2);
     s.genSigs.push(CR.hash(sig));
     if (s.genSigs.length > 600) s.genSigs.splice(0, s.genSigs.length - 600);
@@ -684,6 +689,7 @@
       const autre = GEN2.autreCamp(t, o.camp);
       if (autre) { t = autre; kind = autre.genre; }
     }
+    if (CR.NOMS.eloignerJoueur) CR.NOMS.eloignerJoueur(t, s.player); // 1.3.0 : avant toute préparation
     const id = `g_${kind}_${s.genCount}`;
     const sig = t.sig;
     t.q = allege(t.q); t.q2 = allege(t.q2);

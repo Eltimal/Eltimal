@@ -140,7 +140,7 @@
     const cap = plan === "appel" || plan === "standard" ? "Au téléphone" : plan === "parloir" ? "Parloir avocat" : plan === "entretien" ? "Local avocat" : "Rendez-vous au cabinet";
     const lieuNote = plan ? cap : call.label || (callKey === "intake" ? "Premier entretien" : callKey === "update" ? "Point sur le dossier" : "Appel");
     return html`<div className=${cx("scene call-scene", plan && "staged")}>
-      ${plan && html`<${UI.Plan} key=${plan} name=${plan} opts=${{ min: s.min, rain: CR.dec.rainy(s), look: plan === "standard" ? who.look || CR.px.lookFrom("tiers" + (who.nom || ""), { age: 44 }) : look, expr: mood || "neutral", talk: talking, you: CR.youLook(s) }} />
+      ${plan && html`<${UI.Plan} key=${plan} name=${plan} opts=${{ min: s.min, rain: CR.dec.rainy(s), look: plan === "standard" ? who.look || CR.px.lookFrom("tiers" + (who.nom || ""), CR.NOMS.v5Dossier(s, cs) ? { age: 44, b: 2 } : { age: 44 }) : look, expr: mood || "neutral", talk: talking, you: CR.youLook(s) }} />
       <div className="stg-shade"></div>
       <div className="stg-top"><div className="stg-cap"><span className="pix">${cap}</span><span className="stg-sub">${who.nom || c.prenom + " " + c.nom} · ${CR.fmtTime(s.min)}</span></div></div>`}
       <div className="call-side">
@@ -269,7 +269,7 @@
     const negExpr = last && last.verdict === "leave" ? "angry" : last && last.verdict === "accept" ? "smile" : "neutral";
     const staged = UI.planOk && UI.planOk("rdv");
     return html`<div className=${cx("scene neg-scene", staged && "staged")}>
-      ${staged ? html`<${UI.Plan} name="rdv" opts=${{ min: s.min, rain: CR.dec.rainy(s), look, expr: negExpr, you: CR.youLook(s) }} />
+      ${staged ? html`<${UI.Plan} name="rdv" opts=${{ min: s.min, rain: CR.dec.rainy(s), look, expr: negExpr, you: CR.youLook(s, "ville") }} />
       <div className="stg-shade"></div>
       <div className="stg-top"><div className="stg-cap"><span className="pix">Honoraires · rendez-vous au cabinet</span><span className="stg-sub">${c.prenom} ${c.nom} · ${CR.fmtTime(s.min)}</span></div></div>` : html`<div className="neg-stage"><${UI.SceneCanvas} name="conference" opts=${{ min: s.min, client: look, clientExpr: negExpr }} /></div>`}
       <${UI.Coach} k="honoraires" s=${s} />

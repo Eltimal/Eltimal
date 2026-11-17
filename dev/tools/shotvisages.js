@@ -1,11 +1,13 @@
-// Planche des visages : node tools/shotvisages.js [échelle] → tools/out/visages-recurrents.png, visages-expressions.png, visages-100.png
+// Planche des visages : node tools/shotvisages.js [échelle] [planches] → tools/out/visages-recurrents.png, visages-expressions.png,
+// visages-100.png (banque d'avant), visages-banque2.png (100 inconnus de la banque 2), visages-expr2.png, et une planche
+// par menu de l'atelier (visages-menu-<menu>.png : chaque option posée sur le même visage). Lancer d'abord node tools/shot.js.
 const path = require("path"), fs = require("fs");
 const { chromium } = require("playwright");
 const SP = __dirname;
 (async () => {
   const sc = +(process.argv[2] || 2);
   fs.mkdirSync(path.join(SP, "out"), { recursive: true });
-  const browser = await chromium.launch({ executablePath: process.env.CHROME || "/usr/bin/google-chrome", args: ["--allow-file-access-from-files", "--no-sandbox"] });
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || "/opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell", args: ["--allow-file-access-from-files", "--no-sandbox"] });
   const page = await browser.newPage({ viewport: { width: 1480, height: 900 }, deviceScaleFactor: 1 });
   const errs = []; page.on("pageerror", (e) => errs.push(String(e)));
   await page.goto("file://" + path.join(SP, "preview/index.html"));
@@ -18,11 +20,19 @@ const SP = __dirname;
       const put = (lab, look, ex) => { const d = document.createElement("div"); d.style.cssText = "width:" + N * sc + "px;overflow:hidden;white-space:nowrap"; const c = document.createElement("canvas"); c.width = c.height = N * sc; const x = c.getContext("2d"); x.imageSmoothingEnabled = false; x.drawImage(PX.portrait(look, ex || "neutral"), 0, 0, N * sc, N * sc); d.append(c, lab); r.append(d); };
       if (mode === "rec") { for (const a of CR.ACTEURS.filter((a) => PX.HAND[a.id])) put(a.nom.replace(/^(Mme|M\.|Me|Capitaine|Lieutenant|Brigadier-chef|Adjudant) /, ""), PX.acteurLook(a)); put("Varenne (mentore)", Object.assign({}, PX.lookFrom("mentor", CR.MENTOR.look), CR.MENTOR.look)); }
       else if (mode === "expr") { const ex = ["neutral", "talk", "talk2", "smile", "worried", "angry", "cry", "soulage", "defi", "honte"]; for (const L of [PX.lookFrom("client-a", { g: "m", age: 24, skin: 4, hair: "afro", outfit: "hoodie", shirt: "#2f6b6b" }), PX.lookFrom("client-b", { g: "f", age: 37, skin: 1, hair: "long", hc: "auburn" }), PX.lookFrom("c3", { g: "m", age: 58, skin: 0, hair: "receding", hc: "gray", beard: 2, glasses: 1 })]) for (const e of ex) put(e, L, e); }
+      else if (mode === "cent2") { for (let i = 0; i < 100; i++) put("", PX.lookFrom("visage" + i, { age: 18 + (i * 7) % 60, b: 2 })); }
+      else if (mode === "expr2") { const ex = ["neutral", "talk", "talk2", "smile", "worried", "angry", "cry", "soulage", "defi", "honte"]; for (const i of [3, 17, 42, 71]) { const L = PX.lookFrom("expr2-" + i, { age: 20 + i % 50, b: 2 }); for (const e of ex) put(e, L, e); } }
+      else if (mode.startsWith("menu:")) { const k = mode.slice(5), base = PX.lookFrom("atelier-base", { g: "f", age: 34, b: 2 }), base2 = PX.lookFrom("atelier-base2", { g: "m", age: 52, b: 2 });
+        for (const B of [base, base2]) for (const [v, lab] of PX.BANQUE[k]) { const p = PX.poserPiece(B.p, k, k === "traits" ? [v] : v); if (k === "cut" || k === "hat") { p.hat = k === "hat" ? v : "none"; } put(lab, PX.lookDePieces({ g: B.g, age: B.age, outfit: "shirt" }, p)); } }
       else { for (let i = 0; i < 100; i++) put("", PX.lookFrom("visage" + i, { age: 18 + (i * 7) % 60 })); }
     }, [sc, mode]);
     await page.screenshot({ path: path.join(SP, "out", nom + ".png"), fullPage: true });
   };
-  await planche("visages-recurrents", "rec"); await planche("visages-expressions", "expr"); await planche("visages-100", "cent");
+  const quoi = (process.argv[3] || "tout").split(",");
+  const veut = (n) => quoi.includes("tout") || quoi.includes(n);
+  if (veut("anciens")) { await planche("visages-recurrents", "rec"); await planche("visages-expressions", "expr"); await planche("visages-100", "cent"); }
+  if (veut("banque2")) { await planche("visages-banque2", "cent2"); await planche("visages-expr2", "expr2"); }
+  if (veut("menus")) for (const k of await page.evaluate(() => Object.keys(window.CR.px.BANQUE))) await planche("visages-menu-" + k, "menu:" + k);
   console.log("errors:", errs.join(" | ") || "none");
   await browser.close();
 })();

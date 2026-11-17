@@ -74,7 +74,7 @@
     const q = t.q;
     const proc = N.procedural;
     const nomV = (x) => (proc && x === V ? `${x.g === "f" ? "la mineure" : "le mineur"} ${x.prenom[0]}. ${x.nom[0]}.` : nf(x));
-    const opjN = `${pk(r, ["Commandant", "Capitaine", "Lieutenant"])} ${pk(r, ["Hélène Garnier", "Marc Viallet", "Sonia Rahmani", "Pierre Lestrade", "Aurélie Dumas", "Karim Benhamou"])}`;
+    const opjN = `${pk(r, ["Commandant", "Capitaine", "Lieutenant"])} ${CR.NOMS.pour(t, r, CR.NOMS.ANCIENS.opjCrim)}`;
     const svc = SERVICE(t);
     const docs = {}, titres = {}, facts = {}, anomalies = {};
     let cote = 0;
@@ -136,7 +136,7 @@
 
     // ---------------------------------------------------------------- D : le corps, ou la victime : autopsie, certificat, examen médico-légal
     const M = N.medical || { kind: "aucun" };
-    const medecin = `Dr ${pk(r, ["Élise Vannier", "Marc Dubreuil", "Nora Belhadj", "Thomas Lepage", "Anne Collard"])}, médecin légiste`;
+    const medecin = `Dr ${CR.NOMS.pour(t, r, CR.NOMS.ANCIENS.legistes)}, médecin légiste`;
     if (M.kind === "autopsie" && V) {
       add("medical", "Rapport d'autopsie", () => ({ title: "Rapport d'autopsie médico-légale", kind: "courrier", entete: ["Institut médico-légal de Paris · 2, place Mazas, 75012 Paris", `Réquisition du procureur de la République — procédure n° ${t.proc}`], paras: [
         [`Autopsie de ${nomV(V)}, ${V.age === 0 ? "âgé de quelques mois" : `${V.age} ans`}, pratiquée le ${D(jf + int(r, 1, 3))}, en présence d'un officier de police judiciaire.`],

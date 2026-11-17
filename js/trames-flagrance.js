@@ -31,7 +31,8 @@
     const il = (x) => (x && x.g === "f" ? "elle" : "il"), Il = (x) => Maj(il(x));
     const lui = (x) => (x && x.g === "f" ? "elle" : "lui");
     const le = (x) => (x && x.g === "f" ? "la" : "le");
-    const gp = (nom) => (/^(Léa|Sarah|Aurélie|Nadia|Inès)\b/.test(nom) ? "Gardienne de la paix" : "Gardien de la paix");
+    // le grade s'accorde au prénom (version 5 : le genre du prénom dans la source commune)
+    const gp = (nom) => ((CR.NOMS.v5(t) ? CR.NOMS.genreDe(String(nom).split(" ")[0]) === "f" : /^(Léa|Sarah|Aurélie|Nadia|Inès)\b/.test(nom)) ? "Gardienne de la paix" : "Gardien de la paix");
     const commLong = SF.paris ? SF.commCourt.replace("commissariat", "commissariat central") : SF.commCourt;
     const service = SF.paris ? "PRÉFECTURE DE POLICE · DSPAP" : "POLICE NATIONALE · DDSP";
     const unite = SF.comm;
@@ -80,7 +81,7 @@
     const sansITT = (x) => (avantUMJ ? String(x).replace(/\s*[^.«»!?]*\b(ITT|incapacité totale)\b[^.!?]*[.!?]?/g, "").replace(/Oui, à l'unité médico-judiciaire\.?/, "Pas encore, je dois y aller.").replace(/, puis l'UMJ\./, ".").trim() : x);
     const cotes = {};
     const cote = (key) => cotes[key] || "D?";
-    const identite = (x, extra) => Object.assign({ nom: x.nom, prenom: x.prenom, g: x.g, naissance: x.naissance, adresse: x.adresse, tel: x.tel, metier: x.metier }, extra || {});
+    const identite = (x, extra) => Object.assign({ nom: x.nom, nomNaiss: x.nomNaiss, prenom: x.prenom, g: x.g, naissance: x.naissance, adresse: x.adresse, tel: x.tel, metier: x.metier }, extra || {});
     const tenueA = S.tenueA && CR.video ? CR.video.vetu(S.tenueA, A.g) : null;
     const moi = (x) => String(x || "").replace(/^son /, "mon ").replace(/^sa /, "ma ").replace(/^ses /, "mes ");
 
@@ -214,7 +215,7 @@
         const rr = CR.seeded(t.sig + ":d:cgav");
         return DOCS.forme({ title: "Certificat médical — examen d'une personne gardée à vue", kind: "courrier", cote: cote("certificat_gav"), entete: [SF.paris ? TJ.umj : "Médecin requis", `Réquisition de l'officier de police judiciaire — procédure n° ${t.proc}`],
           blocs: [
-            p(`Je soussigné${(() => { pk(rr, ["", "e"]); const d = pk(rr, ["Hugo Lemaire", "Amina Saïdi", "Paul Ferrand", "Claire Bouvier"]); return (/^(Amina|Claire|Élise|Nora|Sarah|Julie|Léa|Camille|Sophie|Anne|Marie|Inès|Fatima|Hélène) /.test(d) ? "e" : "") + ", Dr " + d; })()}, certifie avoir examiné ${at(S.medecin.examen)}, dans les locaux du ${commLong}, ${n(A)}, ${A.age} ans.`),
+            p(`Je soussigné${(() => { pk(rr, ["", "e"]); const d = CR.NOMS.pour(t, rr, CR.NOMS.ANCIENS.medecinsGav); return (CR.NOMS.v5(t) ? CR.NOMS.e(d) : /^(Amina|Claire|Élise|Nora|Sarah|Julie|Léa|Camille|Sophie|Anne|Marie|Inès|Fatima|Hélène) /.test(d) ? "e" : "") + ", Dr " + d; })()}, certifie avoir examiné ${at(S.medecin.examen)}, dans les locaux du ${commLong}, ${n(A)}, ${A.age} ans.`),
             p(`Antécédents déclarés : ${pk(rr, ["aucun", "asthme dans l'enfance, sans traitement", "consommation occasionnelle de cannabis"])}. Traitement en cours : ${pk(rr, ["aucun", "aucun déclaré"])}.`),
             p(`Examen : personne consciente, orientée, calme. ${pk(rr, ["Aucune lésion traumatique récente.", "Égratignure superficielle de la paume gauche, que l'intéressé attribue à une chute antérieure aux faits.", "Aucune trace de coup."])}`),
             p("Conclusion : état de santé compatible avec la garde à vue dans les locaux du service."),
@@ -273,7 +274,7 @@
         q("Connaissez-vous la victime ou l'auteur ?"), rep("Non, ni l'un ni l'autre."),
       ];
       return DOCS.pv({ cote: cote("pv_temoin"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition de témoin", qualite: "Témoin", numPV: "00" + int(rr, 101, 899), jour: j(E.temoin), heure: E.temoin, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
-        identite: { nom: T.nom, prenom: T.prenom, g: T.g, adresse: T.adresse, metier: T.metier }, blocs, cloture: DOCS.clotureAudition(ville, j(E.temoinFin), E.temoinFin, T.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
+        identite: { nom: T.nom, nomNaiss: T.nomNaiss, prenom: T.prenom, g: T.g, adresse: T.adresse, metier: T.metier }, blocs, cloture: DOCS.clotureAudition(ville, j(E.temoinFin), E.temoinFin, T.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
     });
 
     // ================================================================ D : scellé et restitution
@@ -297,12 +298,12 @@
       const borne = E.victime != null && !PL ? E.victime - 20 : S.T0 + 240;
       const mU = Math.max(S.T0 + 30, Math.min(S.T0 + int(ru, 60, 150), borne));
       const hop = pk(ru, ["Hôpital Lariboisière", "Hôpital Bichat", "Hôpital Saint-Antoine", "Hôpital de la Pitié-Salpêtrière"]);
-      const dr = pk(ru, ["Antoine Mercier", "Salomé Riva", "Karim Haddad", "Inès Morel"]);
+      const dr = CR.NOMS.pour(t, ru, CR.NOMS.ANCIENS.urgentistes);
       const soins = pk(ru, ["Soins locaux, antalgiques de palier 1.", "Suture de la plaie, antalgiques.", "Radiographies sans fracture ; antalgiques et repos."]);
       const les = S.blessures && S.blessures.length ? S.blessures : ["des contusions superficielles"];
       add("certificat_urgences", mU + 40, "Certificat des urgences", () => DOCS.forme({ title: "Certificat médical initial — service d'accueil des urgences", kind: "courrier", cote: cote("certificat_urgences"), entete: [`${hop} · Service d'accueil des urgences`, `Procédure n° ${t.proc} — cote ${cote("certificat_urgences")}`],
         blocs: [
-          p(`Je soussigné, Dr ${dr}, praticien hospitalier, certifie avoir examiné ${nf(V)}, ${V.age} ans, ${at(mU)}, à sa demande.`),
+          p(`Je soussigné${CR.NOMS.v5(t) ? CR.NOMS.e(dr) : ""}, Dr ${dr}, praticien hospitalier, certifie avoir examiné ${nf(V)}, ${V.age} ans, ${at(mU)}, à sa demande.`),
           p(`Motif de la consultation : la personne déclare avoir été agressée le ${DOCS.date(jf)} vers ${hm(S.T0)}.`),
           p(`Constatations : ${les.join(" ; ")}.`),
           p(soins),
@@ -557,7 +558,7 @@
         { const iv = blocs.indexOf("__VIDE__"), dit = blocs.slice(1, iv).length > 0;
           blocs.splice(iv, 1, ...(dit ? [] : [decl(`« ${t.flagrance ? `J'ai entendu du bruit et je me suis retourné${T.g === "f" ? "e" : ""}. Je n'ai pas vu le début ; quand j'ai regardé, c'était presque fini, et la police est arrivée peu après.` : "Je n'ai pas assisté aux faits moi-même. Je peux seulement dire ce que j'ai su ensuite, le jour même ou le lendemain."} »`)])); }
         return DOCS.pv({ cote: cote("pv_temoin"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition de témoin", qualite: "Témoin", numPV: "00" + int(rr, 101, 899), jour: j(E.temoin), heure: E.temoin, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
-          identite: { nom: T.nom, prenom: T.prenom, g: T.g, adresse: T.adresse, metier: T.metier }, blocs, cloture: DOCS.clotureAudition(ville, j(E.temoinFin), E.temoinFin, T.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
+          identite: { nom: T.nom, nomNaiss: T.nomNaiss, prenom: T.prenom, g: T.g, adresse: T.adresse, metier: T.metier }, blocs, cloture: DOCS.clotureAudition(ville, j(E.temoinFin), E.temoinFin, T.g === "f" ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
       });
       // lot 1 ter : le vol en magasin — l'agent de sécurité, puis l'état de la marchandise dressé par le magasin
       if (S.magasin) {
@@ -626,7 +627,7 @@
       if (t.inf === "vol" && t.f && t.f.sc === "vestiaire") {
         const rv = CR.seeded(t.sig + ":g:badge");
         const autres = int(rv, 0, 4);
-        const NOMS = ["Karima L.", "Julien M.", "Sophie D.", "Thomas R.", "Aminata K.", "Pierre V."];
+        const NOMS = CR.NOMS.v5(t) ? CR.NOMS.liste(t, t.sig + ":badges", 6).map((P) => `${P.prenom} ${P.nom[0]}.`) : CR.NOMS.ANCIENS.badges;
         const h0 = ((S.T0 % 1440) + 1440) % 1440;
         const lignesB = [{ qui: `${n(A)} (badge n° ${int(rv, 1000, 9999)})`, h: h0 - int(rv, 5, 40), sortie: h0 + int(rv, 5, 30) }].concat(Array.from({ length: autres }, (_, k) => ({ qui: `${NOMS[k]} (badge n° ${int(rv, 1000, 9999)})`, h: h0 - int(rv, 0, 90), sortie: h0 + int(rv, -20, 60) })));
         lignesB.sort((a, b) => a.h - b.h);
@@ -696,7 +697,7 @@
             R.passant ? decl({ t: "« Des passants étaient là ; l'un d'eux filmait. »", f: "G_video_passant" }) : null,
           ];
           return DOCS.pv({ cote: cote("pv_collegue"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition", qualite: "Fonctionnaire de police, témoin", numPV: "00" + int(rr, 101, 899), jour: j(E.debut + 50), heure: E.debut + 50, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
-            objet: `OBJET : ${q0.label} — audition du second fonctionnaire`, identite: { nom: t.gpx[1].split(" ").slice(-1)[0], prenom: t.gpx[1].split(" ")[0], g: gp(t.gpx[1]).startsWith("Gardienne") ? "f" : "m", metier: gp(t.gpx[1]).toLowerCase() }, blocs,
+            objet: `OBJET : ${q0.label} — audition du second fonctionnaire`, identite: { nom: t.gpx[1].split(" ").slice(1).join(" "), prenom: t.gpx[1].split(" ")[0], g: gp(t.gpx[1]).startsWith("Gardienne") ? "f" : "m", metier: gp(t.gpx[1]).toLowerCase() }, blocs,
             cloture: DOCS.clotureAudition(ville, j(E.debut + 70), E.debut + 70, gp(t.gpx[1]).startsWith("Gardienne") ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
         });
       }
@@ -712,7 +713,7 @@
             O.passant ? decl({ t: "« Un passant a filmé la scène avec son téléphone ; il nous a laissé ses coordonnées. »", f: "G_video_passant" }) : null,
           ];
           return DOCS.pv({ cote: cote("pv_collegue"), proc: t.proc, service, unite, titre: "Procès-verbal d'audition", qualite: "Fonctionnaire de police, témoin", numPV: "00" + int(rr, 101, 899), jour: j(E.debut + 50), heure: E.debut + 50, redacteur: OPJ, lieu: `Nous trouvant au ${commLong}`,
-            objet: `OBJET : ${q0.label} — audition du second fonctionnaire`, identite: { nom: t.gpx[1].split(" ").slice(-1)[0], prenom: t.gpx[1].split(" ")[0], g: gp(t.gpx[1]).startsWith("Gardienne") ? "f" : "m", metier: gp(t.gpx[1]).toLowerCase() }, blocs,
+            objet: `OBJET : ${q0.label} — audition du second fonctionnaire`, identite: { nom: t.gpx[1].split(" ").slice(1).join(" "), prenom: t.gpx[1].split(" ")[0], g: gp(t.gpx[1]).startsWith("Gardienne") ? "f" : "m", metier: gp(t.gpx[1]).toLowerCase() }, blocs,
             cloture: DOCS.clotureAudition(ville, j(E.debut + 70), E.debut + 70, gp(t.gpx[1]).startsWith("Gardienne") ? "elle" : "lui"), signataires: ["La personne entendue", `${OPJ.signe}, officier de police judiciaire`], st: stO });
         });
       }
@@ -1082,7 +1083,8 @@
       // (poids brut, emballages compris, à la pesée ; poids net au laboratoire) ; taux tirés dans les fourchettes d'usage
       if (S.stups && has("labo") && CR.CAT.INF[t.inf] && CR.CAT.INF[t.inf].fam !== "route" && t.f.quantite) {
         const rl = CR.seeded(t.sig + ":g:labo");
-        const brutDe = () => { const rp = CR.seeded(t.sig + ":g:pes"); return Math.round(t.f.quantite * (1.03 + rp() * 0.05) * 10) / 10; };
+        // 1.3.0 (version 5) : au moins un dixième de gramme d'emballage, même pour un demi-gramme
+        const brutDe = () => { const rp = CR.seeded(t.sig + ":g:pes"), x = Math.round(t.f.quantite * (1.03 + rp() * 0.05) * 10) / 10; return (t.ver || 0) >= 5 ? Math.max(x, Math.round((t.f.quantite + 0.1) * 10) / 10) : x; };
         const net = t.f.quantite, prod = t.f.produit;
         const taux = prod === "cannabis" ? (/herbe/.test(N.saisie || "") ? int(rl, 8, 22) : int(rl, 15, 34)) : prod === "cocaine" ? int(rl, 32, 84) : prod === "crack" ? int(rl, 60, 90) : prod === "mdma" ? int(rl, 70, 160) : prod === "ketamine" ? int(rl, 55, 95) : null;
         const nature = prod === "cannabis" ? (/herbe/.test(N.saisie || "") ? "herbe de cannabis" : "résine de cannabis") : prod === "cocaine" ? "chlorhydrate de cocaïne" : prod === "crack" ? "cocaïne base (crack)" : prod === "mdma" ? "comprimés contenant de la MDMA" : prod === "ketamine" ? "kétamine" : "produit stupéfiant";
@@ -1106,7 +1108,7 @@
         return DOCS.pv({ cote: cote("pv_pesee"), proc: t.proc, service, unite, titre: "Procès-verbal de pesée et de test", jour: j(E.pesee), heure: E.pesee, redacteur: OPJ, visa: vis("Vu les articles 54 et 60 du code de procédure pénale,", "Vu les articles 77-1 et 76 du code de procédure pénale,"), lieu: `Nous trouvant au ${commLong}`,
           blocs: [
             p(`En présence de ${n(A)}, procédons à la pesée des produits saisis : ${drogue}.`),
-            p(`Pesée sur balance de précision du service : poids brut ${String(t.f.quantite != null ? Math.round(t.f.quantite * (1.03 + rr() * 0.05) * 10) / 10 : "—").replace(".", ",")} g, emballages compris.`),
+            p(`Pesée sur balance de précision du service : poids brut ${String(t.f.quantite != null ? ((x) => ((t.ver || 0) >= 5 ? Math.max(x, Math.round((t.f.quantite + 0.1) * 10) / 10) : x))(Math.round(t.f.quantite * (1.03 + rr() * 0.05) * 10) / 10) : "—").replace(".", ",")} g, emballages compris.`),
             p({ t: `Test de détection rapide : réaction positive ${produit}.`, f: S.constatDecouvre ? "G_saisie" : undefined }),
             argent.length ? p(`Comptage des espèces saisies : ${argent.join(" et ").replace(/ en espèces$/, "")}, en coupures diverses, placées sous scellé distinct.`) : null,
             p("Plaçons le tout sous scellé fermé, pour analyse par le laboratoire de toxicologie."),

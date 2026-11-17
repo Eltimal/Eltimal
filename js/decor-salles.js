@@ -449,5 +449,7 @@
     const sig = D.sigOf(o);
     return html`<${UI.Room} name=${m[0]} mini=${true} opts=${Object.assign(o, { sig, rain: o.rain != null ? o.rain : CR.store && CR.store.s ? D.rainy(CR.store.s) : false })} className=${className} />`;
   };
-  CR.youLook = (s) => Object.assign({}, s.player.look || CR.px.lookFrom(s.player.nom || "vous"), { outfit: "robe" });
+  // la tenue selon le lieu (1.3.0) : la robe à l'audience, la tenue de ville au cabinet et en garde à vue (lieu « ville »).
+  // Un visage d'avant la 1.3.0 garde sa robe partout : sa tenue entre dans le tirage de ses traits.
+  CR.youLook = (s, lieu) => { const L = s.player.look || CR.px.lookFrom(s.player.nom || "vous"); return Object.assign({}, L, { outfit: lieu === "ville" && L.b === 2 ? "shirt" : "robe" }); };
 })();

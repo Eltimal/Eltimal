@@ -7,9 +7,25 @@
   const pk = (r, a) => a[Math.floor(r() * a.length)];
   const int = (r, a, b) => a + Math.floor(r() * (b - a + 1));
 
-  M.PM = ["Mehdi", "Kevin", "Julien", "Moussa", "Thomas", "Bilal", "Nicolas", "Ibrahima", "Florian", "Sofiane", "Damien", "Alexandre", "Yacine", "Maxime", "Samir", "Loïc", "Adama", "Romain", "Anis", "Quentin", "Mamadou", "Hugo", "Karim", "Lucas", "Ousmane", "Théo", "Rayan", "Antoine", "Wassim", "Cédric", "Jonathan", "Brahim", "Arnaud", "Steeve", "Cheikh", "Mathieu", "Ilyes", "Jérôme", "Dylan", "Patrick", "Abdel", "Grégory", "Souleymane", "Vincent", "Nordine", "Franck", "Issa", "Baptiste", "Malik", "Jean-Marc"];
-  M.PF = ["Inès", "Laura", "Fatou", "Camille", "Sarah", "Amel", "Julie", "Aïcha", "Manon", "Léa", "Nadia", "Océane", "Kenza", "Marine", "Assia", "Pauline", "Mariam", "Chloé", "Yasmina", "Émilie", "Aminata", "Sabrina", "Clara", "Leïla", "Sandrine", "Dounia", "Mélissa", "Hawa", "Nathalie", "Samia", "Jessica", "Awa", "Céline", "Rokia", "Margaux", "Sonia"];
-  M.NOMS = ["Bensaïd", "Martin", "Diarra", "Lefebvre", "Haddad", "Moreau", "Traoré", "Girard", "Mansouri", "Petit", "Camara", "Roux", "Belkacem", "Fournel", "Sissoko", "Garnier", "Amrani", "Lambert", "Koné", "Dubois", "Chérif", "Bonnet", "Fofana", "Lemoine", "Benali", "Mercier", "Ndiaye", "Faure", "Bouaziz", "Rousseau", "Keita", "Blanc", "Zerrouki", "Guérin", "Cissé", "Morel", "Hamidi", "Leroy", "Touré", "Perrin", "Saïdi", "Chevalier", "Coulibaly", "Robin", "Aït-Ali", "Masson", "Diallo", "Henry", "Ouattara", "Gauthier", "Messaoudi", "Nicolas", "Bah", "Durand", "Kaci", "Lopez", "Dembélé", "Fontaine", "Rahmani", "Pereira", "Nguyen", "Da Silva", "Ferreira", "Cohen", "Popescu", "Kowalski", "Ben Youssef", "Barry", "Mendy", "Vidal"];
+  // les listes d'avant la 1.3.0, dans la source commune (js/noms.js) : elles servent encore aux affaires de la version 4
+  const NM = CR.NOMS, A0 = NM.ANCIENS.monde;
+  M.PM = A0.PM; M.PF = A0.PF; M.NOMS = A0.NOMS;
+  // Version du générateur en cours de tirage (GEN2.tirer la pose) : à partir de 5, noms et visages de la 1.3.0.
+  // Hors tirage (pièces composées au chargement), on passe la version de l'affaire : o.v = t.ver.
+  M.vCour = null; M.ctx = null;
+  M.v5 = (o) => (((o && o.v) || M.vCour || 0) >= 5);
+  M.noter = (P) => { if (M.ctx && P && P.nom) { M.ctx.eviter.add(P.prenom + " " + P.nom); M.ctx.eviter.add("nom:" + P.nom); } return P; };
+  // Un autre nom de famille que « sauf » (homonyme évité) ; ref : la personne dont on change le nom
+  M.autreNom = function (r, sauf, ref, o) {
+    if (!M.v5(o)) return pk(r, M.NOMS.filter((n) => n !== sauf));
+    for (let k = 0; k < 8; k++) { const n = NM.nom(r, NM.tirerEnsemble(r), 2026 - ((ref && ref.age) || 40)); if (n !== sauf && !(M.ctx && M.ctx.eviter.has("nom:" + n))) return n; }
+    return NM.nom(r, "france", 1980) + "-" + NM.nom(r, "portugal", 1980);
+  };
+  // Un autre prénom (sauf ceux de la liste), de la génération et de l'ensemble de la personne
+  M.autrePrenom = function (r, g, sauf, ref, o) {
+    if (!M.v5(o)) return pk(r, (g === "f" ? M.PF : M.PM).filter((z) => !sauf.includes(z)));
+    return NM.prenom(r, g, 2026 - ((ref && ref.age) || 40), (ref && ref.ens) || "france", { pens: ref && ref.pens, sauf, sansEpicene: true }).prenom;
+  };
   M.METIERS = [["livreur", true], ["serveur", true], ["agent d'entretien", true], ["étudiant", false], ["sans emploi", false], ["préparateur de commandes", true], ["vendeur", true], ["chauffeur VTC", true], ["intérimaire dans le bâtiment", true], ["sans emploi", false], ["aide-soignant", true], ["cuisinier", true], ["agent de sécurité", true], ["maçon", true], ["coiffeur", true], ["caissier", true], ["magasinier", true], ["électricien", true], ["chauffeur-livreur", true], ["plombier", true], ["comptable", true], ["commercial", true], ["infirmier", true], ["professeur des écoles", true], ["développeur informatique", true], ["auto-entrepreneur", true], ["bénéficiaire du RSA", false], ["retraité", false], ["lycéen en alternance", true], ["boulanger", true]];
   M.METIERS_F = { "directeur juridique": "directrice juridique", "directeur administratif et financier": "directrice administrative et financière", "président de société": "présidente de société", "ouvrier du bâtiment": "ouvrière du bâtiment", "opérateur sur presse": "opératrice sur presse", "canalisateur": "canalisatrice", "collégien": "collégienne", "lycéen": "lycéenne", "lycéen en CAP": "lycéenne en CAP", "apprenti": "apprentie", "écolier": "écolière", "livreur": "livreuse", "serveur": "serveuse", "vendeur": "vendeuse", "étudiant": "étudiante", "préparateur de commandes": "préparatrice de commandes", "cuisinier": "cuisinière", "caissier": "caissière", "aide-soignant": "aide-soignante", "coiffeur": "coiffeuse", "infirmier": "infirmière", "commercial": "commerciale", "retraité": "retraitée", "boulanger": "boulangère", "magasinier": "magasinière", "chauffeur-livreur": "chauffeuse-livreuse", "électricien": "électricienne", "plombier": "plombière", "développeur informatique": "développeuse informatique", "intérimaire dans le bâtiment": "intérimaire dans le bâtiment", "lycéen en alternance": "lycéenne en alternance" };
   // Un métier imposé par l'affaire (« étudiant », « docker ») : en emploi, sauf les situations sans travail
@@ -264,18 +280,53 @@
       P.naissance = `le ${m[1] === "1" ? "1er" : m[1]} ${m[2]} ${now.y - P.age - (passe ? 0 : 1)}${m[4] || ""}`;
     };
     for (const k of Object.keys(t)) { const x = t[k]; if (Array.isArray(x)) x.forEach(une); else une(x); }
+    // 1.3.0 (personnes de la version 5 seulement, marquées par « pens ») : un âge corrigé par la fiche après le tirage
+    // (mineur, témoin étudiant) ou un sexe imposé reprend un prénom de sa génération et de son sexe
+    const gens = []; for (const k of Object.keys(t)) { const x = t[k]; for (const P of Array.isArray(x) ? x : [x]) if (P && typeof P === "object" && P.pens && P.prenom && P.age) gens.push(P); }
+    for (const P of gens) {
+      const d = NM.decennie(2026 - P.age), dd = NM.decenniesDe(P.prenom), gg = NM.genreDe(P.prenom);
+      if (dd && d >= dd[0] && d <= dd[1] && (!gg || gg === "e" || gg === P.g)) continue;
+      const rr = CR.seeded("prenom:" + P.prenom + ":" + P.nom + ":" + P.age);
+      P.prenom = NM.prenom(rr, P.g, 2026 - P.age, P.ens || "france", { pens: P.pens, sauf: gens.map((x) => x.prenom), sansEpicene: true }).prenom;
+    }
     if (t.A && t.V && t.inf === "violences_conj" && !/(^|_)ex|separ/.test((t.f && t.f.sc) || "") && /compagn/.test(t.A.proche || "")) t.A.proche = t.V.g === "f" ? "sa compagne" : "son compagnon";
     return t;
   };
 
   // Une personne : identité, âge, métier, logement, casier, entourage
   // o : { g, minAge, maxAge, metier, casier, majeur, lieu (secteur du domicile), milieu }
+  // o.famille : { de: personne déjà tirée, rel: "parent" | "enfant" | "fratrie" | "conjoint" } (version 5)
   M.personne = function (r, o = {}) {
     const g = o.g || (r() < (o.pf != null ? 1 - o.pf : 0.78) ? "m" : "f");
+    if (M.v5(o)) return personne5(r, o, g);
     const prenom = pk(r, g === "m" ? M.PM : M.PF);
     let nom = pk(r, M.NOMS);
     if (nom === prenom) nom = M.NOMS[(M.NOMS.indexOf(nom) + 1) % M.NOMS.length]; // « Nicolas Nicolas »
     const age = int(r, Math.max(18, o.minAge || 19), o.maxAge || 52);
+    return suite(r, o, g, prenom, nom, age);
+  };
+  // 1.3.0 : l'âge d'abord, puis le prénom de sa génération et un nom du même ensemble ; la famille porte le même nom
+  function personne5(r, o, g) {
+    const age = int(r, Math.max(18, o.minAge || 19), o.maxAge || 52), an = 2026 - age;
+    const F = o.famille, de = F && F.de, eviter = M.ctx ? M.ctx.eviter : new Set(NM.reserves());
+    let id, nomNaiss = null;
+    // l'enfant porte le nom d'usage de sa mère mariée (celui du père) ; ses parents, frères et sœurs, son nom de naissance
+    if (de && F.rel !== "conjoint") id = NM.identite(r, { g, an, ens: de.ens || "france", nom: F.rel === "enfant" ? de.nom : de.nomNaiss || de.nom, pens: F.rel === "fratrie" ? de.pens : undefined, sauf: [de.prenom], eviter });
+    else if (de) {
+      id = NM.identite(r, { g, an, ens: r() < 0.6 && de.ens ? de.ens : undefined, sauf: [de.prenom], eviter });
+      // l'épouse porte souvent le nom de son mari (nom d'usage) ; son nom de naissance reste le sien
+      if (g === "f" && de.g === "m" && r() < 0.5) { nomNaiss = id.nom; id.nom = de.nom; }
+    } else {
+      id = NM.identite(r, { g, an, eviter });
+      // environ une femme adulte sur quatre porte le nom de son mari (nom d'usage) ; les pièces d'identité donnent les deux
+      if (g === "f" && age >= 26 && r() < 0.25) { const u = NM.nom(r, r() < 0.7 ? id.ens : NM.tirerEnsemble(r), 1980); if (u !== id.nom && !eviter.has("nom:" + u)) { nomNaiss = id.nom; id.nom = u; } }
+    }
+    const p = suite(r, o, g, id.prenom, id.nom, age);
+    p.ens = id.ens; p.pens = id.pens; if (nomNaiss) p.nomNaiss = nomNaiss;
+    p.look = { b: 2 };
+    return M.noter(p);
+  }
+  function suite(r, o, g, prenom, nom, age) {
     let [metier, emploi] = o.metier ? [o.metier, M.enEmploi(o.metier)] : pk(r, M.METIERS_MIL[o.milieu] || M.METIERS);
     if (metier === "retraité" && age < 60) [metier, emploi] = ["sans emploi", false];
     if (metier === "lycéen en alternance" && age > 21) [metier, emploi] = ["préparateur de commandes", true];
@@ -300,10 +351,10 @@
     };
     if (S) { p.sect = S.id; if (o.milieu) p.mil = o.milieu; }
     return p;
-  };
+  }
   // Un policier, un contrôleur : la victime « agent » des fiches d'autorité
   M.agent = (r, msp, lieu) => Object.assign(M.personne(r, { pf: 0.3, minAge: 23, maxAge: 48, metier: msp ? "agent de contrôle de la RATP" : "gardien de la paix", casier: 0, lieu }), { agent: true });
-  M.gpx = (r) => `${pk(r, ["Karim Ouali", "Léa Perret", "Julien Moreau", "Sarah Benchetrit", "Kévin Lopes", "Aurélie Dumont", "Mickaël Tessier", "Nadia Ferhat", "Thomas Vasseur", "Inès Bouchard"])}`;
+  M.gpx = (r) => { if (!M.v5()) return `${pk(r, A0.GPX)}`; const P = NM.personneSimple(r, { age: int(r, 23, 50), eviter: M.ctx && M.ctx.eviter }); M.noter(P); return `${P.prenom} ${P.nom}`; };
 
   // ------------------------------------------------------------------ Contexte de récit (X) passé aux fiches
   M.X = function (t, r, niveau) {

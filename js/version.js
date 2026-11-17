@@ -17,6 +17,22 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "1.3.0", nom: "Les visages et les noms", date: "17 novembre 2026", type: "contenu",
+      resume: "Votre avocat se compose pièce par pièce, et les gens que vous croisez ont des visages et des noms qu'on distingue.",
+      notes: [
+        "L'atelier du visage, à la création de la carrière : peau, forme du visage, carrure, coupe et couleur des cheveux, sourcils, yeux, nez, bouche, barbe, lunettes, boucles d'oreilles, collier, couvre-chef, traits, tenue de ville.",
+        "Rien n'y est réservé à un sexe ni à une origine. « Au hasard » pour un menu, ou pour tout.",
+        "L'atelier se rouvre depuis le menu de la partie (« Votre apparence ») : changer de coupe, mettre des lunettes, vieillir, sans toucher à la partie.",
+        "La robe à l'audience ; votre tenue de ville au cabinet et en garde à vue. Vu de dos, votre avocat a sa coupe, sa couleur, ses lunettes et sa barbe.",
+        "Une banque de pièces deux fois plus grande dans chaque menu (47 coupes, 20 couleurs de cheveux, 17 montures, 40 traits), la même pour tous les personnages du jeu : cinq fois plus de visages distincts.",
+        "Des noms pour tout le monde : 785 noms de famille et 710 prénoms, à l'image de l'Île-de-France d'aujourd'hui, avec leur fréquence.",
+        "Les prénoms suivent l'âge : Josiane et Gérard ont soixante-dix ans, Léa et Rayan en ont vingt. Le prénom et le nom vont ensemble, avec environ un assemblage mixte sur six, comme dans la vie.",
+        "Les familles portent le même nom ; une épouse peut porter le nom de son mari, et son nom de naissance reste le sien. Jamais deux personnes du même nom dans une affaire, jamais votre nom à un inconnu.",
+        "Les carrières en cours gardent votre visage, et tous les visages et les noms déjà rencontrés. Les nouveautés viennent avec les nouvelles affaires.",
+        "Les codes d'affaire d'avant se rejouent à l'identique ; les nouveaux codes portent le n° 5 du générateur.",
+      ],
+    },
+    {
       version: "1.2.0", nom: "Le carnet", date: "16 novembre 2026", type: "contenu",
       resume: "Le carnet refait : chaque phrase notée garde son contexte, et se retrouve vite.",
       notes: [

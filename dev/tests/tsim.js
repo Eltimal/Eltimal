@@ -75,7 +75,8 @@ const ok = (c, m) => { if (!c) { fails++; if (fails < 40 || process.env.VOIR) co
       ok(SS.venue === "convocation" || ((E.interp % 1440) >= 6 * 60), `${tag} : interpellation au domicile avant 6 heures`);
       for (const k of Object.keys(PZ.docs)) { const r = rendre(PZ, k, t); if (r.bandeau) ok(r.bandeau.cadre === "ENQUÊTE PRÉLIMINAIRE", `${tag}/${k} : cadre ${r.bandeau.cadre}`); }
       ok(/plainte/i.test(PZ.titres.pv_victime || "plainte"), `${tag} : la victime n'est pas reçue en plainte`);
-      if (PZ.docs.pv_saisie) ok(/assentiment/.test(DOCS.texte(rendre(PZ, "pv_saisie", t))), `${tag} : perquisition sans assentiment`);
+      // l'assentiment écrit, ou l'irrégularité « perq_assentiment » : un consentement seulement oral, à relever
+      if (PZ.docs.pv_saisie) ok(/assentiment|consentir oralement/.test(DOCS.texte(rendre(PZ, "pv_saisie", t))), `${tag} : perquisition sans assentiment`);
       // l'ordre des cotes suit les jours : la plainte d'abord
       if (PZ.cotes.pv_victime) ok(+PZ.cotes.pv_victime.slice(1) < +PZ.cotes[SS.gav ? "pv_notification" : "pv_audition"].slice(1), `${tag} : la plainte après la garde à vue`);
     } else {

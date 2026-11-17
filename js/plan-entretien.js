@@ -91,6 +91,7 @@
 
   // l'avocat, de dos, au premier plan
   function avocat(m, you) {
+    if (you && you.b === 2 && you.p && CR.planKit) return CR.planKit.back(m, 84, 105, { look: you, D: 12 });
     const hair = PL.hexOf(PL.mix(PL.rgb(HAIR[(you && you.hc) || "dkbrown"] || HAIR.dkbrown), [18, 16, 20], 0.64)), // à contre-jour : la couleur s'assombrit
        long = you && you.g === "f";
     m.set({ E: 0, S: 0, D: 12 });

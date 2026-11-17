@@ -32,7 +32,7 @@ contenu = une version mineure nommée ; la 2.0 est la refonte d'ampleur.
 | 1.1.0 | L'accueil | Le menu principal retravaillé | **publiée le 16 novembre** ; reste la validation de Kevin sur son Mac |
 | 1.2.0 | Le carnet | Le carnet refait autour du contexte de chaque note | **publiée le 16 novembre** ; reste le regard de Kevin |
 | 1.2.1 | (correctif) | Publication fiable, retours sur le menu et le carnet | trois publications de suite vertes du premier coup |
-| 1.3.0 | Les visages et les noms | L'avocat du joueur se compose pièce par pièce ; une banque de visages bien plus grande ; bien plus de noms de famille, des prénoms et des noms qui vont ensemble | chaque pièce choisie se voit dans le portrait et en scène ; quatre fois plus de visages distincts ; dix fois plus d'identités, aucun prénom hors de sa génération |
+| 1.3.0 | Les visages et les noms | L'avocat du joueur se compose pièce par pièce ; une banque de visages bien plus grande ; bien plus de noms de famille, des prénoms et des noms qui vont ensemble | **faite le 17 novembre** (`tvisages`, `tnoms`, `tanciens`) ; reste le regard de Kevin sur l'atelier |
 | 1.4.0 | Le premier appel | La première semaine conduite | un joueur passif joue une garde à vue avant le troisième jour |
 | 1.5.0 | La garde à vue | La parole en garde à vue sur le modèle de la consultation | moins de 10 % de questions sans effet, aucun « déjà dit » |
 | 1.6.0 | Les autres voix | Dépôt, parloir, téléphone, victime, famille, témoin | aucune phrase d'une situation dite dans une autre, sur 420 affaires |
@@ -145,7 +145,38 @@ conservées telles quelles — à revoir si Kevin veut que plus rien ne se note 
 - Carnet : un seul nom dans tout le jeu (aujourd'hui « Carnet », « Bloc-notes du dossier », « Vos notes »).
 - Fini quand : trois publications de suite passent du premier coup sur GitHub.
 
-### 1.3.0 « Les visages et les noms » — l'avocat sur mesure, des personnes qu'on distingue
+### 1.3.0 « Les visages et les noms » — l'avocat sur mesure, des personnes qu'on distingue — **faite le 17 novembre 2026**
+
+Bilan, mesuré par la batterie :
+
+- `tvisages` : chacune des 300 options et plus des 28 menus change le portrait ; coupe, couleur, peau, barbe, lunettes
+  (présence et couleur) et tenue de ville se voient aussi sur la petite silhouette des décors et sur l'avocat vu de dos
+  (local de garde à vue, parloir) ; sur 10 000 inconnus, 1 873 visages distincts avant, 9 873 après (× 5,3) ; moins de
+  1 % de paires identiques dans une affaire ; les dix expressions sur 120 visages de la banque 2 ; l'atelier joué de la
+  création à la retouche depuis le menu, sans toucher à la partie.
+- `tnoms` : 6 020 identités possibles avant, 84 911 dans un même ensemble après (× 14), 557 350 avec les assemblages
+  mixtes ; 1,8 % de doublons sur 3 000 personnes ; 1 000 affaires sans prénom hors de sa génération ni de son sexe,
+  sans homonyme, sans nom de personnage récurrent ni du joueur ; liens de famille cohérents ; 16,8 % d'assemblages
+  mixtes ; plus aucune liste de noms de personnes hors de `js/noms.js` (contrôle sur les sources). Environ une femme
+  adulte sur quatre porte un nom d'usage : les procès-verbaux d'audition et de notification donnent alors « Nom d'usage »
+  et « Nom de naissance », le casier le nom de naissance suivi de « épouse » et du nom d'usage.
+- `tanciens` : 1 481 portraits d'avant (toutes expressions) rendus au pixel près, 120 affaires de la version 4 du
+  générateur rejouées à l'identique (tirage, noms et pièces).
+
+Défauts anciens révélés par le nouveau tirage, corrigés : arrêt de la chambre de l'instruction sans dispositif (appel de
+la partie civile contre une mise en accusation : la chambre confirme) ; heure des faits relue avant la chronologie (une
+partie rechargée ne redonnait pas les mêmes dialogues) ; garde à vue de préliminaire le matin des faits commis le soir
+(version 5) ; poids brut égal au poids net pour un demi-gramme (version 5) ; agent de sécurité, médecin et urgentiste
+accordés au prénom ; nom composé coupé au dernier mot dans l'audition du second fonctionnaire. Tests ajustés à des
+issues voulues du jeu : client qui part au premier rendez-vous, victime indemnisée en recouvrement, demande de renvoi
+évitée par l'automate, assentiment seulement oral (irrégularité), candidat qui décline.
+
+Comment : `js/noms.js` (source unique, anciennes listes gardées sous `CR.NOMS.ANCIENS` pour la version 4) ;
+générateur en version 5 (`GEN2.VERSION`) : ses personnes portent `ens`, `pens` et `look: { b: 2 }` ; `js/portraits.js`
+(banque 2 : `PX.BANQUE`, `PX.lookFrom2`, `PX.lookDePieces`) ; `js/ui-atelier.js` (l'atelier) ; `CR.youLook(s, "ville")`.
+Planches : `node tools/shotvisages.js 3 banque2,menus` (une planche par menu). Écarts assumés : vue en petit ou de
+dos, la forme des yeux, du nez ou de la monture ne se voit pas (quelques pixels) ; seuls les nouveaux venus prennent la
+banque 2 (décision de la feuille de route) ; un visage d'avant n'entre dans l'atelier que si le joueur le rouvre.
 
 Demande de Kevin (16 novembre) : personnaliser l'avocat et son visage, avec une banque de visages beaucoup plus grande,
 utilisée en jeu, et des menus : cheveux, yeux, nez, accessoires, etc.

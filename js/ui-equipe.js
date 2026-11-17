@@ -116,7 +116,7 @@
     const v = offre != null ? offre : c.contre || (a ? a.remu : c.demande);
     return html`<li className="eq-cand">
       <div className="eq-cand-head">
-        <${Portrait} look=${CR.px.lookFrom(c.seed)} size=${40} blink=${false} />
+        <${Portrait} look=${CR.lookEquipe(c)} size=${40} blink=${false} />
         <div><strong>${c.prenom} ${c.nom}</strong>, ${c.age} ans <span className="small muted">· ${CR.roleLabel(c)} · ${c.parcours.ans ? `${c.cv.ans} ans d'expérience` : "débutant" + (c.g === "f" ? "e" : "")} · ${c.etat === "entretien" ? `entretien le ${CR.fmtDate(c.entretien.day, "short")}` : c.lu ? "CV lu" : "nouveau"}</span></div>
         <${Btn} small onClick=${() => { if (!c.lu) CR.lireCV(s, c.id); setOpen(!open); bump(); }}>${open ? "Fermer" : c.lu ? "Ouvrir" : "Lire le CV (5 min)"}</${Btn}>
       </div>
@@ -184,7 +184,7 @@
         ${anc && html`<div className="banner small">${anc.prenom} ${anc.nomF} a fini son stage. <${Btn} small kind="primary" onClick=${() => { CR.proposerCollaboration(s); bump(); }}>Lui proposer une collaboration (${CR.money(CR.chiffre("retroMin"))} HT)</${Btn}></div>`}
         <ul className="eq-cards">${staff.map((st) => html`<li key=${st.id} className=${cx("eq-card", sel === st.id && "on")}>
           <button className="eq-card-head" onClick=${() => setSel(sel === st.id ? null : st.id)} aria-expanded=${sel === st.id}>
-            <${Portrait} look=${CR.px.lookFrom(st.seed)} size=${48} blink=${false} />
+            <${Portrait} look=${CR.lookEquipe(st)} size=${48} blink=${false} />
             <span className="eq-card-txt"><strong>${st.name}</strong><span className="small muted">${CR.roleLabel(st)}${st.age ? `, ${st.age} ans` : ""} · ${remuTxt(st)}</span>${statutTxt(s, st)}</span>
             <span className="eq-meters"><span className="small">Charge ${pct(CR.charge(s, st))}</span><${Meter} value=${Math.min(100, CR.charge(s, st) * 70)} tone=${tone(CR.charge(s, st) * 70, true)} small=${true} /><span className="small">Moral</span><${Meter} value=${st.morale} tone=${tone(st.morale)} small=${true} /></span>
           </button>

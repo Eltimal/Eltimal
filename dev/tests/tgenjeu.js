@@ -111,8 +111,9 @@ const P = require("./play"); const U = require("./util"); const { runAudience } 
 
   // ---------------------------------------------------------------- 3. Victime : le prévenu est convoqué, constitution de partie civile
   if (only === "tous" || only === "pc") {
-    const { cs, p } = await ouvrir("pc", (t) => t.d.voiePc === "convoque");
-    const T = await debut(cs);
+    // un client peut partir dès le premier rendez-vous (vie des personnages) : on prend alors une autre affaire
+    let cs, p, T;
+    for (let k = 0; k < 5; k++) { ({ cs, p } = await ouvrir("pc", (t) => t.d.voiePc === "convoque")); T = await debut(cs); if (cs.status === "active") break; }
     console.log("pc convoqué", cs.id, CR.caseTitle(s, cs), "|", p.t.q.label, "| audience", cs.proc.audience && CR.fmtDate(cs.proc.audience.day));
     await copie(cs, T);
     await fresh();
@@ -124,7 +125,8 @@ const P = require("./play"); const U = require("./util"); const { runAudience } 
     const log = await audience(cs, T, { constitution: "yes", questions: [/témoin|reconnu/], args: [/témoignage|certificat|qualification|préjudice|475-1/] });
     for (let i = 0; i < 3 && cs.status !== "closed"; i++) CR.endDay(s);
     console.log(log.filter((l) => /DÉCISION/.test(l)).join("\n").slice(0, 600));
-    res.push(["pc-convoque", cs.status, JSON.stringify(cs.outcome)]);
+    // une victime indemnisée garde son dossier ouvert pendant le recouvrement (lot 8, apres.js) : c'est une issue
+    res.push(["pc-convoque", cs.status === "closed" || (cs.vars.recouv && cs.vars.recouv.outcome) ? "closed" : cs.status, JSON.stringify(cs.outcome || (cs.vars.recouv && { recouvrement: cs.vars.recouv.etat, montant: cs.vars.recouv.montant }))]);
   }
 
   // ---------------------------------------------------------------- 4. Victime : plainte classée, citation directe

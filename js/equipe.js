@@ -105,9 +105,8 @@
   CR.expDomaine = (cs) => { const def = CR.caseDef(cs); if (def.domaineLib === "dpg" && def.camp === "pc") return "affaires"; return DOM_EXP[def.domaine] || "tc"; };
 
   // =================================================================== PARCOURS ET PERSONNALITÉ
-  const PRENOMS_F = ["Inès", "Sarah", "Léa", "Chloé", "Manon", "Amina", "Clara", "Zoé", "Camille", "Yasmine", "Laura", "Mathilde", "Fatou", "Julie", "Héloïse", "Nadia", "Anaïs", "Margaux"];
-  const PRENOMS_M = ["Lucas", "Hugo", "Nathan", "Yanis", "Théo", "Jules", "Rayan", "Adam", "Karim", "Thomas", "Mehdi", "Antoine", "Samuel", "Bilal", "Romain", "Victor", "Issa", "Paul"];
-  const NOMS = ["Martin", "Bernard", "Petit", "Robert", "Richard", "Durand", "Moreau", "Laurent", "Simon", "Michel", "Lefebvre", "Leroy", "Roux", "Fournier", "Girard", "Diallo", "Nguyen", "Haddad", "Benali", "Mercier", "Faure", "Lambert", "Bonnet", "Chevalier", "Traoré", "Ferreira", "Lemaire", "Garnier", "Boyer", "Rousseau"];
+  // les prénoms d'avant la 1.3.0 (source commune, js/noms.js) : ils servent encore à reconnaître le sexe d'un ancien employé
+  const PRENOMS_F = CR.NOMS.ANCIENS.equipe.PF, PRENOMS_M = CR.NOMS.ANCIENS.equipe.PM;
   const UNIVS = ["Paris 1 Panthéon-Sorbonne", "Paris 2 Panthéon-Assas", "Paris Nanterre", "Paris-Saclay", "Université Paris Cité", "Paris-Est Créteil", "Cergy Paris Université", "Lyon 3 Jean-Moulin", "Lille", "Bordeaux", "Aix-Marseille", "Toulouse Capitole", "Montpellier", "Strasbourg", "Rennes", "Université des Antilles"];
   const MASTERS = {
     penal: ["Master 2 Droit pénal et sciences criminelles", "Master 2 Droit pénal et procédure pénale", "Master 2 Justice pénale", "Master 2 Droit pénal international et européen"],
@@ -142,7 +141,7 @@
     const role = o.role, niveau = o.niveau || "confirme";
     const R = CR.ROLES[role];
     const g = role === "assistante" ? (TR.chance(s, 0.8) ? "f" : "m") : TR.chance(s, 0.55) ? "f" : "m";
-    const prenom = TR.pick(s, g === "f" ? PRENOMS_F : PRENOMS_M), nom = TR.pick(s, NOMS);
+    let prenom, nom;
     const an = CR.ymd(s.day).y;
     const ans = role === "eleve" ? 0 : niveau === "debutant" ? TR.int(s, 0, 1) : niveau === "confirme" ? TR.int(s, 2, 5) : TR.int(s, 6, 13);
     const veut = o.domaines || [];
@@ -166,6 +165,8 @@
     const ecole = avocatOuEleve ? TR.pick(s, ECOLES) : null;
     const ecoleFin = role === "eleve" ? null : crfpa ? crfpa + 2 : null;
     const age = role === "eleve" ? TR.int(s, 23, 27) : role === "assistante" ? 21 + ans + TR.int(s, 0, 9) : 24 + ans + TR.int(s, 0, 3);
+    // 1.3.0 : le nom vient de la source commune, le prénom de la génération de la personne
+    ({ prenom, nom } = CR.NOMS.identite(() => TR.next(s), { g, an: CR.ymd(s.day).y - age, eviter: CR.NOMS.reserves() }));
     const langues = ["français"];
     for (let i = TR.int(s, 0, 2); i > 0; i--) { const l = TR.pick(s, LANGUES); if (!langues.includes(l)) langues.push(l); }
     // expérience par domaine
@@ -204,9 +205,11 @@
         perso.loyaute = Math.max(20, perso.loyaute - 10);
       }
     }
-    return { g, prenom, nom, age, parcours: { univ, diplome, spe, crfpa, ecole, ecoleFin, ans, cabinets, langues }, exp, perso, cv };
+    return { g, prenom, nom, age, bq: 2, parcours: { univ, diplome, spe, crfpa, ecole, ecoleFin, ans, cabinets, langues }, exp, perso, cv };
   }
   CR.tirerPersonne = tirerPersonne;
+  // Le visage d'un candidat ou d'un employé : banque 2 pour ceux arrivés depuis la 1.3.0, banque d'avant pour les autres
+  CR.lookEquipe = (c) => CR.px.lookFrom(c.seed, c.bq === 2 ? { b: 2, g: c.g, age: c.age || 30 } : {});
 
   // Les employés des anciennes sauvegardes reçoivent un parcours et une personnalité tirés au sort
   function migrer(s, st) {
@@ -427,7 +430,7 @@
   };
   CR.embaucher = function (s, c, montant) {
     CR.equipe(s);
-    const st = { id: CR.uid("p"), role: c.role, prenom: c.prenom, nom: c.nom, g: c.g, age: c.age, seed: c.seed, parcours: c.parcours, exp: c.exp, perso: c.perso, cv: c.cv, indices: Object.assign({}, c.indices), incohVue: !!c.incohVue, hired: s.day };
+    const st = { id: CR.uid("p"), role: c.role, prenom: c.prenom, nom: c.nom, g: c.g, age: c.age, seed: c.seed, bq: c.bq, parcours: c.parcours, exp: c.exp, perso: c.perso, cv: c.cv, indices: Object.assign({}, c.indices), incohVue: !!c.incohVue, hired: s.day };
     st.vu = { traits: Object.fromEntries(Object.keys(c.indices).map((k) => [k, "indice"])), exp: {} };
     initEmploye(s, st, { arrive: CR.rollForward(Math.max(s.day + 1, c.dispo || s.day + 1)), temps: c.temps || 1, salary: montant });
     s.staff.push(st);
@@ -1024,7 +1027,7 @@
       if (st.depart && !st.depart.fait && d >= st.depart.jour) { finaliser(s, st); continue; }
       if (st.role === "eleve" && st.stageFin != null && d >= st.stageFin && !st.depart) {
         CR.mail(s, { from: st.name, subject: "Fin de mon stage", kind: "email", body: [["Mon stage s'achève aujourd'hui. Merci pour tout ce que j'ai appris ici."], [st.exp.tc + st.exp.recherche > 80 ? "Si une collaboration était possible, j'en serais heureu" + (st.g === "f" ? "se" : "x") + "." : "Je vous souhaite le meilleur pour le cabinet."]] });
-        s.team.ancienStagiaire = { id: st.id, jusqua: d + 10, nom: st.name, prenom: st.prenom, nomF: st.nom, g: st.g, seed: st.seed, parcours: st.parcours, exp: Object.assign({}, st.exp), perso: Object.assign({}, st.perso), cv: st.cv, indices: st.indices };
+        s.team.ancienStagiaire = { id: st.id, jusqua: d + 10, nom: st.name, prenom: st.prenom, nomF: st.nom, g: st.g, seed: st.seed, bq: st.bq, parcours: st.parcours, exp: Object.assign({}, st.exp), perso: Object.assign({}, st.perso), cv: st.cv, indices: st.indices };
         CR.depart(s, st, "fin du stage", { immediat: true });
       }
     }
@@ -1267,7 +1270,7 @@
   CR.proposerCollaboration = function (s) {
     const a = s.team && s.team.ancienStagiaire;
     if (!a) return null;
-    const st = { id: CR.uid("p"), role: "collaborateur", prenom: a.prenom, nom: a.nomF, g: a.g, age: null, seed: a.seed, parcours: Object.assign({}, a.parcours, { crfpa: a.parcours.crfpa, ecoleFin: CR.ymd(s.day).y }), exp: a.exp, perso: a.perso, cv: a.cv, indices: a.indices || {}, hired: s.day };
+    const st = { id: CR.uid("p"), role: "collaborateur", prenom: a.prenom, nom: a.nomF, g: a.g, age: null, seed: a.seed, bq: a.bq, parcours: Object.assign({}, a.parcours, { crfpa: a.parcours.crfpa, ecoleFin: CR.ymd(s.day).y }), exp: a.exp, perso: a.perso, cv: a.cv, indices: a.indices || {}, hired: s.day };
     st.vu = { traits: Object.fromEntries(CR.TRAITS.map(([k]) => [k, "confirme"])), exp: Object.fromEntries(CR.EXP.map(([k]) => [k, true])) };
     initEmploye(s, st, { arrive: CR.rollForward(s.day + 1), temps: 1, salary: CH("retroMin") });
     st.essaiFin = null;

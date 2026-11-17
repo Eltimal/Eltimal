@@ -519,8 +519,11 @@
     const [msg, setMsg] = useState("");
     const [confirmQuit, setConfirmQuit] = useState(false);
     const [confirmRetire, setConfirmRetire] = useState(false);
+    const [atelier, setAtelier] = useState(false);
     useEffect(() => { Saves.list().then(setSaves); }, []);
     const doSave = async (slot) => { const ok = await Saves.save(slot, s); setMsg(ok ? `Partie enregistrée dans l'emplacement ${slot}.${enScene ? " La scène en cours n'y figure pas : elle reprendra à son début." : ""}` : "L'enregistrement a échoué sur cet appareil. Exportez un fichier."); setSaves(await Saves.list()); };
+    // l'atelier prend la place du menu (une seule fenêtre à la fois : focus et Échap restent simples)
+    if (atelier) return html`<${UI.AtelierModal} look=${s.player.look} onClose=${() => setAtelier(false)} onSave=${(L) => { s.player.look = L; setAtelier(false); setMsg("Votre nouveau visage est enregistré."); bump(); }} />`;
     return html`<${UI.Modal} title="Menu" onClose=${onClose} wide>
       <div className="menu-grid">
         <div>
@@ -530,6 +533,8 @@
           <${Btn} onClick=${async () => { const r = await Saves.exportFile(s); setMsg(r === "ok" ? "Fichier de sauvegarde exporté." : r === "declined" ? "Export annulé." : "L'export a échoué."); }}>Exporter un fichier de sauvegarde</${Btn}>
           ${enScene && html`<p className="small muted">Jeu en pause. Une scène en cours ne s'enregistre pas : si vous quittez maintenant, elle reprendra à son début.</p>`}
           ${msg && html`<p className="small">${msg}</p>`}
+          <h3>Votre apparence</h3>
+          <div className="menu-apparence"><${UI.Portrait} look=${s.player.look || CR.px.lookFrom(s.player.nom)} size=${64} blink=${false} /><div><p className="small muted">Changer de coupe, de lunettes, vieillir : la partie n'en est pas touchée.</p><${Btn} onClick=${() => setAtelier(true)}>Retoucher votre visage</${Btn}></div></div>
           <h3>Réglages</h3>
           <${UI.Reglages} />
           <label htmlFor="ts" className="small">Vitesse du texte</label>
@@ -662,7 +667,11 @@
     const fileRef = useRef(null);
     useEffect(() => { Saves.list().then(setSaves); }, [Saves.backend]);
     const auto = saves && saves.find((x) => x.slot === "auto");
-    const look = useMemo(() => CR.px.lookFrom("joueur" + seed, { outfit: "robe", age: 28 }), [seed]);
+    // 1.3.0 : un visage de la banque 2, tiré au sort puis composé à l'atelier
+    const tire = useMemo(() => CR.px.lookJoueur(seed), [seed]);
+    const [compose, setCompose] = useState(null);
+    const [atelier, setAtelier] = useState(false);
+    const look = compose || tire;
     const start = (m, debut) => {
       const p = prenom.trim() || "Camille";
       const n = nom.trim() || "Durand";
@@ -739,7 +748,7 @@
           ${mode === "new" && html`<div className="ts-box">
             <p className="ts-box-title">Prestation de serment</p>
             <div className="new-career">
-              <div className="nc-portrait"><${Portrait} look=${look} size=${96} /><button type="button" className="ts-btn ts-btn-sm" onClick=${() => setSeed(Math.floor(Math.random() * 1e6))}>Un autre visage</button></div>
+              <div className="nc-portrait"><${Portrait} look=${look} size=${96} /><button type="button" className="ts-btn ts-btn-sm" onClick=${() => setAtelier(true)}>Composer le visage</button><button type="button" className="ts-btn ts-btn-sm" onClick=${() => { setCompose(null); setSeed(Math.floor(Math.random() * 1e6)); }}>Un autre visage</button></div>
               <div className="form">
                 <div className="form-row">
                   <div><label htmlFor="nc-prenom">Prénom</label><input id="nc-prenom" type="text" value=${prenom} placeholder="Camille" onChange=${(e) => setPrenom(e.target.value)} /></div>
@@ -761,6 +770,7 @@
             ${auto && !auto.meta.over && html`<p className="small muted">La carrière en cours (${auto.meta.nom}, ${auto.meta.date}) ne sera pas perdue : elle sera rangée dans « Partie précédente », à retrouver par « Charger une partie ».</p>`}
             <button type="button" className="ts-btn ts-btn-sm" onClick=${() => setMode("menu")}>Retour</button>
           </div>`}
+          ${atelier && html`<${UI.AtelierModal} look=${look} titre="Composer votre visage" onClose=${() => setAtelier(false)} onSave=${(L) => { setCompose(L); setAtelier(false); }} />`}
           <p className="ts-note">${Saves.backend === "cloud" ? "Progression enregistrée avec votre compte." : Saves.backend !== "none" ? "Progression enregistrée sur cet appareil, après chaque action." : "Cet appareil ne peut pas enregistrer : exportez un fichier depuis le menu."} Personnages fictifs, lieux réels. Droit à jour de novembre 2026 ; textes résumés pour le jeu.</p>
           <p className="ts-version">Version ${CR.JEU.titre} · ${CR.JEU.date} · fonctionne sans réseau</p>
         </div>

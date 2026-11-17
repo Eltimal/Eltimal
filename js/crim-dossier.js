@@ -132,7 +132,7 @@
     if (!proc) {
       const nb = int(r, 3, 5);
       const BRUITS = I.deces || /meurtre|assassinat|violences/.test(t.inf) ? ["des cris", "une violente dispute", "un bruit sourd, comme une chute", "une détonation", "quelqu'un qui courait dans l'escalier", "une porte claquer"] : ["des éclats de voix", "un véhicule qui démarrait vite", "des pas pressés", "un bruit de verre brisé"];
-      const NOMS = [["Mme", "Josiane Leclerc", 74], ["M.", "Ahmed Bouzid", 41], ["Mme", "Camille Perrin", 29], ["M.", "Gérard Masson", 66], ["Mme", "Fatoumata Sy", 35], ["M.", "Lucas Hoarau", 23]];
+      const NOMS = CR.NOMS.v5(t) ? CR.NOMS.liste(t, t.sig + ":voisins", 6, { ages: [21, 84] }).map((P) => [P.civ, `${P.prenom} ${P.nom}`, P.age]) : CR.NOMS.ANCIENS.monde.VOISINS;
       const vs = [];
       for (let i = 0; i < nb; i++) { const [c, nm, age] = NOMS[(i + int(r, 0, 5)) % NOMS.length]; if (vs.some((x) => x.nm === nm)) continue; vs.push({ c, nm, age, h: h0 + int(r, -35, 35), quoi: pk(r, BRUITS), etage: pk(r, ["au premier étage", "au troisième", "sur le même palier", "dans l'immeuble d'en face", "au rez-de-chaussée"]), rien: r() < 0.25 }); }
       const dits = vs.filter((x) => !x.rien).map((x) => x.h);
@@ -167,7 +167,7 @@
       const { jR, mR, premiere, corrige, hDit, dist, lum, reconnait, ajout, finR } = W;
       add("pv_reaudition", "Seconde audition du témoin", ENQ, () => DOCS.pv({ cote: cotes.pv_reaudition, proc: t.proc, service, unite: svc, cadre: t.flagrance ? "FLAGRANT DÉLIT" : "ENQUÊTE", titre: "Procès-verbal d'audition de témoin", qualite: "Témoin", numPV: "00" + int(CR.seeded(t.sig + ":reaud2"), 101, 899),
         jour: jR, heure: mR, redacteur: opj, lieu: "Nous trouvant au service", objet: `OBJET : ${t.q.label} — seconde audition`,
-        identite: { nom: T.nom, prenom: T.prenom, g: T.g, metier: T.metier, adresse: T.adresse },
+        identite: { nom: T.nom, nomNaiss: T.nomNaiss, prenom: T.prenom, g: T.g, metier: T.metier, adresse: T.adresse },
         blocs: [
           DOCS.decl(`« Je confirme ce que j'ai déclaré le jour des faits.${premiere ? " " + premiere.replace(/\s+$/, "") : ""} »`),
           DOCS.titre("QUESTIONS ET RÉPONSES"),

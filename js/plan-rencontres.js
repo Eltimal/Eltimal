@@ -195,7 +195,7 @@
           m.set({ E: still || t % 3 < 1.5 ? 255 : 30, D: 159 }); m.px(250, 14, "#ff3b30");
           const img = act(m, t, { look: o.look, expr: o.expr || "neutral", talk: parle(o), still, x: 148, y: 58, D: 100 });
           if (img) bras(m, img, 148, 58, 96);
-          const you = o.you || {}; K.back(m, 84, 105, { hc: you.hc, g: you.g, coat: "#1d1f26", D: 12, H });
+          const you = o.you || {}; K.back(m, 84, 105, { hc: you.hc, g: you.g, coat: "#1d1f26", D: 12, H, look: you });
           const fl = still ? 1 : (t % 29 > 28.3 ? 0.6 + 0.4 * h01(Math.floor(t * 30)) : 1) * (0.985 + 0.015 * Math.sin(t * 50)), cor = pass > 0 && pass < 2.6 ? 0.5 : 1;
           return {
             t, floorY: 120, reflK: 1.2, wet: 0.3, grain: 0.035, vig: 0.42, bloom: 1, tint: [0.98, 1, 0.98], amb: mix([0.11, 0.12, 0.13], [0.24, 0.25, 0.25], c.sun),

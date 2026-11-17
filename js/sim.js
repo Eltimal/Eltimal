@@ -43,7 +43,8 @@
   // l'équipage : deux agents différents (le tirage peut donner deux fois le même nom)
   SIM.equipage = function (t) {
     if (!SIM.supporte(t) || !t.gpx || t.gpx[0] !== t.gpx[1]) return;
-    const L = ["Karim Ouali", "Léa Perret", "Julien Moreau", "Sarah Benchetrit", "Kévin Lopes", "Aurélie Dumont", "Mickaël Tessier", "Nadia Ferhat", "Thomas Vasseur", "Inès Bouchard"];
+    if (CR.NOMS.v5(t)) { const P = CR.NOMS.liste(t, t.sig + ":equipage", 1)[0]; t.gpx[1] = `${P.prenom} ${P.nom}`; return; }
+    const L = CR.NOMS.ANCIENS.monde.GPX;
     t.gpx[1] = L[(L.indexOf(t.gpx[0]) + 3) % L.length];
   };
   SIM.caler = function (t, C) {
@@ -368,8 +369,10 @@
     const qte = m ? (m[1] === "des" ? int(r, 2, 4) : NUM[m[1]]) : 1;
     const lib = m ? m[2] : t.f.objet;
     const pu = Math.round((t.f.valeur / qte) * 100) / 100;
-    const prenom = pk(r, ["Moussa", "Kevin", "Yacine", "Sébastien", "Fatou", "Aïssatou", "Steeve", "Nadia"]);
-    const agent = { prenom, nom: pk(r, ["Diallo", "Martin", "Benali", "Lefèvre", "Camara", "Rousseau", "Traoré"]), g: /^(Fatou|Aïssatou|Nadia)$/.test(prenom) ? "f" : "m", societe: pk(r, ["Sécuritas", "Prosegur", "Fiducial Sécurité", "Seris"]), age: int(r, 24, 52) };
+    const AS = CR.NOMS.ANCIENS.agentsSecu;
+    let agent;
+    if (CR.NOMS.v5(t)) { const age = int(r, 24, 52), P = CR.NOMS.personneSimple(r, { g: r() < 0.75 ? "m" : "f", age, eviter: CR.NOMS.eviterDe(t) }); agent = { prenom: P.prenom, nom: P.nom, g: P.g, societe: pk(r, ["Sécuritas", "Prosegur", "Fiducial Sécurité", "Seris"]), age }; }
+    else { const prenom = pk(r, AS.PRENOMS); agent = { prenom, nom: pk(r, AS.NOMS), g: /^(Fatou|Aïssatou|Nadia)$/.test(prenom) ? "f" : "m", societe: pk(r, ["Sécuritas", "Prosegur", "Fiducial Sécurité", "Seris"]), age: int(r, 24, 52) }; }
     const ecrans = ch(r, 0.55);
     const rayon = pk(r, ["au fond du rayon", "dans l'allée centrale", "près des rayonnages du fond", "à l'angle du rayon"]);
     E.repere = S.T0 - int(r, 6, 18); E.portique = S.T0;
@@ -483,7 +486,8 @@
   SIM.detention = (t, S) => !!(t && t.inf === "stups_detention" && t.f && ["domicile", "voiture"].includes(t.f.sc) && t.flagrance && !(S && S.prelim));
   function detention(S, t, k, r) {
     const dom = t.f.sc === "domicile";
-    const prenom = pk(r, ["Yanis", "Mehdi", "Lucas", "Inès", "Sofiane", "Clara"]), nom = pk(r, ["Bensalem", "Garnier", "Diakité", "Morel", "Haddad"]);
+    const CO = CR.NOMS.ANCIENS.colocs, C5 = CR.NOMS.v5(t) ? CR.NOMS.personneSimple(r, { age: 19 + Math.floor(r() * 20), eviter: CR.NOMS.eviterDe(t) }) : null;
+    const prenom = C5 ? C5.prenom : pk(r, CO.PRENOMS), nom = C5 ? C5.nom : pk(r, CO.NOMS);
     return {
       dom, coloc: dom && ch(r, 0.35), colocN: `${prenom} ${nom}`, pieces: pk(r, ["deux pièces", "trois pièces", "un studio"]),
       tiers: !dom && ch(r, 0.4), proprio: pk(r, ["sa sœur", "un ami", "une société de location"]), passagers: dom ? 0 : pk(r, [0, 0, 1, 2]),

@@ -118,7 +118,7 @@
     const A = (r) => { const a = CR.acteur(cs.actors[r]); return a ? CR.px.acteurLook(a) : null; };
     const pres = CR.acteur(cs.actors.president) || CR.acteur(cs.actors.jld) || CR.acteur(cs.actors.ji);
     const jures = decor.jures || 0;
-    const looks = { president: decor.judge || (pres ? CR.px.acteurLook(pres) : null), parquet: A("parquet"), greffier: CR.px.lookFrom("greffiere" + cs.id, { g: "f", age: 44 }), client: CR.px.clientLook(CR.client(cs), cs.def), you: CR.youLook(s), adverse: A("adverse"), jures: decor.jureLooks || null };
+    const looks = { president: decor.judge || (pres ? CR.px.acteurLook(pres) : null), parquet: A("parquet"), greffier: CR.px.lookFrom("greffiere" + cs.id, CR.NOMS.v5Dossier(s, cs) ? { g: "f", age: 44, b: 2 } : { g: "f", age: 44 }), client: CR.px.clientLook(CR.client(cs), cs.def), you: CR.youLook(s), adverse: A("adverse"), jures: decor.jureLooks || null };
     if (decor.sansParquet) delete looks.parquet; // audience où le ministère public n'est pas représenté (intérêts civils, art. 464)
     Object.keys(looks).forEach((k) => { if (looks[k] == null) delete looks[k]; });
     const opts = { looks, camp: cs.camp === "pc" ? "pc" : "defense", box: !!decor.box, jures, juges: decor.juges || (name === "ccd" || (name === "assises" && /criminelle/i.test(t)) ? 5 : name === "cabinet_ji" ? 1 : 3), rouge: name === "assises" && jures > 0, adverse: !!cs.actors.adverse, victime: !!decor.victime };
@@ -699,18 +699,26 @@
   </article>`;
 
   // =================================================================== Tirage et récusation des jurés (art. 298)
-  const PRENOMS_J = ["Martine", "Karim", "Sylvie", "Olivier", "Fatoumata", "Jean-Luc", "Nathalie", "Thomas", "Samia", "Patrick", "Élodie", "Bruno", "Hélène", "Mamadou", "Isabelle", "Franck", "Sophie", "Ahmed", "Céline", "Laurent"];
-  const NOMS_J = ["Dupont", "Benali", "Lemoine", "Garnier", "Traoré", "Rousseau", "Fontaine", "Morel", "Chevalier", "Mercier", "Blanc", "Guerin", "Muller", "Henry", "Perrin", "Robin", "Masson", "Sanchez", "Nicolas", "Gauthier"];
+  const PRENOMS_J = CR.NOMS.ANCIENS.jures.PRENOMS, NOMS_J = CR.NOMS.ANCIENS.jures.NOMS; // affaires d'avant la 1.3.0
   const METIERS_J = [["Infirmière", 0.1], ["Retraité de la RATP", -0.05], ["Commerçant", -0.15], ["Professeure des écoles", 0.15], ["Agent de sécurité", -0.2], ["Ingénieur", 0], ["Chauffeur VTC", 0.05], ["Cadre bancaire", -0.1], ["Étudiante", 0.15], ["Policier retraité", -0.35], ["Éducatrice spécialisée", 0.25], ["Artisan plombier", -0.05], ["Aide-soignante", 0.1], ["Gérant de bar", -0.1]];
+  const FEM_J = /^(Infirmière|Professeure|Étudiante|Éducatrice|Aide-soignante)/, MASC_J = /^(Retraité|Commerçant|Ingénieur|Policier|Artisan|Gérant|Cadre)/;
   CR.tirerJures = function (s, cs, n = 14) {
     const out = [];
     const r = CR.seeded(cs.id + "jury" + s.seed);
+    // les affaires tirées avant la 1.3.0 gardent leurs jurés d'avant ; les nouvelles prennent la source commune des noms
+    const gp = (s.generated || []).find((x) => x.id === cs.id), v5 = !!(gp && gp.t && (gp.t.ver || 0) >= 5), eviter = new Set(CR.NOMS.reserves());
     for (let i = 0; i < n; i++) {
       const [metier, lean] = METIERS_J[Math.floor(r() * METIERS_J.length)];
       const age = 23 + Math.floor(r() * 50);
-      const g = r() < 0.5 ? "f" : "m";
-      const nm = `${PRENOMS_J[Math.floor(r() * PRENOMS_J.length)]} ${NOMS_J[Math.floor(r() * NOMS_J.length)]}`;
-      out.push({ id: "j" + i, nom: nm, age, metier, commune: ["Paris 11e", "Paris 19e", "Paris 15e", "Paris 18e", "Paris 7e", "Paris 20e", "Paris 13e"][Math.floor(r() * 7)], lean: lean + (r() - 0.5) * 0.3, look: CR.px.lookFrom("jure" + nm + s.seed, { age, g }) });
+      let g = r() < 0.5 ? "f" : "m";
+      let nm, look;
+      if (v5) {
+        // 1.3.0 : le juré a le sexe de son métier, un prénom de sa génération, un nom de la source commune, un visage de la banque 2
+        if (FEM_J.test(metier)) g = "f"; else if (MASC_J.test(metier)) g = "m";
+        const id = CR.NOMS.identite(r, { g, an: 2026 - age, eviter }); eviter.add(id.prenom + " " + id.nom); eviter.add("nom:" + id.nom);
+        nm = `${id.prenom} ${id.nom}`; look = CR.px.lookFrom("jure" + nm + s.seed, { age, g, b: 2 });
+      } else { nm = `${PRENOMS_J[Math.floor(r() * PRENOMS_J.length)]} ${NOMS_J[Math.floor(r() * NOMS_J.length)]}`; look = CR.px.lookFrom("jure" + nm + s.seed, { age, g }); }
+      out.push({ id: "j" + i, nom: nm, age, metier, commune: ["Paris 11e", "Paris 19e", "Paris 15e", "Paris 18e", "Paris 7e", "Paris 20e", "Paris 13e"][Math.floor(r() * 7)], lean: lean + (r() - 0.5) * 0.3, look });
     }
     return out;
   };

@@ -73,7 +73,9 @@
     if (d.h0 == null) d.h0 = d.h; else d.h = d.h0;
     if (t.mesure === "gav") {
       if (t.genre === "gav" || t.genre === "ci") { C.jg = t.day + (d.debut < 0 ? -1 : 0); C.debut = ((d.debut % 1440) + 1440) % 1440; }
-      else { C.jg = d.mesure != null ? d.mesure : d.acte != null && !t.flagrance ? d.acte : d.faits; C.debut = t.flagrance ? (d.h + int(r, 10, 30)) : pk(r, [6 * 60 + 5, 8 * 60 + 40, 9 * 60 + 30]); }
+      else { C.jg = d.mesure != null ? d.mesure : d.acte != null && !t.flagrance ? d.acte : d.faits; C.debut = t.flagrance ? (d.h + int(r, 10, 30)) : pk(r, [6 * 60 + 5, 8 * 60 + 40, 9 * 60 + 30]);
+        // 1.3.0 (version 5) : en préliminaire, la garde à vue du matin ne précède pas des faits commis le même jour
+        if ((t.ver || 0) >= 5 && !t.flagrance && C.jg <= d.faits) C.jg = d.faits + 1; }
       C.interp = irr("heures") ? C.debut - int(r, 65, 100) : C.debut;
       C.notif = irr("gav_notif") ? C.debut + int(CR.seeded(t.sig + "n"), 140, 190) : C.debut + int(r, 10, 20);
       C.avisPq = irr("avis_parquet") ? C.debut + int(r, 185, 260) : C.debut + int(r, 15, 35);
@@ -309,7 +311,7 @@
       [{ t: `Mouvements sans rapport avec les revenus déclarés : ${eur(N.montant || int(r, 30, 200) * 100)} au total sur la période.`, f: "G_releve" }],
     ], sigs: [] }));
     if (has("fichier")) add("fichier_permis", "Fichier des permis", () => ({ title: "Relevé du fichier national des permis de conduire", kind: "releve", entete: ["Ministère de l'Intérieur · Fichier national des permis de conduire", `Consultation du ${D(jf)}`], paras: [
-      [`Identité : ${A.nom} ${A.prenom}, né${e(A)} ${A.naissance}.`],
+      [`Identité : ${A.nomNaiss || A.nom} ${A.prenom}${A.nomNaiss ? `, épouse ${A.nom}` : ""}, né${e(A)} ${A.naissance}.`],
       [t.f.sc === "jamais" ? { t: "Aucun permis de conduire délivré à cette identité.", f: "G_fichier" } : { t: t.f.sc === "suspendu" ? `Suspension administrative de six mois, arrêté du préfet de police du ${D(jf - 50)}.` : `Invalidation pour solde de points nul (décision 48 SI du ${D(jf - 80)}).`, f: "G_fichier" }],
       t.f.sc !== "jamais" ? [{ t: dou("notif_permis") ? "Notification par lettre recommandée : pli avisé et non réclamé, retourné à l'expéditeur." : "Notification par lettre recommandée : avis de réception signé.", f: dou("notif_permis") ? "G_notif_permis" : "G_notif_ar" }] : null,
     ].filter(Boolean), sigs: [] }));
@@ -365,10 +367,10 @@
     // n° 12 : la société poursuivie a son propre bulletin n° 1 (jamais condamnée dans le jeu)
     const casierPM = t.PM ? [[`Personne morale : ${t.PM.nom}, ${t.PM.rcs}. Néant.`]] : [];
     if (an) fact("G_ant", { label: `Le bulletin n° 1 : ${an.label}, ${an.juridiction}, ${D(an.jug)}`, key: true, why: "Pour la récidive, tout se lit dans les dates et les qualifications : quand la condamnation est-elle devenue définitive, quand la peine a-t-elle pris fin, et pour quel délit ?" });
-    if (an) docs.casier = () => ({ title: "Bulletin n° 1 du casier judiciaire", kind: "greffe", entete: ["Ministère de la Justice · Casier judiciaire national", "107, rue du Landreau, 44317 Nantes"], paras: [["Relevé délivré à l'autorité judiciaire."], [`Identité : ${A.nom} ${A.prenom}, né${e(A)} ${A.naissance}.`],
+    if (an) docs.casier = () => ({ title: "Bulletin n° 1 du casier judiciaire", kind: "greffe", entete: ["Ministère de la Justice · Casier judiciaire national", "107, rue du Landreau, 44317 Nantes"], paras: [["Relevé délivré à l'autorité judiciaire."], [`Identité : ${A.nomNaiss || A.nom} ${A.prenom}${A.nomNaiss ? `, épouse ${A.nom}` : ""}, né${e(A)} ${A.naissance}.`],
       [{ t: `${an.juridiction}, jugement ${an.mineur ? "" : "contradictoire "}du ${D(an.jug)} : ${an.label}${an.mineur ? "" : ` (${an.art})`}, ${peineAnt(an.peine)}.${an.appel ? ` Appel du prévenu le ${D(an.appel)} ; ${an.juridiction && /Nanterre/.test(an.juridiction) ? "cour d'appel de Versailles" : "cour d'appel de Paris"}, arrêt confirmatif du ${D(an.arret)}.` : ""}${an.mineur ? "" : ` Décision devenue définitive le ${D(an.def)}.`}${execAnt(an)}`, f: "G_ant" }],
       ...casierPM, ["Fin du relevé."]] });
-    else docs.casier = () => ({ title: "Bulletin n° 1 du casier judiciaire", kind: "greffe", entete: ["Ministère de la Justice · Casier judiciaire national", "107, rue du Landreau, 44317 Nantes"], paras: [["Relevé délivré à l'autorité judiciaire."], [`Identité : ${A.nom} ${A.prenom}, né${e(A)} ${A.naissance}.`], [{ t: A.casier === 0 ? "Néant." : t.rec ? `Tribunal correctionnel de Paris, il y a dix-huit mois : ${CAT.INF[t.inf].nom.toLowerCase()}, quatre mois d'emprisonnement avec sursis.` : (() => { const n = CR.MONDE.ansCasier(A, int(r, 7, 12)), quoi = pk(r, ["vol", "usage de stupéfiants", "conduite sans permis"]); return CR.MONDE.casierMineur(A) ? `Tribunal pour enfants de Paris, il y a ${n > 1 ? "deux ans" : "un an"} : ${quoi === "conduite sans permis" ? "vol" : quoi}, avertissement judiciaire.` : `Tribunal correctionnel de Bobigny, il y a ${n} an${n > 1 ? "s" : ""} : ${quoi}, amende de 300 euros.`; })(), f: "G_casier_b1" }], ...casierPM] });
+    else docs.casier = () => ({ title: "Bulletin n° 1 du casier judiciaire", kind: "greffe", entete: ["Ministère de la Justice · Casier judiciaire national", "107, rue du Landreau, 44317 Nantes"], paras: [["Relevé délivré à l'autorité judiciaire."], [`Identité : ${A.nomNaiss || A.nom} ${A.prenom}${A.nomNaiss ? `, épouse ${A.nom}` : ""}, né${e(A)} ${A.naissance}.`], [{ t: A.casier === 0 ? "Néant." : t.rec ? `Tribunal correctionnel de Paris, il y a dix-huit mois : ${CAT.INF[t.inf].nom.toLowerCase()}, quatre mois d'emprisonnement avec sursis.` : (() => { const n = CR.MONDE.ansCasier(A, int(r, 7, 12)), quoi = pk(r, ["vol", "usage de stupéfiants", "conduite sans permis"]); return CR.MONDE.casierMineur(A) ? `Tribunal pour enfants de Paris, il y a ${n > 1 ? "deux ans" : "un an"} : ${quoi === "conduite sans permis" ? "vol" : quoi}, avertissement judiciaire.` : `Tribunal correctionnel de Bobigny, il y a ${n} an${n > 1 ? "s" : ""} : ${quoi}, amende de 300 euros.`; })(), f: "G_casier_b1" }], ...casierPM] });
     titres.casier = "Casier judiciaire";
     if (t.genre === "ci" || t.genre === "gav") {
       docs.esr = () => ({ title: "Enquête sociale rapide", kind: "courrier", entete: ["Association de contrôle judiciaire — permanence du dépôt", "Article 41, alinéa 7, du code de procédure pénale"], paras: [

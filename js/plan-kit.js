@@ -83,8 +83,40 @@
     for (let yy = y + 64; yy < y1; yy++) for (let xx = x + 3; xx < x + 61; xx++) { const u = (xx - x - 32) / 29; m.nx = Math.round(u * Math.abs(u) * 100 + 128); m.px(xx, yy, Math.abs(u) > 0.72 || (xx + yy) % 9 === 0 ? dk : sl); }
     m.nx = 128;
   };
+  function dos2(m, cx, top, o) {
+    const L = o.look, p = L.p, cut = p.cut || "crew", HX = (CR.px && CR.px.HAIRHEX) || {};
+    const voile = cut === "hijab" || cut === "turban";
+    const hair = PL.hexOf(mix(PL.rgb(voile ? p.veilC || "#5b3a5e" : HX[L.hc] || K.HAIR[L.hc] || "#3c271a"), [18, 16, 20], voile ? 0.4 : 0.58));
+    const skin = PL.hexOf(mix(PL.rgb((CR.px.SKIN2 || [])[p.peau] || "#b98257"), [18, 16, 20], 0.35));
+    const robe = L.outfit === "robe" || L.outfit === "robeR", coat = robe ? (L.outfit === "robeR" ? "#6e1a20" : "#1b1c22") : PL.hexOf(mix(PL.rgb(p.shirt || "#2b313d"), [18, 16, 20], 0.45));
+    const cA = PL.rgb(coat), cB = mix(cA, [255, 255, 255], 0.07), sy = top + 53;
+    m.set({ E: 0, S: 0, D: o.D == null ? 12 : o.D });
+    for (let y = sy; y < (o.H || 225); y++) {
+      const k = Math.min(1, (y - sy) / 33), half = Math.round(34 + 58 * Math.sqrt(k) + 6 * k);
+      for (let x = cx - half; x <= cx + half; x++) { const u = (x - cx) / (half + 1), e = Math.pow(Math.abs(u), 3); m.nx = Math.round(u * e * 110 + 128); m.ny = Math.round(128 - (1 - k) * (0.35 + 0.6 * e) * 127); m.px(x, y, PL.h2(x, y) < 0.08 ? cB : cA); }
+    }
+    m.set({ n: [0, -0.7] }); m.r(cx - 18, sy - 5, 36, 6, mix(cA, [0, 0, 0], 0.12)); m.hl(cx - 17, sy - 6, 34, robe ? "#d9dbd6" : mix(cA, [255, 255, 255], 0.1)); m.set({ n: [0, 0] });
+    m.orb(cx, sy - 4, 10, 6, skin, 0.7);
+    // la tête : crâne de peau sous les cheveux ras, volume ou longueur selon la coupe
+    if (RAS.test(cut)) { m.orb(cx, top + 25, 20, 24, skin, 0.92); if (cut !== "bald") m.orb(cx, top + 22, 19, 20, hair, cut === "buzz" || cut === "pixie2" || cut === "cornrows" ? 0.7 : 0.45); }
+    else if (voile) { m.orb(cx, top + 30, 25, 32, hair, 0.95); }
+    else if (LONGS.test(cut)) m.orb(cx, top + 34, 23, 33, hair, 0.92);
+    else if (MOY.test(cut)) m.orb(cx, top + 29, 23, 28, hair, 0.92);
+    else if (VOL.test(cut)) m.orb(cx, top + 22, cut === "bigafro" ? 29 : 24, cut === "hightop" ? 30 : 27, hair, 0.92);
+    else m.orb(cx, top + 25, 21, 25, hair, 0.92);
+    if (NOUE.test(cut)) { if (cut === "ponytail") m.orb(cx, top + 48, 6, 14, hair, 0.9); else if (cut === "pigtails" || cut === "spacebuns") { m.orb(cx - 18, top + 10, 7, 7, hair, 0.9); m.orb(cx + 18, top + 10, 7, 7, hair, 0.9); } else m.orb(cx, top + 2, cut === "manbun" ? 6 : 8, cut === "manbun" ? 5 : 7, hair, 0.92); }
+    if (!voile) { m.orb(cx - 22, top + 30, 3, 6, skin, 0.6); m.orb(cx + 22, top + 30, 3, 6, skin, 0.6); }
+    // vue de dos : la barbe déborde de la mâchoire, les branches des lunettes passent sur les oreilles
+    const B = p.beard && p.beard !== "none" ? p.beard : null;
+    if (B && !/moustache|pencil|handlebar|soul|stubble/.test(B)) { m.orb(cx - 19, top + 40, 4, 7, hair, 0.7); m.orb(cx + 19, top + 40, 4, 7, hair, 0.7); }
+    if (p.glasses && p.glasses !== "none") { const gc = p.gcol || "#1e1e22"; m.hl(cx - 25, top + 27, 6, gc); m.hl(cx + 20, top + 27, 6, gc); }
+    if (!voile && !RAS.test(cut)) { const hi = mix(PL.rgb(hair), [255, 255, 255], 0.16); for (let i = 0; i < 46; i++) { const x = cx - 18 + Math.floor(h01(i * 3.7) * 36), y = top + 3 + Math.floor(h01(i * 9.1) * 34); if ((x - cx) * (x - cx) / 441 + (y - top - 25) * (y - top - 25) / 625 < 0.8) m.vl(x, y, 3, hi, 0.5); } }
+  }
   // personnage de dos au premier plan : tête (centre cx, haut top), épaules jusqu'en bas ; o = { hc, g, coat, skin, D, H }
+  // 1.3.0 : o.look (un visage de la banque 2) donne la coupe, la couleur, la peau, la tenue, les lunettes et la barbe
+  const LONGS = /^(long|wavy|fringe|straightlong|longcurls|braids|locks|lowlocks|mane|bigcurls|twists|sidebraid|mullet)$/, MOY = /^(bob|lob|curtains|shag)$/, RAS = /^(bald|buzz|crown|receding|cornrows|pixie2)$/, VOL = /^(afro|bigafro|hightop|curls)$/, NOUE = /^(bun|manbun|afropuff|locsup|spacebuns|ponytail|pigtails)$/;
   K.back = function (m, cx, top, o) {
+    if (o.look && o.look.b === 2 && o.look.p) return dos2(m, cx, top, o);
     const hair = PL.hexOf(mix(PL.rgb(K.HAIR[o.hc || "dkbrown"] || K.HAIR.dkbrown), [18, 16, 20], 0.58)), // à contre-jour
        long = o.g === "f", coat = o.coat || "#2b313d", skin = o.skin || "#8a6a58";
     const cA = PL.rgb(coat), cB = mix(cA, [255, 255, 255], 0.07), sy = top + 53;

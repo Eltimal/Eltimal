@@ -15,9 +15,9 @@
   const AUD = CR.AUD;
   const GEN = (CR.GEN = {});
 
-  const PM = ["Mehdi", "Kevin", "Julien", "Moussa", "Thomas", "Bilal", "Nicolas", "Ibrahima", "Florian", "Sofiane", "Damien", "Alexandre", "Yacine", "Maxime", "Samir", "Loïc", "Adama", "Romain", "Anis", "Quentin"];
-  const PF = ["Inès", "Laura", "Fatou", "Camille", "Sarah", "Amel", "Julie", "Aïcha", "Manon", "Léa", "Nadia", "Océane", "Kenza", "Marine", "Assia", "Pauline"];
-  const NOMS = ["Bensaïd", "Martin", "Diarra", "Lefebvre", "Haddad", "Moreau", "Traoré", "Girard", "Mansouri", "Petit", "Camara", "Roux", "Belkacem", "Fournel", "Sissoko", "Garnier", "Amrani", "Lambert", "Kone", "Dubois", "Chérif", "Bonnet", "Fofana", "Lemoine"];
+  const PM = CR.NOMS.ANCIENS.gen1.PM;
+  const PF = CR.NOMS.ANCIENS.gen1.PF;
+  const NOMS = CR.NOMS.ANCIENS.gen1.NOMS;
   const METIERS = [["livreur", true], ["serveur", true], ["agent d'entretien", true], ["étudiant", false], ["sans emploi", false], ["préparateur de commandes", true], ["vendeur", true], ["chauffeur VTC", true], ["intérimaire dans le bâtiment", true], ["sans emploi", false]];
   const RUES = ["rue Marcadet", "rue Ordener", "boulevard Barbès", "rue de Clignancourt", "rue Championnet", "rue Myrha", "rue Doudeauville", "rue Ramey", "rue Custine", "rue Labat"];
   const OPJ = ["opj_marchetti", "opj_rocher", "opj_benali"];

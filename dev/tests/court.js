@@ -57,7 +57,9 @@ async function runAudience(w, doc, CR, o = {}) {
       if (/dernier mot/i.test(label)) { const b = btns.find((x) => o.dernier && o.dernier.test(texts(x))) || btns[0]; await click(w, b); log.push("DERNIER " + texts(b).slice(0, 30)); continue; }
       const pref = btns.find((b) => (o.prefer || []).some((r) => r.test(texts(b))));
       if (pref) { await click(w, pref); log.push("CHOIX " + texts(pref).slice(0, 50)); continue; }
-      if (btns.length) { await click(w, btns[0]); log.push("CHOIX " + texts(btns[0]).slice(0, 50)); continue; }
+      // par défaut, le premier choix qui ne demande pas de renvoi : le jeu de bout en bout va jusqu'au jugement
+      const def = btns.find((b) => !/renvoi|besoin de temps|délai/i.test(texts(b))) || btns[0];
+      if (def) { await click(w, def); log.push("CHOIX " + texts(def).slice(0, 50)); continue; }
     }
   }
   return log;

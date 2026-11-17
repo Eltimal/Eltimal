@@ -35,9 +35,12 @@ const ok = (c, m) => { if (!c) { echecs++; console.log("ÉCHEC", m); } };
   ok(cands.length >= 3, "plusieurs candidatures");
   ok(cands.every((c) => c.parcours && c.parcours.univ && c.parcours.langues.includes("français") && Object.keys(c.exp).length === 11), "parcours et expérience par domaine");
   const recruter = (role) => {
+    // le meilleur candidat peut partir après une offre trop basse (c'est voulu) : on passe alors au suivant
     const cs = CR.candidatsVisibles(s).filter((c) => c.role === role).sort((a, b) => b.qualite - a.qualite);
-    const c = cs[0];
-    if (!c) return null;
+    for (const c of cs) { const st = essayer(role, c); if (st) return st; }
+    return null;
+  };
+  const essayer = (role, c) => {
     CR.lireCV(s, c.id);
     CR.entretien(s, c.id, ["situation", "parcours", "pretentions"]);
     ok(c.reponses.length === 3 && Object.keys(c.indices).length >= 2, "entretien : réponses et indices de personnalité");

@@ -94,7 +94,12 @@
     const day = o.day || 0;
     for (let k = 0; k < 60; k++) {
       const r = CR.seeded(seed + (k ? "~" + k : ""));
-      const t = tirer1(r, genre, day, Object.assign({}, o, { _graine: seed + (k ? "~" + k : "") }));
+      // 1.3.0 : la version de la graine choisit les noms et les visages (version 4 : les listes d'avant, à l'identique)
+      const mv = /^v(\d+):/.exec(seed);
+      CR.MONDE.vCour = mv ? +mv[1] : GEN2.VERSION;
+      CR.MONDE.ctx = CR.MONDE.vCour >= 5 ? { eviter: new Set(CR.NOMS.reserves()) } : null;
+      let t;
+      try { t = tirer1(r, genre, day, Object.assign({}, o, { _graine: seed + (k ? "~" + k : "") })); } finally { CR.MONDE.vCour = null; CR.MONDE.ctx = null; }
       if (!t) continue;
       if (CR.MONDE.caler) CR.MONDE.caler(t, day);
       t.sig = GEN2.signature(t);
@@ -167,16 +172,17 @@
       if (mv) { V.metier = mv; V.emploi = true; }
       if (vt === "commerce") { V.metier = V.g === "f" ? "gérante du commerce" : "gérant du commerce"; V.emploi = true; }
     }
-    if (V && A.nom === V.nom) V.nom = pk(r, M.NOMS.filter((n) => n !== A.nom));
+    if (V && A.nom === V.nom) V.nom = M.autreNom(r, A.nom, V);
     const T0 = M.personne(r, { pf: 0.45, minAge: 20, maxAge: 75, casier: 0, lieu: LX.T.id, milieu: LX.milT });
-    const T = { prenom: T0.prenom, nom: T0.nom, g: T0.g, age: T0.age, metier: T0.metier, adresse: T0.adresse };
+    const T = { prenom: T0.prenom, nom: T0.nom, g: T0.g, age: T0.age, metier: T0.metier, adresse: T0.adresse, ens: T0.ens, pens: T0.pens, look: T0.look };
     let P = null;
     if (I.deces && V) {
       // le proche qui se constitue partie civile : un enfant, un parent ou le conjoint de la victime décédée
       const rel = V.age > 55 ? pk(r, ["enfant", "conjoint"]) : V.age < 32 ? pk(r, ["parent", "parent", "fratrie"]) : pk(r, ["conjoint", "parent", "fratrie"]);
       const pg = rel === "conjoint" ? (V.g === "f" ? "m" : "f") : ch(r, 0.5) ? "f" : "m";
       const ages = { enfant: [Math.max(20, V.age - 38), V.age - 20], parent: [V.age + 20, Math.min(85, V.age + 35)], conjoint: [Math.max(19, V.age - 6), V.age + 6], fratrie: [Math.max(18, V.age - 8), V.age + 8] }[rel];
-      P = Object.assign(M.personne(r, { g: pg, minAge: ages[0], maxAge: Math.max(ages[0], ages[1]), casier: 0, lieu: V.sect, milieu: V.mil }), { nom: V.nom, rel });
+      P = M.v5() ? Object.assign(M.personne(r, { g: pg, minAge: ages[0], maxAge: Math.max(ages[0], ages[1]), casier: 0, lieu: V.sect, milieu: V.mil, famille: { de: V, rel } }), { rel })
+        : Object.assign(M.personne(r, { g: pg, minAge: ages[0], maxAge: Math.max(ages[0], ages[1]), casier: 0, lieu: V.sect, milieu: V.mil }), { nom: V.nom, rel });
       P.lien = { enfant: pg === "f" ? "sa fille" : "son fils", parent: pg === "f" ? "sa mère" : "son père", conjoint: pg === "f" ? "son épouse" : "son mari", fratrie: pg === "f" ? "sa sœur" : "son frère" }[rel];
       P.dit = { enfant: V.g === "f" ? "ma mère" : "mon père", parent: V.g === "f" ? "ma fille" : "mon fils", conjoint: V.g === "f" ? "ma femme" : "mon mari", fratrie: V.g === "f" ? "ma sœur" : "mon frère" }[rel];
     }
@@ -486,7 +492,7 @@
         // la société cliente (représentée par une juriste ou un directeur financier muni d'un pouvoir), ou le dirigeant
         if (ch(r, 0.5)) {
           const R0 = M.personne(r, { minAge: 31, maxAge: 59, casier: 0, pf: 0.55, lieu: o.LX ? o.LX.F.id : undefined, milieu: o.LX ? "aise" : undefined });
-          if (R0.nom === A.nom) R0.nom = pk(r, M.NOMS.filter((n) => n !== A.nom));
+          if (R0.nom === A.nom) R0.nom = M.autreNom(r, A.nom, R0);
           R0.metier = pk(r, ["directeur juridique", "directeur administratif et financier"]);
           if (R0.g === "f") R0.metier = M.METIERS_F[R0.metier];
           R0.emploi = true; R0.heberg = true; R0.casier = 0;
@@ -570,8 +576,9 @@
   // Version du générateur : elle entre dans le code d'affaire. Toute modification du tirage (gen-moteur, gen-monde, cat-*,
   // gen-instruction) qui change une affaire tirée d'une graine doit l'incrémenter, et GEN2.VERSIONS_LISIBLES dire si les
   // codes d'avant se rejouent encore à l'identique.
-  GEN2.VERSION = 4; // 2 : anti-répétition, lot 3 (scènes nouvelles, ordonnances pénales élargies) ; 3 : infractions du lot 1 (variantes des fiches) ; 4 : infractions du lot 2 (nouvelles fiches, concours trafic et refus du code)
-  GEN2.VERSIONS_LISIBLES = { 4: true };
+  GEN2.VERSION = 5; // 2 : anti-répétition, lot 3 (scènes nouvelles, ordonnances pénales élargies) ; 3 : infractions du lot 1 (variantes des fiches) ; 4 : infractions du lot 2 (nouvelles fiches, concours trafic et refus du code) ; 5 : noms et visages de la 1.3.0 (js/noms.js, banque de visages 2)
+  // la version 4 se rejoue à l'identique : ses noms viennent des listes d'avant (CR.NOMS.ANCIENS), ses visages de la banque 1
+  GEN2.VERSIONS_LISIBLES = { 4: true, 5: true };
   GEN2.codeSecteur = (S) => (S.paris ? String(parseInt(S.arr, 10)) : S.cp.slice(0, 2));
   // Les sommes en jeu suivent le milieu de la victime (un cambriolage à Neuilly, une escroquerie à Clichy-sous-Bois),
   // sans jamais changer la qualification
@@ -587,8 +594,8 @@
   // ------------------------------------------------------------------ Les magistrats et les policiers de chaque tribunal
   // Un acteur de Paris a son pendant à Bobigny, Créteil et Nanterre (même profil, autre personne) ; les policiers hors du
   // 18e ont leurs pendants (« secteur »). Personnages fictifs.
-  const NOMS_MAG = ["Belhadj", "Okafor", "Pichon", "Morvillier", "Abadie", "Fontanel", "Ngom", "Garrigues", "Rouvier", "Desforges", "Lebrun", "Hervé", "Lambertin", "Cazeneuve", "Roux-Diallo", "Lenoir", "Vallet", "Bouvier", "de Montclos", "Kerbrat", "Ribes", "Marchand", "Benjelloun", "Duroc", "Esnault", "Tavernier", "Quéré", "Lagarde", "Mabille", "Sanchez", "Ferrand", "Picot", "Hamel", "Bertin", "Joubert", "Valette", "Cordier", "Lemarchand", "Thibault", "Aubry", "Gilbert", "Mercadier", "Delorme", "Sarr", "Kouyaté", "Weiss", "Leclerc", "Poulain"];
-  const PRENOMS_MAG = { m: ["Karim", "Laurent", "Thierry", "Olivier", "Mathieu", "Pascal", "Julien", "Frédéric", "Christophe", "Henri", "Antoine", "Youssef", "Guillaume", "Benoît", "Arnaud", "Xavier"], f: ["Sabine", "Agnès", "Claire", "Hélène", "Isabelle", "Martine", "Zoé", "Amina", "Laetitia", "Sophie", "Céline", "Catherine", "Nathalie", "Véronique", "Anne", "Marion"] };
+  // les magistrats des autres tribunaux gardent les noms qu'ils portent depuis l'origine (source commune, js/noms.js)
+  const NOMS_MAG = CR.NOMS.ANCIENS.mag.NOMS, PRENOMS_MAG = CR.NOMS.ANCIENS.mag.PRENOMS;
   const VARIANTES = ["pr_lacassagne", "pr_benkirane", "pr_dessaint", "pr_aubriot", "pr_roquebert", "pq_delahaye", "pq_haddou", "pq_riboulet", "ji_vauclair", "ji_ferraud", "ji_kessler", "ji_mineurs", "jld_pimentel", "jld_cherkaoui", "pq_criminel", "pr_assises", "pr_ccd", "je_morin", "pr_cam"];
   const LIEU_TJ = { pr_lacassagne: "Chambre des comparutions immédiates", pr_benkirane: "Chambre correctionnelle (juge unique)", pr_dessaint: "Chambre correctionnelle (collégiale)", pr_aubriot: "Chambre correctionnelle, contentieux économique", pr_roquebert: "Tribunal de police" };
   GEN2.acteurBase = (id) => (id ? String(id).replace(/_(bobigny|creteil|nanterre|secteur)$/, "") : id);
@@ -624,7 +631,7 @@
   // ------------------------------------------------------------------ Fin du tirage : lieu, revenus, acteurs, personnages
   GEN2.finP3 = function (r3, t, LX) {
     GEN2.creerActeurs();
-    t.ver = GEN2.VERSION;
+    t.ver = CR.MONDE.vCour || GEN2.VERSION; // la version de la graine (une affaire de la version 4 rejouée le reste)
     t.lieu = { f: LX.F.id, a: (t.A && t.A.sect) || LX.A.id, v: t.V ? t.V.sect || LX.V.id : null };
     if (t.inf && CAT.INF[t.inf] && CAT.INF[t.inf].fam === "crim_stups") t.jirs = true;
     for (const k of ["A", "V", "P", "R", "C2"]) { const Q = t[k]; if (Q && typeof Q === "object" && !Q.morale && Q.revenu == null) Q.revenu = M.revenu(r3, Q, Q.mil || LX.milA); }
@@ -682,8 +689,15 @@
       const g = r() < 0.6 ? "f" : "m";
       const jeune = C.age < 30;
       const rel = jeune ? (g === "f" ? pk(r, ["mère", "sœur", "tante"]) : pk(r, ["père", "frère", "oncle"])) : C.g === "f" ? (g === "m" ? "mari" : "sœur") : g === "f" ? "épouse" : "frère";
+      if (M.v5()) {
+        // 1.3.0 : le proche a l'âge de son lien, un prénom de sa génération ; frère et sœur : du même ensemble que le client
+        const age = jeune ? int(r, 40, 62) : int(r, Math.max(20, C.age - 8), C.age + 8), conj = ["mari", "épouse"].includes(rel);
+        const prenom = CR.NOMS.prenom(r, g, 2026 - age, C.ens || "france", { pens: /sœur|frère/.test(rel) ? C.pens : undefined, sauf: [C.prenom], sansEpicene: true }).prenom;
+        v.fam = { g, rel, prenom, nom: conj && r() < 0.4 ? M.autreNom(r, C.nom, { age }) : C.nom, age, paie: r() < 0.55, pousse: pc ? pk(r, ["vengeance", "presse", "argent"]) : pk(r, ["nier", "avouer", "complice", "renvoi"]), secret: r() < 0.65 };
+      } else {
       const prenom = pk(r, g === "f" ? M.PF : M.PM);
       v.fam = { g, rel, prenom, nom: ["mari", "épouse"].includes(rel) && r() < 0.4 ? pk(r, M.NOMS) : C.nom, age: jeune ? int(r, 40, 62) : int(r, Math.max(20, C.age - 8), C.age + 8), paie: r() < 0.55, pousse: pc ? pk(r, ["vengeance", "presse", "argent"]) : pk(r, ["nier", "avouer", "complice", "renvoi"]), secret: r() < 0.65 };
+      }
     } else { r(); r(); r(); r(); r(); r(); }
     // 4. le parquet : appel d'une décision trop douce, CRPC, composition pénale, témoin cité au dernier moment
     const q = t.q || {};
@@ -882,7 +896,8 @@
   GEN2.CHAMBRE = { pr_roquebert: "Tribunal de police", pr_lacassagne: "23e chambre (comparutions immédiates)", pr_benkirane: "24e chambre correctionnelle", pr_dessaint: "16e chambre correctionnelle", pr_aubriot: "10e chambre correctionnelle" };
 
   // Signature : deux affaires de la même partie ne se ressemblent jamais à ce point
-  GEN2.signature = (t) => [t.inf, t.sc || "", JSON.stringify(t.f), `${t.A.prenom} ${t.A.nom}`, t.V ? `${t.V.prenom} ${t.V.nom}` : "", t.genre].join("|");
+  // (le nom tiré, même si l'affaire a dû renommer un homonyme du joueur : nomTire, 1.3.0)
+  GEN2.signature = (t) => [t.inf, t.sc || "", JSON.stringify(t.f), `${t.A.prenom} ${t.A.nomTire || t.A.nom}`, t.V ? `${t.V.prenom} ${t.V.nomTire || t.V.nom}` : "", t.genre].join("|");
 
   // Récit : le contexte (X) et la fiche du catalogue ; « expliquer » des auditions suit la posture tirée
   GEN2.recit = function (t, niveau) {

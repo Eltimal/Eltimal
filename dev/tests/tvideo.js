@@ -116,7 +116,9 @@ for (const g of ["1", "2", "3"]) {
     const lignes = txt(r);
     ok(!/undefined|NaN|\$\{|\[object/.test(lignes.join(" ")), `${t.sig} : procès-verbal incomplet`);
     const X = CR.video.extrait(r.video);
-    for (const m of X.moments) ok(lignes.some((l) => l.endsWith(m.txt)), `${t.sig} : moment absent du procès-verbal`);
+    // le procès-verbal peut porter une faute de frappe voulue (DOCS.FAUTES) : le moment est là quand même
+    const present = (txt) => lignes.some((l) => l.endsWith(txt) || CR.DOCS.FAUTES.some(([re, by]) => re.test(txt) && l.endsWith(txt.replace(re, by))));
+    for (const m of X.moments) ok(present(m.txt), `${t.sig} : moment absent du procès-verbal`);
     ok(X.scn.violence === (t.quoi !== "violence" && (t.f.itt > 0 || t.f.agg.includes("violence0"))), `${t.sig} : violence de la vidéo différente des faits`);
     const ri = def.docs.pv_interpellation && CR.renderDoc(s, cs, { key: "pv_interpellation", vars: {} });
     const vetu = ri && txt(ri).find((l) => /décline son identité|est vêtue? d/.test(l) && /\bvêtue? d/.test(l));

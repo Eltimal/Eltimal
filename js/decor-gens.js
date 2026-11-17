@@ -52,7 +52,7 @@
     const c0 = hc[0], c1 = hc[1], st = L.hair || "short";
     const R = (xx, yy, w, h, c) => d.r(xx, yy, w, h, c || c0);
     if (st === "hijab") {
-      const sc = (L.scarf || "#5b3a5e"), sl = shade(sc, 18);
+      const sc = (L.scarf || (L.p && L.p.veilC) || "#5b3a5e"), sl = shade(sc, 18);
       R(x - 2, top - 1, 5, 1, sc); R(x - 3, top, 7, 2, sc); R(x - 3, top + 2, 2, 4, sc); R(x + 2, top + 2, 2, 4, sc); R(x - 3, top + 6, 7, 2, sc);
       d.p(x - 2, top, sl); d.p(x - 1, top - 1, sl);
       if (back) R(x - 1, top + 2, 3, 4, sc);
@@ -88,7 +88,10 @@
   // x = colonne du milieu, y = ligne des pieds. o : look, wear, pose ("stand" | "sit"), back, dir (-1, 0, 1), dy (se lever),
   // breath, blink, mouth (0 fermée, 1 entrouverte, 2 ouverte), arm (0 bas, 1 tendu, 2 levé, 3 écrit), step (marche), expr.
   function fig(d, x, y, o) {
-    const L = o.look || GENERIC, sk = SKIN[L.skin] || SKIN[1], hc = HAIR[L.hc] || HAIR.black, W = wearOf(o.wear, L);
+    const L = o.look || GENERIC, W = wearOf(o.wear, L);
+    // banque 2 (1.3.0) : la teinte exacte, la couleur des cheveux et de la monture choisies se voient aussi en petit
+    const p2 = L.b === 2 && L.p ? L.p : null, sk2 = p2 && CR.px.SKIN2 ? CR.px.SKIN2[p2.peau] : null, hx = CR.px.HAIRHEX ? CR.px.HAIRHEX[L.hc] : null;
+    const sk = sk2 ? [shade(sk2, 14), sk2, shade(sk2, -22)] : SKIN[L.skin] || SKIN[1], hc = HAIR[L.hc] || (hx ? [hx, shade(hx, 22)] : HAIR.black);
     const seated = o.pose === "sit", back = !!o.back, dir = o.dir || 0;
     x = Math.round(x);
     const base = y - (seated ? 22 : 24) + Math.round(o.dy || 0), top = base - (o.breath ? 1 : 0);
@@ -141,7 +144,7 @@
     if (back) { if ((L.hair || "") !== "hijab" && !W.cap) { d.p(x - 2, top + 3, sk[1]); d.p(x + 2, top + 3, sk[1]); } if (dir) d.vl(dir > 0 ? x + 2 : x - 2, top + 3, 2, sk[0]); return; }
     // visage
     const ey = top + 2, e1 = x - 1 + dir, e2 = x + 1 + dir;
-    if (L.glasses) { d.r(x - 2, ey, 5, 1, "#2a2a30"); d.p(e1, ey, o.blink ? "#2a2a30" : "#9db3c8"); d.p(e2, ey, o.blink ? "#2a2a30" : "#9db3c8"); }
+    if (L.glasses) { const gc = p2 && p2.gcol ? p2.gcol : "#2a2a30"; d.r(x - 2, ey, 5, 1, gc); d.p(e1, ey, o.blink ? gc : p2 && p2.glasses === "sun" ? "#1a1a20" : "#9db3c8"); d.p(e2, ey, o.blink ? gc : p2 && p2.glasses === "sun" ? "#1a1a20" : "#9db3c8"); }
     else { d.p(e1, ey, o.blink ? sk[1] : "#241a16"); d.p(e2, ey, o.blink ? sk[1] : "#241a16"); }
     if (o.expr === "angry" || o.expr === "defi") { d.p(e1 - 1, ey - 1, hc[0]); d.p(e2 + 1, ey - 1, hc[0]); }
     if (o.expr === "worried" || o.expr === "cry" || o.expr === "honte") { d.p(e1, ey - 1, hc[0]); d.p(e2, ey - 1, hc[0]); }
@@ -162,7 +165,7 @@
     const W = wearOf(null, L), turn = o.turn || 0, yy = y + (o.up || 0);
     d.r(x - 6, yy + 8, 13, H - yy - 8, W.b); d.hl(x - 5, yy + 8, 11, W.hi); d.vl(x - 6, yy + 9, H, W.lo);
     if (W.hood) d.r(x - 4, yy + 7, 9, 3, shade(W.b, -18));
-    if (st === "hijab") { const sc = (L.scarf || "#5b3a5e"); d.r(x - 3, yy, 7, 9, sc); d.r(x - 4, yy + 2, 9, 7, sc); d.p(x - 2, yy + 1, shade(sc, 18)); if (turn) d.r(turn > 0 ? x + 3 : x - 4, yy + 3, 1, 3, sk[0]); return; }
+    if (st === "hijab") { const sc = (L.scarf || (L.p && L.p.veilC) || "#5b3a5e"); d.r(x - 3, yy, 7, 9, sc); d.r(x - 4, yy + 2, 9, 7, sc); d.p(x - 2, yy + 1, shade(sc, 18)); if (turn) d.r(turn > 0 ? x + 3 : x - 4, yy + 3, 1, 3, sk[0]); return; }
     d.r(x - 3, yy, 7, 8, sk[0]); d.r(x - 4, yy + 2, 9, 4, sk[0]);
     if (st === "bald") { d.r(x - 4, yy + 4, 9, 3, c0); d.p(x - 1, yy + 1, shade(sk[0], 24)); }
     else {

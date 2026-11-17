@@ -42,13 +42,13 @@
 
     // la pièce suit l'étape : geôles à l'arrivée, local avocat pour l'entretien, bureau d'audition ensuite
     const gavMode = phase === "arrivee" ? (mode === "gav" ? "geole" : "bureau") : phase === "pieces" ? "pieces" : phase === "entretien" || phase === "conseil" ? "entretien" : phase === "issue" ? (mode === "gav" ? "issue" : "bureau") : "bureau";
-    const roomOpts = { min: s.min, rain: CR.dec.rainy(s), season: CR.dec.seasonOf(s), gav: gavMode, gend: s.at === "gendarmerie", print: phase === "relecture", prefW: 210, clientExpr: phase === "entretien" || phase === "conseil" ? "worried" : phase === "issue" ? "soulage" : null, looks: { opj: opjLook, client: look, you: CR.youLook(s) } };
+    const roomOpts = { min: s.min, rain: CR.dec.rainy(s), season: CR.dec.seasonOf(s), gav: gavMode, gend: s.at === "gendarmerie", print: phase === "relecture", prefW: 210, clientExpr: phase === "entretien" || phase === "conseil" ? "worried" : phase === "issue" ? "soulage" : null, looks: { opj: opjLook, client: look, you: CR.youLook(s, "ville") } };
     roomOpts.sig = CR.dec.sigOf(roomOpts);
     // refonte : chaque étape se joue dans un plan plein cadre (CR.plans) ; les pièces à lire s'ouvrent en feuille à droite
     const planName = mode !== "gav" ? "audition" : phase === "entretien" || phase === "conseil" ? "entretien" : phase === "arrivee" || phase === "issue" ? "geoles" : "audition";
     if (UI.planOk && UI.planOk(planName)) {
       const pl = CR.placeOf && CR.placeOf(s, s.at), side = phase === "pieces" || phase === "relecture" || phase === "droits";
-      const planOpts = { min: s.min, rain: CR.dec.rainy(s), look, opj: opjLook, expr: roomOpts.clientExpr || (phase === "audition" || phase === "questions" ? "worried" : "neutral"), you: CR.youLook(s), live: ctx, dehors: phase === "issue", print: phase === "relecture", gend: s.at === "gendarmerie" };
+      const planOpts = { min: s.min, rain: CR.dec.rainy(s), look, opj: opjLook, expr: roomOpts.clientExpr || (phase === "audition" || phase === "questions" ? "worried" : "neutral"), you: CR.youLook(s, "ville"), live: ctx, dehors: phase === "issue", print: phase === "relecture", gend: s.at === "gendarmerie" };
       const cap = planName === "entretien" ? "local avocat" : planName === "geoles" ? "les geôles" : "bureau d'audition";
       return html`<div className=${cx("scene gav-scene staged", side && "stg-side")}>
         <${UI.Plan} key=${planName} name=${planName} opts=${planOpts} />

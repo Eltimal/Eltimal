@@ -100,15 +100,17 @@
         if (pv.rel === "conjoint") { vO.g = pv.g || (A.g === "f" ? "m" : "f"); vO.minAge = Math.max(18, A.age - 8); vO.maxAge = A.age + 6; }
         else if (pv.g) vO.g = pv.g;
         if (pv.rel === "ascendant") { vO.minAge = Math.max(A.age + 18, pv.min || 60); vO.maxAge = Math.max(vO.minAge, Math.min(98, A.age + 45)); }
+        // 1.3.0 : l'enfant et le parent de l'auteur sont de sa famille (même nom, même ensemble)
+        if (M.v5() && (pv.rel === "ascendant" || pv.rel === "enfant")) vO.famille = { de: A, rel: pv.rel === "ascendant" ? "parent" : "enfant" };
         V = M.personne(r, vO);
         if (f.ageV != null) { fixAge(V, f.ageV); V.metier = fem(V, metierAge(r, f.ageV)); V.emploi = false; V.enfants = 0; }
         if (V.age >= 70 && !pv.metier) { V.metier = V.g === "f" ? "retraitée" : "retraité"; V.emploi = false; }
         if (pv.rel === "ascendant") V.nom = A.nom;
         if (pv.rel === "enfant") { V.nom = A.nom; }
       }
-      if (V.nom === A.nom && !["ascendant", "enfant"].includes(pv.rel)) V.nom = pk(r, M.NOMS.filter((x) => x !== A.nom));
+      if (V.nom === A.nom && !["ascendant", "enfant"].includes(pv.rel)) V.nom = M.autreNom(r, A.nom, V);
     }
-    if (V && V.prenom === A.prenom) V.prenom = pk(r, (V.g === "f" ? M.PF : M.PM).filter((z) => z !== A.prenom));
+    if (V && V.prenom === A.prenom) V.prenom = M.autrePrenom(r, V.g, [A.prenom], V);
     // le proche (partie civile en cas de décès, représentant légal d'un mineur victime)
     let P = null;
     const decede = !!(V && (cx.deces != null ? (typeof cx.deces === "function" ? cx.deces(null, f) : cx.deces) : I.deces));
@@ -116,10 +118,11 @@
       const rel = V.age < 18 ? "parent" : pers.P || "parent";
       const pg = rel === "conjoint" ? (V.g === "f" ? "m" : "f") : ch(r, 0.55) ? "f" : "m";
       const ages = { enfant: [Math.max(20, V.age - 38), Math.max(20, V.age - 20)], parent: [Math.max(V.age + 18, 24), Math.min(88, Math.max(V.age + 18, 24) + 20)], conjoint: [Math.max(19, V.age - 6), V.age + 6], fratrie: [Math.max(18, V.age - 8), V.age + 8] }[rel] || [30, 60];
-      P = Object.assign(M.personne(r, { g: pg, minAge: ages[0], maxAge: Math.max(ages[0], ages[1]), casier: 0, lieu: V.sect, milieu: V.mil }), { nom: rel === "conjoint" ? pk(r, M.NOMS) : V.nom, rel });
+      P = M.v5() ? Object.assign(M.personne(r, { g: pg, minAge: ages[0], maxAge: Math.max(ages[0], ages[1]), casier: 0, lieu: V.sect, milieu: V.mil, famille: { de: V, rel } }), { rel })
+        : Object.assign(M.personne(r, { g: pg, minAge: ages[0], maxAge: Math.max(ages[0], ages[1]), casier: 0, lieu: V.sect, milieu: V.mil }), { nom: rel === "conjoint" ? pk(r, M.NOMS) : V.nom, rel });
       if (pers.V && pers.V.rel === "enfant" && rel === "parent") P.nom = A.nom;
       P.lien = { enfant: pg === "f" ? "fille" : "fils", parent: pg === "f" ? "mère" : "père", conjoint: pg === "f" ? "épouse" : "mari", fratrie: pg === "f" ? "sœur" : "frère" }[rel];
-      if (P.prenom === A.prenom) P.prenom = pk(r, (pg === "f" ? M.PF : M.PM).filter((x) => x !== A.prenom));
+      if (P.prenom === A.prenom) P.prenom = M.autrePrenom(r, pg, [A.prenom], P);
     }
     // la famille que raconte le récit se retrouve sur les fiches : l'enfant partie civile est l'enfant de la victime
     // (et du couple, quand l'auteur est son conjoint) ; un récit qui parle des enfants du couple leur en donne
@@ -129,8 +132,8 @@
     if (V && P && P.rel === "parent" && V.age < 18 && pers.V && pers.V.rel === "enfant") parent(A);
     const T0 = M.personne(r, { pf: 0.45, minAge: 20, maxAge: 75, casier: 0, lieu: LX.T.id, milieu: LX.milT });
     const T20 = M.personne(r, { pf: 0.5, minAge: 20, maxAge: 70, casier: 0, lieu: LX.F.id, milieu: LX.milT });
-    for (const Tx of [T0, T20]) if ([A, V, P].some((y) => y && y.prenom === Tx.prenom)) Tx.prenom = pk(r, (Tx.g === "f" ? M.PF : M.PM).filter((z) => ![A, V, P].some((y) => y && y.prenom === z)));
-    const T = { prenom: T0.prenom, nom: T0.nom, g: T0.g, age: T0.age, metier: T0.metier, adresse: T0.adresse };
+    for (const Tx of [T0, T20]) if ([A, V, P].some((y) => y && y.prenom === Tx.prenom)) Tx.prenom = M.autrePrenom(r, Tx.g, [A, V, P].filter(Boolean).map((y) => y.prenom), Tx);
+    const T = { prenom: T0.prenom, nom: T0.nom, g: T0.g, age: T0.age, metier: T0.metier, adresse: T0.adresse, ens: T0.ens, pens: T0.pens, look: T0.look };
     // le témoin dont les propos supposent une fonction, un sexe ou un âge (D-95) : la fiche le dit, sans nouveau tirage
     const FICHE_T = {
       "viol/autorite": { g: "f", metier: "secrétaire médicale" },
@@ -145,7 +148,7 @@
       if (FICHE_T.age) T.age = FICHE_T.age[0] + (hsh % (FICHE_T.age[1] - FICHE_T.age[0] + 1));
       if (FICHE_T.metier) T.metier = typeof FICHE_T.metier === "function" ? FICHE_T.metier(T.g) : FICHE_T.metier;
     }
-    const T2 = { prenom: T20.prenom, nom: T20.nom === T0.nom ? pk(r, M.NOMS) : T20.nom, g: T20.g, age: T20.age, metier: T20.metier, adresse: T20.adresse };
+    const T2 = { prenom: T20.prenom, nom: T20.nom === T0.nom ? (M.v5() ? M.autreNom(r, T0.nom, T20) : pk(r, M.NOMS)) : T20.nom, g: T20.g, age: T20.age, metier: T20.metier, adresse: T20.adresse, ens: T20.ens, pens: T20.pens, look: T20.look };
     const C2 = pers.C2 ? M.personne(r, { g: "m", minAge: Math.max(16, A.age - 5), maxAge: A.age + 8, lieu: LX.A.id, milieu: LX.milA }) : null;
     const ageFaits = A.age;
     const mineur = ageFaits < 18;
@@ -694,8 +697,10 @@
     const H = Math.round((crime ? 6000 : 3500) + (I.gravite || 0.6) * 6000 / 500) * 1;
     const forfait = Math.round(((crime ? 6000 : 3000) + (I.gravite || 0.6) * (crime ? 7000 : 2500)) / 500) * 500;
     const callerNom = t.camp === "pc" ? nom(C) : t.entree === "detenu" ? `${A.proche.replace(/^s(a|on) /, (m0, g) => (g === "a" ? "La " : "Le "))} de ${A.prenom} ${A.nom}`.replace(/^La /, "").replace(/^Le /, "") : nomA;
-    const famille = t.entree === "detenu" || (t.mineur && D0) ? M.personne(CR.seeded(t.sig + ":famille"), { g: /mère|sœur|tante|grand-mère|compagne/.test(A.proche) ? "f" : "m", minAge: t.mineur ? 35 : 30, maxAge: 70, casier: 0 }) : null;
-    if (famille) { famille.nom = /compagn/.test(A.proche) ? famille.nom : A.nom; GEN2.PR.id(famille, "F"); }
+    // 1.3.0 : le proche qui appelle est de la famille du client (même nom et même ensemble, sauf la compagne)
+    const relF = /compagn/.test(A.proche) ? "conjoint" : /sœur|frère/.test(A.proche) ? "fratrie" : "parent";
+    const famille = t.entree === "detenu" || (t.mineur && D0) ? M.personne(CR.seeded(t.sig + ":famille"), Object.assign({ g: /mère|sœur|tante|grand-mère|compagne/.test(A.proche) ? "f" : "m", minAge: t.mineur ? 35 : 30, maxAge: 70, casier: 0 }, (t.ver || 0) >= 5 ? { v: t.ver, famille: { de: A, rel: relF } } : {})) : null;
+    if (famille) { if (!famille.pens) famille.nom = /compagn/.test(A.proche) ? famille.nom : A.nom; GEN2.PR.id(famille, "F"); }
     const appelant = famille ? `${famille.prenom} ${famille.nom}, ${A.proche.replace(/^s(a|on) /, "")} de ${A.prenom}` : callerNom;
     const def = {
       id: p.id, camp: t.camp, domaine: crime ? "criminel" : "instruction", domaineLib: "pp_instruction", generated: true, gen2: true, genre: "info",
@@ -1320,6 +1325,9 @@
         else if (D0 && R0.type === "ortc") { lignes = ["La chambre de l'instruction confirme le renvoi devant le tribunal correctionnel."]; }
         else if (!D0 && ["nonlieu", "irresp"].includes(R0.type)) { R0.type = "oma"; R0.qual = "q"; R0.jur = t.jur; lignes = [`La chambre de l'instruction infirme et ordonne la mise en accusation de ${nomA} devant ${CAT.JUR_LABEL[t.jur]}.`]; }
         else if (!D0 && R0.type === "ortc") { R0.type = "oma"; R0.qual = "q"; R0.jur = t.jur; lignes = [`La chambre de l'instruction infirme l'ordonnance de requalification : ${nomA} est mis${e(A)} en accusation du chef de ${q.label} devant ${CAT.JUR_LABEL[t.jur]}.`]; }
+        // un appel qu'aucune infirmation ne peut satisfaire (la partie civile contre une mise en accusation, qui ne fait pas
+        // grief à ses intérêts civils) : la chambre confirme (sortie 1.3.0 : l'arrêt n'avait plus de dispositif)
+        if (!lignes.length) lignes = ["La chambre de l'instruction confirme l'ordonnance entreprise."];
         if (en && infirme) cs.vars.renfort = Object.assign(cs.vars.renfort || {}, {});
       }
       cs.vars.arretChins = lignes;

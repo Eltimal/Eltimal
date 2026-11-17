@@ -103,7 +103,7 @@
       const G = C.G;
       return { say: pick([
         `${G.Il} a été attaqué${G.e} le premier, une bouteille à la main ; ${G.il} a riposté une fois, dans le même temps : c'est la légitime défense de l'article 122-5 du code pénal.`,
-        `Une attaque, une riposte, immédiate et unique : l'article 122-5 du code pénal ne punit pas celui qui se défend.`,
+        `Une attaque, une riposte, immédiate et unique : l'article 122-5 du code pénal ne punit pas la personne qui se défend.`,
         `Qu'auriez-vous fait ? ${G.Il} a été agressé${G.e}, ${G.il} a répondu d'un seul geste, sur le moment : légitime défense, article 122-5 du code pénal.`,
       ], C.key + "ld:s") };
     },
