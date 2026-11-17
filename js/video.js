@@ -862,8 +862,14 @@
     // les tenues peuvent varier seules, à faits identiques
     if (o.grainetenues) { const alt = F_.monter(rng("tenues:" + o.grainetenues), o); scn.acteurs.forEach((a, i) => { const b = alt.acteurs[i]; a.tenue = b.tenue; a.peau = b.peau; a.chev = b.chev; a.sc = b.sc; }); scn.objet.couleur = alt.objet.couleur; }
     for (const A of scn.acteurs) preparer(A, D);
-    const S = { D, cam, mode, graine, scn, duree: scn.duree, fps: o.fps || pick(r, [8, 10, 12]), lumieres: null };
-    S.lum = Eclairage(D, mode, cam);
+    // 1.5.0 : une scène peut porter sa caméra (camAt : la caméra-piéton suit l'agent), sa cadence, son style d'incrustation
+    // et ses paroles (sous-titres) ; sans elles, le chemin et les tirages sont ceux d'avant
+    const S = { D, cam, mode, graine, scn, duree: scn.duree, fps: o.fps || scn.fps || pick(r, [8, 10, 12]), lumieres: null };
+    if (scn.camAt) { S.camAt = scn.camAt; S.cam = Camera(scn.camAt(0)); }
+    S.style = scn.style || null;
+    S.paroles = scn.paroles || [];
+    S.sous = (t) => S.paroles.filter((p) => t >= p.t0 && t < p.t1);
+    S.lum = Eclairage(D, mode, S.cam);
     S.prims = D.prims(rng("decor:" + graine));
     S.date = o.date || "12-11-2026";
     S.heure = o.heure || (mode === "jour" ? "15:12:40" : mode === "soir" ? "18:47:05" : "22:41:07");
@@ -872,7 +878,7 @@
 
     // images enregistrées : cadence, puis images sautées (l'horodatage saute avec elles)
     const sauts = [];
-    const nS = o.sauts != null ? o.sauts : 1 + Math.floor(r() * 2);
+    const nS = o.sauts != null ? o.sauts : scn.sansSauts ? 0 : 1 + Math.floor(r() * 2);
     for (let k = 0; k < nS; k++) {
       const len_ = 0.5 + r() * 1.1;
       let t0 = 1 + r() * (S.duree - 3);
@@ -883,13 +889,13 @@
     S.sauts = sauts.sort((a, b) => a[0] - b[0]);
     S.frames = [];
     for (let t = 0; t < S.duree; t += 1 / S.fps) if (!sauts.some(([a, b]) => t >= a && t < b)) S.frames.push(+t.toFixed(4));
-    S.k = (o.distorsion != null ? o.distorsion : 0.22);
+    S.k = (o.distorsion != null ? o.distorsion : scn.distorsion != null ? scn.distorsion : 0.22);
     S.render = (t, out) => rendre(S, t, out);
     S.image = (i, out) => rendre(S, S.frames[clamp(i, 0, S.frames.length - 1)], out);
     S.indexA = (t) => { let lo = 0, hi = S.frames.length - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (S.frames[m] <= t) lo = m; else hi = m - 1; } return lo; };
     // point du monde → pixel de l'image montrée (après la déformation de l'objectif)
     S.ecran = (pt) => {
-      const q = cam.proj(pt); if (!q) return null;
+      const q = S.cam.proj(pt); if (!q) return null;
       const ix = 2 / W, sx = (q[0] + 0.5) * ix - 1, sy = (q[1] + 0.5) * ix - H / W;
       let ox = sx, oy = sy;
       for (let n = 0; n < 8; n++) { const f = (1 + S.k * (ox * ox + oy * oy) / 1.31) / (1 + S.k); ox = sx / f; oy = sy / f; }
@@ -974,8 +980,16 @@
     return { pos: add(add(j.hipR, mul(j.lat, -0.13 * sc)), [0, 0.06, 0]), fw: j.fw };
   }
 
+  // la caméra mobile : position de l'instant t, éclairage (le phare infrarouge suit la caméra) et fond retracés
+  function placer(S, t) {
+    if (!S.camAt) return;
+    const k = Math.round(t * 1000);
+    if (S._camK === k) return;
+    S._camK = k; S.cam = Camera(S.camAt(t)); S.lum = Eclairage(S.D, S.mode, S.cam); S.bg = null;
+  }
   function rendre(S, t, out) {
     out = out || new Uint8ClampedArray(N * 4);
+    placer(S, t);
     if (!S.bg) fond(S);
     const F = { c: S.bg.slice(), z: S.bz.slice() };
     const E = etats(S, t);
@@ -1030,6 +1044,14 @@
       out[o + 2] = clamp((v + 1.772 * cb) * 255, 0, 255);
       out[o + 3] = 255;
     }
+    if (S.style === "pieton") {
+      // caméra individuelle : horodatage en haut, identifiant de la caméra en bas, voyant d'enregistrement rouge
+      ecrire(out, 4, 4, S.horodatage(t));
+      ecrire(out, 4, H - 9, S.camNom);
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (dx * dx + dy * dy <= 5) { const i = ((7 + dy) * W + (W - 30 + dx)) * 4; out[i] = 230; out[i + 1] = 30; out[i + 2] = 30; }
+      ecrire(out, W - 24, 4, "REC");
+      return out;
+    }
     ecrire(out, 4, 4, S.horodatage(t));
     ecrire(out, W - 4 - S.camNom.length * 4, 4, S.camNom);
     if (ir) ecrire(out, W - 16, H - 9, "IR");
@@ -1045,6 +1067,7 @@
       // plus grande taille de la tête à l'écran sur tout l'extrait
       let tete = 0, vu = 0;
       for (let i = 0; i < S.frames.length; i += 2) {
+        if (S.camAt) placer(S, S.frames[i]);
         const e = etat(A, S.frames[i], S); if (!e) continue;
         const j = squelette(e.pos, e.gy, e.cap, e.pose, A.sc), p = S.cam.proj(j.head);
         if (!p || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
