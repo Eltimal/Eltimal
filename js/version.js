@@ -17,6 +17,19 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "1.5.0", nom: "La preuve filmée", date: "17 novembre 2026", type: "contenu",
+      resume: "Les affaires de rue et les contrôles de police ont leur vidéo : on la regarde, on l'arrête, on agrandit un visage, et on la confronte au procès-verbal.",
+      notes: [
+        "Vidéoprotection de la voie publique : une rue commerçante, la terrasse d'un bar, une place. Coups, dégradations, vol à la tire, échange de stupéfiants, menaces, et l'interpellation qui peut suivre.",
+        "Caméra-piéton des policiers : contrôles routiers (alcool, stupéfiants, permis), contrôles et interpellations sur la voie publique, avec le son en sous-titres.",
+        "Les personnes de l'affaire ont leur visage à l'image : celui de leur portrait au dossier.",
+        "À l'arrêt sur image, « Agrandir » une personne : la caméra resserre sur elle, au grain réel du capteur. De près, le visage se lit ; de loin, il reste une tache.",
+        "Images refaites : personnages en volume, éclairés comme le décor ; immeubles en pierre de taille, vitrines et enseignes, balcons, trottoirs, passages piétons, voitures, ombres au soleil ; image plus fine.",
+        "Les failles sont dans les images : qui frappe le premier, une chute, des enregistrements effacés faute de réquisition dans le mois, une caméra-piéton déclenchée trop tard ou sans information de la personne, une ressemblance qui n'est pas une identification.",
+        "Les anciennes affaires gardent leurs pièces ; leurs vidéos profitent des nouvelles images.",
+      ],
+    },
+    {
       version: "1.4.0", nom: "Le premier appel", date: "17 novembre 2026", type: "contenu",
       resume: "La première semaine est conduite : le téléphone sonne dès la première nuit, et plus aucun client n'attend sans que vous le sachiez.",
       notes: [

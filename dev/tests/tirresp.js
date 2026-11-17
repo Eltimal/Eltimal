@@ -88,6 +88,7 @@ const { boot, sleep, texts } = require("./harness");
     let cs; try { cs = CR.GEN.open(s, "info", {}); } catch (e) { continue; }
     const t = CR.GEN.paramsOf(s, cs.id).t, def = CR.caseDef(cs);
     if (t.f.psy !== "aboli" || t.q.nature !== "crime" || !CR.hookExists(cs, "decider")) continue;
+    if (t.jur === "tpe" || t.jur === "tc") continue; // le tribunal pour enfants juge sans questions ni jury (art. 706-133) : hors de ce contrôle
     const pc = t.camp === "pc", cas = pc ? "pc" : assises.invoque <= assises.sans ? "invoque" : "sans";
     if (assises[cas] >= 3) continue;
     cs.status = "active"; cs.vars.jurProces = t.jur; cs.vars.reglement = { qual: "q", type: "oma", jur: t.jur };

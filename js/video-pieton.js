@@ -74,7 +74,7 @@
     monter(r, o) {
       const issue = o.issue || "calme";
       const zA = 7.4, xA = 3.4;
-      const A = acteur(r, "A", "personne", { g: (o.personne || {}).g || "m", pos: [xA, zA], cap: Math.PI * 1.05, tenueO: { capuche: 0.4 } });
+      const A = acteur(r, "A", "personne", { g: (o.personne || {}).g || "m", tenue: (o.personne || {}).tenue, pos: [xA, zA], cap: Math.PI * 1.05, tenueO: { capuche: 0.4 } });
       const F2 = acteur(r, "F2", "policier", { g: (o.agent2 || {}).g || (r() < 0.3 ? "f" : "m"), pos: [-2.4, 6.4], cap: 0 });
       const tArr = 3.2, L = [], moments = [], secousses = [], sol = [];
       const info = o.information !== false;
@@ -147,7 +147,7 @@
     monter(r, o) {
       const dep = o.depistage || "alcool", res = o.resultat || "positif";
       const xC = 5.2, zC = 9.1; // le conducteur, sorti de son véhicule, au bord du trottoir
-      const A = acteur(r, "A", "personne", { g: (o.personne || {}).g || "m", pos: [xC, zC], cap: Math.PI });
+      const A = acteur(r, "A", "personne", { g: (o.personne || {}).g || "m", tenue: (o.personne || {}).tenue, pos: [xC, zC], cap: Math.PI });
       const F2 = acteur(r, "F2", "policier", { g: r() < 0.3 ? "f" : "m", pos: [8.6, 9.0], cap: Math.PI });
       const L = [], moments = [], info = o.information !== false;
       const trajet = [{ t: 0, pos: [0.8, 7.6], vise: [xC, zC] }, { t: 3.0, pos: [xC - 1.4, zC - 0.6], vise: [xC, zC] }];
@@ -174,6 +174,13 @@
           dire(L, t, "agent", res === "positif" ? "Le dépistage est positif. On va procéder à une vérification à l'éthylomètre, au service." : "Le dépistage est négatif. Bonne soirée.", 3.4);
           t += 3.8;
         }
+      } else if (dep === "aucun") {
+        // contrôle sans dépistage : le permis (défaut de permis, conduite malgré une suspension), ou l'arrêt après une fuite
+        A.beats.push({ a: "attend", d: 6, face: Math.PI });
+        dire(L, t, "agent", o.permis === false ? "Vous n'avez pas de permis sur vous ? On va vérifier au fichier." : "On vérifie vos documents au fichier. Restez près du véhicule.", 3.0);
+        if (o.reponse) dire(L, t + 3.2, "A", o.reponse, 2.6);
+        moments.push({ t: t + 0.6, cle: "verif", txt: "«A» reste près du véhicule pendant que le fonctionnaire consulte les fichiers." });
+        t += 6.4;
       } else {
         dire(L, t, "agent", "On va faire un dépistage salivaire. Vous allez passer cet écouvillon sur votre langue.", 3.4);
         A.beats.push({ a: "souffle", d: 3.2, face: Math.PI }, { a: "attend", d: 4 });

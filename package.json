@@ -1,7 +1,7 @@
 {
   "name": "la-permanence",
   "productName": "La Permanence",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "La Permanence — jeu d'avocat pénaliste, hors ligne.",
   "private": true,
   "main": "electron/main.js",

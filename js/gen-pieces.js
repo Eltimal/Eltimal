@@ -127,6 +127,8 @@
         date: CR.fmtDate(jf, "num").replace(/\//g, "-"), heure: `${p2(Math.floor(s0 / 3600))}:${p2(Math.floor(s0 / 60) % 60)}:${p2(s0 % 60)}`,
         objet, violence, victime: { g: V.g, agee: V.age >= 68, telephone: true }, auteur: { g: A.g, tenue: tenueImage },
       };
+      // 1.5.0 : les visages de l'affaire (portraits du dossier ; un sosie en cas de doute sur l'identification)
+      if (CR.VPLAN) spec.looks = CR.VPLAN.looks(t);
       return { spec, tenueClient, S: CR.video.extrait(spec) };
     })();
 

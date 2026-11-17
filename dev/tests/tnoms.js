@@ -32,7 +32,7 @@ const { boot, sleep } = require("./harness");
   for (let i = 0; i < NB; i++) {
     let p; try { p = G.params(s, GENRES[i % GENRES.length], {}); } catch (e) { continue; }
     const t = p.t; affaires++;
-    ok(t.ver === 5, "une affaire nouvelle n'est pas en version 5", t.ver);
+    ok(t.ver === CR.GEN2.VERSION, "une affaire nouvelle n'est pas de la version courante", t.ver);
     const ps = ["A", "V", "P", "T", "T2", "C2", "R", "D"].map((k) => [k, t[k]]).filter(([, x]) => x && x.prenom);
     const complets = new Map();
     for (const [k, P] of ps) {

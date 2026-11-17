@@ -89,7 +89,7 @@ const REVELE = /irrégularit|aucune autorisation|aucune ordonnance|nullit|ne men
   await P.openCase(w, doc, nomClient);
   const ouvrirPiece = async (re) => { await click(w, [...doc.querySelectorAll(".tab")].find((t) => /^Pièces/.test(texts(t)))); await click(w, [...doc.querySelectorAll(".doc-row")].find((r) => re.test(texts(r)))); };
   await ouvrirPiece(/Interpellation|interpellation/);
-  const iSeg = [...doc.querySelectorAll(".docview .seg")].find((x) => /\d+ h \d+/.test(texts(x)));
+  const iSeg = [...doc.querySelectorAll(".docview .seg")].find((x) => /\d+ h \d+|\d+ heures? \d+ minutes?/.test(texts(x))); // l'heure écrite en chiffres ou en toutes lettres
   ok(!!iSeg, "un passage daté dans le procès-verbal d'interpellation");
   if (iSeg) { await click(w, iSeg); await click(w, findBtn(doc, "À vérifier")); }
   ok(!!doc.querySelector(".docview mark.an-verifier"), "le passage annoté est marqué");

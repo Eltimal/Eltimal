@@ -13,7 +13,7 @@
   const root = typeof window !== "undefined" ? window : globalThis;
   const CR = (root.CR = root.CR || {});
   const V = (CR.video = {});
-  const W = 320, H = 180, N = W * H;
+  const W = 480, H = 270, N = W * H, REF = 320 / W; // REF : les seuils de lisibilité restent ceux d'une image de 320 points
   V.W = W; V.H = H;
 
   // ---------------------------------------------------------------- hasard et vecteurs
@@ -37,6 +37,11 @@
   const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
   const frac = (x) => x - Math.floor(x);
   const UP = [0, 1, 0];
+  // bruit de valeur lissé (textures des décors) : de 0 à 1, variation douce sur une maille d'une unité
+  function bruit(x, y) {
+    const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+    return lerp(lerp(h2(xi, yi), h2(xi + 1, yi), sx), lerp(h2(xi, yi + 1), h2(xi + 1, yi + 1), sx), sy);
+  }
   function lerpAng(a, b, t) { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * t; }
   function rot(v, k, phi) { const c = Math.cos(phi), s = Math.sin(phi); return add(add(mul(v, c), mul(cross(k, v), s)), mul(k, dot(k, v) * (1 - c))); }
 
@@ -304,9 +309,15 @@
   function hitCyl(P, o, d) {
     const ox = o[0] - P.x, oz = o[2] - P.z, a = d[0] * d[0] + d[2] * d[2], b = 2 * (ox * d[0] + oz * d[2]), c = ox * ox + oz * oz - P.r * P.r;
     const disc = b * b - 4 * a * c; if (disc < 0 || a < 1e-12) return null;
-    const t = (-b - Math.sqrt(disc)) / (2 * a); if (t < 0.01) return null;
-    const y = o[1] + d[1] * t; if (y < P.y0 || y > P.y1) return null;
-    return { t, n: norm([ox + d[0] * t, 0, oz + d[2] * t]) };
+    const t = (-b - Math.sqrt(disc)) / (2 * a);
+    const y = o[1] + d[1] * t;
+    if (t >= 0.01 && y >= P.y0 && y <= P.y1) return { t, n: norm([ox + d[0] * t, 0, oz + d[2] * t]) };
+    // le dessus (plateau de table, socle) : vu d'en haut
+    if (P.plein !== false && d[1] < 0 && o[1] > P.y1) {
+      const tc = (P.y1 - o[1]) / d[1], cx = ox + d[0] * tc, cz = oz + d[2] * tc;
+      if (tc >= 0.01 && cx * cx + cz * cz <= P.r * P.r) return { t: tc, n: UP };
+    }
+    return null;
   }
   function hitSph(P, o, d) {
     const oc = sub(o, P.c), b = dot(oc, d), c = dot(oc, oc) - P.r * P.r, disc = b * b - c;
@@ -372,9 +383,9 @@
     const AMB = D.ambiance ? D.ambiance(mode) : null;
     const amb = AMB ? AMB.amb : mode === "jour" ? [0.36, 0.37, 0.4] : ir ? [0.012, 0.012, 0.012] : [0.018, 0.02, 0.03];
     const sun = AMB ? AMB.sun : mode === "jour" ? { d: norm([-0.4, 0.75, 0.5]), c: [0.55, 0.52, 0.46] } : null;
-    return function (p, n) {
+    const f = function (p, n, so) {
       let r = amb[0], g = amb[1], b = amb[2];
-      if (sun) { const k = n ? Math.max(0, dot(n, sun.d)) : 0.6; r += sun.c[0] * k; g += sun.c[1] * k; b += sun.c[2] * k; }
+      if (sun) { const k = (n ? Math.max(0, dot(n, sun.d)) : 0.6) * (so == null ? 1 : so); r += sun.c[0] * k; g += sun.c[1] * k; b += sun.c[2] * k; }
       for (const l of L) {
         if (l.bas && p[1] > 0.3) continue;
         const v = sub(l.p, p), d2 = dot(v, v), dl = Math.sqrt(d2);
@@ -391,6 +402,8 @@
       }
       return [r, g, b];
     };
+    f.sun = sun;
+    return f;
   }
   const lumi = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
 
@@ -732,75 +745,216 @@
   };
   const CR_cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
 
-  // ---------------------------------------------------------------- rendu des acteurs (capsules au tampon de profondeur)
-  function capsule(F, cam, a, b, r, col) {
-    const pa = cam.proj(a), pb = cam.proj(b);
+  // ---------------------------------------------------------------- rendu des acteurs (volumes éclairés au tampon de profondeur)
+  // Chaque membre est un cône arrondi (deux rayons) dessiné à l'écran ; la normale de chaque pixel est reconstruite en
+  // 3D puis éclairée comme le décor (sources, soleil, phare infrarouge), avec la trame du tissu et un reflet. La tête
+  // est un ellipsoïde lancé au rayon : elle porte un visage, celui du portrait de la personne quand l'interface en
+  // fournit un (V.texturer), sinon un visage modelé (peau, cheveux, yeux, sourcils, bouche, barbe, lunettes).
+  const TRAME = {
+    sweat: (p) => 0.93 + 0.07 * h2(Math.floor(p[0] * 140 + p[2] * 90), Math.floor(p[1] * 140)),
+    doudoune: (p) => 0.7 + 0.3 * Math.sqrt(Math.abs(Math.sin(p[1] * 34))),
+    blouson: (p) => 0.96 + 0.04 * h2(Math.floor(p[0] * 60 + p[2] * 40), Math.floor(p[1] * 60)),
+    manteau: (p) => 0.93 + 0.07 * h2(Math.floor(p[0] * 120 + p[2] * 80), Math.floor(p[1] * 120)),
+    survet: (p) => 0.95 + 0.05 * h2(Math.floor(p[0] * 90 + p[2] * 70), Math.floor(p[1] * 90)),
+    jean: (p) => 0.84 + 0.22 * h2(Math.floor((p[0] + p[2]) * 150 + p[1] * 150), Math.floor(p[1] * 45)),
+    toile: (p) => 0.95 + 0.05 * h2(Math.floor((p[0] + p[2]) * 100), Math.floor(p[1] * 100)),
+  };
+  const BRILLE = { blouson: 0.32, doudoune: 0.24, survet: 0.1, sweat: 0.03, manteau: 0.05 };
+  const mat = (c, ir, tex, s) => ({ c, ir, tex: tex || null, s: s || 0 });
+
+  // un point de surface : lumière reçue, trame, reflet (une lumière haute, vue depuis la caméra)
+  function teinte(F, i, z, S, p, n, m, c) {
+    const L = S.lum(p, n), k = m.tex ? m.tex(p) : 1;
+    let sp = 0;
+    if (m.s) {
+      const v = sub(S.cam.C, p), lv = len(v) || 1, hx = v[0] / lv, hy = v[1] / lv + 1.3, hz = v[2] / lv, lh = Math.hypot(hx, hy, hz);
+      sp = m.s * Math.pow(Math.max(0, (n[0] * hx + n[1] * hy + n[2] * hz) / lh), 18);
+    }
+    F.z[i] = z;
+    if (S.mode === "ir") { const v = (m.ir * k + sp) * L[0]; F.c[i * 3] = v; F.c[i * 3 + 1] = v; F.c[i * 3 + 2] = v; return; }
+    c = c || m.c;
+    const li = (L[0] + L[1] + L[2]) / 3;
+    F.c[i * 3] = c[0] * k * L[0] + sp * li; F.c[i * 3 + 1] = c[1] * k * L[1] + sp * li; F.c[i * 3 + 2] = c[2] * k * L[2] + sp * li;
+  }
+
+  function volume(F, S, a, b, r0, r1, m) {
+    const cam = S.cam, pa = cam.proj(a), pb = cam.proj(b);
     if (!pa || !pb) return;
-    const ra = (cam.F * r) / pa[2], rb = (cam.F * r) / pb[2], rm = Math.max(ra, rb) + 1;
+    const ra = (cam.F * r0) / pa[2], rb = (cam.F * r1) / pb[2], rm = Math.max(ra, rb) + 1;
     const x0 = Math.max(0, Math.floor(Math.min(pa[0], pb[0]) - rm)), x1 = Math.min(W - 1, Math.ceil(Math.max(pa[0], pb[0]) + rm));
     const y0 = Math.max(0, Math.floor(Math.min(pa[1], pb[1]) - rm)), y1 = Math.min(H - 1, Math.ceil(Math.max(pa[1], pb[1]) + rm));
     const dx = pb[0] - pa[0], dy = pb[1] - pa[1], l2 = dx * dx + dy * dy || 1e-9;
+    const ab = sub(b, a), lab = len(ab), ax = lab > 1e-6 ? mul(ab, 1 / lab) : null;
+    const R = cam.r, U = cam.u, Fw = cam.f;
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const px = x + 0.5, py = y + 0.5;
-      const t = clamp(((px - pa[0]) * dx + (py - pa[1]) * dy) / l2, 0, 1);
+      const tt = ((px - pa[0]) * dx + (py - pa[1]) * dy) / l2, t = clamp(tt, 0, 1);
       const qx = pa[0] + dx * t, qy = pa[1] + dy * t, rad = ra + (rb - ra) * t;
       const ex = px - qx, ey = py - qy, d2 = ex * ex + ey * ey;
       if (d2 > rad * rad) continue;
-      const h = Math.sqrt(1 - d2 / (rad * rad));
+      const h = Math.sqrt(1 - d2 / (rad * rad)), r = r0 + (r1 - r0) * t;
       const z = pa[2] + (pb[2] - pa[2]) * t - r * h;
       const i = y * W + x;
       if (z >= F.z[i]) continue;
-      const k = 0.62 + 0.3 * h + 0.18 * (-ey / (rad || 1));
-      F.z[i] = z; F.c[i * 3] = col[0] * k; F.c[i * 3 + 1] = col[1] * k; F.c[i * 3 + 2] = col[2] * k;
+      const u = ex / rad, v = -ey / rad;
+      let n = [R[0] * u + U[0] * v - Fw[0] * h, R[1] * u + U[1] * v - Fw[1] * h, R[2] * u + U[2] * v - Fw[2] * h];
+      if (ax && tt > 0 && tt < 1) { const k = dot(n, ax); n = norm([n[0] - ax[0] * k, n[1] - ax[1] * k, n[2] - ax[2] * k]); }
+      const q = lerp3(a, b, t);
+      teinte(F, i, z, S, [q[0] + n[0] * r, q[1] + n[1] * r, q[2] + n[2] * r], n, m);
     }
   }
-  function couleur(c, ir, light, isIR) { return isIR ? [ir * light[0], ir * light[0], ir * light[0]] : [c[0] * light[0], c[1] * light[1], c[2] * light[2]]; }
+
+  // ellipsoïde lancé au rayon dans le repère (eL, eU, eF) ; surf(l, dedans) → { c, ir, s } ou null (trou)
+  function ellipsoide(F, S, c, eL, eU, eF, ax, surf) {
+    const cam = S.cam, pc = cam.proj(c);
+    if (!pc) return;
+    const rpx = (cam.F * Math.max(ax[0], ax[1], ax[2]) * 1.05) / pc[2] + 1.5;
+    const x0 = Math.max(0, Math.floor(pc[0] - rpx)), x1 = Math.min(W - 1, Math.ceil(pc[0] + rpx));
+    const y0 = Math.max(0, Math.floor(pc[1] - rpx)), y1 = Math.min(H - 1, Math.ceil(pc[1] + rpx));
+    const oc = sub(cam.C, c), o = [dot(oc, eL) / ax[0], dot(oc, eU) / ax[1], dot(oc, eF) / ax[2]], oo = dot(o, o) - 1;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const d = cam.ray(x + 0.5, y + 0.5), dl = [dot(d, eL) / ax[0], dot(d, eU) / ax[1], dot(d, eF) / ax[2]];
+      const A2 = dot(dl, dl), B = dot(o, dl), disc = B * B - A2 * oo;
+      if (disc < 0) continue;
+      const sq = Math.sqrt(disc), i = y * W + x, df = dot(d, cam.f);
+      for (const [t, dedans] of [[(-B - sq) / A2, false], [(-B + sq) / A2, true]]) {
+        if (t < 0.05) continue;
+        const z = t * df;
+        if (z >= F.z[i]) break;
+        const l = [o[0] + dl[0] * t, o[1] + dl[1] * t, o[2] + dl[2] * t];
+        const m = surf(l, dedans);
+        if (!m) continue;
+        let n = norm([eL[0] * l[0] / ax[0] + eU[0] * l[1] / ax[1] + eF[0] * l[2] / ax[2], eL[1] * l[0] / ax[0] + eU[1] * l[1] / ax[1] + eF[1] * l[2] / ax[2], eL[2] * l[0] / ax[0] + eU[2] * l[1] / ax[1] + eF[2] * l[2] / ax[2]]);
+        if (dedans) n = mul(n, -1);
+        teinte(F, i, z, S, add(cam.C, mul(d, t)), n, m, m.c);
+        break;
+      }
+    }
+  }
+
+  // sRGB 8 bits → lumière linéaire (le portrait est peint en sRGB)
+  const LIN = new Float32Array(256);
+  for (let k = 0; k < 256; k++) LIN[k] = Math.pow(k / 255, 2.2) * 0.85;
+  const mix3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+
+  // la surface de la tête, en coordonnées de la sphère unité : x vers la gauche de la personne (droite de l'image
+  // quand elle fait face), y vers le haut, z vers l'avant
+  function surfaceTete(A, l) {
+    const [lx, ly, lz] = l, T = A.tenue, peau = A.peau, chev = A.chev;
+    const g = (u, v, cu, cv, ru, rv) => ((u - cu) * (u - cu)) / (ru * ru) + ((v - cv) * (v - cv)) / (rv * rv);
+    // couvre-chefs
+    if (T.tete === "bonnet" && ly > 0.16 - 0.1 * lz) { const c = COUL[T.teteC], cote = Math.sin(Math.atan2(lx, lz) * 22) > 0 ? 1 : 0.86, bord = ly < 0.36 - 0.1 * lz ? 0.8 : 1; return { c: mul(c.c, cote * bord), ir: c.ir * cote, s: 0.03 }; }
+    if (T.tete === "casquette" && ly > 0.34 - 0.06 * lz) { const c = COUL[T.teteC]; return { c: c.c, ir: c.ir, s: 0.08 }; }
+    // cheveux : la ligne descend des tempes vers la nuque
+    const coupe = A.coupe || "court";
+    const ligne = lz > 0 ? lerp(0.02, coupe === "ras" ? 0.62 : 0.5, lz) : lerp(0.02, coupe === "long" ? -1.2 : -0.62, Math.min(1, -lz * 1.25));
+    let cheveu = coupe !== "chauve" && ly > ligne;
+    if (coupe === "chauve") cheveu = lz < 0.35 && ly > -0.55 && ly < 0.12 && Math.abs(lx) > 0.25;
+    // le portrait de la personne, quand il existe, donne le devant (visage et cheveux de face)
+    let face = null;
+    if (A.tex && lz > 0.02) {
+      const X = A.tex, fx = 31.5 + lx * 14.2, fy = 28 - ly * 19.2, xi = Math.floor(fx), yi = Math.floor(fy);
+      if (xi >= 0 && yi >= 0 && xi < 63 && yi < 63) {
+        const ki = yi * 64 + xi;
+        if (X.m[ki] === 1 || X.m[ki] === 2 || X.m[ki] === 4) {
+          const ax = fx - xi, ay = fy - yi, sm = (k, q) => LIN[X.d[k * 4 + q]];
+          const c = [0, 1, 2].map((q) => lerp(lerp(sm(ki, q), sm(ki + 1, q), ax), lerp(sm(ki + 64, q), sm(ki + 65, q), ax), ay));
+          face = { c, w: smooth(lz / 0.4), cheveu: X.m[ki] === 2 };
+        }
+      }
+    }
+    let c, s = 0.1;
+    if (cheveu) { c = mul(chev, 0.85 + 0.3 * h2(Math.floor(lx * 30 + lz * 20), Math.floor(ly * 40))); s = 0.16; }
+    else {
+      c = peau;
+      if (!A.tex && lz > 0.4) {
+        // traits modelés : yeux, sourcils, nez, bouche, barbe, lunettes
+        for (const sx of [-1, 1]) {
+          const e = g(lx, ly, sx * 0.36, 0.1, 0.13, 0.065);
+          if (e < 1) c = g(lx, ly, sx * 0.36, 0.1, 0.055, 0.055) < 1 ? [0.03, 0.025, 0.02] : [0.42, 0.4, 0.37];
+          else if (ly > 0.22 && ly < 0.3 && Math.abs(lx - sx * 0.36) < 0.18) c = mul(chev, 0.8);
+          if (A.lunettes) { const gl = g(lx, ly, sx * 0.36, 0.1, 0.19, 0.13); if (gl > 0.72 && gl < 1.15) c = [0.03, 0.03, 0.035]; }
+        }
+        if (A.lunettes && Math.abs(lx) < 0.17 && Math.abs(ly - 0.14) < 0.025) c = [0.03, 0.03, 0.035];
+        if (Math.abs(lx) < 0.1 && ly < 0.02 && ly > -0.26 && lx > 0.02) c = mul(peau, 0.82);
+        if (ly < -0.24 && ly > -0.3 && Math.abs(Math.abs(lx) - 0.06) < 0.035) c = mul(peau, 0.55);
+        if (A.barbe && ly < -0.14 && !(ly < -0.4 && ly > -0.5 && Math.abs(lx) < 0.24)) c = mix3(peau, mul(chev, 0.9), 0.55 + 0.35 * h2(Math.floor(lx * 50), Math.floor(ly * 50)));
+        if (ly < -0.42 && ly > -0.5 && Math.abs(lx) < 0.24) c = [peau[0] * 0.75 + 0.04, peau[1] * 0.55, peau[2] * 0.55];
+      } else if (!A.tex && A.barbe && lz > 0 && ly < -0.14) c = mix3(peau, chev, 0.5);
+    }
+    if (face) { c = mix3(c, face.c, face.w); if (face.cheveu) s = 0.16; }
+    // en infrarouge, le visage garde ses contrastes (yeux, sourcils, barbe), la peau renvoie beaucoup de lumière
+    return { c, ir: cheveu && !face ? 0.35 : clamp(0.25 + lumi(c) * 2.2, 0.25, 0.95), s };
+  }
 
   function dessinerActeur(S, F, A, j, st) {
-    const cam = S.cam, isIR = S.mode === "ir", T = A.tenue, sc = A.sc;
+    const T = A.tenue, sc = A.sc;
     const H_ = HAUTS[T.haut], cH = COUL[T.hautC], cB = COUL[T.basC], cC = CHAUSS[T.chauss];
-    const lumAt = (p) => S.lum(p, null);
-    const seg = (a, b, r, c, ir) => { const m = lerp3(a, b, 0.5); capsule(F, cam, a, b, r * sc, couleur(c, ir, lumAt(m), isIR)); };
-    const skin = A.peau, hair = A.chev;
-    // jambes, chaussures
+    const mH = mat(cH.c, cH.ir, TRAME[T.haut], BRILLE[T.haut]);
+    const mB = mat(cB.c, cB.ir, T.bas === "jean" ? TRAME.jean : TRAME.toile, 0.02);
+    const mC = mat(cC.c, cC.ir, null, 0.3), mS = mat(mul(cC.c, 0.7), cC.ir * 0.8, null, 0.05);
+    const mP = mat(A.peau, 0.72, null, 0.12);
+    const vol = (a, b, r0, r1, m) => volume(F, S, a, b, r0 * sc, (r1 == null ? r0 : r1) * sc, m);
+    const U_ = j.tdir;
+    // jambes : cuisse, mollet, chaussure (semelle)
     for (const s of ["L", "R"]) {
-      seg(j["hip" + s], j["kn" + s], 0.075, cB.c, cB.ir);
-      seg(j["kn" + s], j["ft" + s], 0.06, cB.c, cB.ir);
-      seg(j["ft" + s], j["toe" + s], 0.05, cC.c, cC.ir);
+      const hip = j["hip" + s], kn = j["kn" + s], ft = j["ft" + s], toe = j["toe" + s];
+      vol(hip, kn, 0.088, 0.064, mB);
+      vol(kn, lerp3(kn, ft, 0.94), 0.062, 0.046, mB);
+      const heel = sub(ft, mul(sub(toe, ft), 0.28));
+      vol(heel, toe, 0.052, 0.046, mC);
+      vol(add(heel, [0, -0.03 * sc, 0]), add(toe, [0, -0.028 * sc, 0]), 0.03, 0.028, mS);
     }
-    seg(j.hipL, j.hipR, 0.095, cB.c, cB.ir);
-    // buste
-    const rT = H_.r;
-    const wl = mul(j.lat, 0.065 * sc);
-    seg(add(j.pelvis, wl), add(j.chest, mul(wl, 1.2)), rT, cH.c, cH.ir);
-    seg(sub(j.pelvis, wl), sub(j.chest, mul(wl, 1.2)), rT, cH.c, cH.ir);
-    if (H_.long) for (const s of ["L", "R"]) seg(j["hip" + s], lerp3(j["hip" + s], j["kn" + s], 0.95), 0.105, cH.c, cH.ir);
-    if (T.sac === "sac_dos") { const c = COUL[T.sacC]; seg(sub(sub(j.chest, mul(j.tfw, 0.17 * sc)), mul(j.tdir, 0.06)), sub(sub(j.chest, mul(j.tfw, 0.17 * sc)), mul(j.tdir, 0.34 * sc)), 0.12, c.c, c.ir); }
-    // bras
-    const rA = H_.gonfle ? 0.068 : 0.055;
+    vol(j.hipL, j.hipR, 0.105, 0.105, mB);
+    // buste : deux volumes (taille → poitrine) et la carrure
+    const rT = H_.r * 0.86, wl = j.lat;
+    const taille = lerp3(j.pelvis, j.chest, 0.05), poit = lerp3(j.pelvis, j.chest, 0.86);
+    // le tronc : un ellipsoïde plus large que profond, du bassin aux épaules
+    {
+      const tU = norm(sub(j.chest, j.pelvis)), tF = norm(sub(j.tfw, mul(tU, dot(j.tfw, tU)))), tL = norm(cross(tF, tU));
+      const hT = len(sub(poit, taille)) / 2 + rT * 0.38;
+      ellipsoide(F, S, lerp3(taille, poit, 0.5), tL, tU, tF, [rT * 1.38 * sc, hT, rT * 0.92 * sc], () => mH);
+    }
+    vol(add(lerp3(j.shL, j.chest, 0.15), mul(U_, 0.035 * sc)), add(lerp3(j.shR, j.chest, 0.15), mul(U_, 0.035 * sc)), rT * 0.58, rT * 0.58, mH);
+    vol(add(j.chest, mul(U_, 0.0)), add(j.chest, mul(U_, 0.06 * sc)), rT * 0.62, rT * 0.5, mH); // haut du dos, col
+    if (H_.long) for (const s of ["L", "R"]) vol(j["hip" + s], lerp3(j["hip" + s], j["kn" + s], 0.98), 0.11, 0.125, mH);
+    else vol(add(j.hipL, mul(U_, 0.04 * sc)), add(j.hipR, mul(U_, 0.04 * sc)), rT * 0.78, rT * 0.78, mH); // bas du vêtement
+    if (T.sac === "sac_dos") { const c = COUL[T.sacC], mo = mat(c.c, c.ir, TRAME.toile, 0.05), dos = sub(j.chest, mul(j.tfw, 0.19 * sc)); vol(sub(dos, mul(j.tdir, 0.06 * sc)), sub(dos, mul(j.tdir, 0.32 * sc)), 0.12, 0.13, mo); }
+    // capuche rabattue dans le dos
+    if (H_.capuche && T.tete !== "capuche") vol(sub(add(j.chest, mul(U_, 0.06 * sc)), mul(j.tfw, 0.13 * sc)), sub(add(j.chest, mul(U_, -0.04 * sc)), mul(j.tfw, 0.16 * sc)), 0.075, 0.06, mH);
+    // bras, mains
+    const rA = H_.gonfle ? 0.07 : 0.058;
     for (const s of ["L", "R"]) {
-      seg(j["sh" + s], j["el" + s], rA, cH.c, cH.ir);
-      seg(j["el" + s], j["ha" + s], rA * 0.85, cH.c, cH.ir);
-      seg(j["ha" + s], j["ha" + s], 0.045, skin, 0.7);
+      const sh = j["sh" + s], el = j["el" + s], ha = j["ha" + s];
+      vol(sh, el, rA, rA * 0.88, mH);
+      vol(el, lerp3(el, ha, 0.9), rA * 0.85, rA * 0.72, mH);
+      const dm = norm(sub(ha, el));
+      vol(sub(ha, mul(dm, 0.01 * sc)), add(ha, mul(dm, 0.06 * sc)), 0.037, 0.032, mP);
     }
-    // cou, tête, cheveux, couvre-chef
-    seg(j.chest, lerp3(j.chest, j.head, 0.5), 0.05, skin, 0.7);
-    const hd = j.head;
-    seg(hd, hd, 0.105, skin, 0.72);
-    if (T.tete === "capuche") seg(add(sub(hd, mul(j.tfw, 0.05 * sc)), mul(j.tdir, 0.012)), add(sub(hd, mul(j.tfw, 0.05 * sc)), mul(j.tdir, 0.012)), 0.128, cH.c, cH.ir);
-    else if (T.tete === "bonnet") { const c = COUL[T.teteC]; seg(add(hd, mul(j.tdir, 0.035 * sc)), add(hd, mul(j.tdir, 0.035 * sc)), 0.108, c.c, c.ir); }
-    else if (T.tete === "casquette") {
-      const c = COUL[T.teteC], top = add(hd, mul(j.tdir, 0.03 * sc));
-      seg(top, top, 0.107, c.c, c.ir);
-      seg(add(top, add(mul(j.tfw, 0.07 * sc), mul(j.tdir, 0.02))), add(top, add(mul(j.tfw, 0.16 * sc), mul(j.tdir, 0.015))), 0.025, c.c, c.ir);
-    } else {
-      const hp = sub(add(hd, mul(j.tdir, 0.028 * sc)), mul(j.tfw, 0.025 * sc)); seg(hp, hp, 0.1, hair, 0.35);
-      if (A.g === "f" && !A.agee) seg(sub(hd, mul(j.tfw, 0.05 * sc)), sub(sub(hd, mul(j.tfw, 0.06 * sc)), mul(j.tdir, 0.2 * sc)), 0.075, hair, 0.35);
+    // cou, tête
+    const hU = norm(sub(j.head, j.chest)), hF = norm(cross(hU, wl)), hL = norm(cross(hF, hU));
+    const cT = sub(j.head, mul(hU, 0.02 * sc));
+    vol(lerp3(j.chest, j.head, 0.15), sub(add(cT, mul(hU, -0.06 * sc)), mul(hF, 0.01 * sc)), 0.058, 0.054, mP);
+    ellipsoide(F, S, cT, hL, hU, hF, [0.085 * sc, 0.116 * sc, 0.103 * sc], (l) => surfaceTete(A, l));
+    if (T.tete === "capuche") {
+      const c = COUL[T.hautC], m = { c: cH.c, ir: cH.ir, s: 0.03 }, mi = { c: mul(cH.c, 0.45), ir: cH.ir * 0.5, s: 0 };
+      ellipsoide(F, S, sub(add(cT, mul(hU, 0.018 * sc)), mul(hF, 0.022 * sc)), hL, hU, hF, [0.105 * sc, 0.135 * sc, 0.125 * sc], (l, dedans) => {
+        if (dedans) return mi;
+        return l[2] > 0.42 && l[1] < 0.62 && l[1] > -0.9 ? null : m;
+      });
+      void c;
+    } else if (T.tete === "casquette") {
+      const c = COUL[T.teteC], top = add(cT, mul(hU, 0.055 * sc));
+      vol(add(top, mul(hF, 0.06 * sc)), add(top, add(mul(hF, 0.15 * sc), mul(hU, -0.012 * sc))), 0.024, 0.02, mat(c.c, c.ir, null, 0.08));
+    }
+    if (A.coupe === "long" && !T.tete) {
+      const m = mat(A.chev, 0.35, null, 0.16);
+      vol(sub(add(cT, mul(hU, 0.03 * sc)), mul(hF, 0.055 * sc)), sub(sub(cT, mul(hF, 0.07 * sc)), mul(hU, 0.2 * sc)), 0.075, 0.06, m);
     }
     if (T.sac === "sacoche") {
-      const c = COUL[T.sacC], p = add(add(j.hipR, mul(j.fw, 0.12 * sc)), mul(j.tdir, 0.08));
-      seg(j.shL, p, 0.015, c.c, c.ir);
-      seg(sub(p, mul(j.lat, 0.07)), add(p, mul(j.lat, 0.07)), 0.06, c.c, c.ir);
+      const c = COUL[T.sacC], mo = mat(c.c, c.ir, null, 0.12), p = add(add(j.hipR, mul(j.fw, 0.12 * sc)), mul(j.tdir, 0.08));
+      vol(j.shL, p, 0.015, 0.015, mo);
+      vol(sub(p, mul(j.lat, 0.07)), add(p, mul(j.lat, 0.07)), 0.06, 0.06, mo);
     }
   }
 
@@ -822,12 +976,11 @@
   }
 
   function dessinerObjet(S, F, o, ob) {
-    const isIR = S.mode === "ir", cam = S.cam, L = S.lum(o.pos, null);
     const c = ob.type === "sac" || ob.type === "article" ? COUL[ob.couleur] || COUL.rouge : ob.type === "telephone" ? { c: [0.02, 0.02, 0.025], ir: 0.3 } : { c: [0.6, 0.45, 0.12], ir: 0.8 };
-    const col = couleur(c.c, c.ir, L, isIR);
+    const m = mat(c.c, c.ir, null, ob.type === "telephone" ? 0.5 : 0.2);
     const l = ob.type === "sac" ? 0.13 : ob.type === "telephone" ? 0.04 : ob.type === "article" ? 0.06 : 0.05, r = ob.type === "sac" ? 0.085 : ob.type === "telephone" ? 0.03 : ob.type === "article" ? 0.05 : 0.012;
-    capsule(F, cam, sub(o.pos, mul(o.fw, l)), add(o.pos, mul(o.fw, l)), r, col);
-    if (o.att) capsule(F, cam, o.att, add(o.pos, [0, 0.07, 0]), 0.012, col);
+    volume(F, S, sub(o.pos, mul(o.fw, l)), add(o.pos, mul(o.fw, l)), r, r, m);
+    if (o.att) volume(F, S, o.att, add(o.pos, [0, 0.07, 0]), 0.012, 0.012, m);
   }
 
   // ---------------------------------------------------------------- police d'incrustation (3 × 5, sans accents)
@@ -837,19 +990,20 @@
     A: "010101111101101", B: "110101110101110", C: "011100100100011", D: "110101101101110", E: "111100110100111", F: "111100110100100", G: "011100101101011", H: "101101111101101", I: "111010010010111", J: "001001001101010", K: "101101110101101", L: "100100100100111", M: "101111111101101",
     N: "110101101101101", O: "010101101101010", P: "110101110100100", Q: "010101101110011", R: "110101110101101", S: "011100010001110", T: "111010010010010", U: "101101101101111", V: "101101101101010", W: "101101111111101", X: "101101010101101", Y: "101101010010010", Z: "111001010100111",
   };
+  const EC = Math.max(1, Math.round(W / 320)); // taille d'un point de la police
   function ecrire(out, x, y, s) {
     s = s.toUpperCase();
     for (const pass of [0, 1]) {
       let cx = x;
       for (const ch of s) {
         const g = GL[ch] || GL[" "];
-        for (let k = 0; k < 15; k++) if (g[k] === "1") {
-          const px = cx + (k % 3) + (pass ? 0 : 1), py = y + Math.floor(k / 3) + (pass ? 0 : 1);
+        for (let k = 0; k < 15; k++) if (g[k] === "1") for (let a = 0; a < EC; a++) for (let b = 0; b < EC; b++) {
+          const px = cx + (k % 3) * EC + a + (pass ? 0 : 1), py = y + Math.floor(k / 3) * EC + b + (pass ? 0 : 1);
           if (px < 0 || py < 0 || px >= W || py >= H) continue;
           const i = (py * W + px) * 4, v = pass ? 235 : 10;
           out[i] = v; out[i + 1] = v; out[i + 2] = v;
         }
-        cx += 4;
+        cx += 4 * EC;
       }
     }
   }
@@ -866,7 +1020,7 @@
     const scn = F_.monter(rng("faits:" + (o.grainefaits || graine)), o);
     // les tenues peuvent varier seules, à faits identiques
     if (o.grainetenues) { const alt = F_.monter(rng("tenues:" + o.grainetenues), o); scn.acteurs.forEach((a, i) => { const b = alt.acteurs[i]; a.tenue = b.tenue; a.peau = b.peau; a.chev = b.chev; a.sc = b.sc; }); scn.objet.couleur = alt.objet.couleur; }
-    for (const A of scn.acteurs) preparer(A, D);
+    for (const A of scn.acteurs) { preparer(A, D); visage(A, graine, o); }
     // 1.5.0 : une scène peut porter sa caméra (camAt : la caméra-piéton suit l'agent), sa cadence, son style d'incrustation
     // et ses paroles (sous-titres) ; sans elles, le chemin et les tirages sont ceux d'avant
     const S = { D, cam, mode, graine, scn, duree: scn.duree, fps: o.fps || scn.fps || pick(r, [8, 10, 12]), lumieres: null };
@@ -913,18 +1067,37 @@
     return S;
   };
 
+  // les traits d'une personne (coupe, barbe, lunettes) : tirés à part, sans toucher aux tirages des faits ; le portrait
+  // (o.looks[id], sinon un visage tiré au hasard) vient de l'interface quand elle sait le peindre (V.texturer)
+  function visage(A, graine, o) {
+    const r = rng("visage:" + graine + ":" + A.id), f = A.g === "f";
+    A.coupe = f ? (r() < 0.6 && !A.agee ? "long" : "court") : pick(r, A.agee ? ["chauve", "court", "court"] : ["court", "court", "ras", "ras", "chauve"]);
+    A.barbe = !f && r() < 0.3; A.lunettes = r() < (A.agee ? 0.5 : 0.12);
+    A.look = (o.looks && o.looks[A.id]) || null;
+    if (!V.texturer) return;
+    try {
+      const v = V.texturer(A.look, { g: A.g || "m", age: A.agee ? 74 : 22 + Math.floor(r() * 30), graine: graine + ":" + A.id });
+      if (v) for (const k of ["tex", "peau", "chev", "coupe", "barbe", "lunettes"]) if (v[k] != null) A[k] = v[k];
+    } catch (e) { /* pas de portrait : le visage modelé reste */ }
+  }
+
   // fond : lancé une fois, à la première image (construire l'extrait reste léger : texte du procès-verbal, tests)
   function fond(S) {
     const { cam, D, mode } = S, nuit = S.nuit;
     const bg = new Float32Array(N * 3), bz = new Float32Array(N), gx = new Float32Array(N), gz = new Float32Array(N);
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    // caméra mobile : le fond change à chaque image ; on le lance un point sur deux, puis on comble (image bougée et douce)
+    const pas = S.camAt ? 2 : 1;
+    for (let y = 0; y < H; y += pas) for (let x = 0; x < W; x += pas) {
       const i = y * W + x, d = cam.ray(x + 0.5, y + 0.5), h = trace(D, S.prims, cam.C, d, nuit);
       gx[i] = NaN; gz[i] = NaN;
       if (!h) { bz[i] = 1e9; const s = mode === "jour" ? [0.5, 0.55, 0.62] : [0.01, 0.012, 0.02]; bg[i * 3] = s[0]; bg[i * 3 + 1] = s[1]; bg[i * 3 + 2] = s[2]; continue; }
       bz[i] = h.t * dot(d, cam.f);
       if (h.sol) { gx[i] = h.p[0]; gz[i] = h.p[2]; }
-      const m = h.m || { c: [0.3, 0.3, 0.3] };
-      let L = S.lum(h.p, h.n);
+      let m = h.m || { c: [0.3, 0.3, 0.3] };
+      if (m.f) m = m.f(h.p, h.n, nuit); // matière peinte par le décor (store rayé, carrosserie, feuillage)
+      // ombre du soleil portée par les objets du décor (caméra fixe seulement : le fond est alors calculé une fois)
+      const so = S.lum.sun && !S.camAt && D.ombresSoleil ? (ombrage(S.prims, h, S.lum.sun.d) ? 0.12 : 1) : 1;
+      let L = S.lum(h.p, h.n, so);
       // ombre portée sous les voitures garées
       if (h.sol && h.p[2] > 9.8 && h.p[2] < 11.65) for (const P of S.prims) if (P.voiture && h.p[0] > P.a[0] - 0.1 && h.p[0] < P.b[0] + 0.1) { L = mul(L, 0.3); break; }
       const refl = mode === "ir" ? (m.ir != null ? m.ir : lumi(m.c) * 1.25) : null;
@@ -933,7 +1106,25 @@
       if (e) { const k = mode === "ir" ? 0.6 : 1; c = add(c, mode === "ir" ? [lumi(e) * k, lumi(e) * k, lumi(e) * k] : e); }
       bg[i * 3] = c[0]; bg[i * 3 + 1] = c[1]; bg[i * 3 + 2] = c[2];
     }
+    if (pas === 2) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!(x & 1) && !(y & 1)) continue;
+      const x0 = x & ~1, y0 = y & ~1, x1 = Math.min(x0 + 2, (W - 1) & ~1), y1 = Math.min(y0 + 2, (H - 1) & ~1), fx = (x - x0) / 2, fy = (y - y0) / 2;
+      const a = y0 * W + x0, b = y0 * W + x1, c = y1 * W + x0, e = y1 * W + x1, i = y * W + x;
+      for (let q = 0; q < 3; q++) bg[i * 3 + q] = lerp(lerp(bg[a * 3 + q], bg[b * 3 + q], fx), lerp(bg[c * 3 + q], bg[e * 3 + q], fx), fy);
+      const n = fx < 0.5 ? (fy < 0.5 ? a : c) : fy < 0.5 ? b : e;
+      bz[i] = bz[n]; gx[i] = gx[n]; gz[i] = gz[n];
+    }
     Object.assign(S, { bg, bz, gx, gz });
+  }
+
+  function ombrage(prims, h, d) {
+    const o = add(h.p, mul(h.n, 0.02));
+    for (const P of prims) {
+      if (P === h.prim || P.sansOmbre) continue;
+      const q = P.k === "box" ? hitBox(P, o, d) : P.k === "cyl" ? hitCyl(P, o, d) : hitSph(P, o, d);
+      if (q) return true;
+    }
+    return false;
   }
 
   function horo(S, t) {
@@ -1002,8 +1193,21 @@
     ombres(S, F, js);
     for (const A of S.scn.acteurs) { const e = E[A.id]; if (e) dessinerActeur(S, F, A, e.j, e); }
     if (E._objet) dessinerObjet(S, F, E._objet, S.scn.objet);
+    if (S.bloc > 1) pixeliser(F.c, S.bloc);
     post(S, F.c, t, out);
     return out;
+  }
+
+  // l'image vue au grain du capteur : moyenne par blocs de b pixels, puis agrandie en douceur
+  function pixeliser(c, b) {
+    const gw = Math.ceil(W / b) + 1, gh = Math.ceil(H / b) + 1, G = new Float32Array(gw * gh * 3), n = new Float32Array(gw * gh);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const k = Math.floor(y / b) * gw + Math.floor(x / b), i = (y * W + x) * 3; G[k * 3] += c[i]; G[k * 3 + 1] += c[i + 1]; G[k * 3 + 2] += c[i + 2]; n[k]++; }
+    for (let k = 0; k < gw * gh; k++) if (n[k]) { G[k * 3] /= n[k]; G[k * 3 + 1] /= n[k]; G[k * 3 + 2] /= n[k]; }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const gx = clamp((x + 0.5) / b - 0.5, 0, Math.ceil(W / b) - 1.001), gy = clamp((y + 0.5) / b - 0.5, 0, Math.ceil(H / b) - 1.001);
+      const x0 = gx | 0, y0 = gy | 0, fx = gx - x0, fy = gy - y0, i = (y * W + x) * 3;
+      for (let q = 0; q < 3; q++) c[i + q] = lerp(lerp(G[(y0 * gw + x0) * 3 + q], G[(y0 * gw + x0 + 1) * 3 + q], fx), lerp(G[((y0 + 1) * gw + x0) * 3 + q], G[((y0 + 1) * gw + x0 + 1) * 3 + q], fx), fy);
+    }
   }
 
   // ---------------------------------------------------------------- caméra : déformation, couleur, compression, grain, incrustation
@@ -1018,13 +1222,15 @@
       const r2 = (nx * nx + ny * ny) / 1.31, f = (1 + k * r2) / (1 + k);
       const sx = clamp((nx * f + 1) / ix - 0.5, 0, W - 1.001), sy = clamp((ny * f + H / W) / ix - 0.5, 0, H - 1.001);
       const x0 = sx | 0, y0 = sy | 0, fx = sx - x0, fy = sy - y0, i0 = (y0 * W + x0) * 3, i1 = i0 + 3, i2 = i0 + W * 3, i3 = i2 + 3;
-      const c = [0, 1, 2].map((q) => lerp(lerp(src[i0 + q], src[i1 + q], fx), lerp(src[i2 + q], src[i3 + q], fx), fy));
+      const w0 = (1 - fx) * (1 - fy), w1 = fx * (1 - fy), w2 = (1 - fx) * fy, w3 = fx * fy;
       // exposition (courbe douce) puis gamma
-      const m = c.map((v) => Math.pow(1 - Math.exp(-v * expo), 1 / 2.1));
+      const m0 = Math.pow(1 - Math.exp(-(src[i0] * w0 + src[i1] * w1 + src[i2] * w2 + src[i3] * w3) * expo), 1 / 2.1);
+      const m1 = Math.pow(1 - Math.exp(-(src[i0 + 1] * w0 + src[i1 + 1] * w1 + src[i2 + 1] * w2 + src[i3 + 1] * w3) * expo), 1 / 2.1);
+      const m2 = Math.pow(1 - Math.exp(-(src[i0 + 2] * w0 + src[i1 + 2] * w1 + src[i2 + 2] * w2 + src[i3 + 2] * w3) * expo), 1 / 2.1);
       const i = y * W + x;
-      Y[i] = 0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2];
-      Cb[i] = ir ? 0 : (m[2] - Y[i]) * 0.55;
-      Cr[i] = ir ? 0 : (m[0] - Y[i]) * 0.55;
+      Y[i] = 0.299 * m0 + 0.587 * m1 + 0.114 * m2;
+      Cb[i] = ir ? 0 : (m2 - Y[i]) * 0.55;
+      Cr[i] = ir ? 0 : (m0 - Y[i]) * 0.55;
     }
     // chrominance moyennée par blocs de 4 × 2 (compression), luminance adoucie
     if (!ir) for (let by = 0; by < H; by += 2) for (let bx = 0; bx < W; bx += 4) {
@@ -1037,7 +1243,7 @@
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = y * W + x;
       const l = x > 0 ? Y[i - 1] : Y[i], rr = x < W - 1 ? Y[i + 1] : Y[i];
-      let v = 0.24 * l + 0.52 * Y[i] + 0.24 * rr;
+      let v = 0.18 * l + 0.64 * Y[i] + 0.18 * rr;
       v += (h2(i, fi) - 0.5) * grain + (h2(y, fi + 7) - 0.5) * 0.012;
       v = Math.round(v * 40) / 40; // quantification
       const vx = (x / W - 0.5) * 2, vy = (y / H - 0.5) * 2, vig = 1 - 0.18 * (vx * vx + vy * vy);
@@ -1049,17 +1255,19 @@
       out[o + 2] = clamp((v + 1.772 * cb) * 255, 0, 255);
       out[o + 3] = 255;
     }
+    if (S.agrandi) return out;
     if (S.style === "pieton") {
       // caméra individuelle : horodatage en haut, identifiant de la caméra en bas, voyant d'enregistrement rouge
-      ecrire(out, 4, 4, S.horodatage(t));
-      ecrire(out, 4, H - 9, S.camNom);
-      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (dx * dx + dy * dy <= 5) { const i = ((7 + dy) * W + (W - 30 + dx)) * 4; out[i] = 230; out[i + 1] = 30; out[i + 2] = 30; }
-      ecrire(out, W - 24, 4, "REC");
+      ecrire(out, 6, 6, S.horodatage(t));
+      ecrire(out, 6, H - 7 - 5 * EC, S.camNom);
+      const rr0 = 2 * EC + 1;
+      for (let dy = -rr0; dy <= rr0; dy++) for (let dx = -rr0; dx <= rr0; dx++) if (dx * dx + dy * dy <= rr0 * rr0) { const i = ((6 + 2 * EC + dy) * W + (W - 6 - 13 * EC - 4 * EC + dx)) * 4; out[i] = 230; out[i + 1] = 30; out[i + 2] = 30; }
+      ecrire(out, W - 6 - 12 * EC, 6, "REC");
       return out;
     }
-    ecrire(out, 4, 4, S.horodatage(t));
-    ecrire(out, W - 4 - S.camNom.length * 4, 4, S.camNom);
-    if (ir) ecrire(out, W - 16, H - 9, "IR");
+    ecrire(out, 6, 6, S.horodatage(t));
+    ecrire(out, W - 6 - S.camNom.length * 4 * EC, 6, S.camNom);
+    if (ir) ecrire(out, W - 6 - 8 * EC, H - 7 - 5 * EC, "IR");
     return out;
   }
 
@@ -1076,7 +1284,7 @@
         const e = etat(A, S.frames[i], S); if (!e) continue;
         const j = squelette(e.pos, e.gy, e.cap, e.pose, A.sc), p = S.cam.proj(j.head);
         if (!p || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
-        vu++; tete = Math.max(tete, (2 * S.cam.F * 0.105 * A.sc) / p[2]);
+        vu++; tete = Math.max(tete, (2 * S.cam.F * REF * (S.D.capteur || 1) * 0.105 * A.sc) / p[2]);
       }
       const teinte = (c, g) => (ir ? (c.ir >= 0.66 ? "de teinte claire" : c.ir <= 0.48 ? "de teinte foncée" : "de teinte moyenne") : c[g]);
       const fem = H_.g === "f";
@@ -1132,9 +1340,39 @@
     return L;
   };
 
+  // ---------------------------------------------------------------- agrandissement (arrêt sur image)
+  // Les personnes visibles à l'instant t : identifiant, position de la tête à l'écran, taille de la tête.
+  V.personnes = function (S, t) {
+    placer(S, t);
+    const E = etats(S, t), res = [];
+    for (const A of S.scn.acteurs) {
+      const e = E[A.id]; if (!e) continue;
+      const p = S.ecran(e.j.head); if (!p || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
+      res.push({ id: A.id, role: A.role, x: p[0], y: p[1], tete: (2 * S.cam.F * REF * (S.D.capteur || 1) * 0.105 * A.sc) / p[2] });
+    }
+    return res.sort((a, b) => a.x - b.x);
+  };
+  // L'image agrandie autour d'une personne : la même caméra, resserrée sur le haut du corps (1,1 m de large), puis
+  // ramenée au grain réel du capteur (CAPTEUR fois plus fin que l'image de référence de 320 points) : de près, le visage
+  // se lit ; de loin, il reste une tache. → { data (RGBA W × H), bloc, tete }
+  const CAPTEUR = 2.5;
+  V.agrandir = function (S, t, id, out) {
+    t = S.frames[S.indexA(t)];
+    placer(S, t);
+    const E = etats(S, t), e = E[id], A = S.scn.acteurs.find((a) => a.id === id);
+    if (!e || !A) return null;
+    const cible = lerp3(e.j.head, e.j.chest, 0.3), v = sub(cible, S.cam.C), dist = len(v), f = mul(v, 1 / dist);
+    const fov = (2 * Math.atan(1.1 / 2 / dist) * 180) / Math.PI;
+    const cam = Camera({ pos: S.cam.C, yaw: Math.atan2(f[0], f[2]), pitch: Math.asin(-f[1]), fov });
+    const Fref = S.cam.F * REF * (S.D.capteur || 1), bloc = cam.F / (Fref * CAPTEUR);
+    const Z = Object.assign({}, S, { cam, lum: Eclairage(S.D, S.mode, cam), bg: null, camAt: null, k: 0, agrandi: true, bloc });
+    const data = rendre(Z, t, out);
+    return { data, bloc, tete: (2 * Fref * 0.105 * A.sc) / dist };
+  };
+
   V.rng = rng;
   V.squelette = squelette;
   V.Camera = Camera;
   // 1.5.0 : les outils du metteur en scène, pour les décors et les faits écrits ailleurs (video-rue.js, video-pieton.js)
-  V.outils = { rng, pick, lerp, clamp, smooth, frac, h2, add, sub, mul, P, mix, marche, course, tenue, PEAU, CHEV, COUCHE, preparer, etat, squelette };
+  V.outils = { GL, bruit, rng, pick, lerp, clamp, smooth, frac, h2, add, sub, mul, P, mix, marche, course, tenue, PEAU, CHEV, COUCHE, preparer, etat, squelette };
 })();

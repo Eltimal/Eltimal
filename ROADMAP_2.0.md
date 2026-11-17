@@ -294,6 +294,23 @@ une fois mesuré ce qu'aucune caméra ne peut montrer) ; chaque extrait montre c
 moins, et son procès-verbal le dit ; chaque faille se trouve en regardant ou en lisant, et produit son effet à
 l'audience ; les affaires déjà tirées et les codes d'avant ne changent pas.
 
+**Bilan de la livraison 1.5.0 (17 novembre).** Générateur en version 6 (`GEN2.VERSION`) : `js/video-plan.js` choisit
+les vidéos d'une affaire (`t.videos`) et ajoute leurs pièces ; `js/video-rue.js` (trois décors de rue, six faits),
+`js/video-pieton.js` (caméra portée qui bouge, sous-titres, contrôles routiers et de voie publique). Textes lus : CSI
+L252-5 (vidéoprotection : un mois au plus), L241-1, R241-2, R241-4 (caméras individuelles). Mesure sur 160 affaires de
+la version 6 : 46 % ont une pièce vidéo, 36 % un extrait joué (rue 21, caméra-piéton 36) ; par famille : route 88 %,
+stupéfiants 67 %, autorité 67 %, biens 44 %, personnes 23 %, numérique et affaires 0 % (attendus des 1.5.1 à 1.5.3).
+Demande de Kevin en cours de route : **une image de meilleure qualité, et les visages des personnes de l'affaire**.
+Fait : image 480 × 270 (les seuils de lisibilité restent comptés sur 320 points, `REF`, pour que les procès-verbaux
+d'avant ne bougent pas) ; personnages en volumes éclairés pixel par pixel (tronc et tête en ellipsoïdes lancés au
+rayon, membres en cônes arrondis, trame des tissus, reflets) ; la tête porte le portrait de la personne
+(`CR.video.texturer`, dans `ui-video.js`, plaque le portrait 64 × 64 de `CR.px` ; un sosie quand l'identification est
+douteuse : `VPLAN.looks`) ; décor de rue refait (pierre de taille, vitrines et enseignes, balcons, rideaux de fer,
+trottoirs, passage piéton, voitures, ombres portées du soleil) ; caméra de rue rapprochée et « haute définition »
+(`capteur`) ; agrandissement à l'arrêt sur image (`V.personnes`, `V.agrandir`, au grain réel du capteur). Reste pour les
+livraisons suivantes : la même qualité pour les décors du métro et du magasin ; un rendu plus rapide de la
+caméra-piéton (≈ 130 ms par image en Node).
+
 ### 1.6.0 « La garde à vue » — la parole de la scène la plus jouée
 
 - **Contexte de procédure** lu par tous les textes : arrêté sur le fait, convoqué, plaignant ; date des faits relative

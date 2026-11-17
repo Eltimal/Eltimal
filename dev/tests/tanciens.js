@@ -32,6 +32,8 @@ const FV = path.join(__dirname, "visages-or.json"), FA = path.join(__dirname, "a
       const p = G.paramsCode(s, c); CR.GEN.build(p); const cs = CR.openCase(s, p.id), def = CR.caseDef(cs);
       const docs = {};
       for (const d of Object.keys(def.docs || {})) { try { docs[d] = def.docs[d](cs, s); } catch (e) { docs[d] = "erreur"; } }
+      // 1.5.0 : les visages du dossier rejoignent les réglages de l'extrait (le rendu change, pas le texte de la pièce)
+      for (const d of Object.values(docs)) if (d && d.video && d.video.looks) { d.video = Object.assign({}, d.video); delete d.video.looks; }
       const noms = ["A", "V", "T", "T2", "P", "R", "C2"].map((x) => p.t[x] && p.t[x].prenom ? p.t[x].prenom + " " + p.t[x].nom : "").join("/");
       aff[cle] = [h(p.t), h(docs), noms];
     } catch (e) { aff[cle] = ["erreur", String(e.message).slice(0, 60), ""]; }

@@ -12,7 +12,7 @@
   const CR = (root.CR = root.CR || {});
   const V = CR.video;
   if (!V || !V.outils) return;
-  const { rng, pick, lerp, clamp, smooth, frac, h2, add, mul, P, tenue, PEAU, CHEV } = V.outils;
+  const { GL, bruit, rng, pick, lerp, clamp, smooth, frac, h2, add, mul, P, tenue, PEAU, CHEV } = V.outils;
   const RUE = (CR.VRUE = {});
 
   // ---------------------------------------------------------------- gestes nouveaux
@@ -35,130 +35,226 @@
   });
 
   // ---------------------------------------------------------------- le décor de rue
-  // Repère de video.js : x le long du trottoir, y vers le haut, z en s'éloignant de la caméra (posée sur la façade du
-  // trottoir filmé). Trottoir filmé jusqu'à z = 9,5, chaussée, trottoir d'en face, façade d'en face à z = 20.
+  // Repère de video.js : x le long du trottoir, y vers le haut, z en s'éloignant de la façade filmée (zn = 4). Trottoir
+  // filmé jusqu'à z = 9,5, file de stationnement, chaussée, trottoir d'en face. Immeubles en pierre de taille : boutiques
+  // au rez-de-chaussée (vitrine, enseigne, rideau de fer, porte cochère), étages à fenêtres, balcon filant au deuxième.
+  const ENSEIGNES = ["BOULANGERIE", "TABAC PRESSE", "PHARMACIE", "OPTIQUE", "PRIMEUR", "LAVERIE", "FLEURS", "BIJOUTERIE", "COIFFURE", "EPICERIE"];
+  // un texte de la police 3 × 5, peint sur un plan : (u, v) en mètres depuis le coin bas gauche, h = hauteur des lettres
+  function lettre(txt, u, v, h) {
+    const p = h / 5, col = Math.floor(u / p), row = 4 - Math.floor(v / p);
+    if (u < 0 || v < 0 || row < 0 || row > 4) return false;
+    const k = Math.floor(col / 4), c = col % 4; if (c === 3 || k >= txt.length) return false;
+    const g = GL[txt[k]] || GL[" "]; return g[row * 3 + c] === "1";
+  }
   function rue(variante) {
     const D = {
       nom: { commerce: "Rue commerçante", bar: "Rue, devant un bar", place: "Place" }[variante],
       variante,
-      // la caméra municipale est sur un mât du trottoir d'en face, tournée vers le trottoir filmé et sa façade (zn) :
-      // +x part vers la GAUCHE de l'image
-      camera: { pos: [2.6, 6.0, 17.4], yaw: Math.PI + 0.06, pitch: 0.45, fov: 56 },
+      // caméra municipale récente, haute définition (capteur), sur le mât du terre-plein, tournée vers le trottoir
+      // filmé et sa façade : +x part vers la GAUCHE de l'image. Assez près pour qu'un visage tourné vers elle se lise.
+      camera: { pos: [2.6, 4.9, 13.4], yaw: Math.PI + 0.06, pitch: 0.42, fov: 70 },
+      capteur: 2.2, ombresSoleil: true,
       zf: 20, zn: 4.0, bord: 9.5, route: 16.5,
       // cibles des faits : la vitrine (commerce), la terrasse (bar), le banc (place)
       vitrine: { x0: 2.0, x1: 6.2, z: 4.0 },
+      boutique(x) {
+        if (variante === "commerce" && x > this.vitrine.x0 - 0.5 && x < this.vitrine.x1 + 0.5) return { type: "vitrine", nom: this.enseigne, x0: this.vitrine.x0 - 0.5, x1: this.vitrine.x1 + 0.5 };
+        if (variante === "bar" && x > -1.5 && x < 7.5) return { type: "bar", nom: this.enseigneBar, x0: -1.5, x1: 7.5 };
+        const i = Math.floor((x + 100) / 5.5), x0 = i * 5.5 - 100, h = h2(i, 5);
+        return { type: variante === "place" ? (h < 0.45 ? "porte" : h < 0.75 ? "vitrine" : "rideau") : h < 0.25 ? "porte" : h < 0.7 ? "vitrine" : "rideau", nom: ENSEIGNES[Math.floor(h2(i, 8) * ENSEIGNES.length)], x0, x1: x0 + 5.5, i };
+      },
       prims(r) {
         const PR = [];
+        this.enseigne = pick(r, ENSEIGNES); this.enseigneBar = pick(r, ["CAFE DE LA GARE", "LE BALTO", "LE SPORTING", "BAR TABAC"]);
         const box = (a, b, m, x) => PR.push(Object.assign({ k: "box", a, b, m }, x || {}));
-        // réverbères
+        const fonte = { c: [0.03, 0.055, 0.04], s: 0.3 };
+        // réverbères parisiens : socle, fût vert sombre, crosse, lanterne
         for (const x of [-4.6, 9.4]) {
-          PR.push({ k: "cyl", x, z: 9.05, r: 0.08, y0: 0, y1: 5.2, m: { c: [0.05, 0.06, 0.06] } });
-          box([x - 0.05, 5.1, 9.0], [x + 0.05, 5.18, 10.3], { c: [0.05, 0.06, 0.06] });
-          box([x - 0.2, 4.98, 10.0], [x + 0.2, 5.12, 10.6], { c: [0.3, 0.3, 0.28], e: [1.4, 1.15, 0.8], eNuit: true });
+          PR.push({ k: "cyl", x, z: 9.05, r: 0.13, y0: 0, y1: 0.7, m: fonte });
+          PR.push({ k: "cyl", x, z: 9.05, r: 0.07, y0: 0.7, y1: 5.1, m: fonte });
+          box([x - 0.04, 5.05, 9.0], [x + 0.04, 5.13, 10.3], fonte);
+          box([x - 0.18, 4.75, 10.12], [x + 0.18, 5.05, 10.48], { c: [0.5, 0.48, 0.42], e: [1.6, 1.3, 0.9], eNuit: true }, { sansOmbre: true });
+          box([x - 0.22, 5.05, 10.08], [x + 0.22, 5.12, 10.52], fonte);
         }
-        // potelets
-        for (let x = -7; x < 14; x += 1.6) if ((x < -5.3 || x > -3.8) && Math.abs(x - 9.4) > 0.6) PR.push({ k: "cyl", x, z: 9.25, r: 0.05, y0: 0, y1: 0.75, m: { c: [0.08, 0.06, 0.05] } });
-        // voitures garées
-        const cols = [[0.28, 0.28, 0.3], [0.04, 0.04, 0.05], [0.55, 0.55, 0.56], [0.25, 0.03, 0.03], [0.05, 0.08, 0.16], [0.42, 0.4, 0.33]];
+        // potelets à tête ronde
+        for (let x = -7; x < 14; x += 1.6) if ((x < -5.3 || x > -3.8) && Math.abs(x - 9.4) > 0.6) {
+          PR.push({ k: "cyl", x, z: 9.25, r: 0.055, y0: 0, y1: 0.7, m: { c: [0.09, 0.06, 0.045], s: 0.2 } });
+          PR.push({ k: "sph", c: [x, 0.72, 9.25], r: 0.065, m: { c: [0.09, 0.06, 0.045], s: 0.3 } });
+        }
+        // corbeille de rue : arceau vert, sac clair
+        PR.push({ k: "cyl", x: 7.8, z: 9.0, r: 0.035, y0: 0, y1: 0.95, m: fonte });
+        PR.push({ k: "cyl", x: 7.8, z: 8.82, r: 0.2, y0: 0.4, y1: 0.92, m: { c: [0.45, 0.47, 0.45], s: 0.5 } });
+        // voitures garées : caisse, vitrage, roues, phares
+        const cols = [[0.28, 0.28, 0.3], [0.03, 0.03, 0.035], [0.55, 0.55, 0.56], [0.3, 0.03, 0.03], [0.04, 0.07, 0.17], [0.42, 0.4, 0.33], [0.7, 0.7, 0.68]];
         for (const [x0, l] of [[6.6, 4.3], [-12.5, 4.1], [11.5, 4.4], [-7.2, 4.2]]) {
-          const c = pick(r, cols);
-          box([x0, 0.28, 9.85], [x0 + l, 0.95, 11.6], { c, s: 0.6 }, { voiture: true });
-          box([x0 + 0.9, 0.95, 10.0], [x0 + l - 0.8, 1.42, 11.45], { c: [0.02, 0.025, 0.03], s: 0.8 });
-          box([x0 + 0.3, 0.12, 9.9], [x0 + l - 0.3, 0.28, 11.55], { c: [0.01, 0.01, 0.01] });
+          const c = pick(r, cols), carr = { c, s: 0.7 }, vitre = { c: [0.015, 0.02, 0.025], s: 0.9 };
+          box([x0, 0.32, 9.9], [x0 + l, 0.82, 11.55], carr, { voiture: true });
+          box([x0 + 0.15, 0.82, 9.95], [x0 + l - 0.1, 0.9, 11.5], carr);
+          box([x0 + 1.0, 0.9, 10.05], [x0 + l - 1.1, 1.38, 11.4], vitre);
+          box([x0 + 1.15, 1.36, 10.1], [x0 + l - 1.25, 1.42, 11.35], carr);
+          for (const xr of [x0 + 0.75, x0 + l - 0.75]) for (const zr of [9.88, 11.37]) box([xr - 0.32, 0, zr], [xr + 0.32, 0.6, zr + 0.2], { c: [0.015, 0.015, 0.015] });
+          box([x0 - 0.02, 0.6, 10.0], [x0 + 0.02, 0.72, 10.35], { c: [0.6, 0.6, 0.55], e: [0.5, 0.45, 0.3], eNuit: true });
+          box([x0 + l - 0.02, 0.62, 10.0], [x0 + l + 0.02, 0.74, 10.3], { c: [0.4, 0.03, 0.03], e: [0.35, 0.02, 0.02], eNuit: true });
         }
         if (variante === "commerce") {
-          // la vitrine du trottoir filmé, éclairée la nuit, et son store
-          const v = this.vitrine;
-          // le store au-dessus de la vitrine (la vitrine elle-même est peinte sur la façade proche)
-          box([v.x0 - 0.2, 2.75, v.z], [v.x1 + 0.2, 2.85, v.z + 0.9], { c: pick(r, [[0.35, 0.05, 0.05], [0.05, 0.2, 0.1], [0.08, 0.1, 0.3]]) });
-          // l'arrêt de bus : un poteau et son panneau (un abribus vitré masquerait le trottoir à la caméra d'en face)
+          // le store rayé au-dessus de la vitrine
+          const v = this.vitrine, sc = pick(r, [[0.42, 0.05, 0.05], [0.05, 0.25, 0.12], [0.08, 0.12, 0.35]]);
+          box([v.x0 - 0.2, 2.72, v.z], [v.x1 + 0.2, 2.85, v.z + 1.0], { f: (p) => ({ c: frac(p[0] / 0.35) < 0.5 ? sc : [0.62, 0.6, 0.55], s: 0.1 }) });
+          // l'arrêt de bus : un poteau et son panneau
           PR.push({ k: "cyl", x: -2.4, z: 9.0, r: 0.04, y0: 0, y1: 2.6, m: { c: [0.2, 0.22, 0.24] } });
           box([-2.65, 2.2, 8.97], [-2.15, 2.6, 9.03], { c: [0.1, 0.3, 0.45], e: [0.1, 0.3, 0.5], eNuit: true });
         } else if (variante === "bar") {
-          // la façade du bar, l'enseigne allumée, la terrasse : tables rondes et chaises
-          // l'enseigne lumineuse, en saillie sur la façade proche (le bar lui-même est peint sur la façade)
-          box([0.5, 2.7, 4.0], [5.5, 3.1, 4.12], { c: [0.1, 0.1, 0.1], e: pick(r, [[1.4, 0.2, 0.2], [0.2, 0.9, 1.2], [1.3, 0.9, 0.2]]), eNuit: true });
+          // l'enseigne lumineuse en drapeau, la terrasse : tables rondes, chaises, jardinières
+          box([0.5, 2.62, 4.0], [5.5, 2.75, 4.5], { c: [0.08, 0.08, 0.08] });
           for (const [x, z] of [[0.2, 5.0], [1.8, 5.1], [3.4, 5.0], [5.0, 5.1]]) {
-            PR.push({ k: "cyl", x, z, r: 0.04, y0: 0, y1: 0.72, m: { c: [0.1, 0.1, 0.1] } });
-            PR.push({ k: "cyl", x, z, r: 0.33, y0: 0.72, y1: 0.76, m: { c: [0.5, 0.48, 0.44] } });
-            for (const dx of [-0.5, 0.5]) box([x + dx - 0.18, 0, z - 0.18], [x + dx + 0.18, 0.45, z + 0.18], { c: [0.12, 0.08, 0.05] });
+            PR.push({ k: "cyl", x, z, r: 0.035, y0: 0, y1: 0.72, m: { c: [0.1, 0.1, 0.1], s: 0.4 } });
+            PR.push({ k: "cyl", x, z, r: 0.3, y0: 0.72, y1: 0.75, m: { c: [0.55, 0.5, 0.44], s: 0.4 } });
+            for (const dx of [-0.5, 0.5]) {
+              const cc = { f: (p) => ({ c: frac((p[0] + p[2]) / 0.06) < 0.5 ? [0.35, 0.22, 0.1] : [0.15, 0.09, 0.04] }) };
+              box([x + dx - 0.18, 0.42, z - 0.18], [x + dx + 0.18, 0.46, z + 0.18], cc);
+              box([x + dx + (dx < 0 ? -0.18 : 0.15), 0.46, z - 0.18], [x + dx + (dx < 0 ? -0.15 : 0.18), 0.9, z + 0.18], cc);
+              for (const ex of [-0.15, 0.15]) box([x + dx + ex - 0.015, 0, z - 0.015], [x + dx + ex + 0.015, 0.42, z + 0.015], { c: [0.1, 0.1, 0.1] });
+            }
           }
+          for (const x of [-1.2, 6.9]) { box([x - 0.35, 0, 4.4], [x + 0.35, 0.5, 4.8], { c: [0.2, 0.2, 0.2] }); PR.push({ k: "sph", c: [x, 0.65, 4.6], r: 0.33, m: { f: (p) => ({ c: mul([0.05, 0.14, 0.04], 0.6 + 0.6 * bruit(p[0] * 14, p[1] * 14 + p[2] * 9)) }) } }); }
         } else {
           // la place : un banc, un arbre dans sa grille, des arceaux à vélos
-          box([1.2, 0.42, 5.2], [3.4, 0.5, 5.6], { c: [0.3, 0.2, 0.1] });
-          box([1.2, 0.5, 5.55], [3.4, 0.9, 5.62], { c: [0.3, 0.2, 0.1] });
-          for (const x of [1.35, 3.25]) box([x - 0.04, 0, 5.25], [x + 0.04, 0.42, 5.55], { c: [0.05, 0.05, 0.05] });
-          PR.push({ k: "cyl", x: -2.2, z: 6.0, r: 0.16, y0: 0, y1: 3.1, m: { c: [0.13, 0.09, 0.06] } });
-          PR.push({ k: "sph", c: [-2.2, 4.0, 6.0], r: 1.6, m: { c: [0.08, 0.16, 0.06], s: 0.2 } });
-          for (let x = 5.5; x < 8; x += 0.7) PR.push({ k: "cyl", x, z: 5.2, r: 0.025, y0: 0, y1: 0.8, m: { c: [0.3, 0.3, 0.3] } });
+          const bois = { f: (p) => ({ c: mul([0.32, 0.2, 0.1], 0.8 + 0.3 * bruit(p[0] * 30, p[1] * 3)) }) };
+          for (const y of [0.42, 0.47]) box([1.2, y, 5.2], [3.4, y + 0.04, 5.6], bois);
+          for (const y of [0.6, 0.75]) box([1.2, y, 5.55], [3.4, y + 0.09, 5.6], bois);
+          for (const x of [1.35, 3.25]) box([x - 0.03, 0, 5.25], [x + 0.03, 0.85, 5.6], { c: [0.04, 0.05, 0.04], s: 0.3 });
+          PR.push({ k: "cyl", x: -2.2, z: 6.0, r: 0.15, y0: 0, y1: 3.4, m: { f: (p) => ({ c: mul([0.16, 0.12, 0.08], 0.7 + 0.5 * bruit(p[1] * 6, Math.atan2(p[2] - 6, p[0] + 2.2) * 4)) }) } });
+          const feuil = { f: (p, n) => ({ c: mul([0.07, 0.15, 0.05], 0.45 + 0.9 * bruit(p[0] * 7 + p[2] * 3, p[1] * 7) * bruit(p[0] * 2.3, p[1] * 2.3 + p[2])), s: 0.1 }) };
+          for (const [dx, dy, dz, rr] of [[0, 4.1, 0, 1.3], [-0.8, 3.7, 0.3, 0.95], [0.85, 3.8, -0.2, 1.0], [0.1, 4.8, 0.2, 0.9]]) PR.push({ k: "sph", c: [-2.2 + dx, dy, 6.0 + dz], r: rr, m: feuil });
+          for (let x = 5.5; x < 8; x += 0.7) { PR.push({ k: "cyl", x, z: 5.2, r: 0.025, y0: 0, y1: 0.8, m: { c: [0.35, 0.35, 0.36], s: 0.6 } }); PR.push({ k: "cyl", x, z: 5.7, r: 0.025, y0: 0, y1: 0.8, m: { c: [0.35, 0.35, 0.36], s: 0.6 } }); box([x - 0.025, 0.78, 5.2], [x + 0.025, 0.82, 5.7], { c: [0.35, 0.35, 0.36], s: 0.6 }); }
         }
         return PR;
       },
       solY() { return 0; },
       sol(x, z, nuit) {
-        const v = h2(Math.floor(x / 0.8), Math.floor(z / 0.8));
-        if (z < this.bord - 0.15) {
-          if (variante === "place") { const pv = frac(x / 0.4) < 0.08 || frac(z / 0.4) < 0.08; const k = (0.85 + 0.2 * h2(Math.floor(x / 0.4), Math.floor(z / 0.4))) * (pv ? 0.7 : 1); return { c: [0.36 * k, 0.33 * k, 0.3 * k] }; }
-          const j = frac(x / 0.8) < 0.04 || frac(z / 0.8) < 0.04;
-          let k = (0.92 + 0.12 * v) * (j ? 0.72 : 1);
-          if (h2(Math.floor(x * 3), Math.floor(z * 3)) > 0.985) k *= 0.7;
-          return { c: [0.4 * k, 0.385 * k, 0.36 * k] };
+        const grain = 0.88 + 0.16 * bruit(x * 9, z * 9) + 0.08 * (h2(Math.floor(x * 40), Math.floor(z * 40)) - 0.5);
+        // pied de façade et bordure : l'ombre douce des angles
+        const ao = 0.62 + 0.38 * smooth((z - this.zn) / 0.7);
+        if (z < this.bord - 0.3) {
+          if (variante === "place") {
+            // pavés de granit en rangs décalés
+            const row = Math.floor(z / 0.16), off = (row & 1) * 0.07, cx = Math.floor((x + off) / 0.14);
+            const joint = frac((x + off) / 0.14) < 0.12 || frac(z / 0.16) < 0.12;
+            const k = (0.75 + 0.35 * h2(cx, row)) * (joint ? 0.55 : 1) * ao * grain;
+            return { c: [0.33 * k, 0.31 * k, 0.29 * k], s: 0.15 };
+          }
+          // trottoir d'asphalte, reprises et taches
+          let k = grain * ao;
+          if (bruit(x * 0.6 + 3, z * 0.9) > 0.72) k *= 0.88;
+          if (h2(Math.floor(x * 2.5), Math.floor(z * 2.5)) > 0.992) k *= 0.6;
+          return { c: [0.25 * k, 0.245 * k, 0.24 * k], s: 0.08 };
         }
-        if (z < this.bord) return { c: [0.5, 0.48, 0.45] };
-        if (z < this.bord + 0.3) return { c: [0.12, 0.12, 0.125] };
+        if (z < this.bord) { const j = frac(x / 1.0) < 0.02; const k = (0.9 + 0.15 * h2(Math.floor(x), 3)) * (j ? 0.6 : 1); return { c: [0.5 * k, 0.49 * k, 0.47 * k], s: 0.2 }; }
+        if (z < this.bord + 0.35) { const j = frac(x / 0.22) < 0.1 || frac((z - this.bord) / 0.175) < 0.12; const k = (0.8 + 0.2 * h2(Math.floor(x / 0.22), 7)) * (j ? 0.6 : 1) * (0.7 + 0.3 * smooth((z - this.bord) / 0.15)); return { c: [0.27 * k, 0.26 * k, 0.25 * k], s: 0.3 }; }
         if (z < this.route) {
-          const k = 0.85 + 0.25 * h2(Math.floor(x * 5), Math.floor(z * 5));
-          const mid = (this.bord + this.route) / 2;
-          if (Math.abs(z - mid) < 0.07 && frac(x / 6) < 0.5) return { c: [0.55, 0.55, 0.5] };
-          return { c: [0.1 * k, 0.1 * k, 0.11 * k] };
+          let k = grain * (0.92 + 0.1 * bruit(x * 0.4, z * 0.4));
+          const mid = (this.bord + this.route) / 2 + 1;
+          // passage piéton, axe discontinu, limite du stationnement
+          if (x > -6.5 && x < -2.7 && z > this.bord + 2.2 && frac(x / 0.95) < 0.5) return { c: [0.6 * k, 0.6 * k, 0.57 * k], s: 0.2 };
+          if (Math.abs(z - mid) < 0.07 && frac(x / 6) < 0.5) return { c: [0.55 * k, 0.55 * k, 0.5 * k] };
+          if (Math.abs(z - (this.bord + 2.15)) < 0.05 && frac(x / 5) > 0.06) return { c: [0.5 * k, 0.5 * k, 0.47 * k] };
+          return { c: [0.085 * k, 0.085 * k, 0.09 * k], s: 0.15 };
         }
-        if (z < this.route + 0.15) return { c: [0.45, 0.43, 0.4] };
-        const k = 0.9 + 0.1 * v;
-        return { c: [0.33 * k, 0.32 * k, 0.3 * k] };
+        if (z < this.route + 0.25) return { c: [0.45, 0.43, 0.4] };
+        return { c: [0.25 * grain, 0.245 * grain, 0.24 * grain] };
       },
-      facade(x, y, nuit) {
-        const stone = [0.42, 0.38, 0.32];
-        if (y < 3.8) {
-          const i = Math.floor((x + 100) / 6.5), u = (x + 100) - i * 6.5, sh = h2(i, 7);
-          if (u < 0.6) return { c: stone };
-          if (y > 3.05) { const sc = [[0.3, 0.04, 0.04], [0.04, 0.12, 0.05], [0.05, 0.05, 0.06], [0.35, 0.28, 0.1]][Math.floor(sh * 4)]; return { c: sc, e: nuit && sh > 0.3 ? mul(sc, 0.4) : null }; }
-          if (y < 0.35) return { c: mul(stone, 0.7) };
-          const lit = nuit && sh > 0.25;
-          if (frac(u / 1.5) < 0.05) return { c: [0.05, 0.05, 0.05] };
-          return { c: [0.03, 0.035, 0.04], e: lit ? (sh > 0.7 ? [0.9, 0.85, 0.75] : [0.8, 0.58, 0.32]) : null, s: 0.8 };
-        }
-        const fx = frac((x + 100) / 3.2), fy = frac((y - 3.8) / 3.1), fl = Math.floor((y - 3.8) / 3.1), col = Math.floor((x + 100) / 3.2);
-        if (Math.abs(y - 6.95) < 0.12) return { c: [0.05, 0.05, 0.05] };
-        if (fx > 0.3 && fx < 0.7 && fy > 0.22 && fy < 0.82) { const on = nuit && h2(col, fl + 11) > 0.62; return { c: [0.03, 0.03, 0.035], e: on ? [0.7, 0.5, 0.26] : null }; }
-        return { c: stone };
-      },
-      // la façade du trottoir filmé, vue de face : la vitrine (commerce), le bar, ou des immeubles (place)
-      facadeN(x, y, nuit) {
-        const stone = [0.44, 0.4, 0.34];
+      // la façade d'en face (vue par la caméra-piéton) : d'autres immeubles du même genre, lus dans l'autre sens
+      facade(x, y, nuit) { return this.facadeN(x + 41.3, y, nuit, true); },
+      // la façade du trottoir filmé, vue de face
+      facadeN(x, y, nuit, endroit) {
+        const ib = Math.floor((x + 100) / 7.2), hb = h2(ib, 21);
+        const pierre = [0.5 + 0.06 * hb, 0.45 + 0.04 * hb, 0.37 + 0.02 * (1 - hb)];
+        // pierre de taille : assises de 42 cm, joints décalés, chaque bloc a sa teinte, salissures en bas
+        const appareil = (k0) => {
+          const row = Math.floor(y / 0.42), off = (row & 1) * 0.55, bx = Math.floor((x + off + 100) / 1.1);
+          const joint = frac((x + off + 100) / 1.1) < 0.018 || frac(y / 0.42) < 0.04;
+          const k = (0.9 + 0.12 * h2(bx, row)) * (joint ? 0.78 : 1) * (0.86 + 0.14 * bruit(x * 1.3, y * 0.4)) * (k0 || 1) * (1 - 0.18 * (1 - smooth(y / 1.2)));
+          return { c: mul(pierre, k) };
+        };
+        if (y < 0.32) return { c: mul([0.3, 0.29, 0.28], 0.85 + 0.2 * bruit(x * 3, y * 9)) }; // soubassement
         if (y < 3.4) {
-          if (y < 0.3) return { c: mul(stone, 0.7) };
-          const v = this.vitrine;
-          if (variante === "commerce" && x > v.x0 && x < v.x1 && y > 0.45 && y < 2.6) return { c: [0.05, 0.06, 0.07], e: nuit ? [0.75, 0.66, 0.5] : null, s: 0.9 };
-          if (variante === "bar" && x > -0.8 && x < 6.8 && y > 0.5 && y < 2.5) return { c: [0.06, 0.05, 0.04], e: nuit ? [0.95, 0.62, 0.3] : [0.12, 0.09, 0.06], s: 0.9 };
-          if (variante === "bar" && x > -1.5 && x < 7.5) return { c: [0.18, 0.12, 0.08] };
-          // portes cochères et autres boutiques, rideau baissé
-          const i = Math.floor((x + 100) / 5.5), u = (x + 100) - i * 5.5;
-          if (u < 0.5) return { c: stone };
-          if (y < 2.6 && u > 1 && u < 4.6) return h2(i, 3) > 0.5 ? { c: [0.32, 0.33, 0.34] } : { c: [0.03, 0.035, 0.04], e: nuit && h2(i, 9) > 0.6 ? [0.7, 0.55, 0.35] : null, s: 0.8 };
-          return { c: stone };
+          const B = this.boutique(x), u = x - B.x0, w = B.x1 - B.x0;
+          if (u < 0.45 || u > w - 0.45) return appareil(); // trumeaux de pierre
+          if (B.type === "porte") {
+            // porte cochère : deux vantaux de bois à panneaux
+            if (y > 3.0) return appareil(0.95);
+            const du = u - 0.45, dw = w - 0.9, pu = frac(du / (dw / 2)), pv = y / 3.0;
+            const cadre = pu < 0.08 || pu > 0.92 || frac(pv * 3) < 0.07 || Math.abs(du - dw / 2) < 0.04;
+            const bc = h2(B.i, 3) > 0.5 ? [0.05, 0.11, 0.07] : [0.16, 0.08, 0.04];
+            return { c: mul(bc, cadre ? 1.25 : 0.85 + 0.1 * bruit(x * 20, y * 2)), s: 0.3 };
+          }
+          // bandeau d'enseigne
+          if (y > 2.7) {
+            if (y > 3.25) return appareil(0.9);
+            if (B.type === "rideau" && h2(B.i, 11) < 0.5) return appareil(0.9);
+            const fond = B.type === "bar" ? [0.08, 0.06, 0.04] : [[0.32, 0.05, 0.05], [0.04, 0.14, 0.07], [0.05, 0.06, 0.12], [0.06, 0.06, 0.06]][Math.floor(h2(B.i || 1, 13) * 4)];
+            const txt = B.nom, hL = 0.3, lw = (txt.length * 4 - 1) * (hL / 5), u0 = (w - lw) / 2;
+            if (lettre(txt, (endroit ? u : w - u) - u0, y - 2.82, hL)) // +x part vers la gauche de l'image : on lit depuis x1 return { c: [0.75, 0.68, 0.45], e: nuit ? (B.type === "bar" ? [1.6, 0.6, 0.3] : [0.8, 0.75, 0.55]) : null, s: 0.4 };
+            return { c: fond, s: 0.3 };
+          }
+          if (B.type === "rideau") {
+            // rideau de fer baissé, lames horizontales, un tag
+            const k = 0.78 + 0.22 * frac(y / 0.09) - (frac(y / 0.09) < 0.15 ? 0.25 : 0);
+            const tag = h2(B.i, 17) > 0.4 && bruit(x * 1.8 + B.i, y * 2.2) > 0.68 && y > 0.6 && y < 2.2;
+            return { c: tag ? [[0.5, 0.06, 0.25], [0.05, 0.25, 0.5], [0.55, 0.45, 0.05]][Math.floor(h2(B.i, 19) * 3)] : mul([0.36, 0.37, 0.38], k), s: 0.3 };
+          }
+          // vitrine : montants métalliques, porte, intérieur éclairé (rayonnages) ou reflet de la rue le jour
+          if (y < 0.5) return { c: [0.06, 0.06, 0.065], s: 0.5 };
+          const pv = frac((u - 0.45) / 1.4);
+          if (pv < 0.03 || y > 2.62 || Math.abs(y - 2.2) < 0.03) return { c: [0.05, 0.05, 0.055], s: 0.6 };
+          const ouvert = B.type === "bar" || B.type === "vitrine" && (B.nom === this.enseigne || h2(B.i, 23) > 0.3);
+          const ry = y - 0.5, etag = frac(ry / 0.45) < 0.08, prod = h2(Math.floor((x + 100) / 0.18), Math.floor(ry / 0.45));
+          let interieur;
+          if (B.type === "bar") {
+            const comptoir = y < 1.1, bout = y > 1.5 && y < 2.0 && frac(x / 0.12) < 0.5;
+            interieur = comptoir ? [0.25, 0.14, 0.06] : bout ? [[0.2, 0.35, 0.1], [0.5, 0.3, 0.05], [0.4, 0.4, 0.38]][Math.floor(prod * 3)] : [0.55, 0.38, 0.2];
+          } else {
+            // rayonnages vus à travers la vitre : produits serrés, couleurs passées, fond plus sombre
+            const pr = h2(Math.floor((x + 100) / 0.07), Math.floor(ry / 0.45) * 7 + Math.floor(frac(ry / 0.45) * 4)), plein = frac(ry / 0.45) > 0.18 && frac(ry / 0.45) < 0.75;
+            interieur = etag ? [0.55, 0.53, 0.5] : y > 2.25 ? [0.62, 0.6, 0.55] : plein ? mul([[0.5, 0.25, 0.18], [0.3, 0.35, 0.45], [0.55, 0.48, 0.3], [0.35, 0.42, 0.3], [0.6, 0.58, 0.55]][Math.floor(pr * 5)], 0.55 + 0.45 * h2(Math.floor((x + 100) / 0.07), 3)) : [0.3, 0.28, 0.26];
+          }
+          const reflet = 0.3 + 0.5 * smooth((y - 0.5) / 2.2) + 0.12 * bruit(x * 0.8, y * 0.5);
+          if (nuit) return ouvert ? { c: [0.02, 0.02, 0.02], e: mul(interieur, B.type === "bar" ? 0.9 : 0.75), s: 0.9 } : { c: [0.02, 0.025, 0.03], s: 0.9 };
+          return { c: ouvert ? add(mul(interieur, 0.14), mul([0.16, 0.18, 0.21], reflet)) : mul([0.14, 0.16, 0.19], reflet), s: 0.9 };
         }
-        const fx = frac((x + 100) / 3.2), fy = frac((y - 3.4) / 3.1), fl = Math.floor((y - 3.4) / 3.1), col = Math.floor((x + 100) / 3.2);
-        if (fx > 0.3 && fx < 0.7 && fy > 0.22 && fy < 0.82) { const on = nuit && h2(col + 50, fl) > 0.6; return { c: [0.03, 0.03, 0.035], e: on ? [0.7, 0.5, 0.26] : null }; }
-        return { c: stone };
+        // corniche du premier étage
+        if (y < 3.75) return appareil(frac(x / 0.22) < 0.5 && y > 3.62 ? 0.72 : 1.08);
+        const fy = y - 3.75, fl = Math.floor(fy / 3.0), vy = fy - fl * 3.0;
+        if (fl >= 5) return { c: mul([0.2, 0.22, 0.25], 0.85 + 0.15 * frac(x / 0.5)), s: 0.5 }; // toit de zinc
+        if (vy > 2.86) return appareil(1.1); // bandeau d'étage
+        const wx = frac((x + 100) / 3.6) * 3.6 - 1.8, aw = Math.abs(wx), col = Math.floor((x + 100) / 3.6);
+        // balcon filant au deuxième étage, balconnets ailleurs
+        const balcon = fl === 1 || (aw < 0.75 && h2(ib, 31) > 0.5);
+        if (balcon && vy > 0.15 && vy < 1.1 && (fl === 1 || aw < 0.75)) {
+          const barre = frac(x / 0.11) < 0.22 || Math.abs(vy - 1.06) < 0.04 || Math.abs(vy - 0.2) < 0.04 || (Math.abs(vy - 0.62) < 0.13 && Math.abs(frac(x / 0.33) - 0.5) < 0.18);
+          if (barre) return { c: [0.025, 0.025, 0.028], s: 0.4 };
+        }
+        if (aw < 0.6 && vy > 0.15 && vy < 2.5) {
+          // fenêtre : croisée blanche, rideaux, lumière la nuit, reflet du ciel le jour
+          if (aw < 0.03 || Math.abs(vy - 1.85) < 0.03 || aw > 0.55 || vy > 2.45) return { c: [0.62, 0.61, 0.58], s: 0.3 };
+          const allume = nuit && h2(col, fl + 11) > 0.55, rideau = aw > 0.32 && h2(col, fl + 3) > 0.35;
+          if (rideau) { const pli = 0.75 + 0.25 * Math.sin(x * 60); const rc = [[0.6, 0.55, 0.45], [0.5, 0.2, 0.15], [0.55, 0.55, 0.55]][Math.floor(h2(col, fl + 7) * 3)]; return { c: mul(rc, pli * (nuit ? 0.15 : 0.5)), e: allume ? mul(rc, 0.5 * pli) : null }; }
+          if (allume) return { c: [0.02, 0.02, 0.02], e: [0.75, 0.55, 0.3], s: 0.8 };
+          return { c: mul([0.1, 0.12, 0.15], 0.6 + 0.8 * (vy / 2.5) + 0.2 * bruit(x, y)), s: 0.9 };
+        }
+        // encadrement mouluré, appui saillant, persiennes repliées
+        if (aw < 0.75 && vy > 0.0 && vy < 2.65) return appareil(vy < 0.15 ? 1.2 : 1.1);
+        if (aw < 1.25 && vy > 0.15 && vy < 2.5 && h2(ib, 41) > 0.55) return { c: mul([0.3, 0.33, 0.29], frac(vy / 0.07) < 0.3 ? 0.7 : 1), s: 0.2 };
+        return appareil(vy < 0.0 + 0.4 && aw < 0.9 ? 0.9 : 1);
       },
       lumieres(mode) {
         const L = [];
         if (mode === "jour") return L;
-        L.push({ p: [-4.6, 4.95, 10.3], c: [3.4, 2.3, 1.2], r: 2.6 });
-        L.push({ p: [9.4, 4.95, 10.3], c: [3.4, 2.3, 1.2], r: 2.6 });
-        if (variante === "commerce") L.push({ p: [4.1, 1.6, 4.4], c: [0.9, 0.8, 0.6], r: 2.4 });
-        if (variante === "bar") { L.push({ p: [3, 1.8, 4.4], c: [1.6, 1.0, 0.5], r: 3.2 }); L.push({ p: [3, 3.0, 4.3], c: [0.8, 0.3, 0.3], r: 1.6 }); }
-        for (let x = -14; x < 18; x += 6.5) if (h2(Math.floor((x + 100) / 6.5), 7) > 0.25) L.push({ p: [x + 3, 1.6, 19.2], c: [0.6, 0.48, 0.32], r: 3 });
+        L.push({ p: [-4.6, 4.7, 10.3], c: [3.4, 2.4, 1.3], r: 2.8 });
+        L.push({ p: [9.4, 4.7, 10.3], c: [3.4, 2.4, 1.3], r: 2.8 });
+        if (variante === "commerce") L.push({ p: [4.1, 1.6, 4.4], c: [1.0, 0.9, 0.7], r: 2.6 });
+        if (variante === "bar") { L.push({ p: [3, 1.8, 4.4], c: [1.7, 1.05, 0.5], r: 3.4 }); L.push({ p: [3, 2.9, 4.6], c: [0.9, 0.35, 0.2], r: 1.6 }); }
+        for (let x = -14; x < 18; x += 5.5) { const B = this.boutique(x + 2.7); if (B.type === "vitrine" && x + 2.7 > -1e9 && h2(B.i || 0, 23) > 0.3) L.push({ p: [x + 2.7, 1.5, 4.5], c: [0.45, 0.4, 0.32], r: 2.2 }); }
         return L;
       },
     };
@@ -223,8 +319,8 @@
     monter(r, o) {
       const ov = o.victime || {}, oa = o.auteur || {};
       const xV = 2.6 + r() * 0.8, zV = 6.9 + r() * 0.6, xA = xV + 1.05, zA = zV + 0.15;
-      const Vv = acteur(r, "V", "victime", { g: ov.g || "m", agee: ov.agee, pos: [xV - 6, zV], cap: 0 });
-      const Aa = acteur(r, "A", "auteur", { g: oa.g || "m", pos: [xA + 7, zA], cap: Math.PI, tenueO: { capuche: 0.4, hauts: ["sweat", "blouson", "doudoune", "survet"] } });
+      const Vv = acteur(r, "V", "victime", { g: ov.g || "m", agee: ov.agee, tenue: ov.tenue, pos: [xV - 6, zV], cap: 0 });
+      const Aa = acteur(r, "A", "auteur", { g: oa.g || "m", tenue: oa.tenue, pos: [xA + 7, zA], cap: Math.PI, tenueO: { capuche: 0.4, hauts: ["sweat", "blouson", "doudoune", "survet"] } });
       const tRencontre = 3.2, tG = 6.2 + r() * 1.5, premier = o.premier === "V" ? "V" : "A";
       const nCoups = clamp(o.coups || 1 + Math.floor(r() * 2), 1, 3);
       Vv.beats = [{ a: "marche", d: tRencontre, to: [xV, zV] }, { a: premier === "V" ? "menace" : "attend", d: tG - tRencontre, face: 0 }];
@@ -284,7 +380,7 @@
     monter(r, o) {
       const cible = o.cible || pick(r, ["vitrine", "voiture", "tag"]);
       const D = V.DECORS.rue;
-      const A = acteur(r, "A", "auteur", { g: (o.auteur || {}).g || "m", pos: [12, 7.4], cap: Math.PI, tenueO: { capuche: 0.6, hauts: ["sweat", "blouson", "survet"] } });
+      const A = acteur(r, "A", "auteur", { g: (o.auteur || {}).g || "m", tenue: (o.auteur || {}).tenue, pos: [12, 7.4], cap: Math.PI, tenueO: { capuche: 0.6, hauts: ["sweat", "blouson", "survet"] } });
       const tG = 5.5;
       let to, face, geste, txt;
       if (cible === "vitrine") { to = [4.2, D.vitrine.z + 0.75]; face = -Math.PI / 2; geste = "coup_pied"; txt = "«A» donne plusieurs coups de pied dans la vitrine du commerce."; }
@@ -309,7 +405,7 @@
     monter(r, o) {
       const zV = 7.9;
       const Vv = acteur(r, "V", "victime", { g: (o.victime || {}).g || (r() < 0.6 ? "f" : "m"), pos: [-1.6, zV], cap: 0.2 });
-      const A = acteur(r, "A", "auteur", { g: "m", pos: [12, zV + 0.2], cap: Math.PI, tenueO: { capuche: 0.5 } });
+      const A = acteur(r, "A", "auteur", { g: (o.auteur || {}).g || "m", tenue: (o.auteur || {}).tenue, pos: [12, zV + 0.2], cap: Math.PI, tenueO: { capuche: 0.5 } });
       const tG = 8.2;
       Vv.beats = [{ a: "attend", d: tG + 4.5, face: 0.2 }, { a: "sursaut", d: 1, face: Math.PI }, { a: "montre", d: 3, face: Math.PI }, { a: "sonne", d: 10 }];
       const xG = -1.6 + 0.45;
@@ -333,7 +429,7 @@
     nom: "Échanges de la main à la main", decor: "rue_place",
     monter(r, o) {
       const n = clamp(o.n || 2, 1, 3);
-      const W = acteur(r, "A", "auteur", { g: "m", pos: [4.4, 7.0], cap: Math.PI * 0.9, tenueO: { capuche: 0.5, hauts: ["sweat", "doudoune", "survet"], sac: "sacoche" } });
+      const W = acteur(r, "A", "auteur", { g: (o.auteur || {}).g || "m", tenue: (o.auteur || {}).tenue, pos: [4.4, 7.0], cap: Math.PI * 0.9, tenueO: { capuche: 0.5, hauts: ["sweat", "doudoune", "survet"], sac: "sacoche" } });
       const G = o.guetteur ? acteur(r, "A2", "auteur", { g: "m", pos: [7.6, 8.6], cap: 0 }) : null;
       const duree = 10 + n * 6.5;
       W.beats = [{ a: "attend", d: duree + 2, face: Math.PI * 0.9, poches: true }];
@@ -363,7 +459,7 @@
     monter(r, o) {
       const zV = 7.0;
       const Vv = acteur(r, "V", "victime", { g: (o.victime || {}).g || (r() < 0.5 ? "f" : "m"), pos: [2.4, zV], cap: 0 });
-      const A = acteur(r, "A", "auteur", { g: (o.auteur || {}).g || "m", pos: [11, zV + 0.2], cap: Math.PI });
+      const A = acteur(r, "A", "auteur", { g: (o.auteur || {}).g || "m", tenue: (o.auteur || {}).tenue, pos: [11, zV + 0.2], cap: Math.PI });
       const tG = 5;
       Vv.beats = [{ a: "attend", d: tG, face: 0, tel: true }, { a: "sursaut", d: 0.8, face: 0 }, { a: "marche", d: 3, to: [0.6, zV - 0.3], face: 0 }, { a: "attend", d: 12, face: 0 }];
       A.beats = [{ a: "marche", d: tG, to: [3.5, zV + 0.1] }, { a: "menace", d: 4.2, to: [2.0, zV], face: Math.PI }, { a: "menace", d: 2.4, face: Math.PI }, { a: "marche", d: 6, to: [12, zV + 0.4] }];
