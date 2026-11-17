@@ -85,6 +85,9 @@ const P = require("./play"); const U = require("./util"); const { runAudience } 
       console.log(`audience — ${cs.vars.raisonnement && cs.vars.raisonnement.coupable ? "condamnation" : "relaxe"} · ${cs.vars.decision && cs.vars.decision.peine}`);
     }
     for (let k = 0; k < 4 && cs.status !== "closed"; k++) CR.endDay(s);
+    // le parquet peut faire appel du jugement (gen-vie.js) : l'affaire continue devant la cour (tp3 joue l'appel) ;
+    // le débrief viendra après l'arrêt
+    if (cs.vars.vieAppel && cs.status !== "closed") { console.log("appel du parquet : l'affaire continue devant la cour d'appel"); if (errors.length) { echecs++; console.log("  ✗ erreurs : " + errors.slice(0, 2).join(" | ")); } console.log("échecs:", echecs); process.exit(echecs ? 1 : 0); }
     ok(cs.status === "closed", "l'affaire ne se clôt pas", cs.status);
     ok(cs.debrief && cs.debrief.items.length > 0, "pas de débrief");
     ok(cs.vars.corrige && cs.vars.corrige["Garde à vue"], "pas de corrigé de l'entretien");

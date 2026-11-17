@@ -22,8 +22,8 @@ const FV = path.join(__dirname, "visages-or.json"), FA = path.join(__dirname, "a
   const h = (x) => CR.hash(typeof x === "string" ? x : JSON.stringify(x)).toString(36);
   const s = CR.newGame({ prenom: "Camille", nom: "Durand", mode: "carriere", seed: 7 }); s.pending = [];
   let i = 0;
-  // version 4 (avant la 1.3.0), version 5 (avant la 1.5.0), version 6 (1.5.0), version 7 (1.5.1), version 8 (1.5.2) : chaque version garde ses affaires à l'identique
-  for (const v of [4, 5, 6, 7, 8]) for (const genre of Object.keys(G.GENRES)) for (let k = 0; k < (genre === "info" ? 24 : 16); k++) {
+  // version 4 (avant la 1.3.0), version 5 (avant la 1.5.0), version 6 (1.5.0), version 7 (1.5.1), version 8 (1.5.2), version 9 (1.5.3) : chaque version garde ses affaires à l'identique
+  for (const v of [4, 5, 6, 7, 8, 9]) for (const genre of Object.keys(G.GENRES)) for (let k = 0; k < (genre === "info" ? 24 : 16); k++) {
     i++;
     let day = 100 + ((k * 3) % 40); while (!CR.isBusinessDay(day)) day++;
     const c = { v, lie: false, genre, day, slot: genre === "gav" ? 60 + (k * 5) % 40 : 66, n: (k * 37 + i * 11) % 1024 };

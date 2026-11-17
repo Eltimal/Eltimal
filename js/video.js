@@ -377,8 +377,8 @@
   }
 
   // ---------------------------------------------------------------- éclairage
-  function Eclairage(D, mode, cam) {
-    const L = D.lumieres(mode);
+  function Eclairage(D, mode, cam, extra) {
+    const L = D.lumieres(mode).concat(extra || []); // extra : les lumières propres à une scène (l'écran d'un téléphone)
     const ir = mode === "ir";
     const AMB = D.ambiance ? D.ambiance(mode) : null;
     const amb = AMB ? AMB.amb : mode === "jour" ? [0.36, 0.37, 0.4] : ir ? [0.012, 0.012, 0.012] : [0.018, 0.02, 0.03];
@@ -958,6 +958,24 @@
     }
   }
 
+  // ---------------------------------------------------------------- véhicules en mouvement (1.5.4, caméra de bord)
+  // v : { id, couleur, cles: [{ t, x, z, cap }] } ; caisse et habitacle en ellipsoïdes, vitres sombres, quatre roues
+  function vehiculeA(v, t) {
+    const k = v.cles;
+    if (t <= k[0].t) return k[0];
+    for (let i = 0; i < k.length - 1; i++) if (t <= k[i + 1].t) { const u = (t - k[i].t) / (k[i + 1].t - k[i].t || 1); return { x: lerp(k[i].x, k[i + 1].x, u), z: lerp(k[i].z, k[i + 1].z, u), cap: lerpAng(k[i].cap, k[i + 1].cap, u) }; }
+    return k[k.length - 1];
+  }
+  V.vehiculeA = vehiculeA;
+  function dessinerVehicule(S, F, v, t) {
+    if (v.t0 != null && t < v.t0) return;
+    const e = vehiculeA(v, t), fw = [Math.cos(e.cap), 0, Math.sin(e.cap)], lat = [-Math.sin(e.cap), 0, Math.cos(e.cap)];
+    const m = { c: v.couleur, ir: 0.55, s: 0.7 }, vitre = { c: [0.02, 0.025, 0.03], ir: 0.2, s: 0.9 }, c = [e.x, 0.62, e.z];
+    ellipsoide(F, S, c, lat, UP, fw, [0.9, 0.36, 2.15], (l) => (l[2] > 0.96 && Math.abs(l[0]) > 0.45 && l[1] > -0.2 && l[1] < 0.3 ? { c: [0.9, 0.88, 0.8], ir: 0.9, s: 0.9 } : m));
+    ellipsoide(F, S, add(add(c, [0, 0.36, 0]), mul(fw, -0.2)), lat, UP, fw, [0.78, 0.36, 1.2], (l) => (l[1] > -0.25 ? vitre : m));
+    for (const a of [1.3, -1.3]) for (const b of [0.8, -0.8]) { const q = add(add([e.x, 0.32, e.z], mul(fw, a)), mul(lat, b)); volume(F, S, sub(q, mul(lat, 0.11)), add(q, mul(lat, 0.11)), 0.3, 0.3, { c: [0.02, 0.02, 0.02], ir: 0.2, s: 0.1 }); }
+  }
+
   function ombres(S, F, js) {
     const cam = S.cam, ir = S.mode === "ir";
     for (const j of js) {
@@ -1025,10 +1043,10 @@
     // et ses paroles (sous-titres) ; sans elles, le chemin et les tirages sont ceux d'avant
     const S = { D, cam, mode, graine, scn, duree: scn.duree, fps: o.fps || scn.fps || pick(r, [8, 10, 12]), lumieres: null };
     if (scn.camAt) { S.camAt = scn.camAt; S.cam = Camera(scn.camAt(0)); }
-    S.style = scn.style || null;
+    S.style = scn.style || null; S.debutAppel = scn.debutAppel || 0;
     S.paroles = scn.paroles || [];
     S.sous = (t) => S.paroles.filter((p) => t >= p.t0 && t < p.t1);
-    S.lum = Eclairage(D, mode, S.cam);
+    S.lum = Eclairage(D, mode, S.cam, scn.lumieres);
     S.prims = D.prims(rng("decor:" + graine));
     S.date = o.date || "12-11-2026";
     S.heure = o.heure || (mode === "jour" ? "15:12:40" : mode === "soir" ? "18:47:05" : "22:41:07");
@@ -1093,7 +1111,7 @@
     const { cam, D, mode } = S, nuit = S.nuit;
     const bg = new Float32Array(N * 3), bz = new Float32Array(N), gx = new Float32Array(N), gz = new Float32Array(N);
     // caméra mobile : le fond change à chaque image ; on le lance un point sur deux, puis on comble (image bougée et douce)
-    const tel = S.style === "telephone" && !S.agrandi, pas = S.camAt ? 2 : 1, xa = tel ? XV - 4 : 0, xb = tel ? XV + WV + 4 : W;
+    const tel = (S.style === "telephone" || S.style === "visio") && !S.agrandi, pas = S.camAt ? 2 : 1, xa = tel ? XV - 4 : 0, xb = tel ? XV + WV + 4 : W;
     for (let y = 0; y < H; y += pas) for (let x = 0; x < W; x += pas) {
       if (x < xa || x > xb) { const i = y * W + x; bg[i * 3] = bg[i * 3 + 1] = bg[i * 3 + 2] = 0; bz[i] = 1e9; gx[i] = NaN; gz[i] = NaN; continue; }
       const i = y * W + x, d = cam.ray(x + 0.5, y + 0.5), h = trace(D, S.prims, cam.C, d, nuit);
@@ -1191,7 +1209,7 @@
     if (!S.camAt) return;
     const k = Math.round(t * 1000);
     if (S._camK === k) return;
-    S._camK = k; S.cam = Camera(S.camAt(t)); S.lum = Eclairage(S.D, S.mode, S.cam); S.bg = null;
+    S._camK = k; S.cam = Camera(S.camAt(t)); S.lum = Eclairage(S.D, S.mode, S.cam, S.scn.lumieres); S.bg = null;
   }
   function rendre(S, t, out) {
     out = out || new Uint8ClampedArray(N * 4);
@@ -1204,6 +1222,7 @@
     ombres(S, F, js);
     for (const A of S.scn.acteurs) { const e = E[A.id]; if (e && !A.cache) dessinerActeur(S, F, A, e.j, e); }
     if (E._objet) dessinerObjet(S, F, E._objet, S.scn.objet);
+    for (const v of S.scn.vehicules || []) dessinerVehicule(S, F, v, t);
     if (S.bloc > 1) pixeliser(F.c, S.bloc);
     post(S, F.c, t, out);
     return out;
@@ -1283,6 +1302,24 @@
       }
       return out;
     }
+    if (S.style === "bord") {
+      // caméra de bord : date, heure et vitesse en bas de l'image
+      const t2 = Math.max(0, t - 0.5), a = S.camAt(t2).pos, b = S.camAt(t).pos, kmh = Math.round((Math.hypot(b[0] - a[0], b[2] - a[2]) / Math.max(0.01, t - t2)) * 3.6);
+      ecrire(out, 6, H - 7 - 5 * EC, S.horodatage(t));
+      const vit = `${kmh} KM/H`;
+      ecrire(out, W - 6 - vit.length * 4 * EC, H - 7 - 5 * EC, vit);
+      return out;
+    }
+    if (S.style === "visio") {
+      // l'enregistrement d'écran d'un appel vidéo : la bande verticale, la durée de l'appel, le bouton rouge, la vignette
+      const D0 = S.debutAppel || 0, s0 = Math.floor(t + D0), dur = `${String(Math.floor(s0 / 60)).padStart(2, "0")}:${String(s0 % 60).padStart(2, "0")}`;
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (x < XV || x >= XV + WV) { const o = (y * W + x) * 4; out[o] = 12; out[o + 1] = 12; out[o + 2] = 14; }
+      ecrire(out, XV + (WV - dur.length * 4 * EC) / 2, 10, dur);
+      const cx = XV + WV / 2, cy = H - 22;
+      for (let dy = -10; dy <= 10; dy++) for (let dx = -10; dx <= 10; dx++) if (dx * dx + dy * dy <= 100) { const o = ((cy + dy) * W + (cx + dx)) * 4; out[o] = 210; out[o + 1] = 40; out[o + 2] = 40; }
+      for (let y = 10; y < 62; y++) for (let x = XV + WV - 42; x < XV + WV - 8; x++) { const o = (y * W + x) * 4, bord = y === 10 || y === 61 || x === XV + WV - 42 || x === XV + WV - 9; const g = bord ? 200 : 40 + 25 * Math.exp(-(((x - (XV + WV - 25)) ** 2) / 60 + ((y - 34) ** 2) / 120)); out[o] = g; out[o + 1] = g * 0.95; out[o + 2] = g * 0.9; }
+      return out;
+    }
     if (S.style === "pieton") {
       // caméra individuelle : horodatage en haut, identifiant de la caméra en bas, voyant d'enregistrement rouge
       ecrire(out, 6, 6, S.horodatage(t));
@@ -1307,7 +1344,7 @@
       const T = A.tenue, H_ = HAUTS[T.haut], cH = COUL[T.hautC], cB = COUL[T.basC], cC = CHAUSS[T.chauss];
       // plus grande taille de la tête à l'écran sur tout l'extrait
       let tete = 0, vu = 0;
-      const x0v = S.style === "telephone" ? XV : 0, x1v = S.style === "telephone" ? XV + WV : W;
+      const bande = S.style === "telephone" || S.style === "visio", x0v = bande ? XV : 0, x1v = bande ? XV + WV : W;
       for (let i = 0; i < S.frames.length; i += 2) {
         if (S.camAt) placer(S, S.frames[i]);
         const e = etat(A, S.frames[i], S); if (!e) continue;
@@ -1376,7 +1413,7 @@
     const E = etats(S, t), res = [];
     for (const A of S.scn.acteurs) {
       const e = E[A.id]; if (!e || A.cache) continue;
-      const p = S.ecran(e.j.head), x0v = S.style === "telephone" ? XV : 0, x1v = S.style === "telephone" ? XV + WV : W;
+      const p = S.ecran(e.j.head), bande = S.style === "telephone" || S.style === "visio", x0v = bande ? XV : 0, x1v = bande ? XV + WV : W;
       if (!p || p[0] < x0v || p[0] > x1v || p[1] < 0 || p[1] > H) continue;
       res.push({ id: A.id, role: A.role, x: p[0], y: p[1], tete: (2 * S.cam.F * REF * capteur(S) * 0.105 * A.sc) / p[2] });
     }
@@ -1396,7 +1433,7 @@
     const fov = (2 * Math.atan(1.1 / 2 / dist) * 180) / Math.PI;
     const cam = Camera({ pos: S.cam.C, yaw: Math.atan2(f[0], f[2]), pitch: Math.asin(-f[1]), fov });
     const Fref = S.cam.F * REF * capteur(S), bloc = cam.F / (Fref * CAPTEUR);
-    const Z = Object.assign({}, S, { cam, lum: Eclairage(S.D, S.mode, cam), bg: null, camAt: null, k: 0, agrandi: true, bloc });
+    const Z = Object.assign({}, S, { cam, lum: Eclairage(S.D, S.mode, cam, S.scn.lumieres), bg: null, camAt: null, k: 0, agrandi: true, bloc });
     const data = rendre(Z, t, out);
     return { data, bloc, tete: (2 * Fref * 0.105 * A.sc) / dist };
   };

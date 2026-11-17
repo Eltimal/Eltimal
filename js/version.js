@@ -17,6 +17,18 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "1.5.4", nom: "", date: "17 novembre 2026", type: "correctif", // livraison de la 1.5 « La preuve filmée » (D-101)
+      resume: "La preuve filmée, cinquième livraison : la caméra de bord d'une voiture, l'appel vidéo enregistré, l'intérieur d'un commerce, le RER.",
+      notes: [
+        "La caméra de bord, avec les voitures qui roulent : le piéton renversé sur le passage (et la voiture qui ne s'arrête pas), le dépassement qui frôle un piéton, le conducteur qui descend frapper la vitre. La vitesse s'affiche ; la plaque se lit, ou pas.",
+        "L'appel vidéo enregistré par la victime : l'ex qui appelle malgré l'interdiction de contact et menace, le harcèlement, les appels malveillants. Le visage de l'appelant en gros plan, et ses paroles.",
+        "L'intérieur d'un commerce : l'employé qui se sert dans la caisse, le commerçant qui rachète des téléphones au comptoir sans document, le client qui part du restaurant sans payer, la bagarre au comptoir d'un bar.",
+        "Le RER : les faits des transports s'y jouent aussi.",
+        "Failles : l'horloge de la caméra de bord, réglée à la main ; la plaque illisible ; la copie remise à la place de la carte mémoire.",
+        "Les affaires tirées avant cette version gardent leurs vidéos et leurs pièces.",
+      ],
+    },
+    {
       version: "1.5.3", nom: "", date: "17 novembre 2026", type: "correctif", // livraison de la 1.5 « La preuve filmée » (D-101)
       resume: "La preuve filmée, quatrième livraison : le distributeur de billets, le guichet de la banque, la sonnette connectée.",
       notes: [

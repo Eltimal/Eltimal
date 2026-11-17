@@ -339,6 +339,14 @@ frauduleux), les infractions d'écrit (abus de biens sociaux, fraude fiscale) et
 domicile sans témoin. Reste à décider avec Kevin : le seuil chiffré de « presque toutes », et s'il veut d'autres
 sources (capture d'écran animée d'un appel vidéo, caméra de tableau de bord, vidéo d'un commerce intérieur).
 
+**Bilan de la livraison 1.5.4 (17 novembre, Kevin a choisi d'ajouter des sources).** Générateur en version 10 :
+`js/video-plus.js` — caméra de bord (`bord_pieton`, `bord_dangereux`, `bord_colere` ; véhicules en mouvement dans le
+moteur, `scn.vehicules`, circulation à droite), appel vidéo (`visio_appel`, style « visio », lumière de l'écran :
+`scn.lumieres`), commerce (`boutique`, `restaurant`, `bar_salle` : `caisse_poche`, `vente_comptoir`, `filouterie`,
+`bar_coups`), RER (décor dérivé du bus). Faille `G_bord_plaque`. Mesure sur 1 000 affaires de la version 10 : 60 % ont
+une pièce vidéo, **52 % un extrait joué** ; route 91 %, autorité 82 %, stupéfiants 68 %, biens 65 %, personnes 49 %,
+affaires 15 %, numérique 10 %.
+
 ### 1.6.0 « La garde à vue » — la parole de la scène la plus jouée
 
 - **Contexte de procédure** lu par tous les textes : arrêté sur le fait, convoqué, plaignant ; date des faits relative
