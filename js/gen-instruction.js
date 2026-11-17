@@ -57,7 +57,16 @@
   const PIECE_PREUVE = { temoin: "temoin", telephonie: "telephonie", adn: "adn", video: "video", expertise: "expertise", ecrits: "ecrits", toxico: "toxico" };
 
   // Âge figé sur la personne tirée (naissance réécrite)
-  const fixAge = (P, age) => { P.age = age; P.naissance = P.naissance.replace(/\d{4}/, String(2026 - age)); return P; };
+  const fixAge = (P, age) => {
+    const avant = P.age; P.age = age; P.naissance = P.naissance.replace(/\d{4}/, String(2026 - age));
+    // version 9 : un âge imposé (un nourrisson, un adolescent) reçoit un prénom de sa génération ; les affaires d'avant gardent le leur
+    const N = CR.NOMS, v = CR.MONDE && CR.MONDE.vCour ? CR.MONDE.vCour : GEN2.VERSION;
+    if (v >= 9 && N && N.prenom && avant !== age) {
+      const dd = N.decenniesDe(P.prenom), d = N.decennie(2026 - age);
+      if (!dd || d < dd[0] - 1 || d > dd[1] + 1) P.prenom = N.prenom(CR.seeded("prenom:" + P.nom + ":" + age), P.g, 2026 - age, P.pens || P.ens, { sansEpicene: true }).prenom;
+    }
+    return P;
+  };
   const fem = (P, m) => (P.g === "f" && M.METIERS_F[m]) || m;
   const metierAge = (r, age) => (age < 3 ? "nourrisson" : age < 11 ? "écolier" : age < 15 ? pk(r, ["collégien", "collégienne"]).replace(/ne$/, "") : pk(r, ["lycéen", "apprenti", "lycéen en CAP"]));
 

@@ -71,7 +71,8 @@ const SCOLAIRE = /\b(je vais au lycée|j'allais au lycée|au collège)\b/i;
         if (TRAVAILLE.test(txt.replace(/je travaille aux cuisines/i, "")) && !CHOMAGE.test(txt)) ok(CR.MONDE.travaille(P), voix, "travaille-sans-emploi:" + (TRAVAILLE.exec(txt) || [""])[0].toLowerCase());
         if (CHOMAGE.test(txt)) ok(!CR.MONDE.travaille(P), voix, "chomage-en-emploi:" + (CHOMAGE.exec(txt) || [""])[0].toLowerCase());
         if (/\b(je cherche du travail|rien, en ce moment|pas de travail)/i.test(txt)) ok(!/étudiant|lycéen|retraité|collégien/.test(P.metier), voix, "chomage-etudiant-retraite");
-        if (/retraité/.test(P.metier)) ok(!/pour l'instant|depuis quelques années/i.test(txt) || !/retraité/i.test(txt), voix, "retraite-provisoire");
+        // « depuis quelques années » est juste passé 64 ans (gen-parole.js) ; « pour l'instant » ne l'est jamais
+        if (/retraité/.test(P.metier)) ok(!(/pour l'instant/i.test(txt) || (/depuis quelques années/i.test(txt) && P.age < 64)) || !/retraité/i.test(txt), voix, "retraite-provisoire");
         const m = /\bje suis ([a-zà-ÿ' -]+?)(?:[.,:;]|$)/i.exec(txt);
         if (m && x.f === "G_emploi") ok(m[1].trim() === P.metier, voix, "metier-different");
         // 2. les enfants

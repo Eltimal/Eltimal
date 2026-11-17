@@ -24,6 +24,8 @@
   // 1.5.2 (version 8) : les caméras intérieures (js/video-interieur.js : hall d'immeuble, parking, bus) ; une faille de
   // plus : l'horloge de l'enregistreur décalée sur l'heure légale (tout rapprochement d'horaires est à corriger) ; le
   // recel découvert lors d'un contrôle, filmé par la caméra-piéton.
+  // 1.5.3 (version 9) : la banque (js/video-banque.js : le distributeur, dont la caméra fait face au client, et le
+  // journal de ses opérations ; le guichet) et la sonnette connectée (le palier, avec le son).
   const VP = (CR.VPLAN = {});
   const pk = (r, a) => a[Math.floor(r() * a.length)];
   const int = (r, a, b) => a + Math.floor(r() * (b - a + 1));
@@ -79,7 +81,40 @@
         if (r2() < 0.75) { p8.src = "pieton"; p8.preuve = false; if (r2() < 0.18) p8.o.tardif = int(r2, 4, 9); else if (r2() < 0.14) p8.o.information = false; out.push(p8); }
       }
     }
+    // 5. la banque, le guichet, la sonnette (version 9)
+    if ((ver || GEN2.VERSION) >= 9 && CR.VBANQUE) { const vb = VP.banque(t, out); if (vb) out.push(vb); }
     return out;
+  };
+  const BANQUE_MAP = {
+    escroquerie: { faux_conseiller: { faits: "dab_retrait", o: { cartes: 1 } }, annonce: { faits: "dab_retrait", o: { cartes: 1 } }, location: { faits: "dab_retrait", o: { cartes: 1 } },
+      faux_plombier: { faits: "porte_visite", o: { genre: "plombier", entre: true } }, faux_policier: { faits: "porte_visite", o: { genre: "faux_policier", entre: true } } },
+    blanchiment: { mule: { faits: "dab_retrait", o: { cartes: 3 } }, especes: { faits: "guichet", o: { motif: "depot" } } },
+    abus_confiance: { tutelle: { faits: "dab_retrait", o: { cartes: 1 } } },
+    usurpation_identite: { etat_civil: { faits: "guichet", o: { motif: "ouverture" } } },
+    faux_usage: { bulletins: { faits: "guichet", o: { motif: "pret" } } },
+    abus_faiblesse: { voisin: { faits: "guichet", o: { motif: "retrait", accompagne: true } }, travaux: { faits: "porte_visite", o: { genre: "artisan", entre: true } } },
+    violation_domicile: { ex: { faits: "porte_visite", o: { genre: "ex" } }, voisin: { faits: "porte_visite", o: { genre: "voisin" } } },
+    ordonnance_protection: { domicile: { faits: "porte_visite", o: { genre: "ex" } } },
+    non_representation: { visite: { faits: "porte_visite", o: { genre: "parent" } } },
+    harcelement_moral: { voisinage: { faits: "porte_visite", o: { genre: "voisin" } } },
+  };
+  VP.banque = function (t, deja) {
+    const r = CR.seeded(t.sig + ":videos:banque"), m = BANQUE_MAP[t.inf] && BANQUE_MAP[t.inf][ctxDe(t)];
+    if (!m || r() > 0.65) return null;
+    // une seule vidéo du domicile ou du hall pour une même visite
+    if (m.faits === "porte_visite" && deja.some((v) => v.src === "interieur" || (v.src === "telephone" && v.faits === "tel_dispute"))) return null;
+    const fl = !!t.flagrance, sonnette = m.faits === "porte_visite";
+    const v = { src: sonnette ? "sonnette" : "banque", faits: m.faits, decor: m.faits === "dab_retrait" ? "dab" : m.faits === "guichet" ? "banque" : "palier", o: Object.assign({}, m.o), preuve: true };
+    if (sonnette) {
+      if (v.o.genre === "ex" || v.o.genre === "voisin") v.o.violence = r() < 0.45 ? "porte" : "aucune";
+      v.qui = "victime"; v.copie = r() < 0.4;
+      return v;
+    }
+    if (m.faits === "dab_retrait") { v.o.regarde = r() < 0.6; v.o.montant = pk(r, [200, 300, 400, 500]); if (v.o.cartes > 1) v.o.cartes = int(r, 2, 3); }
+    const delai = !fl && t.d && t.d.plainte != null && t.d.faits != null ? t.d.plainte - t.d.faits + int(r, 1, 12) : 0;
+    Object.assign(v, { efface: delai > 30, delai, preuve: delai <= 30, requisitionIrr: (t.irr || []).includes("requisition") && !fl });
+    v.horloge = r() < 0.3 ? (r() < 0.5 ? -1 : 1) * int(r, 2, 11) : 0;
+    return v;
   };
   const RECEL = { recel: ["telephone", "scooter", "bijoux"] };
   const INT_MAP = {
@@ -171,9 +206,10 @@
       spec.cam = "CAM " + p2(int(r, 2, 48));
       spec.auteur = { g: A.g || "m" }; if (tenueA) spec.auteur.tenue = tenueA;
       spec.victime = { g: Vv.g || "m", agee: (Vv.age || 0) >= 70 };
-    } else if (v.src === "interieur") {
-      // un lieu éclairé : l'image reste en couleur
-      if (spec.mode === "ir") spec.mode = "soir";
+    } else if (v.src === "interieur" || v.src === "banque" || v.src === "sonnette") {
+      // un lieu éclairé : l'image reste en couleur (la sonnette, elle, passe en infrarouge la nuit)
+      if (spec.mode === "ir" && v.src !== "sonnette") spec.mode = "soir";
+      if (v.src === "sonnette") { const dits = [].concat((t.f || {}).propos || (t.f || {}).menaces || []).filter((x) => typeof x === "string" && x.length > 6 && x.length < 80); if (dits.length) spec.propos = dits.slice(0, 1).map((x) => (/[.!?]$/.test(x) ? x : x + " !")); }
       spec.cam = "CAM " + p2(int(r, 1, 24));
       spec.auteur = { g: A.g || "m" }; if (tenueA) spec.auteur.tenue = tenueA;
       spec.victime = { g: Vv.g || "f", agee: (Vv.age || 0) >= 70 };
@@ -205,6 +241,8 @@
 
   // ---------------------------------------------------------------- les pièces
   const hsx = (h) => { const [hh, mm, ss] = h.split(" ")[1].split(":"); return `${+hh} h ${mm} min ${ss} s`; };
+  // une interruption : « de 13 h 23 min 07 s à 13 h 23 min 09 s », ou « à 13 h 23 min 07 s, moins d'une seconde »
+  const coupure = (X, a0, b0, t) => { const a = hsx(X.horodatage(a0)), b = hsx(X.horodatage(b0)); return a === b && (t.ver || 0) >= 9 ? `à ${a}, pendant moins d'une seconde` : `de ${a} à ${b}`; }; // version 9 : les pièces d'avant ne changent pas
   const art = (s) => (/^(doudoune|veste)/.test(s) ? "une " : "un ") + s;
   function pieceRue(t, v, spec, cote, X) {
     const A = t.A || {}, dou = (k) => (t.doutes || []).includes(k), LZ = CR.MONDE.lieuxDe(t), SF = LZ.F;
@@ -228,7 +266,7 @@
         : dou("doute_ident")
           ? P({ t: `Sur l'image agrandie, les traits du visage de l'individu se distinguent. Ils présentent une ressemblance avec ceux de ${A.prenom} ${A.nom}, sans qu'il soit possible de l'affirmer.`, f: "G_doute_ident" })
           : P({ t: `Sur l'image agrandie, les traits du visage de l'individu se distinguent. Le visage, la silhouette et les vêtements correspondent à ceux de ${A.prenom} ${A.nom}${fl ? " lors de son interpellation" : ""}.`, f: "G_video" }),
-      X.sauts.length ? P(`L'enregistrement présente ${X.sauts.length === 1 ? "une interruption" : X.sauts.length + " interruptions"} : ${X.sauts.map(([a0, b0]) => `de ${hsx(X.horodatage(a0))} à ${hsx(X.horodatage(b0))}`).join(", ")}.`) : null,
+      X.sauts.length ? P(`L'enregistrement présente ${X.sauts.length === 1 ? "une interruption" : X.sauts.length + " interruptions"} : ${X.sauts.map(([a0, b0]) => coupure(X, a0, b0, t)).join(", ")}.`) : null,
       P("Une planche de captures est jointe ; les images utiles sont gravées sur un disque placé sous scellé."),
     ].filter(Boolean);
     return Object.assign(DOCS.forme({ title: titre, kind: "video", cote, entete, blocs, sigs: ["L'officier de police judiciaire"] }), { video: spec });
@@ -253,7 +291,7 @@
 
   function pieceInt(t, v, spec, cote, X) {
     const A = t.A || {}, dou = (k) => (t.doutes || []).includes(k), LZ = CR.MONDE.lieuxDe(t), SF = LZ.F, fl = !!t.flagrance, P = (x) => DOCS.p(x);
-    const SRC = CR.VINT.SOURCES[v.decor], titre = SRC.titre;
+    const SRC = (CR.VINT.SOURCES[v.decor] || SOURCES_BQ[v.decor]), titre = SRC.titre;
     const entete = [`${SF.paris ? "Préfecture de police" : "Police nationale"} · ${SF.comm}`, `Procédure n° ${t.proc} — cote ${cote}`];
     const req = `en exécution de ${fl ? "notre réquisition" : "notre réquisition, prise avec l'autorisation du procureur de la République"} (art. ${fl ? "60-1" : "77-1-1"} du code de procédure pénale)`;
     if (v.efface) return DOCS.forme({ title: titre, kind: "video", cote, entete, sigs: ["L'officier de police judiciaire"], blocs: [
@@ -267,6 +305,8 @@
       P(`Les images proviennent ${SRC.camera}, qui filme ${SRC.lieu} ; elles sont en couleur, à ${X.fps} images par seconde, sans le son.`),
       v.horloge ? P({ t: `L'exploitant nous signale que l'horloge de l'enregistreur ${v.horloge > 0 ? "avance" : "retarde"} de ${Math.abs(v.horloge)} minutes sur l'heure légale ; les heures citées ci-dessous sont celles qu'affiche l'image.`, f: "G_vid_horloge" }) : null,
       X.scn.ellipses && X.scn.ellipses.length ? P("L'enregistrement est déclenché par les mouvements : entre deux séquences, l'horodatage avance sans image.") : null,
+      // le journal du distributeur : les heures de la banque (exactes), à rapprocher de celles de l'image
+      ...(X.scn.operations ? [P("La banque joint le journal des opérations de l'automate pour cette période :")].concat(X.scn.operations.map((op, k) => P(v.horloge && k === 0 ? { t: `${hsx(X.horodatage(op.t - (v.horloge || 0) * 60))} — retrait de ${op.montant} euros, carte n° ${["4973", "5132", "4970"][k]} •••• ${String(1000 + ((t.sig.length * 37 + k * 911) % 9000))}.`, f: "G_vid_horloge" } : `${hsx(X.horodatage(op.t - (v.horloge || 0) * 60))} — retrait de ${op.montant} euros, carte n° ${["4973", "5132", "4970"][k]} •••• ${String(1000 + ((t.sig.length * 37 + k * 911) % 9000))}.`))) : []),
       ...X.moments.map((m) => { const tx = `${hsx(m.h)} — ${CR.VRUE.rediger(X, m.txt, vus)}`; return P(v.o.premier === "V" && m.cle === "premier" ? { t: tx, f: "G_vid_premier" } : m.cle === "chute" ? { t: tx, f: "G_vid_chute" } : tx); }),
       lis.A ? P(`L'individu désigné ci-dessus porte ${art(lis.A.image)}.`) : null,
       !lis.A || lis.A.visage !== "traits du visage discernables"
@@ -274,10 +314,35 @@
         : dou("doute_ident")
           ? P({ t: `Sur l'image agrandie, les traits du visage de l'individu se distinguent. Ils présentent une ressemblance avec ceux de ${A.prenom} ${A.nom}, sans qu'il soit possible de l'affirmer.`, f: "G_doute_ident" })
           : P({ t: `Sur l'image agrandie, les traits du visage de l'individu se distinguent. Le visage, la silhouette et les vêtements correspondent à ceux de ${A.prenom} ${A.nom}.`, f: "G_video" }),
-      X.sauts.length ? P(`L'enregistrement présente ${X.sauts.length === 1 ? "une interruption" : X.sauts.length + " interruptions"} : ${X.sauts.map(([a0, b0]) => `de ${hsx(X.horodatage(a0))} à ${hsx(X.horodatage(b0))}`).join(", ")}.`) : null,
+      X.sauts.length ? P(`L'enregistrement présente ${X.sauts.length === 1 ? "une interruption" : X.sauts.length + " interruptions"} : ${X.sauts.map(([a0, b0]) => coupure(X, a0, b0, t)).join(", ")}.`) : null,
       P("Une planche de captures est jointe ; les images utiles sont gravées sur un disque placé sous scellé."),
     ].filter(Boolean);
     return Object.assign(DOCS.forme({ title: titre, kind: "video", cote, entete, blocs, sigs: ["L'officier de police judiciaire"] }), { video: spec });
+  }
+
+  const SOURCES_BQ = {
+    dab: { titre: "Procès-verbal d'exploitation des images d'un distributeur automatique de billets", remis: "le service de sécurité de la banque", lieu: "le client placé devant l'automate", camera: "de la caméra de l'automate, logée au-dessus de l'écran et tournée vers le visage du client" },
+    banque: { titre: "Procès-verbal d'exploitation des images de vidéosurveillance d'une agence bancaire", remis: "le service de sécurité de la banque", lieu: "la salle du public et les guichets", camera: "d'une caméra fixée en hauteur, dans un angle de la salle" },
+  };
+  function pieceSonnette(t, v, spec, cote, X) {
+    const A = t.A || {}, Vv = t.V || {}, dou = (k) => (t.doutes || []).includes(k), LZ = CR.MONDE.lieuxDe(t), SF = LZ.F, P = (x) => DOCS.p(x), vus = new Set();
+    const lis = X.lisible(), parent = X.scn.genre === "parent", e = (p) => (p && p.g === "f" ? "e" : "");
+    const qui = parent ? `${A.prenom} ${A.nom}, occupant${e(A)} de l'appartement, à notre demande` : `${Vv.prenom} ${Vv.nom}, victime, occupant${e(Vv)} de l'appartement`;
+    const blocs = [
+      P(v.copie ? { t: `Nous est remise par ${qui}, une vidéo enregistrée par la sonnette connectée de sa porte d'entrée, téléchargée depuis le service en ligne du fabricant sur un support du service ; le compte et l'original n'ont pas été examinés.`, f: "G_tel_copie" } : `Nous est présentée par ${qui}, l'application de la sonnette connectée de sa porte d'entrée ; la vidéo y figure, conservée par le service en ligne du fabricant, avec sa date et son heure ; nous en faisons une copie intègre.`),
+      P(`La caméra de la sonnette, à hauteur d'homme, filme le palier en très grand angle${X.mode === "ir" ? ", en infrarouge (de nuit)" : ""} ; elle se déclenche à la détection d'un mouvement et enregistre le son.`),
+      P("Transcription des paroles (les passages couverts par le bruit sont signalés « [inaudible] ») :"),
+      ...X.paroles.map((p) => P(`${hsx(X.horodatage(p.t0))} — ${p.nom} : « ${p.texte} »`)),
+      P("Images :"),
+      ...X.moments.map((m) => P(`${hsx(m.h)} — ${CR.VRUE.rediger(X, m.txt, vus)}`)),
+      parent || !lis.A ? null : lis.A.visage !== "traits du visage discernables"
+        ? P({ t: "Les traits du visage de l'individu ne se distinguent pas.", f: dou("doute_ident") ? "G_doute_ident" : "G_vid_visage" })
+        : dou("doute_ident")
+          ? P({ t: `Le visage de l'individu est filmé de face, de près. Il présente une ressemblance avec celui de ${A.prenom} ${A.nom}, sans qu'il soit possible de l'affirmer.`, f: "G_doute_ident" })
+          : P({ t: `Le visage de l'individu est filmé de face, de près ; il correspond à celui de ${A.prenom} ${A.nom}.`, f: "G_video_tel" }),
+      P("La vidéo est gravée sur un disque placé sous scellé ; une planche de captures est jointe."),
+    ].filter(Boolean);
+    return Object.assign(DOCS.forme({ title: "Procès-verbal d'exploitation de la vidéo d'une sonnette connectée", kind: "video", cote, entete: [`${SF.paris ? "Préfecture de police" : "Police nationale"} · ${SF.comm}`, `Procédure n° ${t.proc} — cote ${cote}`], blocs, sigs: ["L'officier de police judiciaire"] }), { video: spec });
   }
 
   function pieceTel(t, v, spec, cote, X) {
@@ -325,7 +390,7 @@
       const lis = X.lisible(), flou = !lis.A || lis.A.visage !== "traits du visage discernables" || (t.doutes || []).includes("doute_ident");
       if (flou && !(t.doutes || []).includes("doute_ident")) f("G_vid_visage", { label: "Les traits du visage de l'auteur ne sont pas discernables sur les images", key: true, why: "L'identification repose sur la silhouette et les vêtements : un rapprochement, pas une reconnaissance." });
       if (!flou) f("G_video", { label: "La vidéo correspond à la silhouette et aux vêtements du mis en cause", key: false });
-    } else if (v.src === "interieur") {
+    } else if (v.src === "interieur" || v.src === "banque") {
       if (v.efface) { f("G_vid_efface", { label: "Les images de vidéosurveillance ont été écrasées avant la réquisition", key: true, why: "Faute d'avoir été requises à temps, les images qui auraient pu confirmer ou démentir les déclarations n'existent plus : le doute qui en reste profite au prévenu." }); return; }
       if (!X) return;
       if (v.horloge) f("G_vid_horloge", { label: "L'horloge de l'enregistreur est décalée sur l'heure légale", key: true, why: "Les heures lues sur l'image ne sont pas les heures réelles : tout rapprochement d'horaires (un appel, un témoignage, un alibi) doit être corrigé du décalage." });
@@ -334,14 +399,15 @@
       const lis = X.lisible(), flou = !lis.A || lis.A.visage !== "traits du visage discernables";
       if (flou && !(t.doutes || []).includes("doute_ident")) f("G_vid_visage", { label: "Les traits du visage de l'auteur ne sont pas discernables sur les images", key: true, why: "L'identification repose sur la silhouette et les vêtements : un rapprochement, pas une reconnaissance." });
       if (!flou && !(t.doutes || []).includes("doute_ident")) f("G_video", { label: "La vidéo correspond au visage, à la silhouette et aux vêtements du mis en cause", key: false });
-    } else if (v.src === "telephone") {
+    } else if (v.src === "telephone" || v.src === "sonnette") {
       if (!X) return;
       if (X.scn.retard) f("G_tel_debut", { label: v.apresPremier ? "La vidéo du témoin commence après le premier coup" : "La vidéo commence alors que la scène est engagée", key: true, why: v.apresPremier ? "Le début de l'altercation n'est pas filmé : la vidéo ne dit pas qui a frappé le premier, et n'écarte pas une riposte." : "Ce qui a précédé n'est pas filmé : la vidéo montre une scène dont le début manque." });
       if (v.copie || v.qui === "reseau") f("G_tel_copie", { label: "Seule une copie de la vidéo a été exploitée", key: true, why: "Sans l'original et ses métadonnées, l'intégrité de la vidéo (coupes, montage, date) n'est pas vérifiée : la défense peut en contester la valeur ou demander une expertise." });
       if (X.scn.violence && X.scn.violence !== "aucune") f("G_tel_coupe", { label: "L'enregistrement s'arrête pendant la scène", key: true, why: "La suite n'est pas filmée : ce qui s'est passé ensuite ne repose que sur les déclarations." });
       if (v.o.baseO && v.o.baseO.premier === "V" && X.moments.some((m) => m.cle === "premier")) f("G_vid_premier", { label: "Les images montrent l'autre porter le premier coup", key: true, why: "La riposte immédiate à une attaque peut relever de la légitime défense (art. 122-5 du code pénal) ; l'image le montre mieux qu'une déclaration." });
       const lis = X.lisible();
-      if (lis.A && lis.A.visage === "traits du visage discernables" && !(t.doutes || []).includes("doute_ident")) f("G_video_tel", { label: "La vidéo filmée au téléphone montre le visage du mis en cause", key: false });
+      if (v.src === "sonnette" && X.scn.genre === "parent") return;
+      if (lis.A && lis.A.visage === "traits du visage discernables" && !(t.doutes || []).includes("doute_ident")) f("G_video_tel", { label: v.src === "sonnette" ? "La sonnette a filmé le visage du mis en cause" : "La vidéo filmée au téléphone montre le visage du mis en cause", key: false });
       else if (lis.A && lis.A.visage !== "traits du visage discernables" && !(t.doutes || []).includes("doute_ident")) f("G_vid_visage", { label: "Les traits du visage de l'auteur ne sont pas discernables sur les images", key: true, why: "L'identification repose sur la silhouette et les vêtements : un rapprochement, pas une reconnaissance." });
     } else if (X) {
       if (X.scn.tardif) f("G_pieton_tardif", { label: "La caméra-piéton a été déclenchée après le début de l'échange", key: true, why: "Le début de l'incident n'est pas enregistré : ce qui l'a provoqué ne se voit pas, et la version des policiers sur ce moment n'est confirmée par rien." });
@@ -361,23 +427,23 @@
     let n = 0;
     for (const c of Object.values(PZ.cotes || {})) { const m = /^D(\d+)/.exec(String(c || "")); if (m) n = Math.max(n, +m[1]); }
     for (const v of t.videos) {
-      let key = { rue: "pv_videoprotection", pieton: "pv_camera_pieton", telephone: "pv_video_telephone", interieur: "pv_video_interieur" }[v.src], cote;
+      let key = { rue: "pv_videoprotection", pieton: "pv_camera_pieton", telephone: "pv_video_telephone", interieur: "pv_video_interieur", banque: "pv_video_banque", sonnette: "pv_video_sonnette" }[v.src], cote;
       // la vidéo seulement écrite que l'affaire avait déjà : la pièce jouable la remplace, à la même cote
       if (v.src === "rue" && PZ.docs.pv_video) { key = "pv_video"; cote = PZ.cotes.pv_video; }
       if (!cote) { n++; cote = "D" + n; }
       const spec = v.efface ? null : VP.spec(t, v);
       const X = spec ? CR.video.extrait(spec) : null;
-      const fn = v.src === "rue" ? () => pieceRue(t, v, spec, cote, X) : v.src === "telephone" ? () => pieceTel(t, v, spec, cote, X) : v.src === "interieur" ? () => pieceInt(t, v, spec, cote, X) : () => piecePieton(t, v, spec, cote, X);
+      const fn = v.src === "rue" ? () => pieceRue(t, v, spec, cote, X) : v.src === "telephone" ? () => pieceTel(t, v, spec, cote, X) : v.src === "interieur" || v.src === "banque" ? () => pieceInt(t, v, spec, cote, X) : v.src === "sonnette" ? () => pieceSonnette(t, v, spec, cote, X) : () => piecePieton(t, v, spec, cote, X);
       PZ.docs[key] = () => CAT.typoDeep(fn());
       PZ.cotes[key] = cote;
-      PZ.titres[key] = `${v.src === "rue" ? (v.efface ? "Vidéoprotection : images effacées" : "Exploitation vidéo") : v.src === "telephone" ? (v.qui === "reseau" ? "Vidéo publiée en ligne" : "Vidéo filmée au téléphone") : v.src === "interieur" ? (v.efface ? "Vidéosurveillance : images écrasées" : { hall: "Vidéo du hall d'immeuble", parking: "Vidéo du parking", bus: "Vidéo du bus" }[v.decor]) : "Caméra-piéton"} (${cote})`;
+      PZ.titres[key] = `${v.src === "rue" ? (v.efface ? "Vidéoprotection : images effacées" : "Exploitation vidéo") : v.src === "telephone" ? (v.qui === "reseau" ? "Vidéo publiée en ligne" : "Vidéo filmée au téléphone") : v.src === "interieur" || v.src === "banque" ? (v.efface ? "Vidéosurveillance : images écrasées" : { hall: "Vidéo du hall d'immeuble", parking: "Vidéo du parking", bus: "Vidéo du bus", dab: "Vidéo du distributeur", banque: "Vidéo de l'agence bancaire" }[v.decor]) : v.src === "sonnette" ? "Vidéo de la sonnette" : "Caméra-piéton"} (${cote})`;
       for (const l of ["dossier", "copie"]) {
         const L = PZ.listes[l]; if (!L || L.includes(key)) continue;
         const i = L.indexOf("casier"); if (i >= 0) L.splice(i, 0, key); else L.push(key);
       }
       faits(PZ, t, v, X);
       // la réquisition sans autorisation : la nullité écarte aussi les images
-      if ((v.src === "rue" || v.src === "interieur") && v.requisitionIrr && PZ.anomalies.requisition && !PZ.anomalies.requisition.annule.includes("video")) PZ.anomalies.requisition.annule.push("video");
+      if ((v.src === "rue" || v.src === "interieur" || v.src === "banque") && v.requisitionIrr && PZ.anomalies.requisition && !PZ.anomalies.requisition.annule.includes("video")) PZ.anomalies.requisition.annule.push("video");
     }
     return PZ;
   };

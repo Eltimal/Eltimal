@@ -17,6 +17,17 @@
   // les mises à jour, la plus récente d'abord
   const HISTORIQUE = [
     {
+      version: "1.5.3", nom: "", date: "17 novembre 2026", type: "correctif", // livraison de la 1.5 « La preuve filmée » (D-101)
+      resume: "La preuve filmée, quatrième livraison : le distributeur de billets, le guichet de la banque, la sonnette connectée.",
+      notes: [
+        "Le distributeur : sa caméra fait face au client, de tout près. La banque joint le journal des retraits ; quand l'horloge de la caméra est décalée, les heures ne concordent plus.",
+        "Retraits avec la carte d'une victime (faux conseiller, fausse annonce, fausse location), mule bancaire qui enchaîne les cartes, tuteur qui retire l'argent de la personne protégée.",
+        "Le guichet : dépôt d'espèces, ouverture d'un compte avec une fausse identité, faux bulletins de paie pour un prêt, voisin qui accompagne une personne âgée et parle à sa place.",
+        "La sonnette connectée, avec le son, en infrarouge la nuit : l'ex qui tambourine malgré l'interdiction, le faux artisan, le faux policier ou le faux plombier qu'on laisse entrer, le parent qui vient chercher l'enfant et à qui l'on n'ouvre pas.",
+        "Les affaires tirées avant cette version gardent leurs vidéos et leurs pièces.",
+      ],
+    },
+    {
       version: "1.5.2", nom: "", date: "17 novembre 2026", type: "correctif", // livraison de la 1.5 « La preuve filmée » (D-101)
       resume: "La preuve filmée, troisième livraison : les caméras intérieures — le hall d'un immeuble, un parking souterrain, un bus.",
       notes: [

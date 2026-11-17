@@ -329,6 +329,16 @@ découvert lors d'un contrôle filmé par la caméra-piéton. Le RER et le bar i
 1 000 affaires de la version 8 : 53 % ont une pièce vidéo, 45 % un extrait joué ; personnes 46 %, biens 54 %,
 stupéfiants 67 %, route 87 %, autorité 77 % ; numérique et affaires 0 % (1.5.3 : banque, guichet, domicile).
 
+**Bilan de la livraison 1.5.3 (17 novembre).** Générateur en version 9 : `js/video-banque.js` (décors « banque »,
+« dab » — la caméra de l'automate face au client — et « palier » ; scènes `dab_retrait` avec le journal des opérations,
+`guichet`, `porte_visite` — la sonnette, avec le son, en infrarouge la nuit) ; `VPLAN.banque`. Mesure sur 1 000
+affaires de la version 9 : **59 % ont une pièce vidéo, 50 % un extrait joué** (21 % de pièces avant la 1.5.0) ; biens
+65 %, personnes 44 %, route 85 %, stupéfiants 68 %, autorité 81 %, affaires 27 %, numérique 9 %. Le seuil de « fini »
+n'est pas atteint : ce qui reste sans caméra crédible est surtout le numérique (diffusion, usurpation en ligne, accès
+frauduleux), les infractions d'écrit (abus de biens sociaux, fraude fiscale) et les violences dont la scène est au
+domicile sans témoin. Reste à décider avec Kevin : le seuil chiffré de « presque toutes », et s'il veut d'autres
+sources (capture d'écran animée d'un appel vidéo, caméra de tableau de bord, vidéo d'un commerce intérieur).
+
 ### 1.6.0 « La garde à vue » — la parole de la scène la plus jouée
 
 - **Contexte de procédure** lu par tous les textes : arrêté sur le fait, convoqué, plaignant ; date des faits relative

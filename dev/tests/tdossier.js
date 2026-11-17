@@ -40,9 +40,11 @@ const REVELE = /irrégularit|aucune autorisation|aucune ordonnance|nullit|ne men
   CR.retirerIrreg(cs, i2.id);
   ok(!cs.notes.some((n) => n.issueId === i2.id), "retirer l'irrégularité efface sa note");
   // Indice du mode assisté : propre à la pièce tant que l'anomalie n'est pas trouvée
-  ok(CR.indicesPiece(cs, rn).length === 1, "indice propre à la notification des droits");
+  // (la même pièce peut porter une autre anomalie, l'avis au procureur tardif : son indice reste)
+  const nInd = CR.indicesPiece(cs, rn).length;
+  ok(nInd >= 1 && CR.indicesPiece(cs, rn).some((x) => /notifiés/.test(x)), "indice propre à la notification des droits");
   CR.releverIrreg(s, cs, { seg: notif, ref: { doc: dn.id }, type: "heure" });
-  ok(CR.indicesPiece(cs, rn).length === 0, "plus d'indice une fois l'irrégularité relevée");
+  ok(CR.indicesPiece(cs, rn).length === nInd - 1 && !CR.indicesPiece(cs, rn).some((x) => /notifiés/.test(x)), "plus d'indice une fois l'irrégularité relevée");
 
   // 3. Incohérence entre deux pièces (affaire générée, interprète absent)
   let gcs = null;

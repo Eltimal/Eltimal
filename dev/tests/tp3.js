@@ -237,7 +237,7 @@ const ok = (c, m, k) => { if (c) return; fails++; const key = k || m; const n = 
         } else ok(cs.status === "closed", `${cs.id} : jugement définitif mais dossier ouvert`, "2b:def");
         fait.appel++;
       }
-      if (v.presse && fait.presse < 1 && def.calls.vie_presse) {
+      if (v.presse && fait.presse < 1 && def.calls.vie_presse && !cs.vars.vieArticle && cs.status !== "closed") { // un article déjà paru, un dossier clos : plus de conséquence possible
         cs.flags.viePresse = "details";
         G.VIE.evenement(api, t, v, "article", {});
         ok(cs.erreurs.some((e) => e.id === "vie_presse") && s.disc.open.length > 0, `${cs.id} : pièces livrées à la presse sans conséquence`, "2b:presse");

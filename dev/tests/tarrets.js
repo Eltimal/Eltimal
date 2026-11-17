@@ -41,7 +41,8 @@ const { boot } = require("./harness");
       ok(/art\. 362/.test(T), `${id} : vote sur la peine absent`);
       ok(appel ? /art\. 568/.test(T) : /art\. 380-9/.test(T) && (ccd ? /380-21/.test(T) : /380-14/.test(T)), `${id} : voies de recours`, T.slice(-500));
     } else if (J.irresp) {
-      ok(/Question n° 2 : .+ cause d'irresponsabilité pénale/.test(T) && /706-129/.test(T) && /706-132/.test(T), `${id} : irresponsabilité sans ses deux questions (art. 349-1)`);
+      // en appel, l'arrêt n'est plus susceptible que d'un pourvoi : l'appel du procureur général (706-132) ne s'écrit qu'en premier ressort (tribunal.js)
+      ok(/Question n° 2 : .+ cause d'irresponsabilité pénale/.test(T) && /706-129/.test(T) && (appel || /706-132/.test(T)), `${id} : irresponsabilité sans ses deux questions (art. 349-1)`);
     } else {
       ok(/— Non\./.test(T), `${id} : acquittement sans réponse négative`);
       ok(appel ? /art\. 568/.test(T) : /procureur général/.test(T), `${id} : voies de recours après acquittement`);

@@ -578,9 +578,9 @@
   // Version du générateur : elle entre dans le code d'affaire. Toute modification du tirage (gen-moteur, gen-monde, cat-*,
   // gen-instruction) qui change une affaire tirée d'une graine doit l'incrémenter, et GEN2.VERSIONS_LISIBLES dire si les
   // codes d'avant se rejouent encore à l'identique.
-  GEN2.VERSION = 8; // 2 : anti-répétition, lot 3 (scènes nouvelles, ordonnances pénales élargies) ; 3 : infractions du lot 1 (variantes des fiches) ; 4 : infractions du lot 2 (nouvelles fiches, concours trafic et refus du code) ; 5 : noms et visages de la 1.3.0 (js/noms.js, banque de visages 2) ; 6 : la preuve filmée de la 1.5.0 (js/video-plan.js : vidéos planifiées au tirage, graine propre) ; 7 : la vidéo filmée au téléphone de la 1.5.1 (js/video-telephone.js) ; 8 : les caméras intérieures de la 1.5.2 (js/video-interieur.js)
+  GEN2.VERSION = 9; // 2 : anti-répétition, lot 3 (scènes nouvelles, ordonnances pénales élargies) ; 3 : infractions du lot 1 (variantes des fiches) ; 4 : infractions du lot 2 (nouvelles fiches, concours trafic et refus du code) ; 5 : noms et visages de la 1.3.0 (js/noms.js, banque de visages 2) ; 6 : la preuve filmée de la 1.5.0 (js/video-plan.js : vidéos planifiées au tirage, graine propre) ; 7 : la vidéo filmée au téléphone de la 1.5.1 (js/video-telephone.js) ; 8 : les caméras intérieures de la 1.5.2 (js/video-interieur.js) ; 9 : la banque et la sonnette de la 1.5.3 (js/video-banque.js)
   // la version 4 se rejoue à l'identique : ses noms viennent des listes d'avant (CR.NOMS.ANCIENS), ses visages de la banque 1
-  GEN2.VERSIONS_LISIBLES = { 4: true, 5: true, 6: true, 7: true, 8: true };
+  GEN2.VERSIONS_LISIBLES = { 4: true, 5: true, 6: true, 7: true, 8: true, 9: true };
   GEN2.codeSecteur = (S) => (S.paris ? String(parseInt(S.arr, 10)) : S.cp.slice(0, 2));
   // Les sommes en jeu suivent le milieu de la victime (un cambriolage à Neuilly, une escroquerie à Clichy-sous-Bois),
   // sans jamais changer la qualification
